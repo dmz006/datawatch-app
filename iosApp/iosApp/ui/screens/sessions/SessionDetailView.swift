@@ -27,6 +27,8 @@ struct SessionDetailView: View {
     @State private var whisperEnabled = false
     @State private var voiceRecorder: VoiceRecorder? = nil
     @State private var isTranscribing = false
+    /// Transient composer note (PWA toast stand-in until D41): text + isWarning.
+    @State private var composerNote: (String, Bool)? = nil
     @State private var recordingPulse = false
     @Environment(\.dismiss) private var dismiss
     /// PWA output tab bar: "tmux" (terminal) or "status".
@@ -539,6 +541,21 @@ struct SessionDetailView: View {
 
     private var isWaiting: Bool { session.state == .waiting }
 
+    /// PWA input placeholder rule (app.js input_ph_*).
+    private var composerPlaceholder: String {
+        if isTranscribing { return "Transcribing…" }
+        if isWaiting { return "Type your response…" }
+        if session.isChatMode || session.inputMode == "channel" { return "Send message…" }
+        return "Send command or input…"
+    }
+
+    private func flashComposerNote(_ text: String, warning: Bool, seconds: Double) {
+        composerNote = (text, warning)
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+            if composerNote?.0 == text { composerNote = nil }
+        }
+    }
+
     private var composerBar: some View {
         VStack(spacing: 0) {
             if isWaiting {
@@ -549,6 +566,25 @@ struct SessionDetailView: View {
                 Divider().background(DatawatchColors.border)
             }
             keysStrip
+            if isTranscribing {
+                // PWA _composerBanner('Transcribing voice message…').
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.mini).tint(DatawatchColors.onSurfaceMuted)
+                    Text("Transcribing voice message…")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
+            } else if let note = composerNote {
+                Text(note.0)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(note.1 ? DatawatchColors.warning : DatawatchColors.success)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 4)
+            }
             if let banner = imageBanner {
                 Text(banner == "uploading" ? "Uploading image…" : banner)
                     .font(DatawatchFonts.labelSmall)
@@ -571,7 +607,8 @@ struct SessionDetailView: View {
                 }
                 .disabled(imageBanner == "uploading")
                 .accessibilityLabel("Attach image")
-                TextField(isWaiting ? "Type a reply…" : "Reply or press Enter", text: $replyText)
+                TextField(composerPlaceholder, text: $replyText)
+                    .disabled(isTranscribing)
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
                     .autocorrectionDisabled()
@@ -830,12 +867,20 @@ struct SessionDetailView: View {
             profile: profile,
             onSuccess: { transcript in
                 DispatchQueue.main.async {
-                    self.replyText = transcript
                     self.isTranscribing = false
+                    if transcript.isEmpty {
+                        self.flashComposerNote("Backend returned empty transcript — check whisper config", warning: true, seconds: 4)
+                    } else {
+                        self.replyText = self.replyText.isEmpty ? transcript : self.replyText + " " + transcript
+                        self.flashComposerNote("✓ Transcribed (\(transcript.count) chars)", warning: false, seconds: 2.5)
+                    }
                 }
             },
-            onError: { _ in
-                DispatchQueue.main.async { self.isTranscribing = false }
+            onError: { msg in
+                DispatchQueue.main.async {
+                    self.isTranscribing = false
+                    self.flashComposerNote("Voice transcribe error: \(msg)", warning: true, seconds: 4)
+                }
             }
         )
     }
