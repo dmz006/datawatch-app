@@ -455,6 +455,8 @@ public class SessionDetailViewModel(
                     "[D", "[D" -> "Left"
                     "" -> "Escape"
                     "\t" -> "Tab"
+                    "\u0003" -> "C-c" // PWA abort
+                    "\u0002" -> "C-b" // PWA tmux prefix
                     "[5~" -> "PgUp"
                     "[6~" -> "PgDn"
                     else -> null

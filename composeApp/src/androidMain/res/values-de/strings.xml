@@ -117,7 +117,9 @@
     <string name="session_detail_override_state">Zustand überschreiben</string>
     <string name="session_detail_reply_waiting">Antworten (Eingabe erforderlich)…</string>
     <string name="session_detail_reply_hint">Antworten…</string>
-    <string name="session_detail_saved_commands">Gespeicherte Befehle</string>
+    <string name="session_detail_commands_select">Befehle…</string>
+    <string name="session_detail_commands_custom">Eigener…</string>
+    <string name="session_detail_commands_custom_ph">Befehl eingeben…</string>
     <string name="session_detail_schedule_action">Antwort planen</string>
     <string name="session_detail_on_input">bei Eingabe</string>
     <string name="session_detail_cancel_schedule">Zeitplan abbrechen</string>

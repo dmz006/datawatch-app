@@ -178,7 +178,9 @@
     <string name="session_detail_override_state">Override state</string>
     <string name="session_detail_reply_waiting">Reply (input required)…</string>
     <string name="session_detail_reply_hint">Reply…</string>
-    <string name="session_detail_saved_commands">Saved commands</string>
+    <string name="session_detail_commands_select">Commands…</string>
+    <string name="session_detail_commands_custom">Custom…</string>
+    <string name="session_detail_commands_custom_ph">Type command…</string>
     <string name="session_detail_schedule_action">Schedule reply</string>
     <string name="session_detail_on_input">on input</string>
     <string name="session_detail_cancel_schedule">Cancel schedule</string>

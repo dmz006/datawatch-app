@@ -117,7 +117,9 @@
     <string name="session_detail_override_state">Forzar estado</string>
     <string name="session_detail_reply_waiting">Responder (entrada requerida)…</string>
     <string name="session_detail_reply_hint">Responder…</string>
-    <string name="session_detail_saved_commands">Comandos guardados</string>
+    <string name="session_detail_commands_select">Comandos…</string>
+    <string name="session_detail_commands_custom">Personalizado…</string>
+    <string name="session_detail_commands_custom_ph">Escribe un comando…</string>
     <string name="session_detail_schedule_action">Programar respuesta</string>
     <string name="session_detail_on_input">al recibir entrada</string>
     <string name="session_detail_cancel_schedule">Cancelar programación</string>

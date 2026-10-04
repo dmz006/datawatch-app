@@ -35,11 +35,11 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Mic
@@ -826,7 +826,6 @@ public fun SessionDetailScreen(
                 // Composer in its own layer responding to keyboard insets separately.
                 // In scroll mode the big PgUp/PgDn overlay replaces the composer.
                 if (!toolbarState.scrollMode) {
-                    var savedCmdsOpen by remember { mutableStateOf(false) }
                     Box(
                         modifier =
                             Modifier
@@ -848,20 +847,9 @@ public fun SessionDetailScreen(
                                 // in the composer toolbar.
                                 onResponse = {},
                                 hasResponse = false,
-                                onSavedCommands = { savedCmdsOpen = true },
+                                fetchSavedCommands = { vm.fetchSavedCommands() },
                                 whisperConfigured = state.whisperConfigured,
                             )
-                            if (savedCmdsOpen) {
-                                QuickCommandsSheet(
-                                    fetchSavedCommands = { vm.fetchSavedCommands() },
-                                    onSend = { cmd ->
-                                        vm.sendQuickReply(cmd + "\r")
-                                        savedCmdsOpen = false
-                                    },
-                                    onDismiss = { savedCmdsOpen = false },
-                                    sessionId = sessionId,
-                                )
-                            }
                         }
                     }
                 }
@@ -1101,11 +1089,10 @@ private fun SessionInfoBar(
             if (!computeNodeRef.isNullOrBlank()) {
                 InfoBadge(text = "⚙ $computeNodeRef", color = Color(0xFF8B5CF6))
             }
-            // User 2026-04-24: the "tmux" mode badge is redundant with
-            // the tmux/channel TabRow above. Only surface the mode
-            // badge for non-default modes (channel, chat, etc.) so the
-            // information isn't repeated.
-            if (sessionMode.lowercase() !in setOf("tmux", "", "none")) {
+            // Parity D17a — PWA rule: the mode badge shows only for plain
+            // tmux sessions (channel/acp/chat modes are conveyed by the tab
+            // strip, app.js v5.23.0).
+            if (sessionMode.lowercase() == "tmux") {
                 InfoBadge(text = sessionMode.lowercase(), color = MaterialTheme.colorScheme.secondary)
             }
             state?.let {
@@ -1947,10 +1934,12 @@ private fun ReplyComposer(
     onQuickReply: (String) -> Unit = {},
     onResponse: () -> Unit = {},
     hasResponse: Boolean = false,
-    onSavedCommands: () -> Unit = {},
+    fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     whisperConfigured: Boolean = false,
 ) {
     HorizontalDivider()
+    // Parity D21b — PWA keys strip: "Commands…" dropdown + inline custom input.
+    var customCmdOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var recorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
@@ -2177,26 +2166,20 @@ private fun ReplyComposer(
     // and custom commands; the redundant chip row was eating ~40 dp
     // of vertical space the terminal viewport could use instead.
 
-    // Quick-actions row above the composer. The Last Response button
-    // moved to the SessionInfoBar (header) per user request 2026-05-25,
-    // so this row holds Saved Commands + ESC + arrow keys only.
+    // Quick-actions row above the composer: Commands… dropdown + ESC +
+    // arrow keys + Enter (PWA savedCmdsQuick).
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(0.dp),
     ) {
-        IconButton(
-            onClick = onSavedCommands,
-            modifier = Modifier.size(32.dp),
+        SavedCommandsDropdown(
             enabled = !sending,
-        ) {
-            Icon(
-                Icons.Filled.Keyboard,
-                contentDescription = stringResource(R.string.session_detail_saved_commands),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+            fetchSavedCommands = fetchSavedCommands,
+            onSend = onQuickReply,
+            onCustom = { customCmdOpen = true },
+        )
+        Spacer(modifier = Modifier.weight(1f))
         // ESC — matches PWA savedCmdsQuick ␛ button
         TextButton(
             onClick = { onQuickReply("\u001B") },
@@ -2258,6 +2241,15 @@ private fun ReplyComposer(
         ) {
             Text("⏎", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
         }
+    }
+    if (customCmdOpen) {
+        CustomCommandRow(
+            onSend = { cmd ->
+                onQuickReply(cmd + "\r")
+                customCmdOpen = false
+            },
+            onCancel = { customCmdOpen = false },
+        )
     }
 
     // Pending image chip — shown when an image is queued for attachment.
@@ -2586,5 +2578,135 @@ private fun SessionModeTab(
             color = textColor,
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
         )
+    }
+}
+
+/**
+ * Parity D21b — PWA `savedCmdsQuick` `<select>`: System commands, the
+ * user's saved commands, then "Custom…" (opens [CustomCommandRow]). The
+ * PWA's Guardrails group is omitted: the app's transport can only run the
+ * session's default guardrail, not a named one.
+ */
+@Composable
+private fun SavedCommandsDropdown(
+    enabled: Boolean,
+    fetchSavedCommands: suspend () -> List<Pair<String, String>>,
+    onSend: (String) -> Unit,
+    onCustom: () -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    LaunchedEffect(open) {
+        if (open) saved = fetchSavedCommands()
+    }
+    // PWA system set (app.js loadSavedCmdsQuick); values are what the app's
+    // send path expects (text + CR, or a control byte mapped to sendkey).
+    val system =
+        listOf(
+            "approve" to "yes\r",
+            "reject" to "no\r",
+            "enter" to "\r",
+            "continue" to "continue\r",
+            "skip" to "skip\r",
+            "abort" to "\u0003",
+            "ESC" to "\u001B",
+            "tmux prefix (Ctrl-b)" to "\u0002",
+            "quit" to "/exit\r",
+        )
+    Box {
+        androidx.compose.material3.OutlinedButton(
+            onClick = { open = true },
+            enabled = enabled,
+            modifier = Modifier.height(30.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        ) {
+            Text(
+                stringResource(R.string.session_detail_commands_select),
+                style = MaterialTheme.typography.labelSmall,
+            )
+            Icon(
+                Icons.Filled.ArrowDropDown,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownGroupLabel(stringResource(R.string.sessions_cmd_system))
+            system.forEach { (label, value) ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(label, style = MaterialTheme.typography.bodySmall) },
+                    onClick = {
+                        open = false
+                        onSend(value)
+                    },
+                )
+            }
+            if (saved.isNotEmpty()) {
+                DropdownGroupLabel(stringResource(R.string.sessions_cmd_saved))
+                saved.forEach { (name, cmd) ->
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text(name.ifBlank { cmd }, style = MaterialTheme.typography.bodySmall, maxLines = 1) },
+                        onClick = {
+                            open = false
+                            onSend(cmd + "\r")
+                        },
+                    )
+                }
+            }
+            HorizontalDivider()
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text(stringResource(R.string.session_detail_commands_custom), style = MaterialTheme.typography.bodySmall) },
+                onClick = {
+                    open = false
+                    onCustom()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DropdownGroupLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+    )
+}
+
+/** PWA `customCmdWrap`: inline text field + ➤ send + ✕ cancel. */
+@Composable
+private fun CustomCommandRow(
+    onSend: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var text by remember { mutableStateOf("") }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = { Text(stringResource(R.string.session_detail_commands_custom_ph)) },
+            singleLine = true,
+            keyboardOptions =
+                androidx.compose.foundation.text.KeyboardOptions(
+                    imeAction = androidx.compose.ui.text.input.ImeAction.Send,
+                ),
+            keyboardActions =
+                androidx.compose.foundation.text.KeyboardActions(
+                    onSend = { if (text.isNotBlank()) onSend(text) },
+                ),
+            modifier = Modifier.weight(1f),
+            textStyle = MaterialTheme.typography.bodySmall,
+        )
+        IconButton(onClick = { if (text.isNotBlank()) onSend(text) }, enabled = text.isNotBlank()) {
+            Text("➤", color = MaterialTheme.colorScheme.primary)
+        }
+        IconButton(onClick = onCancel) {
+            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_cancel))
+        }
     }
 }
