@@ -245,3 +245,127 @@ public object IosPrdItemOps {
         }
     }
 }
+
+/**
+ * Automata templates (parity B15; PWA Templates tab, Android TemplatesTab):
+ * list / create / update / delete / instantiate, and clone a PRD into a template.
+ */
+public object IosTemplates {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    public fun list(
+        profile: ServerProfile,
+        onSuccess: (List<com.dmzs.datawatchclient.transport.dto.TemplateDto>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).listTemplates().fold(
+                onSuccess = { onSuccess(it.templates) },
+                onFailure = { onError(it.message ?: "Couldn't load templates.") },
+            )
+        }
+    }
+
+    /** Create when [id] is blank, otherwise update. [tags] is comma-separated. */
+    public fun save(
+        profile: ServerProfile,
+        id: String,
+        title: String,
+        type: String,
+        description: String,
+        tags: String,
+        spec: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val tagList = tags.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        scope.launch {
+            val t = IosServiceLocator.transportFor(profile)
+            val result =
+                if (id.isBlank()) {
+                    t.createTemplate(
+                        com.dmzs.datawatchclient.transport.dto.CreateTemplateRequestDto(
+                            title = title.trim(),
+                            spec = spec,
+                            type = type.ifBlank { null },
+                            tags = tagList,
+                            description = description.trim().ifBlank { null },
+                        ),
+                    )
+                } else {
+                    t.updateTemplate(
+                        id,
+                        com.dmzs.datawatchclient.transport.dto.UpdateTemplateRequestDto(
+                            title = title.trim(),
+                            spec = spec,
+                            type = type.ifBlank { null },
+                            tags = tagList,
+                            description = description.trim(),
+                        ),
+                    )
+                }
+            result.fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Couldn't save the template.") },
+            )
+        }
+    }
+
+    public fun delete(
+        profile: ServerProfile,
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).deleteTemplate(id).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Delete failed.") },
+            )
+        }
+    }
+
+    /** Instantiate into a new PRD; [onSuccess] receives the new PRD id. */
+    public fun instantiate(
+        profile: ServerProfile,
+        id: String,
+        projectDir: String,
+        vars: Map<String, String>,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).instantiateTemplate(
+                id,
+                com.dmzs.datawatchclient.transport.dto.InstantiateTemplateRequestDto(
+                    projectDir = projectDir.trim().ifBlank { null },
+                    vars = vars,
+                ),
+            ).fold(
+                onSuccess = { onSuccess(it.id) },
+                onFailure = { onError(it.message ?: "Couldn't create an automaton from this template.") },
+            )
+        }
+    }
+
+    public fun clonePrd(
+        profile: ServerProfile,
+        prdId: String,
+        description: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).clonePrdToTemplate(
+                prdId,
+                com.dmzs.datawatchclient.transport.dto.ClonePrdToTemplateRequestDto(
+                    description = description.trim().ifBlank { null },
+                    actor = "operator",
+                ),
+            ).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Couldn't save as a template.") },
+            )
+        }
+    }
+}

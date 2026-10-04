@@ -59,6 +59,7 @@ struct AutomataView: View {
 
     private enum AutomataSection: String, CaseIterable {
         case prds = "PRDs"
+        case templates = "Templates"
         case types = "Types"
     }
 
@@ -153,6 +154,10 @@ struct AutomataView: View {
             case .prds:
                 if let profile = selectedProfile {
                     PrdListView(profile: profile)
+                }
+            case .templates:
+                if let profile = selectedProfile {
+                    TemplatesView(profile: profile)
                 }
             case .types:
                 if vm.isLoading && vm.types.isEmpty {

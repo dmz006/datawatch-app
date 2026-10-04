@@ -96,6 +96,7 @@ struct PrdDetailView: View {
     @State private var showCancel = false
     @State private var showEdit = false
     @State private var showDelete = false
+    @State private var templateSaved = false
     @Environment(\.dismiss) private var dismissDetail
 
     init(profile: ServerProfile, initial: PrdDto) {
@@ -128,6 +129,13 @@ struct PrdDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button { showEdit = true } label: { Label("Edit title / spec", systemImage: "pencil") }
+                    Button {
+                        IosTemplates.shared.clonePrd(
+                            profile: vm.profile, prdId: prd.id, description: "",
+                            onSuccess: { DispatchQueue.main.async { templateSaved = true } },
+                            onError: { msg in DispatchQueue.main.async { vm.actionError = msg } }
+                        )
+                    } label: { Label("Save as template", systemImage: "doc.on.doc") }
                     if !["running", "planning", "archived"].contains(prd.status.lowercased()) {
                         Button {
                             Task { await vm.perform("reset_to_draft", body: ["actor": "operator"]) }
@@ -140,6 +148,11 @@ struct PrdDetailView: View {
                 }
                 .accessibilityLabel("Automaton actions")
             }
+        }
+        .alert("Saved as template", isPresented: $templateSaved) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Find it in Automata → Templates.")
         }
         .sheet(isPresented: $showEdit) {
             EditPrdView(profile: vm.profile, prdId: prd.id, title: prd.displayTitle, spec: prd.spec ?? "") {
