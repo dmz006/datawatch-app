@@ -128,4 +128,11 @@ public object IosSessionOps {
             )
         }
     }
+
+    /** `send_input` over the session's open /ws (used by chat-mode sessions, which mount no terminal). */
+    public fun sendText(session: Session, text: String): Boolean = WsOutbound.sendInput(session.id, text)
+
+    /** Chat role as a plain string ("user" | "assistant" | "system") — avoids Kotlin enum interop in Swift. */
+    public fun chatRole(event: com.dmzs.datawatchclient.domain.SessionEvent.ChatMessage): String =
+        event.role.name.lowercase()
 }
