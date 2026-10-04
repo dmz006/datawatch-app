@@ -385,7 +385,7 @@ private struct MetricCard: View {
     }
 }
 
-// ── DwSession count card ────────────────────────────────────────────────────
+// ── Session count card ────────────────────────────────────────────────────
 
 private struct SessionMetricCard: View {
     let label: String

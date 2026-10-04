@@ -547,7 +547,7 @@ struct SessionsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // ── DwSession row ───────────────────────────────────────────────────────
+    // ── Session row ───────────────────────────────────────────────────────
 
     @ViewBuilder
     private func sessionRow(_ session: DwSession) -> some View {
