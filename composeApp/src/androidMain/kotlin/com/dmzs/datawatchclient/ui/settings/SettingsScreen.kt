@@ -91,8 +91,7 @@ import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.flowOf
@@ -481,6 +480,7 @@ private fun ServersCard(
     onDelete: (com.dmzs.datawatchclient.domain.ServerProfile) -> Unit,
 ) {
     SectionWithAction(
+        id = "servers",
         title = "Servers",
         actionIcon = Icons.Filled.Add,
         actionDescription = "Add server",
@@ -706,7 +706,7 @@ private fun SecurityCard() {
     var migrationError by remember { mutableStateOf<String?>(null) }
     val migrationFailedFmt = stringResource(R.string.security_migration_failed)
 
-    Section(title = "Security", docsAnchor = "security") {
+    Section(id = "security", title = "Security", docsAnchor = "security") {
         androidx.compose.foundation.layout.Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -769,7 +769,7 @@ private fun SecurityCard() {
 
 @Composable
 private fun CommsCard() {
-    Section(title = "Comms", docsAnchor = "communication-configuration") {
+    Section(id = "comms", title = "Comms", docsAnchor = "communication-configuration") {
         Text(
             "Messaging channel configuration will land in Sprint 3 (see " +
                 "docs/plans/README.md F3). This card will mirror the PWA's " +
@@ -811,7 +811,8 @@ private fun AboutCard(activeProfile: ServerProfile?) {
         transport.stats().onSuccess { stats = it }
     }
 
-    Section(title = "About", docsAnchor = "api") {
+    // PWA About header is a plain (non-collapsible) title (app.js renderSettingsView).
+    Section(id = "about", title = "About", docsAnchor = "api", collapsible = false) {
         // S6-6 (#87): normalized to 12dp horizontal / 8dp vertical per pwaCard standard.
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             // Live animated logo (matrix rain + eye + arcs + tablet frame).
@@ -1038,28 +1039,21 @@ private fun DaemonInfoRow(
     }
 }
 
+/** Settings / Observer card — thin alias over the shared collapsible [PwaCard] (D26a/D27a). */
 @Composable
 internal fun Section(
+    id: String,
     title: String,
     docsAnchor: String? = null,
+    collapsible: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(title, docsAnchor = docsAnchor)
-            content()
-        }
-    }
+    PwaCard(id = id, title = title, docsAnchor = docsAnchor, collapsible = collapsible) { content() }
 }
 
 @Composable
 private fun SectionWithAction(
+    id: String,
     title: String,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     actionDescription: String,
@@ -1067,34 +1061,20 @@ private fun SectionWithAction(
     docsAnchor: String? = null,
     content: @Composable () -> Unit,
 ) {
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PwaSectionTitle(
-                    title,
-                    modifier = Modifier.weight(1f),
-                    docsAnchor = docsAnchor,
+    PwaCard(
+        id = id,
+        title = title,
+        docsAnchor = docsAnchor,
+        headerActions = {
+            IconButton(onClick = onAction) {
+                Icon(
+                    actionIcon,
+                    contentDescription = actionDescription,
+                    tint = MaterialTheme.colorScheme.primary,
                 )
-                IconButton(onClick = onAction) {
-                    Icon(
-                        actionIcon,
-                        contentDescription = actionDescription,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
             }
-            content()
-        }
-    }
+        },
+    ) { content() }
 }
 
 /**

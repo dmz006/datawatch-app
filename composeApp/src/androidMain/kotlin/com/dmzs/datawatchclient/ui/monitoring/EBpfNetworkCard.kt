@@ -41,7 +41,7 @@ public fun EBpfNetworkCard(vm: StatsViewModel = viewModel()) {
     // show a placeholder rather than vanishing — so the user knows why data is missing.
     if (!stats.ebpfActive) {
         if (stats.ebpfEnabled == true) {
-            Section(title = stringResource(R.string.stats_section_process_network)) {
+            Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network), docsAnchor = "ebpf-per-process-net") {
                 Text(
                     text = stringResource(R.string.stats_ebpf_configured_not_active),
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -60,7 +60,7 @@ public fun EBpfNetworkCard(vm: StatsViewModel = viewModel()) {
 
     if (rows.isEmpty()) return
 
-    Section(title = stringResource(R.string.stats_section_process_network)) {
+    Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network), docsAnchor = "ebpf-per-process-net") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             // Header row
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {

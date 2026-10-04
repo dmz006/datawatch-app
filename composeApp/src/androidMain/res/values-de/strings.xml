@@ -1254,4 +1254,6 @@
     <string name="work_queue_push">Arbeitseintrag hinzufügen</string>
     <string name="work_queue_new_role_hint">Rolle (z. B. worker)</string>
     <string name="work_queue_delete_title">Warteschlangeneintrag %1$s löschen?</string>
+    <string name="card_collapse">Abschnitt einklappen</string>
+    <string name="card_expand">Abschnitt ausklappen</string>
 </resources>
