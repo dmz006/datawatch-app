@@ -6,22 +6,15 @@ import SwiftUI
 /// no frame yet).
 struct SessionLoadingOverlay: View {
     let status: String
-    @State private var pulse = false
 
     var body: some View {
-        VStack(spacing: 18) {
-            ZStack {
-                Circle()
-                    .stroke(DatawatchColors.primary.opacity(pulse ? 0.15 : 0.6), lineWidth: 2)
-                    .frame(width: 84, height: 84)
-                    .scaleEffect(pulse ? 1.18 : 0.92)
-                Image(systemName: "eye")
-                    .font(.system(size: 34, weight: .light))
-                    .foregroundStyle(DatawatchColors.secondary)
-                    .scaleEffect(pulse ? 1.04 : 0.96)
-            }
-            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse)
-
+        VStack(spacing: 14) {
+            // D10a: the PWA/Android connect animation — eye + dot rain + lightning
+            // bolt (SplashArt port of splash-art.js startSessionLoading); static
+            // frame under Reduce Motion.
+            SplashEyeView(bolt: true)
+                .frame(width: 220, height: 220)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             Text("datawatch")
                 .font(DatawatchFonts.titleMedium)
                 .foregroundStyle(DatawatchColors.onSurface)
@@ -31,8 +24,7 @@ struct SessionLoadingOverlay: View {
                 .animation(.none, value: status)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DatawatchColors.background)
-        .onAppear { pulse = true }
+        .background(SplashArt.bg)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("datawatch, \(status)")
     }
