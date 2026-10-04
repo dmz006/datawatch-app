@@ -30,6 +30,8 @@ struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
     /// PWA output tab bar: "tmux" (terminal) or "status".
     @State private var detailTab = "tmux"
+    /// Status tab sub-tabs (PWA switchStatusSubtab): "status" | "stats".
+    @State private var statusSubtab = "status"
 
     var body: some View {
         ZStack {
@@ -46,7 +48,15 @@ struct SessionDetailView: View {
                         .opacity(detailTab == "tmux" ? 1 : 0)
                         .allowsHitTesting(detailTab == "tmux")
                     if detailTab == "status" {
-                        SessionStatusView(profile: profile, session: session)
+                        VStack(spacing: 0) {
+                            statusSubtabStrip
+                            if statusSubtab == "stats" {
+                                SessionStatsView(profile: profile, session: session)
+                            } else {
+                                SessionStatusView(profile: profile, session: session)
+                            }
+                        }
+                        .background(DatawatchColors.background)
                     }
                 }
                 if isTerminalState {
@@ -235,6 +245,29 @@ struct SessionDetailView: View {
         }
         .background(DatawatchColors.surface)
         .overlay(Divider().background(DatawatchColors.border), alignment: .bottom)
+    }
+
+    private var statusSubtabStrip: some View {
+        HStack(spacing: 18) {
+            ForEach([("status", "Status"), ("stats", "Stats")], id: \.0) { tab in
+                Button {
+                    statusSubtab = tab.0
+                } label: {
+                    VStack(spacing: 3) {
+                        Text(tab.1)
+                            .font(DatawatchFonts.labelSmall)
+                            .foregroundStyle(statusSubtab == tab.0 ? DatawatchColors.waiting : DatawatchColors.onSurfaceMuted)
+                        Rectangle()
+                            .fill(statusSubtab == tab.0 ? DatawatchColors.waiting : Color.clear)
+                            .frame(height: 2)
+                    }
+                    .fixedSize()
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
     }
 
     // ── State badge → state override (PWA showStateOverride) ─────────────
