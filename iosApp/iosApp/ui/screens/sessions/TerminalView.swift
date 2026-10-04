@@ -2,6 +2,25 @@ import SwiftUI
 import WebKit
 import DatawatchShared
 
+// MARK: - TerminalController
+
+/// Lets the session screen drive the xterm page (fit, scroll mode) and hear back
+/// when the page auto-sizes its font.
+final class TerminalController: ObservableObject {
+    weak var webView: WKWebView?
+    var onAutoFontSize: ((Int) -> Void)?
+
+    func eval(_ js: String) {
+        webView?.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    /// PWA termFitToWidth: shrink the font until there is no horizontal overflow.
+    func fitToWidth() { eval("window.dwAutoFitToWidth && window.dwAutoFitToWidth();") }
+    func setScrollMode(_ on: Bool) { eval("window.dwSetScrollMode && window.dwSetScrollMode(\(on));") }
+    /// Accept the next pane_capture while scrolled (PWA 700 ms window).
+    func scrollPendingRefresh(ms: Int = 700) { eval("window.dwScrollPendingRefresh && window.dwScrollPendingRefresh(\(ms));") }
+}
+
 // MARK: - TerminalView (public SwiftUI entry point)
 
 /// xterm.js terminal in a `WKWebView`, driven by the session's `/ws` hub.
@@ -19,6 +38,7 @@ struct TerminalView: View {
     /// Set to a non-nil string to send input to the session. The view clears it
     /// back to nil after forwarding so callers can watch for completion.
     @Binding var terminalInput: String?
+    var controller: TerminalController? = nil
 
     @State private var connected = false
     @State private var disconnected = false
@@ -35,7 +55,8 @@ struct TerminalView: View {
                 connected: $connected,
                 disconnected: $disconnected,
                 hasContent: $hasContent,
-                terminalInput: $terminalInput
+                terminalInput: $terminalInput,
+                controller: controller
             )
 
             // Splash stays up through socket connect → subscribe → first pane_capture,
@@ -94,6 +115,7 @@ private struct TerminalWebView: UIViewRepresentable {
     @Binding var disconnected: Bool
     @Binding var hasContent: Bool
     @Binding var terminalInput: String?
+    var controller: TerminalController?
 
     static let bridgeName = "dwBridge"
 
@@ -144,6 +166,8 @@ private struct TerminalWebView: UIViewRepresentable {
         webView.scrollView.isScrollEnabled = false
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
+        context.coordinator.controller = controller
+        controller?.webView = webView
         context.coordinator.requestedFontSize = fontSize
         context.coordinator.generation = reconnectGeneration
         webView.onLayout = { [weak coordinator = context.coordinator] size in
@@ -198,6 +222,7 @@ extension TerminalWebView {
         @Binding var hasContent: Bool
         @Binding var terminalInput: String?
         weak var webView: WKWebView?
+        var controller: TerminalController?
         var generation = 0
         var requestedFontSize = 9
 
@@ -341,6 +366,10 @@ extension TerminalWebView {
             case "autoFontSize":
                 if let px = body["px"] as? Int, px > 0 {
                     UserDefaults.standard.set(px, forKey: "dw.terminal.font_size_px")
+                    // The page already applied it — record so updateUIView doesn't revert it.
+                    requestedFontSize = px
+                    appliedFontSize = px
+                    controller?.onAutoFontSize?(px)
                 }
             default:
                 break
