@@ -52,6 +52,14 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     entitlements:
       path: iosApp/DatawatchClient.entitlements
+      # xcodegen regenerates this file from `properties` (it dropped the hand-written
+      # keys before). Keychain group = the app's own (IosTokenStore).
+      # aps-environment is intentionally NOT set yet: push (APNs) isn't enabled on
+      # the App ID, and requesting it would break TestFlight signing. Add
+      # `aps-environment: development` here when APNs is set up.
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.dmzs.datawatchclient
     settings:
       base:
         # Bundle ID must match Android phone app so the same Apple Developer
