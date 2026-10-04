@@ -11,6 +11,8 @@ struct SessionsView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @StateObject private var viewModel = SessionsViewModel()
     @ObservedObject private var nav = SessionsNav.shared
+    /// D61a watch / D62a mute id sets (per profile).
+    @ObservedObject private var localPrefs = LocalSessionPrefs.shared
 
     @State private var filterText: String = ""
     @State private var showFilter: Bool = false
@@ -245,7 +247,8 @@ struct SessionsView: View {
         VStack(spacing: 0) {
             ConnectionStatusBanner(state: connectionState)
             if viewModel.isLoading && viewModel.sessions.isEmpty {
-                LoadingIndicator(message: "Loading sessions…")
+                // D60a: Android SessionSkeletonList (5 shimmer rows, 900 ms).
+                SkeletonListView(rows: 5)
             } else if let errorMsg = viewModel.error, viewModel.sessions.isEmpty {
                 ErrorCard(message: errorMsg) { viewModel.refresh() }
             } else if viewModel.activeProfile == nil {
@@ -333,7 +336,7 @@ struct SessionsView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    if backendTypes.count > 1 {
+                    if backendTypes.count > 1 || backendTypes.contains("council-virtual") {
                         toggleBadge(llmButtonLabel, active: llmFilterOpen || llmActive != nil) { llmFilterOpen.toggle() }
                     }
                     toggleBadge(stateButtonLabel, active: stateFilterOpen || stateChip != "all") { stateFilterOpen.toggle() }
@@ -353,9 +356,10 @@ struct SessionsView: View {
                     }
                 }
             }
-            if llmFilterOpen && backendTypes.count > 1 {
+            if llmFilterOpen && (backendTypes.count > 1 || backendTypes.contains("council-virtual")) {
+                // D64: council-virtual renders as the 🎭 Council chip (Android council_session_filter).
                 chipRow(backendTypes.map { bt in
-                    (bt, bt, DatawatchColors.secondary, viewModel.sessions.filter { $0.backend == bt }.count, filterText.lowercased() == bt.lowercased())
+                    (bt, bt == "council-virtual" ? "🎭 Council" : bt, DatawatchColors.secondary, viewModel.sessions.filter { $0.backend == bt }.count, filterText.lowercased() == bt.lowercased())
                 }) { key in filterText = filterText.lowercased() == key.lowercased() ? "" : key }
             }
             if stateFilterOpen {
@@ -609,7 +613,10 @@ struct SessionsView: View {
             onToggleLong: { cardStatus[session.fullId]?.longExpanded.toggle() },
             onToggleSelect: { toggleSelect(session) },
             onResponse: { responseSession = session },
-            onExpand: { DashExpandNav.shared.open(session.fullId) }
+            onExpand: { DashExpandNav.shared.open(session.fullId) },
+            watched: isLocal(.watchedSessions, session),
+            onWatchToggle: { toggleLocal(.watchedSessions, session) },
+            muted: isLocal(.mutedSessions, session)
         )
         Group {
             if selectMode {
@@ -629,6 +636,31 @@ struct SessionsView: View {
             Button { moveOne(session, by: -1) } label: { Label("Move up", systemImage: "arrow.up") }
             Button { moveOne(session, by: 1) } label: { Label("Move down", systemImage: "arrow.down") }
         }
+        // D62a swipe-to-mute (Android ≥64 dp horizontal swipe); full swipe toggles.
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            if !selectMode { muteSwipeButton(session) }
+        }
+    }
+
+    private func muteSwipeButton(_ session: DwSession) -> some View {
+        let isMuted: Bool = isLocal(.mutedSessions, session)
+        return Button {
+            toggleLocal(.mutedSessions, session)
+        } label: {
+            Label(isMuted ? "Unmute" : "Mute", systemImage: isMuted ? "speaker.wave.2" : "speaker.slash")
+        }
+        .tint(isMuted ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+    }
+
+    private func isLocal(_ kind: LocalSessionPrefs.Kind, _ session: DwSession) -> Bool {
+        _ = localPrefs.revision
+        guard let pid = viewModel.activeProfile?.id else { return false }
+        return localPrefs.contains(kind, profileId: pid, id: session.id)
+    }
+
+    private func toggleLocal(_ kind: LocalSessionPrefs.Kind, _ session: DwSession) {
+        guard let pid = viewModel.activeProfile?.id else { return }
+        localPrefs.toggle(kind, profileId: pid, id: session.id)
     }
 
     private func toggleSelect(_ s: DwSession) {

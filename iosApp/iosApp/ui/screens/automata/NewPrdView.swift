@@ -20,6 +20,11 @@ struct NewPrdView: View {
     @State private var planningBackend = ""
     @State private var planningTouched = false
     @State private var planningModel = ""
+    /// D73a (Android NewPrdDialog #175): memory seed / harvest + promote-to scope.
+    @State private var memorySeed = false
+    @State private var memoryHarvest = false
+    @State private var promoteTo = "story-shared"
+    private static let promoteScopes = ["session-local", "story-shared", "prd-shared", "project-shared"]
     @State private var submitting = false
     @State private var errorMessage: String? = nil
 
@@ -104,6 +109,8 @@ struct NewPrdView: View {
                     }
                 }
 
+                memorySection
+
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
@@ -149,11 +156,37 @@ struct NewPrdView: View {
         .preferredColorScheme(.dark)
     }
 
+    private var memorySection: some View {
+        Section("Memory") {
+            Toggle(isOn: $memorySeed) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Seed from prior memory")
+                    Text("Inject relevant memories at task start")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+            }
+            Toggle(isOn: $memoryHarvest) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Harvest learnings on completion")
+                    Text("Promote memories when PRD finishes")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+            }
+            if memoryHarvest {
+                Picker("Promote to scope", selection: $promoteTo) {
+                    ForEach(Self.promoteScopes, id: \.self) { Text($0).tag($0) }
+                }
+            }
+        }
+    }
+
     private func submit() {
         guard canSubmit else { return }
         submitting = true
         errorMessage = nil
-        IosAutomata.shared.createPrd(
+        IosExtras.shared.createPrd(
             profile: profile,
             title: title,
             spec: spec,
@@ -164,6 +197,9 @@ struct NewPrdView: View {
             effort: effort,
             planningBackend: planningBackend == backend ? "" : planningBackend,
             planningModel: planningModel,
+            memorySeed: memorySeed,
+            memoryHarvest: memoryHarvest,
+            promoteTo: promoteTo,
             onSuccess: { id in
                 DispatchQueue.main.async {
                     submitting = false
@@ -187,11 +223,15 @@ struct EditPrdView: View {
     let prdId: String
     @State var title: String
     @State var spec: String
+    /// D75a (Android EditPrdDialog): claude-code permission mode; "" = inherit.
+    var currentPermissionMode: String = ""
     var onSaved: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var saving = false
     @State private var errorMessage: String? = nil
+    @State private var permissionModes: [String] = []
+    @State private var permissionMode: String? = nil
 
     var body: some View {
         NavigationStack {
@@ -204,6 +244,19 @@ struct EditPrdView: View {
                         .frame(minHeight: 220)
                         .font(DatawatchFonts.terminalSmall)
                         .scrollContentBackground(.hidden)
+                }
+                if !permissionModes.isEmpty {
+                    Section {
+                        Picker("Permission mode", selection: Binding(
+                            get: { permissionMode ?? currentPermissionMode },
+                            set: { permissionMode = $0 }
+                        )) {
+                            Text("Inherit").tag("")
+                            ForEach(permissionModes, id: \.self) { Text($0).tag($0) }
+                        }
+                    } footer: {
+                        Text("Most specific wins: task › automaton › session default.")
+                    }
                 }
                 if let errorMessage {
                     Section {
@@ -229,6 +282,18 @@ struct EditPrdView: View {
                     }
                 }
             }
+            .onAppear {
+                guard permissionModes.isEmpty else { return }
+                IosExtras.shared.permissionModes(profile: profile) { list in
+                    DispatchQueue.main.async {
+                        var modes: [String] = list
+                        if !currentPermissionMode.isEmpty && !modes.contains(currentPermissionMode) {
+                            modes.append(currentPermissionMode)
+                        }
+                        permissionModes = modes
+                    }
+                }
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -236,8 +301,10 @@ struct EditPrdView: View {
     private func save() {
         saving = true
         errorMessage = nil
-        IosAutomata.shared.editPrd(
-            profile: profile, prdId: prdId, title: title, spec: spec,
+        // Android sends permission_mode only when it changed (blank = unchanged).
+        let changedMode: String = (permissionMode != nil && permissionMode != currentPermissionMode) ? (permissionMode ?? "") : ""
+        IosExtras.shared.editPrd(
+            profile: profile, prdId: prdId, title: title, spec: spec, permissionMode: changedMode,
             onSuccess: {
                 DispatchQueue.main.async {
                     saving = false
