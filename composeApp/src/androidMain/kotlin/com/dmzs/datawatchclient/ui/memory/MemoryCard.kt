@@ -3,7 +3,6 @@ package com.dmzs.datawatchclient.ui.memory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,7 +45,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -168,17 +167,12 @@ public fun MemoryCard() {
             }
         }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        // Header row: section title + [+] Add button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(modifier = Modifier.weight(1f)) {
-                PwaSectionTitle("Episodic memory", docsAnchor = "memory-browser")
-            }
+    // Header: section title + [+] Add button (D26a/D27a shared card shell).
+    PwaCard(
+        id = "membrowser",
+        title = "Episodic memory",
+        docsAnchor = "memory-browser",
+        headerActions = {
             IconButton(onClick = { addOpen = true }) {
                 Icon(
                     Icons.Filled.Add,
@@ -186,7 +180,8 @@ public fun MemoryCard() {
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
-        }
+        },
+    ) {
 
         banner?.let {
             Text(
@@ -204,7 +199,7 @@ public fun MemoryCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@PwaCard
         }
         stats?.let { s ->
             StatsGrid(s)

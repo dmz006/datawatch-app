@@ -42,8 +42,8 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
+import com.dmzs.datawatchclient.ui.theme.pwaDocsSlug
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -130,11 +130,13 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    // D26a/D27a: collapsible card keyed by the PWA section key (gc_/cc_/lc_<id>),
+    // docs anchor = PWA defsLink slug of the PWA's English section title.
+    PwaCard(
+        id = section.id,
+        title = section.title,
+        docsAnchor = pwaDocsSlug(PWA_SECTION_TITLES[section.id] ?: section.title),
     ) {
-        val docsAnchor = section.title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trimStart('-').trimEnd('-')
-        PwaSectionTitle(section.title, docsAnchor = docsAnchor)
         banner?.let {
             // Only error banners fire after the autosave switch (S4). Drop
             // the old "Saved." success path — the inline "Saving…" label
@@ -154,7 +156,7 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@PwaCard
         }
         section.fields.forEach { field ->
             FieldRow(
@@ -214,6 +216,17 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
 }
 
 private const val SAVE_DEBOUNCE_MS: Long = 500
+
+/**
+ * PWA English section titles (app.js GENERAL/COMMS/LLM_CONFIG_FIELDS `section`)
+ * where the Android title differs — the docs anchor must be the PWA's slug.
+ */
+private val PWA_SECTION_TITLES: Map<String, String> =
+    mapOf(
+        "gc_sess" to "Sessions",
+        "gc_autonomous" to "Autonomous Automata planning",
+        "gc_orchestrator" to "Automata-DAG orchestrator",
+    )
 
 /**
  * Tight phone-sized widget rhythm — every settings row uses the

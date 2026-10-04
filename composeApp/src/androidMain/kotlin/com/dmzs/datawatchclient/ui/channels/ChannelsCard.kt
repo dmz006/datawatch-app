@@ -36,8 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
@@ -94,22 +93,16 @@ public fun ChannelsCard() {
     // to leave Settings and come back (2026-04-22 user report).
     LaunchedEffect(activeId) { refresh() }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PwaSectionTitle(
-                "Communication Configuration",
-                modifier = Modifier.weight(1f),
-                docsAnchor = "communication-configuration",
-            )
+    PwaCard(
+        id = "backends",
+        title = "Communication Configuration",
+        docsAnchor = "communication-configuration",
+        headerActions = {
             IconButton(onClick = { addOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add channel")
             }
-        }
+        },
+    ) {
         banner?.let {
             Text(
                 it,

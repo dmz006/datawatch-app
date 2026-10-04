@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,8 +35,7 @@ import com.dmzs.datawatchclient.push.AlertTier
 import com.dmzs.datawatchclient.push.PushTierManager
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.WebPushRegistrationDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -69,16 +67,16 @@ internal fun PushNotificationsCard() {
 
     LaunchedEffect(Unit) { reload() }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle("Push Notifications", docsAnchor = "push-notifications", modifier = Modifier.weight(1f))
+    PwaCard(
+        id = "push_notifications",
+        title = "Push Notifications",
+        docsAnchor = "push-notifications",
+        headerActions = {
             IconButton(onClick = { scope.launch { reload() } }) {
                 Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
             }
-        }
-
+        },
+    ) {
         // Delivery tier row
         val (tierLabel, tierColor, tierBg) = when (deliveryTier) {
             AlertTier.UnifiedPush -> Triple(

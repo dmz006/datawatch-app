@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.compute
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,8 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.CostRateDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -65,14 +63,12 @@ public fun CostRatesCard() {
     }
     LaunchedEffect(Unit) { load() }
 
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+    PwaCard(
+        id = "costrates",
+        title = stringResource(R.string.cost_rates_title),
+        docsAnchor = "cost-rates-usd-1k-tokens",
     ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.cost_rates_title), docsAnchor = "cost-rates")
+        Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
             if (error != null || rates.isEmpty()) {
                 Text(
                     stringResource(R.string.cost_rates_none),

@@ -24,13 +24,12 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 /**
  * Settings → About: MCP channel bridge status card.
@@ -74,10 +73,11 @@ public fun McpChannelCard() {
         )
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "mcp_channel",
+        title = "MCP Channel Bridge",
+        docsAnchor = "mcp-server",
     ) {
-        PwaSectionTitle("MCP Channel Bridge", docsAnchor = "mcp-server")
         banner?.let {
             Text(
                 it,

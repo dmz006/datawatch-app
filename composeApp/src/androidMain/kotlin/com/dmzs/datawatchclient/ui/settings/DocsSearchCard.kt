@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,8 +43,8 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto
 import com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto
 import com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -65,173 +66,168 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
         vm.loadAll()
     }
 
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
+    PwaCard(
+        id = "docs_search",
+        title = stringResource(R.string.docs_search_title),
+        docsAnchor = "docs-search",
+        innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.docs_search_title), docsAnchor = "docs-search")
-
-            // Search input
-            OutlinedTextField(
-                value = query,
-                onValueChange = { q ->
-                    query = q
-                    if (q.length >= 2) {
-                        vm.search(q)
-                    } else if (q.isEmpty()) {
-                        vm.clearResults()
-                    }
-                },
-                label = { Text(stringResource(R.string.docs_search_placeholder)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-
-            // Search results
-            state.results.forEach { result ->
-                Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            result.title,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f),
-                        )
-                        val badgeColor =
-                            if (result.indexKind == "vector") Color(0xFF00ACC1) else Color(0xFF757575)
-                        Surface(color = badgeColor, shape = RoundedCornerShape(4.dp)) {
-                            Text(
-                                result.indexKind,
-                                fontSize = 10.sp,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                            )
-                        }
-                    }
-                    Text(
-                        result.excerpt,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        // Search input
+        OutlinedTextField(
+            value = query,
+            onValueChange = { q ->
+                query = q
+                if (q.length >= 2) {
+                    vm.search(q)
+                } else if (q.isEmpty()) {
+                    vm.clearResults()
                 }
-                HorizontalDivider()
-            }
+            },
+            label = { Text(stringResource(R.string.docs_search_placeholder)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-            // Pending trust queue
-            if (state.pending.isNotEmpty()) {
-                PwaSectionTitle(stringResource(R.string.docs_trust_pending_title))
-                val allSelected =
-                    state.selected.size == state.pending.size && state.pending.isNotEmpty()
+        // Search results
+        state.results.forEach { result ->
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        result.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    val badgeColor =
+                        if (result.indexKind == "vector") Color(0xFF00ACC1) else Color(0xFF757575)
+                    Surface(color = badgeColor, shape = RoundedCornerShape(4.dp)) {
+                        Text(
+                            result.indexKind,
+                            fontSize = 10.sp,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+                Text(
+                    result.excerpt,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            HorizontalDivider()
+        }
+
+        // Pending trust queue
+        if (state.pending.isNotEmpty()) {
+            PwaSectionTitle(stringResource(R.string.docs_trust_pending_title))
+            val allSelected =
+                state.selected.size == state.pending.size && state.pending.isNotEmpty()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = allSelected,
+                    onCheckedChange = { vm.selectAll(it) },
+                )
+                Text(stringResource(R.string.docs_trust_select_all))
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = { vm.trustSelected() }) {
+                    Text(stringResource(R.string.docs_trust_accept))
+                }
+                TextButton(onClick = { vm.dismissSelected() }) {
+                    Text(stringResource(R.string.docs_trust_dismiss))
+                }
+            }
+            state.pending.forEach { source ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
-                        checked = allSelected,
-                        onCheckedChange = { vm.selectAll(it) },
+                        checked = source.path in state.selected,
+                        onCheckedChange = { vm.toggle(source.path, it) },
                     )
-                    Text(stringResource(R.string.docs_trust_select_all))
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { vm.trustSelected() }) {
-                        Text(stringResource(R.string.docs_trust_accept))
-                    }
-                    TextButton(onClick = { vm.dismissSelected() }) {
-                        Text(stringResource(R.string.docs_trust_dismiss))
+                    Text(
+                        source.path,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    source.reason?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
-                state.pending.forEach { source ->
+            }
+        }
+
+        // Trusted sources
+        if (state.trusted.isNotEmpty()) {
+            TextButton(onClick = { trustedExpanded = !trustedExpanded }) {
+                Text(stringResource(R.string.docs_trusted_sources, state.trusted.size))
+                Icon(
+                    if (trustedExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                )
+            }
+            if (trustedExpanded) {
+                state.trusted.forEach { source ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = source.path in state.selected,
-                            onCheckedChange = { vm.toggle(source.path, it) },
-                        )
                         Text(
                             source.path,
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodySmall,
                         )
-                        source.reason?.let {
-                            Text(
-                                it,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        IconButton(onClick = { vm.removeTrusted(source.path) }) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.docs_trust_remove),
                             )
                         }
                     }
                 }
             }
+        }
 
-            // Trusted sources
-            if (state.trusted.isNotEmpty()) {
-                TextButton(onClick = { trustedExpanded = !trustedExpanded }) {
-                    Text(stringResource(R.string.docs_trusted_sources, state.trusted.size))
-                    Icon(
-                        if (trustedExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = null,
-                    )
-                }
-                if (trustedExpanded) {
-                    state.trusted.forEach { source ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                source.path,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                            IconButton(onClick = { vm.removeTrusted(source.path) }) {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    contentDescription = stringResource(R.string.docs_trust_remove),
-                                )
-                            }
+        // Add source
+        TextButton(onClick = { addSourceExpanded = !addSourceExpanded }) {
+            Text(stringResource(R.string.docs_trust_add_source))
+            Icon(
+                if (addSourceExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = null,
+            )
+        }
+        if (addSourceExpanded) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = addSourceText,
+                    onValueChange = { addSourceText = it },
+                    label = { Text(stringResource(R.string.docs_trust_add_source_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    onClick = {
+                        if (addSourceText.isNotBlank()) {
+                            vm.addSource(addSourceText.trim())
+                            addSourceText = ""
+                            addSourceExpanded = false
                         }
-                    }
+                    },
+                    enabled = addSourceText.isNotBlank(),
+                ) {
+                    Text(stringResource(R.string.docs_trust_accept))
                 }
             }
+        }
 
-            // Add source
-            TextButton(onClick = { addSourceExpanded = !addSourceExpanded }) {
-                Text(stringResource(R.string.docs_trust_add_source))
-                Icon(
-                    if (addSourceExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null,
-                )
-            }
-            if (addSourceExpanded) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = addSourceText,
-                        onValueChange = { addSourceText = it },
-                        label = { Text(stringResource(R.string.docs_trust_add_source_hint)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        onClick = {
-                            if (addSourceText.isNotBlank()) {
-                                vm.addSource(addSourceText.trim())
-                                addSourceText = ""
-                                addSourceExpanded = false
-                            }
-                        },
-                        enabled = addSourceText.isNotBlank(),
-                    ) {
-                        Text(stringResource(R.string.docs_trust_accept))
-                    }
-                }
-            }
-
-            // Error hint
-            state.error?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
+        // Error hint
+        state.error?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

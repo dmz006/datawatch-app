@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.alertrules
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,8 +39,7 @@ import com.dmzs.datawatchclient.transport.dto.AlertActionDto
 import com.dmzs.datawatchclient.transport.dto.AlertConditionDto
 import com.dmzs.datawatchclient.transport.dto.AlertRuleDto
 import com.dmzs.datawatchclient.transport.dto.AlertRuleFiringDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -78,22 +78,18 @@ public fun AlertRulesCard() {
 
     LaunchedEffect(Unit) { reload() }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle("Alert Rules", docsAnchor = "alert-rules")
-            Spacer(Modifier.weight(1f))
+    PwaCard(
+        id = "alert_rules",
+        title = "Alert Rules",
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "alert-rules",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             TextButton(onClick = { showAddDialog = true }) {
                 Text("+ Add Rule", style = MaterialTheme.typography.labelSmall)
             }
-        }
-
+        },
+    ) {
         banner?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             Spacer(Modifier.height(4.dp))

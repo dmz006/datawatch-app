@@ -28,10 +28,9 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.CooldownStatusDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 /**
  * Observer tab — Global Cooldown card. Mirrors PWA cooldown section:
@@ -66,15 +65,13 @@ public fun CooldownCard() {
 
     LaunchedEffect(Unit) { reload() }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "cooldown",
+        title = "Global Cooldown",
+        modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "global-cooldown",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle("Global Cooldown", docsAnchor = "global-cooldown")
 
         banner?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
@@ -87,7 +84,7 @@ public fun CooldownCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@PwaCard
         }
 
         if (s.active) {

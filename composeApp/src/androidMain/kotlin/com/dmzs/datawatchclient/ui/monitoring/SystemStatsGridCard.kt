@@ -33,8 +33,7 @@ import com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import com.dmzs.datawatchclient.ui.common.LiveDot
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,23 +59,16 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
 
     if (state.local == null && state.peers.isEmpty() && !state.loading) return
 
-    Box(
+    PwaCard(
+        id = "sysgrid",
+        title = "System Resources",
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .pwaCard(),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        docsAnchor = "system-statistics",
+        headerActions = { Box(Modifier.padding(end = 8.dp)) { LiveDot() } },
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PwaSectionTitle(
-                    title = "System Resources",
-                    modifier = Modifier.weight(1f),
-                )
-                LiveDot()
-            }
+        run {
             if (state.loading && state.local == null && state.peers.isEmpty()) {
                 DatawatchLoadingContent(verticalPadding = 16.dp)
             } else {

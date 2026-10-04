@@ -20,8 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 /**
  * Mirrors PWA `gc_notifs` Notifications card. Shows whether the
@@ -39,10 +38,11 @@ public fun NotificationsCard() {
     LaunchedEffect(Unit) {
         enabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "gc_notifs",
+        title = "Notifications",
+        docsAnchor = "notifications",
     ) {
-        PwaSectionTitle("Notifications", docsAnchor = "notifications")
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,

@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.automata
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,8 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.OrchestratorGraphListItemDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -70,23 +70,16 @@ internal fun OrchestratorGraphsCard() {
 
     LaunchedEffect(Unit) { runCatching { load() } }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(
-                stringResource(R.string.orchestrator_graphs_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "automata-orchestrator",
-            )
+    PwaCard(
+        id = "orchestrator_graphs",
+        title = stringResource(R.string.orchestrator_graphs_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "automata-orchestrator",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             if (loading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-        }
-
+        },
+    ) {
         // Create form
         OutlinedTextField(
             value = titleInput,

@@ -1,8 +1,6 @@
 package com.dmzs.datawatchclient.ui.config
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,8 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -50,68 +47,60 @@ public fun ConfigViewerCard(vm: ConfigViewerViewModel = viewModel()) {
     // Header card with refresh action + banner. Each config section
     // renders as its own card below, mirroring the PWA's per-section
     // grouping.
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
+    PwaCard(
+        id = "config_viewer",
+        title = "Daemon config",
+        docsAnchor = "datawatch",
+        headerActions = {
+            IconButton(onClick = vm::refresh, enabled = state.supported) {
+                if (state.loading) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(6.dp))
+                } else {
+                    Icon(
+                        Icons.Filled.Refresh,
+                        contentDescription = "Refresh config",
+                        tint =
+                            if (state.supported) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    )
+                }
+            }
+        },
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PwaSectionTitle("Daemon config", modifier = Modifier.weight(1f), docsAnchor = "datawatch")
-                IconButton(onClick = vm::refresh, enabled = state.supported) {
-                    if (state.loading) {
-                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(6.dp))
-                    } else {
-                        Icon(
-                            Icons.Filled.Refresh,
-                            contentDescription = "Refresh config",
-                            tint =
-                                if (state.supported) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                        )
-                    }
+        state.banner?.let { banner ->
+            Surface(color = MaterialTheme.colorScheme.errorContainer) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        banner,
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    TextButton(onClick = vm::dismissBanner) { Text("Dismiss") }
                 }
             }
-            state.banner?.let { banner ->
-                Surface(color = MaterialTheme.colorScheme.errorContainer) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            banner,
-                            modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        TextButton(onClick = vm::dismissBanner) { Text("Dismiss") }
-                    }
-                }
-            }
-            if (state.config.raw.isEmpty() && state.supported && !state.loading) {
-                Text(
-                    "Config empty or not yet loaded.",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (state.config.raw.isNotEmpty()) {
-                Text(
-                    "Read-only. Editable form lands v0.13 (ADR-0019).",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        }
+        if (state.config.raw.isEmpty() && state.supported && !state.loading) {
+            Text(
+                "Config empty or not yet loaded.",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (state.config.raw.isNotEmpty()) {
+            Text(
+                "Read-only. Editable form lands v0.13 (ADR-0019).",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 
@@ -127,17 +116,8 @@ private fun ConfigSectionCard(
     name: String,
     value: JsonElement,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(name)
-            ConfigSectionBody(value)
-        }
+    PwaCard(id = "config_viewer_$name", title = name) {
+        ConfigSectionBody(value)
     }
 }
 

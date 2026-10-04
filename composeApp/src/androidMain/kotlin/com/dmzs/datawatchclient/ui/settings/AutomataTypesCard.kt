@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,8 +30,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -58,24 +58,18 @@ internal fun AutomataTypesCard() {
 
     LaunchedEffect(Unit) { runCatching { loadTypes() } }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(
-                stringResource(R.string.automata_type_registry_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "automata",
-            )
+    PwaCard(
+        id = "automata_type_registry",
+        title = stringResource(R.string.automata_type_registry_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "type-registry",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             IconButton(onClick = { createOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.automata_type_create))
             }
-        }
+        },
+    ) {
         if (types.isEmpty()) {
             Text(
                 stringResource(R.string.automata_type_create) + "…",

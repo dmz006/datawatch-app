@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.settings
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuItem
@@ -15,16 +14,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.ThemeMode
 import com.dmzs.datawatchclient.ui.theme.ThemePrefs
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,23 +37,18 @@ public fun ThemePickerCard(modifier: Modifier = Modifier) {
             ThemeMode.System -> context.getString(R.string.settings_theme_system)
         }
 
-    Column(
+    // The picker is the card's only control, so it rides in the header row
+    // (hidden while the card is collapsed — D27a).
+    PwaCard(
+        id = "theme",
+        title = stringResource(R.string.settings_theme_title),
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PwaSectionTitle(
-                stringResource(R.string.settings_theme_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "settings",
-            )
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        docsAnchor = "settings",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded },
@@ -85,6 +77,6 @@ public fun ThemePickerCard(modifier: Modifier = Modifier) {
                     }
                 }
             }
-        }
-    }
+        },
+    ) {}
 }

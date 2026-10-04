@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,8 +51,7 @@ import com.dmzs.datawatchclient.transport.dto.SkillRegistryDto
 import com.dmzs.datawatchclient.transport.dto.SkillRegistryRequestDto
 import com.dmzs.datawatchclient.transport.dto.SkillRegistryUpdateDto
 import com.dmzs.datawatchclient.transport.dto.SyncSkillsRequestDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -84,20 +84,13 @@ internal fun SkillRegistriesCard() {
 
     LaunchedEffect(Unit) { runCatching { loadAll() } }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(
-                stringResource(R.string.skills_section_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "skill-registries",
-            )
+    PwaCard(
+        id = "automata_skills",
+        title = stringResource(R.string.skills_section_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "skill-registries",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             TextButton(onClick = {
                 scope.launch {
                     runCatching {
@@ -119,8 +112,8 @@ internal fun SkillRegistriesCard() {
             IconButton(onClick = { addOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.skills_btn_add))
             }
-        }
-
+        },
+    ) {
         if (registries.isEmpty()) {
             Text(
                 stringResource(R.string.skills_empty),

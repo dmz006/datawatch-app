@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.schedules
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,8 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.Schedule
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 private const val SCHEDULES_PAGE_SIZE = 10
 
@@ -52,43 +50,35 @@ public fun SchedulesCard(vm: SchedulesViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var addOpen by remember { mutableStateOf(false) }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // v0.33.13 (B16): title matches PWA "Scheduled Events".
-                // Explicit Refresh button dropped — VM polls every 15 s
-                // and re-fetches on active-profile change.
-                PwaSectionTitle("Scheduled Events", modifier = Modifier.weight(1f), docsAnchor = "scheduled-events")
-                if (state.refreshing) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.padding(horizontal = 8.dp).size(16.dp),
-                    )
-                }
-                IconButton(onClick = { addOpen = true }, enabled = state.supported) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = "New schedule",
-                        tint =
-                            if (state.supported) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    )
-                }
+    // v0.33.13 (B16): title matches PWA "Scheduled Events".
+    // Explicit Refresh button dropped — VM polls every 15 s
+    // and re-fetches on active-profile change.
+    PwaCard(
+        id = "schedules",
+        title = "Scheduled Events",
+        docsAnchor = "scheduled-events",
+        headerActions = {
+            if (state.refreshing) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.padding(horizontal = 8.dp).size(16.dp),
+                )
             }
-            SchedulesCardBody(state = state, vm = vm, addOpen = addOpen, setAddOpen = { addOpen = it })
-        }
+            IconButton(onClick = { addOpen = true }, enabled = state.supported) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "New schedule",
+                    tint =
+                        if (state.supported) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
+            }
+        },
+    ) {
+        SchedulesCardBody(state = state, vm = vm, addOpen = addOpen, setAddOpen = { addOpen = it })
     }
 }
 

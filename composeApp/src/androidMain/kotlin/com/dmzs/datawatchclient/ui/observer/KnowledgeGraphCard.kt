@@ -23,12 +23,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.TransportClient
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import com.dmzs.datawatchclient.ui.theme.PwaCard
+import androidx.compose.foundation.layout.PaddingValues
 
 @Composable
 internal fun KnowledgeGraphCard() {
@@ -51,10 +51,12 @@ internal fun KnowledgeGraphCard() {
         return p?.let { ServiceLocator.transportFor(it) }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard().padding(12.dp),
+    PwaCard(
+        id = "kg",
+        title = "Knowledge Graph",
+        docsAnchor = "knowledge-graph",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle("Knowledge Graph", docsAnchor = "memory")
 
         // Query section
         Text(

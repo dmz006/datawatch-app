@@ -66,8 +66,7 @@ import com.dmzs.datawatchclient.transport.dto.LlmModelPairDto
 import com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto
 import com.dmzs.datawatchclient.transport.dto.LlmSessionRefDto
 import com.dmzs.datawatchclient.transport.dto.MigrationStatusDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -128,8 +127,18 @@ public fun LlmRegistryCard() {
         loading = false
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "llms",
+        title = stringResource(R.string.settings_llm_registry_title),
+        docsAnchor = "llms",
+        headerActions = {
+            IconButton(onClick = {
+                selectedLlm = null
+                showAddDialog = true
+            }) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.llm_registry_add))
+            }
+        },
     ) {
         val migCount = if (migrationStatus?.show == true) migrationStatus?.migrated?.size ?: 0 else 0
         if (migCount > 0) {
@@ -163,19 +172,6 @@ public fun LlmRegistryCard() {
             }
         }
 
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(
-                stringResource(R.string.settings_llm_registry_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "llms",
-            )
-            IconButton(onClick = {
-                selectedLlm = null
-                showAddDialog = true
-            }) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.llm_registry_add))
-            }
-        }
         banner?.let {
             Text(
                 it,
