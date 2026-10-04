@@ -261,6 +261,7 @@ public class WebSocketTransport(
                                         "session_state" -> tryRouteSessionStateFrame(dto.data, json, profile.id)
                                         "channel_reply", "channel_notify" -> tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
                                         "alert" -> tryRouteAlertFrame(dto.data, profile.id)
+                                        "hook_update" -> HookHub.route(dto.data, profile.id)
                                     }
                                 }
                                 is Frame.Close -> {

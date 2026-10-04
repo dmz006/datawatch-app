@@ -944,4 +944,81 @@ class RestTransportTest {
             assertTrue(!server.takeRequest().body.readUtf8().contains("run_at"))
         }
 
+    // ---- iOS Dashboard parity ----
+
+    @Test
+    fun `dashboard layout get and put hit layout endpoint`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"cards":[{"id":"tree","cs":2,"rs":2,"system":true}]}"""))
+            server.enqueue(jsonResponse("""{"ok":true}"""))
+            val obj = transport.fetchDashboardLayoutJson().getOrThrow()
+            assertTrue(obj.containsKey("cards"))
+            val body =
+                com.dmzs.datawatchclient.dashboard.IosDashCatalog.layoutBody(
+                    com.dmzs.datawatchclient.dashboard.IosDashCatalog.parseLayout(obj),
+                )
+            assertTrue(transport.putDashboardLayout(body).isSuccess)
+            assertEquals("/api/dashboard/layout", server.takeRequest().path)
+            val put = server.takeRequest()
+            assertEquals("PUT", put.method)
+            assertEquals("/api/dashboard/layout", put.path)
+            val sent = put.body.readUtf8()
+            assertTrue(sent.contains("\"id\":\"tree\"") && sent.contains("\"cs\":2") && sent.contains("\"system\":true"), sent)
+        }
+
+    @Test
+    fun `smoke runs list detail and delete`() =
+        runTest {
+            server.enqueue(jsonResponse("""[{"id":"run-1","type":"smoke","pass":3,"fail":1,"total":82,"active":true,"pct":5}]"""))
+            server.enqueue(jsonResponse("""{"pass":3,"fail":1,"total":82,"active":true,"sections":[{"id":"a","name":"A","result":"pass"}]}"""))
+            server.enqueue(MockResponse().setResponseCode(404))
+            server.enqueue(MockResponse().setResponseCode(204))
+            server.enqueue(MockResponse().setResponseCode(204))
+            val runs = com.dmzs.datawatchclient.dashboard.IosDashParsers.smokeRuns(transport.listSmokeRunsJson().getOrThrow())
+            assertEquals(1, runs.size)
+            assertEquals("run-1", runs[0].id)
+            assertTrue(runs[0].active)
+            val detail = transport.fetchSmokeRunJson("run-1").getOrThrow()
+            assertTrue(detail != null && detail.containsKey("sections"))
+            val gone = transport.fetchSmokeRunJson("run 2")
+            assertTrue(gone.isSuccess && gone.getOrNull() == null, "404 should map to null, got $gone")
+            assertTrue(transport.deleteSmokeRun("run-1").isSuccess)
+            assertTrue(transport.deleteSmokeRun(null).isSuccess)
+            assertEquals("/api/smoke/progress", server.takeRequest().path)
+            assertEquals("/api/smoke/progress/run-1", server.takeRequest().path)
+            assertEquals("/api/smoke/progress/run%202", server.takeRequest().path)
+            val del1 = server.takeRequest()
+            assertEquals("DELETE", del1.method)
+            assertEquals("/api/smoke/progress/run-1", del1.path)
+            val delAll = server.takeRequest()
+            assertEquals("DELETE", delAll.method)
+            assertEquals("/api/smoke/progress", delAll.path)
+        }
+
+    @Test
+    fun `cost summary and session status json`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"sessions":3,"total_usd":1.25}"""))
+            server.enqueue(
+                jsonResponse(
+                    """{"session_id":"h-ab","state":"running","hook_health":"alive","current_focus":{"task":"t1"},""" +
+                        """"telemetry":{"guardrail_verdicts":[{"guardrail":"security","outcome":"block"}],""" +
+                        """"tasks":[{"id":"1","status":"completed"},{"id":"2","status":"pending"}]}}""",
+                ),
+            )
+            val cost = com.dmzs.datawatchclient.dashboard.IosDashParsers.costTotal(transport.fetchCostSummaryJson().getOrThrow())
+            assertEquals(1.25, cost)
+            val board =
+                com.dmzs.datawatchclient.dashboard.IosDashParsers.board(
+                    sessionId = "h-ab",
+                    obj = transport.fetchSessionStatusJson("h-ab").getOrThrow(),
+                )
+            assertEquals("alive", board.hookHealth)
+            assertEquals("t1", board.focusTask)
+            assertEquals(1, board.tasksDone)
+            assertEquals(2, board.tasksTotal)
+            assertEquals("block", board.verdicts.single().outcome)
+            assertEquals("/api/cost", server.takeRequest().path)
+            assertEquals("/api/sessions/h-ab/status", server.takeRequest().path)
+        }
 }
