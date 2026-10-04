@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,8 +36,7 @@ import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaInputTextStyle
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
@@ -128,15 +128,12 @@ public fun ExitHooksCard() {
 
     LaunchedEffect(Unit) { load() }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "exit_hooks",
+        title = stringResource(R.string.exit_hooks_title),
+        docsAnchor = "exit-hooks",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.exit_hooks_title))
         Text(
             stringResource(R.string.exit_hooks_help),
             style = MaterialTheme.typography.labelSmall,

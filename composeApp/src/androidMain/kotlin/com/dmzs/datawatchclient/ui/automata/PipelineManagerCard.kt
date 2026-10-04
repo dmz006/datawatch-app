@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.automata
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,8 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.PipelineListItemDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -72,27 +72,21 @@ internal fun PipelineManagerCard(
         }
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(
-                stringResource(R.string.pipeline_manager_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "pipeline-manager",
-            )
+    PwaCard(
+        // Observer placement (live refresh) collapses independently of Settings → Automata.
+        id = if (liveRefreshMs != null) "obs_pipelines" else "pipelines",
+        title = stringResource(R.string.pipeline_manager_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "pipeline-manager",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             if (liveRefreshMs != null) {
                 com.dmzs.datawatchclient.ui.common.LiveDot()
             } else if (loading) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
             }
-        }
-
+        },
+    ) {
         if (pipelines.isEmpty() && !loading) {
             Text(
                 stringResource(R.string.pipeline_no_pipelines),

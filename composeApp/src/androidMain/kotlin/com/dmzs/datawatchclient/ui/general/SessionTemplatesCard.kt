@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.general
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,8 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.SessionTemplateDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -54,125 +54,120 @@ public fun SessionTemplatesCard(vm: SessionTemplatesViewModel = viewModel()) {
 
     LaunchedEffect(Unit) { vm.load() }
 
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
+    PwaCard(
+        id = "templates",
+        title = stringResource(R.string.session_templates_title),
+        docsAnchor = "session-templates",
+        innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.session_templates_title), docsAnchor = "session-templates")
+        // Add form
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.session_template_name_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = backend,
+            onValueChange = { backend = it },
+            label = { Text(stringResource(R.string.session_template_backend_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = projectDir,
+            onValueChange = { projectDir = it },
+            label = { Text(stringResource(R.string.session_template_dir_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = effort,
+            onValueChange = { effort = it },
+            label = { Text(stringResource(R.string.session_template_effort_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text(stringResource(R.string.session_template_desc_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedButton(
+            onClick = {
+                if (name.isNotBlank()) {
+                    vm.addTemplate(
+                        SessionTemplateDto(
+                            name = name,
+                            backend = backend,
+                            projectDir = projectDir,
+                            effort = effort,
+                            description = description,
+                        ),
+                    )
+                    name = ""
+                    backend = ""
+                    projectDir = ""
+                    effort = ""
+                    description = ""
+                }
+            },
+            modifier = Modifier.padding(top = 4.dp),
+        ) {
+            Text(stringResource(R.string.session_template_add))
+        }
 
-            // Add form
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.session_template_name_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = backend,
-                onValueChange = { backend = it },
-                label = { Text(stringResource(R.string.session_template_backend_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = projectDir,
-                onValueChange = { projectDir = it },
-                label = { Text(stringResource(R.string.session_template_dir_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = effort,
-                onValueChange = { effort = it },
-                label = { Text(stringResource(R.string.session_template_effort_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text(stringResource(R.string.session_template_desc_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedButton(
-                onClick = {
-                    if (name.isNotBlank()) {
-                        vm.addTemplate(
-                            SessionTemplateDto(
-                                name = name,
-                                backend = backend,
-                                projectDir = projectDir,
-                                effort = effort,
-                                description = description,
-                            ),
-                        )
-                        name = ""
-                        backend = ""
-                        projectDir = ""
-                        effort = ""
-                        description = ""
-                    }
-                },
+        // Template list
+        if (state.templates.isEmpty()) {
+            Text(
+                stringResource(R.string.session_template_none),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
-            ) {
-                Text(stringResource(R.string.session_template_add))
-            }
-
-            // Template list
-            if (state.templates.isEmpty()) {
-                Text(
-                    stringResource(R.string.session_template_none),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            } else {
-                state.templates.forEach { t ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(t.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                            val meta =
-                                listOfNotNull(
-                                    t.backend.takeIf { it.isNotBlank() },
-                                    t.effort.takeIf { it.isNotBlank() },
-                                    t.description.takeIf { it.isNotBlank() },
-                                ).joinToString(" · ")
-                            if (meta.isNotBlank()) {
-                                Text(
-                                    meta,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        Spacer(Modifier.width(4.dp))
-                        IconButton(onClick = { vm.deleteTemplate(t.name) }) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.session_template_delete),
+            )
+        } else {
+            state.templates.forEach { t ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(t.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        val meta =
+                            listOfNotNull(
+                                t.backend.takeIf { it.isNotBlank() },
+                                t.effort.takeIf { it.isNotBlank() },
+                                t.description.takeIf { it.isNotBlank() },
+                            ).joinToString(" · ")
+                        if (meta.isNotBlank()) {
+                            Text(
+                                meta,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(onClick = { vm.deleteTemplate(t.name) }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.session_template_delete),
+                        )
+                    }
                 }
             }
+        }
 
-            state.error?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
+        state.error?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

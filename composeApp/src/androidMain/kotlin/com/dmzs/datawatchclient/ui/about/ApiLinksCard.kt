@@ -20,9 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 /**
  * Settings → About → API links card. Mirrors the PWA's API
@@ -46,10 +45,11 @@ public fun ApiLinksCard() {
     }
 
     val base = baseUrl
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "api",
+        title = "API",
+        docsAnchor = "api",
     ) {
-        PwaSectionTitle("API", docsAnchor = "api")
         if (base == null) {
             Text(
                 "No enabled server.",
@@ -57,7 +57,7 @@ public fun ApiLinksCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@PwaCard
         }
         listOf(
             "Swagger UI" to "$base/api/docs",

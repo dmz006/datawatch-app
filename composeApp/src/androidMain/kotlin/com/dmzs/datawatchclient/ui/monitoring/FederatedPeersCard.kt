@@ -35,6 +35,7 @@ import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import com.dmzs.datawatchclient.ui.common.LiveDot
 import com.dmzs.datawatchclient.ui.common.relativeTimeLabel
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -93,29 +94,13 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
         )
     }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(8.dp),
-                ),
+    PwaCard(
+        id = "observer_peers",
+        title = "Federated peers",
+        docsAnchor = "federated-peers",
+        headerActions = { Box(Modifier.padding(end = 8.dp)) { LiveDot() } },
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "Federated peers",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                )
-                LiveDot()
-            }
+        run {
             // Group-by-node toggle row (alpha.24 #231)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 4.dp),

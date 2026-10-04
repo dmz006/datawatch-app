@@ -20,11 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonPrimitive
+import com.dmzs.datawatchclient.ui.theme.PwaCard
+import androidx.compose.foundation.layout.PaddingValues
 
 private val LANGUAGE_OPTIONS =
     listOf(
@@ -66,15 +66,13 @@ internal fun LanguagePickerCard() {
 
     val displayLabel = LANGUAGE_OPTIONS.firstOrNull { it.first == current }?.second ?: current
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+    PwaCard(
+        id = "language",
+        title = "Language / Whisper Language",
+        modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "language",
+        innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        PwaSectionTitle("Language / Whisper Language", docsAnchor = "language")
         Row(
             modifier =
                 Modifier

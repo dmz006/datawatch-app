@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,8 +56,7 @@ import com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto
 import com.dmzs.datawatchclient.transport.dto.CouncilRunDto
 import com.dmzs.datawatchclient.transport.dto.StartCouncilRunRequest
 import com.dmzs.datawatchclient.ui.common.MicAttachableTextField
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -185,16 +185,13 @@ internal fun CouncilCard() {
 
     LaunchedEffect(Unit) { runCatching { loadAll() } }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "council",
+        title = stringResource(R.string.council_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "council-mode",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.council_title), docsAnchor = "council-mode")
-
         // ── PERSONAS section ──────────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),

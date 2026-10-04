@@ -21,9 +21,8 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.MatrixStatusDto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 @Composable
 public fun MatrixStatusCard() {
@@ -46,10 +45,11 @@ public fun MatrixStatusCard() {
         )
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "matrix_status",
+        title = "Matrix",
+        docsAnchor = "communication-configuration",
     ) {
-        PwaSectionTitle("Matrix", docsAnchor = "communication-configuration")
         banner?.let {
             Text(
                 it,

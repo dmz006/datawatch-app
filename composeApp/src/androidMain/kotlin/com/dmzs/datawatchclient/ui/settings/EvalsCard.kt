@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,8 +34,8 @@ import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.EvalRunHistoryDto
 import com.dmzs.datawatchclient.transport.dto.EvalRunResultDto
 import com.dmzs.datawatchclient.transport.dto.EvalSuiteDto
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -75,16 +76,13 @@ internal fun EvalsCard() {
 
     if (!visible) return
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "evals",
+        title = stringResource(R.string.evals_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "evals",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.evals_title), docsAnchor = "evals")
-
         if (suites.isEmpty()) {
             Text(
                 stringResource(R.string.evals_no_suites),

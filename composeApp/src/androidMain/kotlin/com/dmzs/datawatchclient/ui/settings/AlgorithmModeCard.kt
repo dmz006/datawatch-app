@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,8 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -80,16 +80,13 @@ internal fun AlgorithmModeCard() {
 
     LaunchedEffect(Unit) { runCatching { loadSessions() } }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "algorithm",
+        title = stringResource(R.string.algorithm_mode_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "algorithm-mode",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.algorithm_mode_title), docsAnchor = "algorithm-mode")
-
         // Start algorithm mode on any session by ID
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp),

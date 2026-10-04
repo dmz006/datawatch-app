@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.general
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,8 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.ToolingBackendDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -42,78 +42,69 @@ public fun ToolingCard(vm: ToolingViewModel = viewModel()) {
 
     LaunchedEffect(Unit) { vm.load() }
 
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                PwaSectionTitle(
-                    stringResource(R.string.tooling_title),
-                    Modifier.weight(1f),
-                    docsAnchor = "backend-artifact-lifecycle",
-                )
-                TextButton(onClick = { vm.load() }) {
-                    Text(stringResource(R.string.tooling_refresh))
-                }
+    PwaCard(
+        id = "tooling",
+        title = stringResource(R.string.tooling_title),
+        docsAnchor = "backend-artifact-lifecycle",
+        innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        headerActions = {
+            TextButton(onClick = { vm.load() }) {
+                Text(stringResource(R.string.tooling_refresh))
             }
-
-            if (state.backends.isEmpty()) {
-                Text(
-                    stringResource(R.string.tooling_none),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            } else {
-                state.backends.forEach { b ->
-                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                b.backend,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                if (b.ignored) "✓" else "⚠",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (b.ignored) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            )
+        },
+    ) {
+        if (state.backends.isEmpty()) {
+            Text(
+                stringResource(R.string.tooling_none),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        } else {
+            state.backends.forEach { b ->
+                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            b.backend,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            if (b.ignored) "✓" else "⚠",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (b.ignored) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    if (b.present.isNotEmpty()) {
+                        Text(
+                            b.present.joinToString(", "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Row {
+                        OutlinedButton(
+                            onClick = { vm.gitignore(b.backend) },
+                            modifier = Modifier.padding(end = 4.dp),
+                        ) {
+                            Text(stringResource(R.string.tooling_gitignore))
                         }
-                        if (b.present.isNotEmpty()) {
-                            Text(
-                                b.present.joinToString(", "),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Row {
-                            OutlinedButton(
-                                onClick = { vm.gitignore(b.backend) },
-                                modifier = Modifier.padding(end = 4.dp),
-                            ) {
-                                Text(stringResource(R.string.tooling_gitignore))
-                            }
-                            Spacer(Modifier.width(4.dp))
-                            OutlinedButton(onClick = { vm.cleanup(b.backend) }) {
-                                Text(stringResource(R.string.tooling_cleanup))
-                            }
+                        Spacer(Modifier.width(4.dp))
+                        OutlinedButton(onClick = { vm.cleanup(b.backend) }) {
+                            Text(stringResource(R.string.tooling_cleanup))
                         }
                     }
                 }
             }
+        }
 
-            state.error?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
+        state.error?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

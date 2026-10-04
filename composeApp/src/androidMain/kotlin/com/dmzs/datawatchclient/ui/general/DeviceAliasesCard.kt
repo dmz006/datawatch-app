@@ -1,6 +1,6 @@
 package com.dmzs.datawatchclient.ui.general
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,8 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.DeviceAliasDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -50,82 +49,77 @@ public fun DeviceAliasesCard(vm: DeviceAliasesViewModel = viewModel()) {
 
     LaunchedEffect(Unit) { vm.load() }
 
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
+    PwaCard(
+        id = "device_aliases",
+        title = stringResource(R.string.device_aliases_title),
+        docsAnchor = "device-aliases",
+        innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.device_aliases_title), docsAnchor = "device-aliases")
+        // Add form
+        OutlinedTextField(
+            value = alias,
+            onValueChange = { alias = it },
+            label = { Text(stringResource(R.string.device_alias_name)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = server,
+            onValueChange = { server = it },
+            label = { Text(stringResource(R.string.device_alias_value)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedButton(
+            onClick = {
+                if (alias.isNotBlank() && server.isNotBlank()) {
+                    vm.addAlias(alias, server)
+                    alias = ""
+                    server = ""
+                }
+            },
+            modifier = Modifier.padding(top = 4.dp),
+        ) {
+            Text(stringResource(R.string.device_alias_add))
+        }
 
-            // Add form
-            OutlinedTextField(
-                value = alias,
-                onValueChange = { alias = it },
-                label = { Text(stringResource(R.string.device_alias_name)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = server,
-                onValueChange = { server = it },
-                label = { Text(stringResource(R.string.device_alias_value)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedButton(
-                onClick = {
-                    if (alias.isNotBlank() && server.isNotBlank()) {
-                        vm.addAlias(alias, server)
-                        alias = ""
-                        server = ""
-                    }
-                },
+        // Alias list
+        if (state.aliases.isEmpty()) {
+            Text(
+                stringResource(R.string.device_alias_none),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
-            ) {
-                Text(stringResource(R.string.device_alias_add))
-            }
-
-            // Alias list
-            if (state.aliases.isEmpty()) {
-                Text(
-                    stringResource(R.string.device_alias_none),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            } else {
-                state.aliases.forEach { a ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "${a.alias} → ${a.server}",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
+            )
+        } else {
+            state.aliases.forEach { a ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "${a.alias} → ${a.server}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(onClick = { vm.deleteAlias(a.alias) }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "×",
                         )
-                        Spacer(Modifier.width(4.dp))
-                        IconButton(onClick = { vm.deleteAlias(a.alias) }) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = "×",
-                            )
-                        }
                     }
                 }
             }
+        }
 
-            state.error?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
+        state.error?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }
