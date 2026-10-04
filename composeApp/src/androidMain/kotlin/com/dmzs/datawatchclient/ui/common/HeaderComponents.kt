@@ -106,6 +106,20 @@ internal fun AlertsBellAction(
     alertsBadge: Int,
     alertsMuted: Boolean = false,
 ) {
+    // Parity D41a/D47a: client-side dock entries (former toasts) add to the
+    // count; the dock mute lives in AlertDockChannel.
+    val dockEntries by AlertDockChannel.entries.collectAsState()
+    val dockMuted by AlertDockChannel.muted.collectAsState()
+    val muted = alertsMuted || dockMuted
+    val count = alertsBadge + AlertDockChannel.localCount(dockEntries)
+    AlertsBellPill(count, muted)
+}
+
+@Composable
+private fun AlertsBellPill(
+    alertsBadge: Int,
+    alertsMuted: Boolean,
+) {
     val (bg, border, alpha) =
         when {
             alertsMuted ->

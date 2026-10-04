@@ -732,7 +732,7 @@ public class SessionsViewModel : ViewModel() {
             ServiceLocator.transportFor(profile).killSession(fullIdFor(sessionId)).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _banner.value = "Kill failed — ${err.message ?: err::class.simpleName}"
+                    _banner.value = "Stop failed — ${err.message ?: err::class.simpleName}"
                 },
             )
         }

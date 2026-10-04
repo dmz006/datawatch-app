@@ -1,10 +1,12 @@
 package com.dmzs.datawatchclient.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +59,7 @@ import com.dmzs.datawatchclient.ui.shell.Destinations
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import com.dmzs.datawatchclient.ui.shell.SettingsNavChannel
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
+import com.dmzs.datawatchclient.ui.splash.SplashGate
 import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -143,6 +147,12 @@ public fun AppRoot() {
             }
         }
 
+        // Activity-scoped so the Home shell, the root alert dock and the live
+        // WS alert feed share one poller.
+        val alertsVm: AlertsViewModel = viewModel()
+        val alertsState by alertsVm.state.collectAsState()
+        LiveAlertFeed()
+
         Box(
             modifier =
                 Modifier
@@ -153,7 +163,22 @@ public fun AppRoot() {
                 navController = navController,
                 startDestination = Destinations.Splash,
                 profiles = profiles,
+                alertsVm = alertsVm,
             )
+            // Parity D41a — the alert dock is hosted at the root so client-side
+            // messages (the former toasts) are visible on every screen, including
+            // full-screen session detail and New Session.
+            val dockOpen by AlertDockChannel.open.collectAsState()
+            val dockEntries by AlertDockChannel.entries.collectAsState()
+            if (dockOpen) {
+                AlertDockOverlay(
+                    alerts = alertsState.active.flatMap { it.alerts },
+                    entries = dockEntries,
+                    onDismiss = { AlertDockChannel.dismiss() },
+                    onMute = { AlertDockChannel.mute() },
+                    modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding(),
+                )
+            }
             if (pickerOpen) {
                 ServerPickerSheet(
                     onDismiss = { pickerOpen = false },
@@ -169,34 +194,51 @@ private fun Nav(
     navController: NavHostController,
     startDestination: String,
     profiles: List<ServerProfile>?,
+    alertsVm: AlertsViewModel,
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Destinations.Splash) {
+            val splashContext = LocalContext.current
+            // Parity D37a — splash only on first launch, app version change,
+            // or >24 h since last shown; otherwise go straight in.
+            val showSplash =
+                rememberSaveable {
+                    SplashGate.consume(splashContext, com.dmzs.datawatchclient.Version.VERSION)
+                }
             var splashStatus by remember { mutableStateOf("unlocking vault…") }
-            MatrixSplashScreen(
-                replay = false,
-                autoAdvance = false,
-                statusText = splashStatus,
-                onFinished = { /* managed by LaunchedEffect below */ },
-            )
+            if (showSplash) {
+                MatrixSplashScreen(
+                    replay = false,
+                    autoAdvance = false,
+                    statusText = splashStatus,
+                    onFinished = { /* managed by LaunchedEffect below */ },
+                )
+            } else {
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+            }
             LaunchedEffect(profiles) {
-                // Cycle status messages timed to what's actually happening:
-                // SQLCipher unwrap → profile query → service startup → navigate.
-                delay(800L)
-                splashStatus = "loading profiles…"
-                delay(1200L)
-                splashStatus = "starting services…"
-                // Wait out the remaining dwell to reach the 3200ms brand moment.
-                delay(1200L)
+                if (showSplash) {
+                    // Cycle status messages timed to what's actually happening:
+                    // SQLCipher unwrap → profile query → service startup → navigate.
+                    delay(800L)
+                    splashStatus = "loading profiles…"
+                    delay(1200L)
+                    splashStatus = "starting services…"
+                    // Wait out the remaining dwell to reach the 3200ms brand moment.
+                    delay(1200L)
+                }
                 var resolved = profiles
                 var waited = 0L
-                while (resolved == null && waited < 2000L) {
+                val maxWaitMs = if (showSplash) 2000L else 5000L
+                while (resolved == null && waited < maxWaitMs) {
                     delay(100L)
                     waited += 100L
                     resolved = profiles
                 }
-                splashStatus = "ready"
-                delay(180L) // brief flash so "ready" is visible
+                if (showSplash) {
+                    splashStatus = "ready"
+                    delay(180L) // brief flash so "ready" is visible
+                }
                 val next =
                     if (resolved?.isNotEmpty() == true) {
                         Destinations.Home
@@ -244,6 +286,7 @@ private fun Nav(
         }
         composable(Destinations.Home) {
             HomeShell(
+                alertsVm = alertsVm,
                 onAddServer = { navController.navigate(Destinations.AddServer) },
                 onEditServer = { id -> navController.navigate(Destinations.editServer(id)) },
                 onOpenSession = { id ->
@@ -325,6 +368,7 @@ private fun Nav(
 
 @Composable
 private fun HomeShell(
+    alertsVm: AlertsViewModel,
     onAddServer: () -> Unit,
     onEditServer: (String) -> Unit,
     onOpenSession: (String) -> Unit,
@@ -332,11 +376,7 @@ private fun HomeShell(
     onNewSession: () -> Unit,
 ) {
     val tabNav = rememberNavController()
-    val alertsVm: AlertsViewModel = viewModel()
     val alertsState by alertsVm.state.collectAsState()
-    // alpha.29 #271 — alert dock state driven by AlertDockChannel singleton
-    val dockOpen by AlertDockChannel.open.collectAsState()
-    var dockMuted by remember { mutableStateOf(false) }
     // S6-2 (#74): observe federated peer stale state for Settings nav badge.
     val federatedPeersVm: FederatedPeersViewModel = viewModel()
     val federatedPeersState by federatedPeersVm.state.collectAsState()
@@ -450,7 +490,6 @@ private fun HomeShell(
                     prdsSupported = prdsSupported,
                     dashboardEnabled = dashboardEnabled,
                     anyPeerStale = federatedPeersState.anyPeerStale,
-                    alertsMuted = dockMuted,
                 )
             },
         ) { inner ->
@@ -500,16 +539,6 @@ private fun HomeShell(
                         )
                     }
                 }
-                // alert dock: only opens when user clicks the bell pill (AlertDockChannel)
-                val dockAlerts = alertsState.active.flatMap { it.alerts }
-                if (dockOpen && !dockMuted) {
-                    AlertDockOverlay(
-                        alerts = dockAlerts,
-                        onDismiss = { AlertDockChannel.close() },
-                        onMute = { dockMuted = true },
-                        modifier = Modifier.align(Alignment.TopEnd),
-                    )
-                }
             }
         }
     }
@@ -548,5 +577,32 @@ private fun HomeShell(
         }
     } else {
         mainPane(Modifier.fillMaxSize())
+    }
+}
+
+/**
+ * Parity D51a — live WS `alert` frames become dock entries ("badge + in-app
+ * toast" in the PWA, where toasts are the dock). Duplicate frames for the same
+ * alert id (several sockets open) are posted once.
+ */
+@Composable
+private fun LiveAlertFeed() {
+    LaunchedEffect(Unit) {
+        val seen = ArrayDeque<String>()
+        com.dmzs.datawatchclient.transport.ws.AlertsHub.flow.collect { push ->
+            val id = push.id
+            if (id != null) {
+                if (id in seen) return@collect
+                seen.addLast(id)
+                if (seen.size > 200) seen.removeFirst()
+            }
+            val title = if (push.title.length > 60) push.title.take(57) + "…" else push.title
+            val level =
+                when (push.level.lowercase()) {
+                    "error", "warn", "warning" -> com.dmzs.datawatchclient.ui.shell.DockLevel.Error
+                    else -> com.dmzs.datawatchclient.ui.shell.DockLevel.Info
+                }
+            AlertDockChannel.post(title, level, fromServerAlert = true)
+        }
     }
 }

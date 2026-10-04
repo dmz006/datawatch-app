@@ -28,7 +28,6 @@
     <string name="action_edit">Modifier</string>
     <string name="action_browse">Parcourir…</string>
     <string name="action_back">Retour</string>
-    <string name="action_kill">Terminer</string>
     <string name="action_yes">Oui</string>
     <string name="action_no">Non</string>
 
@@ -114,8 +113,7 @@
     <string name="session_detail_generating">génération</string>
     <string name="session_detail_no_messages">Aucun message pour l\'instant. En attente de la sortie de la session…</string>
     <string name="session_detail_no_events">Aucun événement pour l\'instant — ouvrez une session avec une sortie pour voir les transitions d\'état, les invites et les complétions.</string>
-    <string name="session_detail_unreachable_banner">Serveur inaccessible — flux du terminal en pause, dernière image affichée.</string>
-    <string name="session_detail_kill_title">Terminer la session ?</string>
+    <string name="session_detail_kill_title">Arrêter la session ?</string>
     <string name="session_detail_kill_body">Cela arrête la session tmux sur le serveur. La session ne peut pas être reprise.</string>
     <string name="session_detail_delete_title">Supprimer la session ?</string>
     <string name="session_detail_delete_body">L\'enregistrement de session sera supprimé du serveur. Les données sur le disque sont préservées. Cette action est irréversible.</string>
@@ -414,7 +412,7 @@
     <string name="mermaid_render_hint">Diagramme Mermaid (rendre dans les docs)</string>
     <string name="mermaid_title">Diagramme Mermaid</string>
     <string name="nav_automata">Automates</string>
-    <string name="nav_home">Datawatch</string>
+    <string name="nav_home">datawatch</string>
     <string name="nav_new_session">Nouvelle session</string>
     <string name="nav_observer">Observer</string>
     <string name="header_alerts_pill_cd">%1$d alertes</string>

@@ -28,7 +28,6 @@
     <string name="action_edit">Editar</string>
     <string name="action_browse">Explorar…</string>
     <string name="action_back">Atrás</string>
-    <string name="action_kill">Terminar</string>
     <string name="action_yes">Sí</string>
     <string name="action_no">No</string>
 
@@ -114,8 +113,7 @@
     <string name="session_detail_generating">generando</string>
     <string name="session_detail_no_messages">Aún no hay mensajes. Esperando salida de sesión…</string>
     <string name="session_detail_no_events">Sin eventos aún — abre una sesión con salida para ver transiciones de estado, prompts y finalizaciones.</string>
-    <string name="session_detail_unreachable_banner">Servidor inaccesible — flujo de terminal pausado, mostrando último frame.</string>
-    <string name="session_detail_kill_title">¿Terminar sesión?</string>
+    <string name="session_detail_kill_title">¿Detener sesión?</string>
     <string name="session_detail_kill_body">Esto detiene la sesión tmux en el servidor. La sesión no puede reanudarse.</string>
     <string name="session_detail_delete_title">¿Eliminar sesión?</string>
     <string name="session_detail_delete_body">El registro de sesión se eliminará del servidor. Los datos en disco se conservan. Esta acción no se puede deshacer.</string>
@@ -414,7 +412,7 @@
     <string name="mermaid_render_hint">Diagrama Mermaid (renderizar en docs)</string>
     <string name="mermaid_title">Diagrama Mermaid</string>
     <string name="nav_automata">Autómatas</string>
-    <string name="nav_home">Datawatch</string>
+    <string name="nav_home">datawatch</string>
     <string name="nav_new_session">Nueva sesión</string>
     <string name="nav_observer">Observer</string>
     <string name="header_alerts_pill_cd">%1$d alertas</string>

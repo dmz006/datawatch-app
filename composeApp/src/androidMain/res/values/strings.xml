@@ -2,7 +2,7 @@
 <resources>
     <!-- Public variant: "datawatch" (lowercase brand per ADR-0041). Dev flavor overrides in flavor-specific strings.xml. -->
     <string name="app_name">datawatch</string>
-    <string name="tile_voice_label">Datawatch voice</string>
+    <string name="tile_voice_label">datawatch voice</string>
     <string name="widget_description">Running / waiting / total session counts at a glance.</string>
     <string name="widget_monitor_description">CPU load, memory and session counts from the active datawatch server.</string>
     <string name="widget_monitor_label">datawatch Monitor</string>
@@ -34,7 +34,6 @@
     <string name="action_edit">Edit</string>
     <string name="action_browse">Browse…</string>
     <string name="action_back">Back</string>
-    <string name="action_kill">Kill</string>
     <string name="action_yes">Yes</string>
     <string name="action_no">No</string>
 
@@ -175,8 +174,7 @@
     <string name="session_detail_generating">generating</string>
     <string name="session_detail_no_messages">No messages yet. Waiting for session output…</string>
     <string name="session_detail_no_events">No events yet — open a session that has produced output to see state transitions, prompts, and completions here.</string>
-    <string name="session_detail_unreachable_banner">Server unreachable — terminal stream paused, last frame shown.</string>
-    <string name="session_detail_kill_title">Kill session?</string>
+    <string name="session_detail_kill_title">Stop session?</string>
     <string name="session_detail_kill_body">This stops the tmux session on the server. The session cannot be resumed (a new session would need to be started).</string>
     <string name="session_detail_delete_title">Delete session?</string>
     <string name="session_detail_delete_body">This removes the session record from the server. Tracking data on disk is preserved. This cannot be undone.</string>
@@ -562,7 +560,7 @@
     <string name="mermaid_render_hint">Mermaid diagram (render in docs)</string>
     <string name="mermaid_title">Mermaid diagram</string>
     <string name="nav_automata">Automata</string>
-    <string name="nav_home">Datawatch</string>
+    <string name="nav_home">datawatch</string>
     <string name="nav_new_session">New Session</string>
     <string name="nav_observer">Observer</string>
     <string name="header_alerts_pill_cd">%1$d alerts</string>

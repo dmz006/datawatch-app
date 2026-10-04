@@ -532,7 +532,7 @@ public class SessionDetailViewModel(
                 onSuccess = { _killing.value = false },
                 onFailure = { err ->
                     _killing.value = false
-                    _banner.value = "Kill failed: ${err.describe()}"
+                    _banner.value = "Stop failed: ${err.describe()}"
                 },
             )
         }

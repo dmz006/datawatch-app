@@ -29,7 +29,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import android.widget.Toast
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -202,11 +201,7 @@ fun CouncilPersonaWizardSheet(
                                                     refineInput = ""
                                                 }
                                                 .onFailure { err ->
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Refine failed: ${err.message}",
-                                                        Toast.LENGTH_SHORT,
-                                                    ).show()
+                                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Refine failed: ${err.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                                 }
                                         }
                                         refining = false

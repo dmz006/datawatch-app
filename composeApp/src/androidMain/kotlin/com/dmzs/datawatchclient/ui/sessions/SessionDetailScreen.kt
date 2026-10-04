@@ -98,8 +98,6 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
-import com.dmzs.datawatchclient.ui.common.DatawatchToastHost
-import com.dmzs.datawatchclient.ui.common.ToastMessage
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import kotlinx.coroutines.delay
@@ -821,20 +819,8 @@ public fun SessionDetailScreen(
                     visible = !hadContent && (state.reachable == null || !contentReady),
                     statusText = connectStatus,
                 )
-                // Connection-lost toast — floats over terminal without layout reflow.
-                if (state.reachable == false) {
-                    DatawatchToastHost(
-                        toasts = listOf(
-                            ToastMessage(
-                                message = stringResource(R.string.session_detail_unreachable_banner),
-                                isError = true,
-                            ),
-                        ),
-                        onDismiss = {},
-                        onReconnect = {},
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
-                    )
-                }
+                // Parity D46b — no in-session disconnect banner; the header
+                // reachability dot is the only disconnect signal (PWA minimal).
                 } // close Box(weight(1f))
 
                 // Composer in its own layer responding to keyboard insets separately.
@@ -896,7 +882,7 @@ public fun SessionDetailScreen(
                     vm.kill()
                 }) {
                     Text(
-                        stringResource(R.string.action_kill),
+                        stringResource(R.string.action_stop),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -1092,20 +1078,10 @@ private fun SessionInfoBar(
         state == SessionState.Completed || state == SessionState.Killed ||
             state == SessionState.Error
 
-    // Pulse the Running badge so the user can see the session is actively
-    // generating. Waiting / RateLimited are static — they already have
-    // distinct colour cues. Other states never animate.
-    val runPulse = rememberInfiniteTransition(label = "run-pulse")
-    val runBadgeAlpha by runPulse.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 1.0f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(700, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "run-badge-alpha",
-    )
+    // Pulse the Running badge — PWA dw-running-pulse (0.55-1.0, 700 ms
+    // ease-in-out, alternate; static under reduced motion). Parity D18: kept.
+    // Waiting / RateLimited are static — they already have distinct colour cues.
+    val runBadgeAlpha by com.dmzs.datawatchclient.ui.theme.rememberRunningPulseAlpha(state == SessionState.Running)
 
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
@@ -2004,11 +1980,7 @@ private fun ReplyComposer(
                 }.getOrNull()
             if (bytes == null) {
                 imageUploading = false
-                android.widget.Toast.makeText(
-                    context,
-                    "Could not read image.",
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Could not read image.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                 return@launch
             }
             val displayName =
@@ -2039,18 +2011,14 @@ private fun ReplyComposer(
                     ?: profiles.firstOrNull { it.enabled }
             if (profile == null) {
                 imageUploading = false
-                android.widget.Toast.makeText(context, "No server connected.", android.widget.Toast.LENGTH_SHORT).show()
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("No server connected.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                 return@launch
             }
             val transport = com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
             val root = transport.getFileServiceMeta().getOrNull()?.root?.trimEnd('/')
             if (root == null) {
                 imageUploading = false
-                android.widget.Toast.makeText(
-                    context,
-                    "Could not resolve server file root.",
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Could not resolve server file root.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                 return@launch
             }
             val fullPath = "$root/$destName"
@@ -2062,11 +2030,7 @@ private fun ReplyComposer(
                 }
                 .onFailure {
                     imageUploading = false
-                    android.widget.Toast.makeText(
-                        context,
-                        "Image upload failed: ${it.message}",
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Image upload failed: ${it.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                 }
         }
     }
@@ -2116,18 +2080,10 @@ private fun ReplyComposer(
                         showRecordingDialog = true
                     }
                     .onFailure { e ->
-                        android.widget.Toast.makeText(
-                            context,
-                            "Recording failed: ${e.message ?: e::class.simpleName}",
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
+                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                     }
             } else {
-                android.widget.Toast.makeText(
-                    context,
-                    "Microphone permission denied — enable it in Settings.",
-                    android.widget.Toast.LENGTH_LONG,
-                ).show()
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Microphone permission denied — enable it in Settings.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
             }
         }
 
@@ -2188,11 +2144,7 @@ private fun ReplyComposer(
                                             .startSession(task = newPrefix)
                                             .fold(
                                                 onSuccess = {
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        "Started new session: $newPrefix",
-                                                        android.widget.Toast.LENGTH_SHORT,
-                                                    ).show()
+                                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Started new session: $newPrefix", com.dmzs.datawatchclient.ui.shell.DockLevel.Success)
                                                 },
                                                 onFailure = { onTranscribed(text) },
                                             )
@@ -2207,19 +2159,11 @@ private fun ReplyComposer(
                                             .joinToString(" ← ") {
                                                 "${it::class.simpleName}: ${it.message?.take(120)}"
                                             }
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Transcribe failed: $cause",
-                                        android.widget.Toast.LENGTH_LONG,
-                                    ).show()
+                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed: $cause", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                 },
                             )
                     } else {
-                        android.widget.Toast.makeText(
-                            context,
-                            "No enabled server profile — voice reply aborted.",
-                            android.widget.Toast.LENGTH_LONG,
-                        ).show()
+                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("No enabled server profile — voice reply aborted.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                     }
                     transcribing = false
                 }
@@ -2479,11 +2423,7 @@ private fun ReplyComposer(
                                 showRecordingDialog = true
                             }
                             .onFailure { e ->
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Recording failed: ${e.message ?: e::class.simpleName}",
-                                    android.widget.Toast.LENGTH_SHORT,
-                                ).show()
+                                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                             }
                     } else {
                         micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)

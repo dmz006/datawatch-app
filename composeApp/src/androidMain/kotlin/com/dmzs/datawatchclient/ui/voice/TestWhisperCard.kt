@@ -2,7 +2,6 @@ package com.dmzs.datawatchclient.ui.voice
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -141,7 +140,7 @@ public fun TestWhisperCard() {
                         recording = true
                         status = "recording — tap ■ to stop"
                         // S6-7 (#88): mic recording toast.
-                        Toast.makeText(context, R.string.mic_toast_recording, Toast.LENGTH_SHORT).show()
+                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(context.getString(R.string.mic_toast_recording), com.dmzs.datawatchclient.ui.shell.DockLevel.Info)
                     }
                     .onFailure { status = "mic start failed: ${it.message}" }
             } else {
@@ -194,7 +193,7 @@ public fun TestWhisperCard() {
                                         recording = true
                                         status = "recording — tap ■ to stop"
                                         // S6-7 (#88): mic recording toast.
-                                        Toast.makeText(context, R.string.mic_toast_recording, Toast.LENGTH_SHORT).show()
+                                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(context.getString(R.string.mic_toast_recording), com.dmzs.datawatchclient.ui.shell.DockLevel.Info)
                                     }
                                     .onFailure { status = "mic start failed: ${it.message}" }
                             } else {

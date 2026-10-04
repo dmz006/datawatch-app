@@ -101,11 +101,7 @@ public fun NewSessionScreen(
                         showVoiceDialog = true
                     }
                     .onFailure { e ->
-                        android.widget.Toast.makeText(
-                            context,
-                            "Recording failed: ${e.message ?: e::class.simpleName}",
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
+                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                     }
             }
         }
@@ -409,11 +405,7 @@ public fun NewSessionScreen(
                                         ).onSuccess { result ->
                                             task = (task + " " + result.transcript.trim()).trim()
                                         }.onFailure { err ->
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "Transcribe failed: ${err.message}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed: ${err.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                         }
                                 }
                                 transcribingVoice = false
@@ -449,11 +441,7 @@ public fun NewSessionScreen(
                                             showVoiceDialog = true
                                         }
                                         .onFailure { e ->
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "Recording failed: ${e.message}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                         }
                                 } else {
                                     micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
