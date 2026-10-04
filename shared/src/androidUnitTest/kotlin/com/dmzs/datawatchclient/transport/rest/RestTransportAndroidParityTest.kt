@@ -72,4 +72,35 @@ class RestTransportAndroidParityTest {
             server.enqueue(json("""{"error":"no channel"}""", code = 404))
             assertTrue(transport.sendChannelMessage("x", "y").isFailure)
         }
+
+    @Test
+    fun getComputeNodeModelsUnwrapsServerEnvelope() =
+        runTest {
+            server.enqueue(json("""{"models":["llama3:8b","qwen2"],"kind":"ollama"}"""))
+            val res = transport.getComputeNodeModels("gpu-1", "ollama")
+            assertEquals(listOf("llama3:8b", "qwen2"), res.getOrThrow())
+            assertEquals("/api/compute/nodes/gpu-1/models?kind=ollama", server.takeRequest().path)
+        }
+
+    @Test
+    fun scanConfigUsesServerKeys() =
+        runTest {
+            server.enqueue(
+                json(
+                    """{"enabled":true,"sast_enabled":true,"secrets_enabled":false,"deps_enabled":true,
+                    |"fail_on_severity":"warning","rules_grader_enabled":true,"fix_loop_enabled":true,
+                    |"fix_loop_max_retries":5}""".trimMargin(),
+                ),
+            )
+            val cfg = transport.getScanConfig().getOrThrow()
+            assertTrue(cfg.grader)
+            assertTrue(cfg.fixLoop)
+            assertEquals(5, cfg.maxRetries)
+            server.enqueue(json("{}"))
+            transport.updateScanConfig(cfg.copy(maxRetries = 2))
+            server.takeRequest()
+            val body = server.takeRequest().body.readUtf8()
+            assertTrue(body.contains("\"fix_loop_max_retries\":2"), body)
+            assertTrue(body.contains("\"rules_grader_enabled\":true"), body)
+        }
 }

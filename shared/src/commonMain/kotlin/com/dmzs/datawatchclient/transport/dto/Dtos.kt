@@ -929,9 +929,12 @@ public data class ScanConfigDto(
     @SerialName("secrets_enabled") val secrets: Boolean = false,
     @SerialName("deps_enabled") val deps: Boolean = false,
     @SerialName("fail_on_severity") val failOnSeverity: String = "error",
-    val grader: Boolean = false,
-    @SerialName("fix_loop") val fixLoop: Boolean = false,
-    @SerialName("max_retries") val maxRetries: Int = 3,
+    // Server keys (autonomous/scan.Config): rules_grader_enabled, fix_loop_enabled,
+    // fix_loop_max_retries — the old grader / fix_loop / max_retries names never matched.
+    @SerialName("rules_grader_enabled") val grader: Boolean = false,
+    @SerialName("fix_loop_enabled") val fixLoop: Boolean = false,
+    @SerialName("fix_loop_max_retries") val maxRetries: Int = 3,
+    @SerialName("max_findings") val maxFindings: Int = 0,
 )
 
 @Serializable
