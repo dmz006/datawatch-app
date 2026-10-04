@@ -101,6 +101,11 @@ public data class Session(
      * Used to render an "AI Xm ago" age badge on the session card.
      */
     val summaryGeneratedAt: Instant? = null,
+    /**
+     * datawatch `prd_id` — the automaton that spawned this session, if any.
+     * Not persisted to SQLite; populated from live REST responses only.
+     */
+    val prdId: String? = null,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =

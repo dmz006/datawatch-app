@@ -46,6 +46,7 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         chrome = chrome == true,
         lastSummaryLong = lastSummaryLong?.takeIf { it.isNotBlank() },
         summaryGeneratedAt = summaryGeneratedAt.toInstantOrNull(),
+        prdId = prdId?.takeIf { it.isNotBlank() },
     )
 
 private fun SessionDto.extractHostnamePrefix(): String? {
