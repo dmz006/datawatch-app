@@ -21,6 +21,7 @@ final class SessionsViewModel: ObservableObject {
 
     private var pollTask: Task<Void, Never>? = nil
     private var wsSubscription: IosSubscription? = nil
+    private var diffSubscription: IosSubscription? = nil
     private var inFlight = false
     private var polling = false
     private static let restFallbackInterval: Duration = .seconds(30)
@@ -74,6 +75,10 @@ final class SessionsViewModel: ObservableObject {
             }
         )
 
+        diffSubscription = IosServiceLocator.shared.subscribeSessionDiffs(profile: profile) { [weak self] updated in
+            Task { @MainActor [weak self] in self?.upsert(updated) }
+        }
+
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
@@ -95,6 +100,17 @@ final class SessionsViewModel: ObservableObject {
         pollTask = nil
         wsSubscription?.cancel()
         wsSubscription = nil
+        diffSubscription?.cancel()
+        diffSubscription = nil
+    }
+
+    /// Apply a single-row `session_state` diff without refetching the list.
+    private func upsert(_ updated: DwSession) {
+        if let i = sessions.firstIndex(where: { $0.id == updated.id }) {
+            sessions[i] = updated
+        } else {
+            sessions.append(updated)
+        }
     }
 
     private func refreshAsync() async {

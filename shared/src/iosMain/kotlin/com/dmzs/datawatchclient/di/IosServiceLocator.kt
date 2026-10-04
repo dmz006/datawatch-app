@@ -456,6 +456,24 @@ public object IosServiceLocator {
         return IosSubscription(job)
     }
 
+    /**
+     * Single-session `session_state` diffs (server v8.37+) for [profile], delivered as
+     * they arrive on any open `/ws` connection (e.g. the one [subscribeGlobalStream]
+     * keeps). Opens no socket itself. Callbacks run on a background thread.
+     */
+    public fun subscribeSessionDiffs(
+        profile: ServerProfile,
+        onSession: (com.dmzs.datawatchclient.domain.Session) -> Unit,
+    ): IosSubscription {
+        val job =
+            ioScope.launch {
+                com.dmzs.datawatchclient.transport.ws.SessionsHub.singleSessionFlow
+                    .filter { it.serverProfileId == profile.id }
+                    .collect { onSession(it.session) }
+            }
+        return IosSubscription(job)
+    }
+
     // ── Keychain token accessor ───────────────────────────────────────────
 
     /**
@@ -641,7 +659,11 @@ public object IosServiceLocator {
     ) {
         ioScope.launch {
             transportFor(profile).getSessionCurrentStatus(sessionId).fold(
-                onSuccess = { dto -> onSuccess(dto.currentStatus, dto.currentStatusLong) },
+                onSuccess = { dto ->
+                    // PWA/Android show "(no change since last refresh)" when the summary is unchanged.
+                    val short = if (dto.noChange) "${dto.currentStatus}\n(no change since last refresh)" else dto.currentStatus
+                    onSuccess(short, dto.currentStatusLong)
+                },
                 onFailure = { onError(it.message ?: "Failed to fetch current status.") },
             )
         }
