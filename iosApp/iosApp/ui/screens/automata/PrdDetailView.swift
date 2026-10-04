@@ -119,7 +119,9 @@ struct PrdDetailView: View {
 
     private var prd: PrdDto { vm.prd }
 
-    var body: some View {
+    var body: some View { withAlerts }
+
+    private var mainScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 header
@@ -190,6 +192,11 @@ struct PrdDetailView: View {
                 .accessibilityLabel("Automaton actions")
             }
         }
+    }
+
+    /// Sheets + lifecycle (split out so the type checker copes).
+    private var withSheets: some View {
+        mainScroll
         .alert("Saved as template", isPresented: $templateSaved) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -238,6 +245,10 @@ struct PrdDetailView: View {
             }
         }
         .refreshable { await vm.refresh() }
+    }
+
+    private var withAlerts: some View {
+        withSheets
         .alert("Reject PRD", isPresented: $showReject) {
             TextField("Reason", text: $rejectReason)
             Button("Reject", role: .destructive) {
