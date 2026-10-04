@@ -35,8 +35,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
@@ -79,10 +78,7 @@ public fun FiltersCard() {
 
     LaunchedEffect(Unit) { refresh() }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        PwaSectionTitle("Output filters", docsAnchor = "output-filters")
+    PwaCard(id = "filters", title = "Output filters", docsAnchor = "output-filters") {
         banner?.let {
             Text(
                 it,

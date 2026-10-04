@@ -1,6 +1,6 @@
 package com.dmzs.datawatchclient.ui.settings
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +21,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,8 +28,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.IdentityDto
 import com.dmzs.datawatchclient.ui.common.MicAttachableTextField
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -58,24 +56,18 @@ internal fun IdentityCard() {
 
     LaunchedEffect(Unit) { runCatching { loadIdentity() } }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(
-                stringResource(R.string.identity_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "identity",
-            )
+    PwaCard(
+        id = "identity",
+        title = stringResource(R.string.identity_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "identity",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             IconButton(onClick = { wizardOpen = true }) {
                 Icon(Icons.Filled.RecordVoiceOver, contentDescription = stringResource(R.string.identity_wizard_open))
             }
-        }
+        },
+    ) {
         OutlinedTextField(
             value = identity.role,
             onValueChange = { identity = identity.copy(role = it) },

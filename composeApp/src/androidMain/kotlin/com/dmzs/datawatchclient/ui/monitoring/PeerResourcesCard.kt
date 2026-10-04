@@ -31,6 +31,7 @@ import com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto
 import com.dmzs.datawatchclient.transport.dto.ComputeNodeDto
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.ui.common.LiveDot
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,25 +57,16 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
 
     if (state.peers.isEmpty() && state.localNodes.isEmpty() && !state.loading) return
 
-    Box(
+    PwaCard(
+        id = "peer_resources",
+        title = stringResource(R.string.obs_peer_resources),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        docsAnchor = "federated-peers",
+        headerActions = { Box(Modifier.padding(end = 8.dp)) { LiveDot() } },
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 10.dp, bottom = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.obs_peer_resources),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                )
-                LiveDot()
-            }
+        run {
             // Local server compute nodes (auto-created by the daemon, e.g. "datawatch-stats")
             state.localNodes.forEach { (node, detail) ->
                 LocalNodeRow(node = node, detail = detail)

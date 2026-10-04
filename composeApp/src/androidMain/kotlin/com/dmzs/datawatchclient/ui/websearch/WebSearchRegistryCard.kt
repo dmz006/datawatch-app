@@ -48,8 +48,7 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto
 import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -100,19 +99,16 @@ public fun WebSearchRegistryCard() {
         loading = false
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(
-                stringResource(R.string.ws_registry_title),
-                modifier = Modifier.weight(1f),
-            )
+    PwaCard(
+        id = "websearch_providers",
+        title = stringResource(R.string.ws_registry_title),
+        docsAnchor = "web-search-providers",
+        headerActions = {
             IconButton(onClick = { editProvider = null; showAddDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.ws_registry_add))
             }
-        }
-
+        },
+    ) {
         banner?.let {
             Text(
                 it,

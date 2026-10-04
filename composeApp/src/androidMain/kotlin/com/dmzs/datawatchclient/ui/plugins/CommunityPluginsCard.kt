@@ -23,10 +23,9 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.CommunityPluginDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 @Composable
 public fun CommunityPluginsCard() {
@@ -52,10 +51,11 @@ public fun CommunityPluginsCard() {
         )
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "plugins_list",
+        title = "Community Plugins",
+        docsAnchor = "plugin-manager",
     ) {
-        PwaSectionTitle("Community Plugins", docsAnchor = "skill-registries")
         banner?.let {
             Text(
                 it,

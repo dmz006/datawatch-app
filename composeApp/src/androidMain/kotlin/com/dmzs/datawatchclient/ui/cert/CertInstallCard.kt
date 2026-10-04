@@ -23,8 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 
 /**
@@ -50,10 +49,11 @@ public fun CertInstallCard() {
         baseUrl = profile?.baseUrl
     }
     val base = baseUrl
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "cert_install",
+        title = "CA certificate",
+        docsAnchor = "security",
     ) {
-        PwaSectionTitle("CA certificate", docsAnchor = "security")
         if (base == null) {
             Text(
                 "No enabled server.",
@@ -61,7 +61,7 @@ public fun CertInstallCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@PwaCard
         }
         Text(
             "If the server uses self-signed TLS, install the CA here " +

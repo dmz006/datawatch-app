@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,8 +34,7 @@ import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaInputTextStyle
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -80,15 +80,12 @@ public fun WorkQueueCard() {
 
     fun JsonObject.s(k: String) = (this[k] as? JsonPrimitive)?.content.orEmpty()
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "work_queue",
+        title = stringResource(R.string.work_queue_title),
+        docsAnchor = "work-queue",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.work_queue_title))
         Text(
             stringResource(R.string.work_queue_help),
             style = MaterialTheme.typography.labelSmall,

@@ -23,10 +23,10 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.AuditEntryDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.dmzs.datawatchclient.ui.theme.PwaCard
+import androidx.compose.foundation.layout.PaddingValues
 
 /**
  * Observer tab — Audit Log card. Mirrors PWA audit section:
@@ -65,15 +65,13 @@ public fun AuditLogCard() {
 
     LaunchedEffect(Unit) { reload() }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "audit",
+        title = "Audit Log",
+        modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "audit-log",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle("Audit Log", docsAnchor = "audit-log")
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedTextField(
