@@ -1850,6 +1850,7 @@ public class RestTransport(
         cron: String,
         enabled: Boolean,
         sessionId: String?,
+        runAt: String?,
     ): Result<Schedule> =
         request {
             val dto: ScheduleDto =
@@ -1862,6 +1863,7 @@ public class RestTransport(
                             cron = cron,
                             enabled = enabled,
                             sessionId = sessionId,
+                            runAt = runAt?.takeIf { it.isNotBlank() },
                         ),
                     )
                 }.body()
