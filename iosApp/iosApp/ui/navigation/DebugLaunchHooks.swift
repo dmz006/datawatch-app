@@ -38,7 +38,9 @@ enum DebugLaunchHooks {
             lastSeenTs: nil,
             signalLinked: false
         )
-        store.save(profile: profile, token: arg("-dwSeedToken"), onSuccess: {}, onError: { msg in
+        store.save(profile: profile, token: arg("-dwSeedToken"), onSuccess: {
+            print("DebugLaunchHooks: seeded \(name)")
+        }, onError: { msg in
             print("DebugLaunchHooks: seed failed: \(msg)")
         })
     }
