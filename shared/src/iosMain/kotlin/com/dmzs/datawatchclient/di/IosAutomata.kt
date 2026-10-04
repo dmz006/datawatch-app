@@ -184,3 +184,64 @@ public object IosAutomata {
         }
     }
 }
+
+/**
+ * Story / task operations inside a PRD (parity B18; PWA prdStory* / prd*Task).
+ * Story actions: approve | reject | cancel. Task actions: retry (reset) | cancel |
+ * requeue | remove. [reason] applies to story reject/cancel and task cancel.
+ */
+public object IosPrdItemOps {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    public fun storyAction(
+        profile: ServerProfile,
+        prdId: String,
+        storyId: String,
+        action: String,
+        reason: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            val t = IosServiceLocator.transportFor(profile)
+            val result =
+                when (action) {
+                    "approve" -> t.approveStory(prdId, storyId)
+                    "reject" -> t.rejectStory(prdId, storyId, reason)
+                    "cancel" -> t.cancelPrdStory(prdId, storyId, reason.ifBlank { null })
+                    else -> Result.failure(IllegalArgumentException("Unknown story action: $action"))
+                }
+            result.fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Story action failed.") },
+            )
+        }
+    }
+
+    public fun taskAction(
+        profile: ServerProfile,
+        prdId: String,
+        storyId: String,
+        taskId: String,
+        action: String,
+        reason: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            val t = IosServiceLocator.transportFor(profile)
+            val result: Result<Any> =
+                when (action) {
+                    "retry" -> t.resetPrdTask(prdId, taskId)
+                    "cancel" -> t.cancelPrdTask(prdId, taskId, reason.ifBlank { null })
+                    "requeue" -> t.requeuePrdTask(prdId, taskId)
+                    "remove" -> t.removeTask(prdId, storyId, taskId, actor = "operator")
+                    else -> Result.failure(IllegalArgumentException("Unknown task action: $action"))
+                }
+            result.fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Task action failed.") },
+            )
+        }
+    }
+}

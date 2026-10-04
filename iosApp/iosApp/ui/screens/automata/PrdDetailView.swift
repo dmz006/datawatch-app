@@ -77,6 +77,19 @@ struct PrdDetailView: View {
     @StateObject private var vm: PrdDetailViewModel
     @State private var expandedStories: Set<String> = []
     @State private var showReject = false
+    @State private var itemConfirm: ItemConfirm? = nil
+    @State private var rejectStoryId: String? = nil
+    @State private var rejectStoryReason = ""
+    @State private var itemBusy: String? = nil
+
+    /// A confirm-before-run story/task action (PWA uses confirm() for these).
+    struct ItemConfirm: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+        let destructiveLabel: String
+        let run: () -> Void
+    }
     @State private var rejectReason = ""
     @State private var showRevision = false
     @State private var revisionNote = ""
@@ -178,6 +191,32 @@ struct PrdDetailView: View {
             Button("Keep running", role: .cancel) {}
         } message: {
             Text("Running tasks are stopped. The PRD and its history are kept.")
+        }
+        .alert(
+            itemConfirm?.title ?? "",
+            isPresented: Binding(get: { itemConfirm != nil }, set: { if !$0 { itemConfirm = nil } })
+        ) {
+            Button(itemConfirm?.destructiveLabel ?? "OK", role: .destructive) {
+                itemConfirm?.run()
+                itemConfirm = nil
+            }
+            Button("Keep", role: .cancel) { itemConfirm = nil }
+        } message: {
+            Text(itemConfirm?.message ?? "")
+        }
+        .alert(
+            "Reject story",
+            isPresented: Binding(get: { rejectStoryId != nil }, set: { if !$0 { rejectStoryId = nil } })
+        ) {
+            TextField("Reason", text: $rejectStoryReason)
+            Button("Reject", role: .destructive) {
+                if let sid = rejectStoryId {
+                    storyOp(sid, "reject", reason: rejectStoryReason)
+                }
+                rejectStoryReason = ""
+                rejectStoryId = nil
+            }
+            Button("Cancel", role: .cancel) { rejectStoryId = nil }
         }
         .alert(
             "Action failed",
@@ -321,6 +360,7 @@ struct PrdDetailView: View {
         }()
         return DisclosureGroup(isExpanded: binding(for: story.id)) {
             VStack(alignment: .leading, spacing: 6) {
+                storyActions(story)
                 if let d = story.description_, !d.isEmpty {
                     Text(d)
                         .font(DatawatchFonts.labelSmall)
@@ -328,7 +368,9 @@ struct PrdDetailView: View {
                         .padding(.bottom, 2)
                 }
                 ForEach(story.tasks, id: \.id) { task in
-                    PrdTaskRow(task: task)
+                    PrdTaskRow(task: task, actions: taskActions(task), busy: itemBusy == task.id) { action in
+                        runTaskAction(action, story: story, task: task)
+                    }
                 }
                 if story.tasks.isEmpty {
                     Text("No tasks").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -353,6 +395,102 @@ struct PrdDetailView: View {
         .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
     }
 
+    // ── Story / task operations (parity B18; PWA visibility rules) ────────
+
+    private var prdStatus: String { prd.status.lowercased() }
+    /// PWA `editable`: structure can change only before/after a run.
+    private var editable: Bool { ["needs_review", "revisions_asked", "cancelled"].contains(prdStatus) }
+
+    @ViewBuilder
+    private func storyActions(_ story: PrdStoryDto) -> some View {
+        let runnable = ["approved", "active", "running"].contains(prdStatus)
+        let showApproveReject = runnable && story.status == "awaiting_approval"
+        let terminal = ["completed", "cancelled", "failed"].contains(story.status)
+        let canCancel = prdStatus == "running" && !terminal
+        if showApproveReject || canCancel {
+            HStack(spacing: 8) {
+                if showApproveReject {
+                    smallAction("✓ Approve", DatawatchColors.success) { storyOp(story.id, "approve") }
+                    smallAction("✗ Reject", DatawatchColors.error) { rejectStoryId = story.id }
+                }
+                if canCancel {
+                    smallAction("⏹ Cancel story", DatawatchColors.error) {
+                        itemConfirm = ItemConfirm(
+                            title: "Cancel story?",
+                            message: "Cancel story \"\(story.title.isEmpty ? story.id : story.title)\" and all remaining tasks?",
+                            destructiveLabel: "Cancel story"
+                        ) { storyOp(story.id, "cancel") }
+                    }
+                }
+                if itemBusy == story.id { ProgressView().controlSize(.small) }
+            }
+        }
+    }
+
+    private func smallAction(_ title: String, _ tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(DatawatchFonts.labelSmall.weight(.semibold))
+                .foregroundStyle(tint)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(tint.opacity(0.14), in: Capsule())
+        }
+        .buttonStyle(.borderless)
+        .disabled(itemBusy != nil)
+    }
+
+    private func taskActions(_ task: PrdTaskDto) -> [PrdTaskRow.Action] {
+        let st = task.status
+        var out: [PrdTaskRow.Action] = []
+        if (st == "failed" || st == "blocked") && ["running", "blocked", "cancelled"].contains(prdStatus) {
+            out.append(.retry)
+        }
+        if ["pending", "in_progress", "running", "verifying", "running_tests", "waiting_capacity"].contains(st)
+            && prdStatus == "running" {
+            out.append(.cancel)
+        }
+        if (st == "completed" || st == "cancelled") && ["running", "cancelled"].contains(prdStatus) && editable {
+            out.append(.requeue)
+        }
+        if editable { out.append(.remove) }
+        return out
+    }
+
+    private func runTaskAction(_ action: PrdTaskRow.Action, story: PrdStoryDto, task: PrdTaskDto) {
+        let name = task.task.isEmpty ? task.id : task.task
+        switch action {
+        case .cancel:
+            itemConfirm = ItemConfirm(title: "Cancel task?", message: "Cancel \"\(name)\"?", destructiveLabel: "Cancel task") {
+                taskOp(story.id, task.id, "cancel")
+            }
+        case .remove:
+            itemConfirm = ItemConfirm(title: "Remove task?", message: "Remove \"\(name)\" from this story? This doesn't re-run decompose.", destructiveLabel: "Remove") {
+                taskOp(story.id, task.id, "remove")
+            }
+        case .retry: taskOp(story.id, task.id, "retry")
+        case .requeue: taskOp(story.id, task.id, "requeue")
+        }
+    }
+
+    private func storyOp(_ storyId: String, _ action: String, reason: String = "") {
+        itemBusy = storyId
+        IosPrdItemOps.shared.storyAction(
+            profile: vm.profile, prdId: prd.id, storyId: storyId, action: action, reason: reason,
+            onSuccess: { DispatchQueue.main.async { itemBusy = nil; Task { await vm.refresh() } } },
+            onError: { msg in DispatchQueue.main.async { itemBusy = nil; vm.actionError = msg } }
+        )
+    }
+
+    private func taskOp(_ storyId: String, _ taskId: String, _ action: String) {
+        itemBusy = taskId
+        IosPrdItemOps.shared.taskAction(
+            profile: vm.profile, prdId: prd.id, storyId: storyId, taskId: taskId, action: action, reason: "",
+            onSuccess: { DispatchQueue.main.async { itemBusy = nil; Task { await vm.refresh() } } },
+            onError: { msg in DispatchQueue.main.async { itemBusy = nil; vm.actionError = msg } }
+        )
+    }
+
     private func binding(for storyId: String) -> Binding<Bool> {
         Binding(
             get: { expandedStories.contains(storyId) },
@@ -366,7 +504,12 @@ struct PrdDetailView: View {
 // ── Task row ──────────────────────────────────────────────────────────────
 
 struct PrdTaskRow: View {
+    enum Action { case retry, cancel, requeue, remove }
+
     let task: PrdTaskDto
+    var actions: [Action] = []
+    var busy: Bool = false
+    var onAction: (Action) -> Void = { _ in }
 
     var body: some View {
         let (glyph, color) = PrdStatusStyle.taskGlyph(task.status)
@@ -405,8 +548,35 @@ struct PrdTaskRow: View {
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .padding(.leading, 24)
             }
+            if !actions.isEmpty || busy {
+                HStack(spacing: 6) {
+                    ForEach(actions, id: \.self) { a in
+                        Button { onAction(a) } label: {
+                            Text(label(a))
+                                .font(DatawatchFonts.badge)
+                                .foregroundStyle(a == .remove || a == .cancel ? DatawatchColors.error : DatawatchColors.primary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(DatawatchColors.surface2, in: Capsule())
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(busy)
+                    }
+                    if busy { ProgressView().controlSize(.mini) }
+                }
+                .padding(.leading, 24)
+                .padding(.top, 2)
+            }
         }
         .padding(.vertical, 3)
-        .accessibilityElement(children: .combine)
+    }
+
+    private func label(_ a: Action) -> String {
+        switch a {
+        case .retry: return "↻ Retry"
+        case .cancel: return "⏹ Cancel"
+        case .requeue: return "↻ Re-run"
+        case .remove: return "🗑 Remove"
+        }
     }
 }
