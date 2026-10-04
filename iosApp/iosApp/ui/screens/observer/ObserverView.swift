@@ -272,7 +272,7 @@ struct ObserverView: View {
     @StateObject private var vm = ObserverViewModel()
     @StateObject private var collapse = ObserverCollapseStore()
     @StateObject private var toaster = ObserverToastCenter()
-    @State private var selectedProfileId: String? = nil
+    @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
 
     private var selectedProfile: ServerProfile? {
         if let id = selectedProfileId {
@@ -321,6 +321,9 @@ struct ObserverView: View {
         .onDisappear {
             vm.stopPolling()
         }
+        .onChange(of: store.activeProfileId) { id in
+            if id != selectedProfileId { selectedProfileId = id; }
+        }
         .onChange(of: store.profiles) { newProfiles in
             if let id = selectedProfileId, !newProfiles.contains(where: { $0.id == id }) {
                 selectedProfileId = nil
@@ -356,7 +359,7 @@ struct ObserverView: View {
     private var profilePicker: some View {
         Picker("Server", selection: Binding(
             get: { selectedProfileId ?? store.profiles.first?.id ?? "" },
-            set: { selectedProfileId = $0 }
+            set: { selectedProfileId = $0; store.selectActive($0) }
         )) {
             ForEach(store.profiles, id: \.id) { profile in
                 Text(profile.displayName).tag(profile.id)

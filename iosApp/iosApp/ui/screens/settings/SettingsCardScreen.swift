@@ -8,7 +8,7 @@ struct SettingsCardScreen: View {
     let card: SettingsCard
 
     private var profile: ServerProfile? {
-        store.profiles.first { $0.enabled } ?? store.profiles.first
+        store.activeProfile
     }
 
     var body: some View {

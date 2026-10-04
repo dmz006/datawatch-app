@@ -89,11 +89,14 @@ struct SessionsView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
-        .onChange(of: store.profiles) { profiles in
-            viewModel.update(profiles: profiles)
+        .onChange(of: store.profiles) { _ in
+            viewModel.update(profiles: activeList)
+        }
+        .onChange(of: store.activeProfileId) { _ in
+            viewModel.update(profiles: activeList)
         }
         .onAppear {
-            viewModel.update(profiles: store.profiles)
+            viewModel.update(profiles: activeList)
             viewModel.startPolling()
             applyPendingFilter()
         }
@@ -259,8 +262,12 @@ struct SessionsView: View {
         }
     }
 
+    /// D2a: the app-wide active server only.
+    private var activeList: [ServerProfile] { store.activeProfile.map { [$0] } ?? [] }
+
     private var sessionList: some View {
         VStack(spacing: 0) {
+            ServerPickerBar()
             if showFilter { filterBar }
             if let actionError {
                 Text(actionError)

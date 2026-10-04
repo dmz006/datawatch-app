@@ -283,7 +283,7 @@ struct DashboardView: View {
     @StateObject private var vm = DashboardViewModel()
     @StateObject private var collapse = DashCollapseStore()
     @ObservedObject private var expandNav = DashExpandNav.shared
-    @State private var selectedProfileId: String? = nil
+    @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
     @State private var openSession: DwSession? = nil
     @State private var openPrd: PrdDto? = nil
     @State private var expandSession: DashExpandItem? = nil
@@ -304,6 +304,9 @@ struct DashboardView: View {
             .toolbar { toolbarContent }
             .onAppear(perform: activate)
             .onDisappear { vm.stop() }
+            .onChange(of: store.activeProfileId) { id in
+                if id != selectedProfileId { selectedProfileId = id; activate() }
+            }
             .onChange(of: store.profiles) { _ in activate() }
             .onChange(of: expandNav.pendingSessionId) { _ in consumeExpandNav() }
             .navigationDestination(isPresented: sessionBinding) { sessionDestination }
@@ -346,7 +349,7 @@ struct DashboardView: View {
     private var profilePicker: some View {
         Picker("Server", selection: Binding(
             get: { selectedProfileId ?? store.profiles.first?.id ?? "" },
-            set: { selectedProfileId = $0; activate() }
+            set: { selectedProfileId = $0; store.selectActive($0); activate() }
         )) {
             ForEach(store.profiles, id: \.id) { profile in
                 Text(profile.displayName).tag(profile.id)
