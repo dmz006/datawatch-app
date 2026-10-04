@@ -1254,4 +1254,6 @@
     <string name="work_queue_push">Añadir elemento de trabajo</string>
     <string name="work_queue_new_role_hint">Rol (p. ej. worker)</string>
     <string name="work_queue_delete_title">¿Eliminar el elemento de la cola %1$s?</string>
+    <string name="card_collapse">Contraer sección</string>
+    <string name="card_expand">Expandir sección</string>
 </resources>

@@ -1254,4 +1254,6 @@
     <string name="work_queue_push">作業アイテムを追加</string>
     <string name="work_queue_new_role_hint">ロール (例: worker)</string>
     <string name="work_queue_delete_title">キューアイテム %1$s を削除しますか?</string>
+    <string name="card_collapse">セクションを折りたたむ</string>
+    <string name="card_expand">セクションを展開</string>
 </resources>

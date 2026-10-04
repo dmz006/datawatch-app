@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 @Composable
 public fun MempalaceActionsCard(vm: MempalaceActionsViewModel = viewModel()) {
     val state by vm.state.collectAsState()
-    Section(title = "Mempalace") {
+    Section(id = "memmaint", title = "Mempalace", docsAnchor = "memory-maintenance") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             SweepRow(state, vm)
             Spacer(Modifier.height(12.dp))

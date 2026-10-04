@@ -1570,4 +1570,6 @@
     <string name="work_queue_push">Push Work Item</string>
     <string name="work_queue_new_role_hint">Role (e.g. worker)</string>
     <string name="work_queue_delete_title">Delete queue item %1$s?</string>
+    <string name="card_collapse">Collapse section</string>
+    <string name="card_expand">Expand section</string>
 </resources>
