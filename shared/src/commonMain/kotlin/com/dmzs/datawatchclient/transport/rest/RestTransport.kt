@@ -3557,6 +3557,82 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- iOS Observer parity ----
+
+    override suspend fun fetchStatsJson(v2: Boolean): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                if (v2) parameter("v", 2)
+            }.body()
+        }
+
+    override suspend fun fetchObserverPeerSnapshot(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/peers/${name.replace(" ", "%20")}/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun removeObserverPeer(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/observer/peers/${name.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun fetchObserverStatsJson(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun fetchObserverConfig(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun fetchChannelDiagnostics(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/channel/diagnostics") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun sendMatrixTest(): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/matrix/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.JsonObject(emptyMap()))
+            }
+            Unit
+        }
+
+    override suspend fun updateSchedule(
+        id: String,
+        command: String,
+        runAt: String?,
+    ): Result<Unit> =
+        request {
+            val body =
+                buildMap<String, kotlinx.serialization.json.JsonElement> {
+                    put("id", kotlinx.serialization.json.JsonPrimitive(id))
+                    put("command", kotlinx.serialization.json.JsonPrimitive(command))
+                    runAt?.takeIf { it.isNotBlank() }?.let { put("run_at", kotlinx.serialization.json.JsonPrimitive(it)) }
+                }
+            client.put("${profile.baseUrl}/api/schedules") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.JsonObject(body))
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
