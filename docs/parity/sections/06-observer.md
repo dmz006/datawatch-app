@@ -28,7 +28,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | token | GPU temp thresholds ≥80 error / ≥60 warning | ✓ | ✓ (PeerResources/grid) | ✗ | ios-missing | | |
 | element | Statistics panel bars: CPU Load (load/cores), Memory, Disk, Swap (if >0), GPU util+temp, GPU VRAM | ✓ renderStatsData app.js:20473–20486 | ✓ SystemStatisticsCard | ~ CPU/Memory/Disk/VRAM tiles | misaligned | | iOS omits Swap, GPU util/temp, load/cores |
 | token | Statistics panel thresholds: CPU >80/>50, Memory >85, Disk >90, GPU >80 | ✓ app.js:20475–20486 | ~ pctColor ≥90/≥70 for all (StatsScreen:860) | ~ ≥90/≥70 for all | misaligned | needs-decision (D5) | |
-| element | GPU probe failed card (red, grid-column 1/-1) | ✓ app.js:20492 | ✗ | ✗ | android-missing / ios-missing | | shows when probe exists but last poll failed |
+| element | GPU probe failed card (red, grid-column 1/-1) | ✓ app.js:20492 | ✗ | ✗ | android-missing | | iOS ✗ too; shows when probe exists but last poll failed |
 | element | Network card "(datawatch)" vs "(system)" label by ebpf_active, ↓ Download / ↑ Upload | ✓ app.js:20498 | ✓ NetworkCard | ✗ | ios-missing | | |
 | element | Daemon card: Memory RSS, Uptime (h m / m s) | ✓ app.js:20507 | ✓ DaemonCard | ~ uptimeRow only (d h m) | misaligned | | iOS format differs, no RSS |
 | element | Infrastructure card | ✓ app.js:20519 | ✓ InfrastructureCard | ✗ | ios-missing | | |
@@ -112,7 +112,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | string | Empty copy "Add a server in Settings to monitor metrics." | n/a | "No enabled server. Add or enable one in Settings." | ✓ | misaligned | | unify copy |
 
 ## Coverage
-rows: 93 · aligned: 5 · ios-missing: 52 · android-missing: 5 · pwa-missing: 10 · misaligned: 20 · n/a: 1
+rows: 93 · aligned: 4 · ios-missing: 47 · android-missing: 6 · pwa-missing: 11 · misaligned: 24 · n/a: 1
 
 ## Decisions needed
 1. **Docs links** — PWA has a docs link per card header; apps have one per page. Options: (a) per-card links on Android/iOS (b) keep single page link (c) drop per-card links in PWA — refs app.js:23330, ObserverScreen.kt:DocsLinkAction.
