@@ -56,8 +56,7 @@ public class StatsViewModel : ViewModel() {
     // Null = no successful list fetch yet; use dto as-is.
     private var cachedSessionCounts: Triple<Int, Int, Int>? = null // total, running, waiting
 
-    // How many REST poll cycles between webSearch supplemental fetches.
-    // At 30s REST interval this is ~3 min — webSearch stats don't need real-time freshness.
+    private val _visible = MutableStateFlow(false)
     private var restCycleCount = 0
 
     init {
@@ -84,14 +83,24 @@ public class StatsViewModel : ViewModel() {
                 }
             }
         }
-        // REST poll is a fallback/reconnect mechanism, not the real-time source.
-        // 30 s matches the PWA's scoped polling cadence; WS fills the gaps.
+        // REST poll only runs while the card is on screen — WS handles background updates.
+        // On becoming visible: immediate refresh, then every 30 s while still visible.
         viewModelScope.launch {
-            while (isActive) {
-                doRefresh()
-                delay(REFRESH_INTERVAL_MS)
+            _visible.collect { visible ->
+                if (visible) {
+                    doRefresh()
+                    while (_visible.value && isActive) {
+                        delay(REFRESH_INTERVAL_MS)
+                        if (_visible.value) doRefresh()
+                    }
+                }
             }
         }
+    }
+
+    /** Called by the composable when it enters/leaves the screen. */
+    public fun setVisible(visible: Boolean) {
+        _visible.value = visible
     }
 
     /** Trigger a one-shot manual refresh (e.g. pull-to-refresh). */

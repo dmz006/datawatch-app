@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -51,6 +52,10 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
  */
 @Composable
 public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
+    DisposableEffect(vm) {
+        vm.setVisible(true)
+        onDispose { vm.setVisible(false) }
+    }
     val state by vm.state.collectAsState()
 
     state.banner?.let {
