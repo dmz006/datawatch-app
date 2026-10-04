@@ -57,17 +57,17 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
-| nav | Dashboard view (bottom-nav tab) | ✓ `renderDashboardView` :22898 | ✓ `dashboard/DashboardScreen.kt` | ~ `DashboardView.swift` — per-server stats+sessions cards, different design | misaligned | needs-decision | D5 |
-| element | Dashboard stat tiles — sessions / tasks / guardrails / burn rate | ✓ `#dashStatSessions/Tasks/Guardrails/BurnRate` | ~ unverified | ✗ | ios-missing | | confirm Android tiles in 07/08 pass 2 |
-| element | Dashboard card: Constellation | ✓ (`constellation` ×8) | ✓ `ConstellationCard` :222 | ✗ | ios-missing | | |
-| element | Dashboard card: Pulse / EKG | ✓ (`ekg\|pulse` ×12) | ✓ `PulseCard` :384 | ✗ | ios-missing | | |
-| element | Dashboard card: Sparklines (SVG, ~5 fps) | ✓ `_sparkline` :3919, :22097 | ✓ `SparklineCard` :593 | ✗ | ios-missing | | motion: 5 fps redraw cadence |
-| element | Dashboard card: Recent events | ~ unverified | ✓ `RecentEventsCard` :469 | ✗ | ios-missing | | |
-| element | Dashboard card: Gantt / pipeline | ✓ (`gantt` ×22) | ✓ `PipelineCard` :529 | ✗ | ios-missing | | |
-| element | Dashboard card: Heatmap | ✓ `_heatmapData` :16430 | ✓ `HeatmapCard` :649 | ✗ | ios-missing | | |
-| element | Dashboard card: Guardrails overview | ✓ (`'guardrails'` ×2) | ✓ `GuardrailsOverviewCard` :736 | ✗ | ios-missing | | |
-| element | Dashboard card: Smoke progress | ✓ (`smoke` ×74) | ✓ `SmokeProgressCard` :796 ("Clear run") | ✗ | ios-missing | | |
-| interaction | Dashboard add/edit cards + expand panel (tree + verdicts) | ✓ `#dashAddCardBtn`, `#dashEditBtn`, `#dashExpand*` | ✓ `settings/DashboardCardsCard` + BL303 expand mode | ✗ | ios-missing | | |
+| nav | Dashboard view (bottom-nav tab) | ✓ `renderDashboardView` :22898 | ✓ `dashboard/DashboardScreen.kt` | ✓ `dashboard/DashboardView.swift` — PWA 12-col card grid (D34a; multi-server overview removed), server picker, `live · ws` | aligned | D34a | B36; shared `dashboard/IosDash*` engine |
+| element | Dashboard stat tiles — sessions / tasks / guardrails / burn rate | ✓ `#dashStatSessions/Tasks/Guardrails/BurnRate` | ~ unverified | ✓ `DashStatBar` (sess · active · $ · tasks · blk/warn · burn rate) | aligned | | iOS reads `/api/cost` `total_usd` (PWA reads `total_cost_usd`, never shows $) |
+| element | Dashboard card: Constellation | ✓ (`constellation` ×8) | ✓ `ConstellationCard` :222 | ✓ `DashNetworkCard` — force graph (physics 60 Hz, redraw 10 fps, pulse/health rings, threat badges, tap → session/automaton); <400 pt compact list (#98) | aligned | | Reduce Motion: settled static frame; edges from hook `parent_session_id` |
+| element | Dashboard card: Pulse / EKG | ✓ (`ekg\|pulse` ×12) | ✓ `PulseCard` :384 | ✓ `DashEkgCard` — per-session channels (≤6), hook blips sweep a 60 s window at display rate + burn-rate panel; <280 pt burn-rate only (#99) | aligned | | fed by WS `hook_update` (new `HookHub`) |
+| element | Dashboard card: Sparklines (SVG, ~5 fps) | ✓ `_sparkline` :3919, :22097 | ✓ `SparklineCard` :593 | ✓ `DashSparklinesCard` — 60×2 s hook-event buckets per active session, TimelineView 5 fps | aligned | | iOS buckets per session (PWA counts all events in every row) |
+| element | Dashboard card: Recent events | ~ unverified | ✓ `RecentEventsCard` :469 | ✓ `DashEventsCard` (PWA `events` Live Events ticker, last 40 hook events) | aligned | | |
+| element | Dashboard card: Gantt / pipeline | ✓ (`gantt` ×22) | ✓ `PipelineCard` :529 | ✓ `DashGanttCard` (Timeline · 6h: hour ticks, NOW line, automaton rows + story bars, collapsible) + `DashTreeCard` (Automata tree) | aligned | | redraw 1 s (PWA 10 fps; only the NOW edge moves) |
+| element | Dashboard card: Heatmap | ✓ `_heatmapData` :16430 | ✓ `HeatmapCard` :649 | ✓ `DashHeatmapCard` — 30-day strip; 7-day bars when <300 pt or cs ≤ 3 (#101) | aligned | | |
+| element | Dashboard card: Guardrails overview | ✓ (`'guardrails'` ×2) | ✓ `GuardrailsOverviewCard` :736 | ✓ `DashGuardrailsCard` (block/warn/pass + per-rule bars) | aligned | | |
+| element | Dashboard card: Smoke progress | ✓ (`smoke` ×74) | ✓ `SmokeProgressCard` :796 ("Clear run") | ✓ `DashSmokeCard` — multi-run envelopes, select → detail, filter pills, delete / Clear all; 2.5 s poll while a run is active | aligned | | Android still parses the legacy single-run shape |
+| interaction | Dashboard add/edit cards + expand panel (tree + verdicts) | ✓ `#dashAddCardBtn`, `#dashEditBtn`, `#dashExpand*` | ✓ `settings/DashboardCardsCard` + BL303 expand mode | ✓ Edit/Done (+ Card sheet, Nw/Nh cyclers, remove non-system, ↑/↓ reorder) → PUT `/api/dashboard/layout`; `DashExpandView` (Task Tree · Status · Verdicts; `DashExpandNav.open(sid)` from any tab); collapsible cards persisted (D27a), per-card docs links (D26a) | aligned | D27a D26a | drag-reorder replaced by move buttons; Memory Scopes + Search Usage tiles also built |
 | nav | Orchestrator graphs view | ✓ `renderOrchestratorView` :25115 (`orchestrator/graph`) | ✓ `automata/OrchestratorGraphsCard.kt`, `OrchestratorGraphDialog.kt` | ✓ OrchestratorGraphsView | aligned | | app#184 |
 | element | Guardrail verdicts inline in session detail (+ Approve on blocked) | ✓ `renderSessionGuardrailVerdicts` :4281 | ~ unverified in sessions/ | ~ SessionStatusView "Guardrail verdicts" card (Status tab); no Approve on blocked | misaligned | | |
 | element | Guardrail library (Settings) | ✓ (`guardrail` ×67) | ✓ `settings/GuardrailLibraryCard.kt` | ✗ | ios-missing | | |

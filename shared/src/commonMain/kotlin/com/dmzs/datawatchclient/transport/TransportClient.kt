@@ -1649,6 +1649,35 @@ public interface TransportClient {
         runAt: String? = null,
     ): Result<Unit>
 
+    // ---- iOS Dashboard parity ----
+
+    /** GET /api/dashboard/layout — `{cards:[{id,cs,rs,system}]}` (PWA `_dashLoadLayout`). */
+    public suspend fun fetchDashboardLayoutJson(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchDashboardLayoutJson"))
+
+    /** PUT /api/dashboard/layout — persist the full card order/sizes (PWA `_dashSaveLayout`). */
+    public suspend fun putDashboardLayout(layout: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        Result.failure(UnsupportedOperationException("putDashboardLayout"))
+
+    /** GET /api/smoke/progress — array of smoke/e2e run envelopes, newest first. */
+    public suspend fun listSmokeRunsJson(): Result<kotlinx.serialization.json.JsonArray> =
+        Result.failure(UnsupportedOperationException("listSmokeRunsJson"))
+
+    /** GET /api/smoke/progress/{id} — full detail for one run; null on 404 (run removed). */
+    public suspend fun fetchSmokeRunJson(id: String): Result<kotlinx.serialization.json.JsonObject?> =
+        Result.failure(UnsupportedOperationException("fetchSmokeRunJson"))
+
+    /** DELETE /api/smoke/progress/{id}, or every run when [id] is null (PWA "Clear all"). */
+    public suspend fun deleteSmokeRun(id: String?): Result<Unit> =
+        Result.failure(UnsupportedOperationException("deleteSmokeRun"))
+
+    /** GET /api/cost — aggregate token cost summary (BL6). */
+    public suspend fun fetchCostSummaryJson(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchCostSummaryJson"))
+
+    /** GET /api/sessions/{id}/status as raw JSON — the hook board incl. `telemetry` + `current_focus` map. */
+    public suspend fun fetchSessionStatusJson(sessionId: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchSessionStatusJson"))
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
