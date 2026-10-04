@@ -123,6 +123,13 @@ struct PrdDetailView: View {
                 header
                 if prd.scopeWarnings { scopeWarningsBanner }
                 actions
+                if ["completed", "archived"].contains(prd.status.lowercased()) {
+                    // PWA prd_terminal_state_hint (not shown for cancelled, which can reset to draft).
+                    Text("This automaton is in a terminal state. Edit/Settings/Run actions are no longer available; only Clone-to-Template + Delete remain.")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+                PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
                 statusGraphs
                 capacityCard
                 if let spec = prd.spec, !spec.isEmpty {

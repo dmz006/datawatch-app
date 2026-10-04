@@ -88,6 +88,8 @@ public data class SessionDto(
     @SerialName("last_summary_long") val lastSummaryLong: String? = null,
     /** datawatch v8.9.5 — UTC timestamp of the most-recent AI summary generation (RFC3339). Null if never summarized. */
     @SerialName("summary_generated_at") val summaryGeneratedAt: String? = null,
+    /** Automaton that spawned this session (PRD executor / decomposer). */
+    @SerialName("prd_id") val prdId: String? = null,
 )
 
 @Serializable
