@@ -27,11 +27,27 @@ struct ChatTranscriptView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     if entries.isEmpty {
-                        Text(connected ? "No messages yet." : "connecting…")
-                            .font(DatawatchFonts.bodyMedium)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        if connected {
+                            // PWA chat-empty (app.js renderChat) + memory hint (D68a).
+                            VStack(spacing: 6) {
+                                Text("💬").font(.system(size: 36)).opacity(0.3).accessibilityHidden(true)
+                                Text("Send a message to begin the conversation")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(DatawatchColors.onSurface)
+                                Text("Memory commands work here: remember, recall, kg, research")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            }
+                            .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
                             .padding(.top, 40)
+                        } else {
+                            Text("connecting…")
+                                .font(DatawatchFonts.bodyMedium)
+                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 40)
+                        }
                     }
                     ForEach(entries) { e in bubble(e).id(e.id) }
                     if let transient {

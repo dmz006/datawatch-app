@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 import DatawatchShared
 
 /// Quick commands for a waiting session, opened from the ▶ button on its card
@@ -12,6 +13,11 @@ struct QuickCommandsSheet: View {
     @State private var custom = ""
     @State private var sending: String? = nil
     @State private var errorMessage: String? = nil
+    /// D63a Whisper voice reply (Android quick-commands 🎤): shown when the
+    /// server has whisper enabled; the transcript is appended to Custom.
+    @State private var whisperEnabled = false
+    @State private var recorder: VoiceRecorder? = nil
+    @State private var transcribing = false
 
     /// PWA system commands: value → label.
     private static let system: [(value: String, label: String)] = [
@@ -47,6 +53,7 @@ struct QuickCommandsSheet: View {
                         }
                         .disabled(custom.trimmingCharacters(in: .whitespaces).isEmpty || sending != nil)
                         .accessibilityLabel("Send custom command")
+                        if whisperEnabled { voiceButton }
                     }
                 }
                 if let errorMessage {
@@ -70,6 +77,13 @@ struct QuickCommandsSheet: View {
                 IosQuickCommands.shared.loadSaved(profile: profile) { list in
                     DispatchQueue.main.async { saved = list }
                 }
+                IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
+                    DispatchQueue.main.async { whisperEnabled = enabled.boolValue }
+                }
+            }
+            .onDisappear {
+                recorder?.cancel()
+                recorder = nil
             }
         }
         .presentationDetents([.medium, .large])
@@ -94,6 +108,62 @@ struct QuickCommandsSheet: View {
             }
         }
         .disabled(sending != nil)
+    }
+
+    @ViewBuilder
+    private var voiceButton: some View {
+        if transcribing {
+            ProgressView().controlSize(.small)
+        } else {
+            Button(action: toggleRecording) {
+                Image(systemName: recorder == nil ? "mic" : "stop.circle.fill")
+                    .foregroundStyle(recorder == nil ? DatawatchColors.primary : DatawatchColors.error)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(recorder == nil ? "Voice reply" : "Stop recording")
+        }
+    }
+
+    private func toggleRecording() {
+        if let rec = recorder {
+            recorder = nil
+            guard let audio = rec.stop() else { return }
+            transcribing = true
+            IosServiceLocator.shared.transcribeAudioData(
+                audioData: audio,
+                audioMime: VoiceRecorder.mimeType,
+                sessionId: session.id,
+                profile: profile,
+                onSuccess: { transcript in
+                    DispatchQueue.main.async {
+                        transcribing = false
+                        custom = (custom + " " + transcript).trimmingCharacters(in: .whitespaces)
+                    }
+                },
+                onError: { msg in
+                    DispatchQueue.main.async {
+                        transcribing = false
+                        errorMessage = String(format: L("Transcribe failed: %@"), msg)
+                    }
+                }
+            )
+            return
+        }
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            DispatchQueue.main.async {
+                guard granted else {
+                    errorMessage = L("Microphone permission denied — enable it in Settings.")
+                    return
+                }
+                let rec = VoiceRecorder()
+                do {
+                    try rec.start()
+                    recorder = rec
+                } catch {
+                    errorMessage = String(format: L("Recording failed: %@"), error.localizedDescription)
+                }
+            }
+        }
     }
 
     private func sendCustom() {

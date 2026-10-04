@@ -31,6 +31,7 @@ struct SettingsAboutCard: View {
     @State private var confirmRestart = false
     @State private var confirmKill = false
     @State private var confirmUpdate = false
+    @State private var replaySplash = false
 
     var body: some View {
         List {
@@ -42,6 +43,13 @@ struct SettingsAboutCard: View {
                     SplashTextBlock(version: appVersion)
                 }
                 .padding(.vertical, 6)
+                // D59a (Android Destinations.SplashReplay): ungated full-screen replay.
+                Button {
+                    replaySplash = true
+                } label: {
+                    Label("Replay splash", systemImage: "play.circle")
+                        .foregroundStyle(DatawatchColors.primary)
+                }
             }
             .listRowBackground(DatawatchColors.surface)
 
@@ -62,6 +70,9 @@ struct SettingsAboutCard: View {
         .scrollContentBackground(.hidden)
         .task { load() }
         .refreshable { load() }
+        .fullScreenCover(isPresented: $replaySplash) {
+            LaunchSplashView(replay: true) { replaySplash = false }
+        }
         .confirmationDialog("Restart the datawatch daemon?", isPresented: $confirmRestart, titleVisibility: .visible) {
             Button("Restart", role: .destructive) { restart() }
             Button("Cancel", role: .cancel) {}

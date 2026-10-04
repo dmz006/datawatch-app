@@ -34,6 +34,52 @@ final class TerminalController: ObservableObject {
         eval("window.dwSetMinCols && window.dwSetMinCols(\(minCols), 0);")
     }
 
+    // ── D67a rate-limit notice ──────────────────────────────────────────
+
+    /// Fired on each `rate_limited` session event with its retry-after (if known).
+    var onRateLimited: ((Date?) -> Void)?
+
+    // ── D69a search + copy (host.html dwSearch* / dwCopySelection bridge) ─
+
+    private static func jsString(_ s: String) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: s, options: .fragmentsAllowed),
+              let literal = String(data: data, encoding: .utf8) else { return "\"\"" }
+        return literal
+    }
+
+    /// Next / previous match in the scrollback via the xterm search addon; the
+    /// completion gets whether a match was found.
+    func search(_ query: String, forward: Bool, completion: @escaping (Bool) -> Void) {
+        let fn = forward ? "dwSearchNext" : "dwSearchPrev"
+        let js = "window.\(fn) ? window.\(fn)(\(Self.jsString(query))) : false"
+        webView?.evaluateJavaScript(js) { result, _ in
+            completion((result as? Bool) ?? ((result as? NSNumber)?.boolValue ?? false))
+        }
+    }
+
+    func clearSearch() { eval("window.dwSearchClear && window.dwSearchClear();") }
+
+    /// The current selection, or — when nothing is selected — the visible rows
+    /// (trailing whitespace trimmed).
+    func copyText(completion: @escaping (String) -> Void) {
+        let js = """
+        (function(){
+          var sel = window.dwCopySelection ? window.dwCopySelection() : '';
+          if (sel) return sel;
+          try {
+            var b = term.buffer.active, out = [];
+            for (var y = b.viewportY; y < b.viewportY + term.rows; y++) {
+              var l = b.getLine(y); out.push(l ? l.translateToString(true) : '');
+            }
+            return out.join('\\n').replace(/\\s+$/, '');
+          } catch (e) { return ''; }
+        })()
+        """
+        webView?.evaluateJavaScript(js) { result, _ in
+            completion((result as? String) ?? "")
+        }
+    }
+
     static func defaultMinCols(backend: String?) -> Int {
         switch backend?.lowercased() {
         case "claude-code", "claude": return 120
@@ -303,6 +349,11 @@ extension TerminalWebView {
             if !connected || disconnected {
                 connected = true
                 disconnected = false
+            }
+            if let limited = event as? SessionEventRateLimited {
+                let retry = limited.retryAfter.map { Date(timeIntervalSince1970: Double($0.toEpochMilliseconds()) / 1000.0) }
+                controller?.onRateLimited?(retry)
+                return
             }
             if let capture = event as? SessionEventPaneCapture {
                 if ready {
