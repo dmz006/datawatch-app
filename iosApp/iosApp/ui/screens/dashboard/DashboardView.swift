@@ -119,7 +119,7 @@ struct DashboardView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(.principal) {
+            ToolbarItem(placement: .principal) {
                 HeaderView(title: "Dashboard")
             }
             ToolbarItem(placement: .navigationBarTrailing) {

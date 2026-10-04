@@ -129,7 +129,7 @@ struct SettingsView: View {
             .background(DatawatchColors.background)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(.principal) {
+                ToolbarItem(placement: .principal) {
                     HeaderView(title: "Settings")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {

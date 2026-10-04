@@ -241,7 +241,7 @@ struct EditServerView: View {
         baseUrl: "https://localhost:8443",
         bearerTokenRef: "tok-preview",
         trustAnchorSha256: nil,
-        reachabilityProfileId: nil,
+        reachabilityProfileId: "preview",
         enabled: true,
         createdTs: 0,
         lastSeenTs: 0,

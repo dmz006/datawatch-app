@@ -203,7 +203,7 @@ extension TerminalWebView {
 
         private let session: Session
         private let profile: ServerProfile
-        private var subscription: IosServiceLocatorEventSubscription?
+        private var subscription: IosSubscription?
         private var ready = false
         private var pendingCapture: SessionEventPaneCapture?
         private var appliedFontSize: Int?
@@ -368,7 +368,7 @@ extension TerminalWebView {
         baseUrl: "https://localhost:8443",
         bearerTokenRef: "",
         trustAnchorSha256: nil,
-        reachabilityProfileId: nil,
+        reachabilityProfileId: "preview",
         enabled: true,
         createdTs: 0,
         lastSeenTs: 0,

@@ -409,33 +409,26 @@ public object IosServiceLocator {
     /** Returns a configured [WebSocketTransport] for [profile]. */
     public fun wsTransport(profile: ServerProfile): WebSocketTransport = wsTransportFor(profile)
 
-    /** Handle for [subscribeSessionEvents]; [cancel] closes the socket and stops reconnects. */
-    public class EventSubscription internal constructor(
-        private val job: kotlinx.coroutines.Job,
-    ) {
-        public fun cancel(): Unit = job.cancel()
-    }
-
     /**
      * Collect [WebSocketTransport.events] for one session and deliver each event
      * to [onEvent] (called on a background thread). While subscribed, outbound
      * [com.dmzs.datawatchclient.transport.ws.WsOutbound] frames tagged with
      * [storageId] are relayed to the server. Swift must keep the returned handle
-     * and call [EventSubscription.cancel] on teardown — the flow reconnects forever
+     * and call [IosSubscription.cancel] on teardown — the flow reconnects forever
      * on its own and would otherwise leak a live socket.
      */
     public fun subscribeSessionEvents(
         profile: ServerProfile,
         session: com.dmzs.datawatchclient.domain.Session,
         onEvent: (com.dmzs.datawatchclient.domain.SessionEvent) -> Unit,
-    ): EventSubscription {
+    ): IosSubscription {
         // Subscribe with the server's full id (hostname-shortid); store/route outbound
         // frames by the short id — same split as Android's SessionDetailViewModel.
         val job =
             ioScope.launch {
                 wsTransportFor(profile).events(session.fullId, session.id).collect { onEvent(it) }
             }
-        return EventSubscription(job)
+        return IosSubscription(job)
     }
 
     /**
@@ -449,7 +442,7 @@ public object IosServiceLocator {
         profile: ServerProfile,
         onStats: (com.dmzs.datawatchclient.transport.dto.StatsDto) -> Unit,
         onSessions: (List<com.dmzs.datawatchclient.domain.Session>) -> Unit,
-    ): EventSubscription {
+    ): IosSubscription {
         val job =
             ioScope.launch {
                 launch { wsTransportFor(profile).globalStream().collect { } }
@@ -460,7 +453,7 @@ public object IosServiceLocator {
                         .collect { onSessions(it.sessions) }
                 }
             }
-        return EventSubscription(job)
+        return IosSubscription(job)
     }
 
     // ── Keychain token accessor ───────────────────────────────────────────
@@ -833,4 +826,15 @@ public object IosServiceLocator {
             }
         }
     }
+}
+
+/**
+ * Handle for long-lived streams opened from Swift ([IosServiceLocator.subscribeSessionEvents],
+ * [IosServiceLocator.subscribeGlobalStream]); [cancel] closes the socket and stops reconnects.
+ * Top-level (not nested) so Swift sees it under exactly this name.
+ */
+public class IosSubscription internal constructor(
+    private val job: kotlinx.coroutines.Job,
+) {
+    public fun cancel(): Unit = job.cancel()
 }

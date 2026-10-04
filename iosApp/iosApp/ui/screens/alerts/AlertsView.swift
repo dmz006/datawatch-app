@@ -205,7 +205,7 @@ struct AlertsView: View {
         .background(DatawatchColors.background)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(.principal) {
+            ToolbarItem(placement: .principal) {
                 headerTitle
             }
             ToolbarItem(placement: .navigationBarTrailing) {

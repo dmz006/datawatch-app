@@ -44,7 +44,7 @@ struct SessionDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(.principal) {
+            ToolbarItem(placement: .principal) {
                 Button {
                     renameText = sessionTitle
                     showRenameDialog = true
@@ -567,7 +567,7 @@ private struct LastResponseSheet: View {
         baseUrl: "http://localhost:8080",
         bearerTokenRef: "",
         trustAnchorSha256: nil,
-        reachabilityProfileId: nil,
+        reachabilityProfileId: "preview",
         enabled: true,
         createdTs: 0,
         lastSeenTs: 0,

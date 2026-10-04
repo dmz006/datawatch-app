@@ -20,7 +20,7 @@ final class SessionsViewModel: ObservableObject {
     // ── Private ───────────────────────────────────────────────────────────
 
     private var pollTask: Task<Void, Never>? = nil
-    private var wsSubscription: IosServiceLocatorEventSubscription? = nil
+    private var wsSubscription: IosSubscription? = nil
     private var inFlight = false
     private var polling = false
     private static let restFallbackInterval: Duration = .seconds(30)
