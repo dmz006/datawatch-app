@@ -8,6 +8,23 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added (Android — PWA features the app was missing, 2026-10-04 sweep)
+- **Light theme**: Settings → Theme Light uses the web UI's light palette, and theme changes apply immediately. Dark stays the default.
+- **Reduced motion**: pulsing dots, skeletons and loading labels stop animating when system animations are turned off.
+- **Splash** shows an "Updated to vX" badge after the app is updated.
+- **Sessions list**: Tree view groups child sessions under their parent (orphans flagged); a 🕒 N badge lists pending schedules with cancel; cards show server, "↳ child of", "⚠ zombie" badges and a live elapsed clock; waiting / rate-limited cards pulse their left edge; a maximize button opens the session in Dashboard expand mode; pull down to refresh.
+- **Session detail**: "Waiting for MCP channel / ACP server…" banner; Status tab shows hook health and state before you open it; "?" Channel Commands help; `▶ ch` sends through the MCP channel on the Channel tab; parent-session link and "Last 5 events before failure" on the Status tab; chat mode collapses older messages and adds 📚 / 🔍 / 🔗 / 🔬 quick commands; log-mode sessions get a coloured log viewer; arrow keys repeat while held; a session that started waiting while you were away shows its prompt in the alert dock when you open it.
+- **Automata**: search field in the filter bar; running cards show the current story and task; Archive on finished automata; the Launch wizard links to its help page and the skills settings.
+- **Observer**: Cross-host envelope view, remove a federated peer, live pipelines and identity panels, and a "GPU probe failed" card.
+- **Settings → Compute**: Exit Hooks and Work Queue cards; server profiles show a "certificate pinned" badge.
+- Rename results now appear in the alert dock.
+
+### Fixed (Android)
+- Batch Archive on automata set the type to "archived" instead of archiving.
+- Signal device linking used the wrong endpoints and never produced a link; it now follows the web UI flow and shows the link with Copy / Open in Signal.
+- Compute-node model lists failed to load (the server wraps them in `{models: …}`).
+- Scan settings (grader, fix loop, max retries) were sent under names the server ignores.
+
 ## [1.24.0] — 2026-10-04
 
 Three-way parity release (PWA ↔ Android ↔ iOS) following the 2026-10-04 parity audit and decisions (`docs/parity/`).

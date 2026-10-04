@@ -122,6 +122,11 @@ import com.dmzs.datawatchclient.ui.theme.pwaStateEdge
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.filled.Fullscreen
 
 /**
  * Approximate session-row height in dp — used by the long-press drag
@@ -140,6 +145,8 @@ public fun SessionsScreen(
     onEditServer: (String) -> Unit = {},
     onAddServer: () -> Unit = {},
     onNewSession: () -> Unit = {},
+    /** BL303 — row maximize opens the session in Dashboard expand (status) mode. */
+    onExpandSession: (String) -> Unit = {},
     vm: SessionsViewModel = viewModel(),
     alertsVm: AlertsViewModel = viewModel(),
 ) {
@@ -336,6 +343,10 @@ public fun SessionsScreen(
                     selectionMode = !selectionMode
                     if (!selectionMode) selectedIds = emptySet()
                 },
+                treeView = state.treeView,
+                onToggleTreeView = vm::toggleTreeView,
+                pendingSchedules = state.pendingSchedules,
+                onCancelSchedule = vm::cancelSchedule,
             )
 
             val visible = state.visibleSessions
@@ -353,7 +364,19 @@ public fun SessionsScreen(
                 // eye + matrix + arcs; clipped to the list bounds
                 // and painted at 10% alpha so it doesn't compete with
                 // the row content.
-                androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+                // Pull-to-refresh (mobile convention; iOS has `.refreshable`).
+                val pullState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
+                if (pullState.isRefreshing) {
+                    LaunchedEffect(Unit) {
+                        vm.refresh()
+                        kotlinx.coroutines.delay(400)
+                        while (vm.state.value.refreshing) kotlinx.coroutines.delay(100)
+                        pullState.endRefresh()
+                    }
+                }
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier.fillMaxSize().nestedScroll(pullState.nestedScrollConnection),
+                ) {
                     androidx.compose.foundation.Image(
                         painter =
                             androidx.compose.ui.res.painterResource(
@@ -371,7 +394,16 @@ public fun SessionsScreen(
                         // Key = profile:id to avoid LazyColumn duplicate-key crashes
                         // when the same session id appears under both a server's
                         // primary list and another server's federation fan-out.
-                        items(visible, key = { "${it.serverProfileId}:${it.id}" }) { session ->
+                        // BL348 — tree view nests children under their parent (18 dp per level).
+                        val rows =
+                            if (state.treeView) {
+                                state.treeRows
+                            } else {
+                                visible.map { SessionsViewModel.UiState.TreeRow(it, 0, false) }
+                            }
+                        items(rows, key = { "${it.session.serverProfileId}:${it.session.id}" }) { row ->
+                            val session = row.session
+                            val borderColor = LocalDatawatchColors.current.border
                             // Per-row drag state. The user long-presses the row
                             // to start dragging; while dragging, the row floats
                             // via `translationY` and other rows stay put. On
@@ -390,8 +422,34 @@ public fun SessionsScreen(
                             var isDragging by remember(session.id) {
                                 mutableStateOf(false)
                             }
+                            Column(
+                                modifier =
+                                    if (row.depth > 0) {
+                                        Modifier
+                                            .padding(start = (row.depth * 18).dp)
+                                            .drawBehind {
+                                                drawRect(
+                                                    color = borderColor,
+                                                    topLeft = androidx.compose.ui.geometry.Offset(6.dp.toPx(), 0f),
+                                                    size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height),
+                                                )
+                                            }
+                                            .padding(start = 6.dp)
+                                    } else {
+                                        Modifier
+                                    },
+                            ) {
+                            if (row.orphaned) {
+                                Text(
+                                    "⚠ " + stringResource(R.string.session_tree_orphaned),
+                                    fontSize = 10.sp,
+                                    color = LocalDatawatchColors.current.warning,
+                                    modifier = Modifier.padding(start = 14.dp, top = 4.dp),
+                                )
+                            }
                             SessionRow(
                                 session = session,
+                                onExpand = { onExpandSession(session.id) },
                                 backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
                                 reorderMode = state.reorderMode,
                                 showHostname = state.allServersMode,
@@ -453,8 +511,13 @@ public fun SessionsScreen(
                                 isWatched = session.id in watchedIds,
                                 onWatchToggle = { vm.toggleWatch(session.id) },
                             )
+                            }
                         }
                     } // LazyColumn close
+                    androidx.compose.material3.pulltorefresh.PullToRefreshContainer(
+                        state = pullState,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
                 } // watermark Box close
             }
         }
@@ -578,6 +641,10 @@ private fun SessionsToolbar(
     // Parity D15a: ☑ toggles select mode (shown only with History on).
     selectMode: Boolean = false,
     onToggleSelectMode: () -> Unit = {},
+    treeView: Boolean = false,
+    onToggleTreeView: () -> Unit = {},
+    pendingSchedules: List<com.dmzs.datawatchclient.domain.Schedule> = emptyList(),
+    onCancelSchedule: (String) -> Unit = {},
 ) {
     // Toolbar is rendered only when expanded (user toggled search) OR
     // something filter-related is active (stale state we don't want
@@ -585,7 +652,7 @@ private fun SessionsToolbar(
     // icon lives on the TopAppBar above.
     val show =
         expanded || filterText.isNotEmpty() ||
-            activeBackendFilter != null || showHistory
+            activeBackendFilter != null || showHistory || treeView
     if (!show) return
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
         run {
@@ -725,6 +792,76 @@ private fun SessionsToolbar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
             ) {
+                // PWA `🕒 N` pending-schedules badge + dropdown with per-item cancel.
+                if (pendingSchedules.isNotEmpty()) {
+                    var schedOpen by remember { mutableStateOf(false) }
+                    Box {
+                        OutlinedButton(
+                            onClick = { schedOpen = !schedOpen },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Text("🕒 ${pendingSchedules.size}", style = MaterialTheme.typography.labelSmall)
+                        }
+                        androidx.compose.material3.DropdownMenu(
+                            expanded = schedOpen,
+                            onDismissRequest = { schedOpen = false },
+                        ) {
+                            Text(
+                                stringResource(R.string.sessions_pending_schedules),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            )
+                            pendingSchedules.forEach { sc ->
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp).widthIn(min = 240.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        sc.sessionId ?: sc.task.take(40),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = LocalDatawatchColors.current.accent2,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                    )
+                                    Text(
+                                        sc.runAt?.let { relativeTimeLabel(it.toEpochMilliseconds()) } ?: sc.cron.orEmpty(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 6.dp),
+                                    )
+                                    IconButton(onClick = { onCancelSchedule(sc.id) }, modifier = Modifier.size(24.dp)) {
+                                        Icon(
+                                            Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.action_cancel),
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(14.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // BL348 — Tree toggle (PWA `btn-toggle-history` styled, `.active` when on).
+                OutlinedButton(
+                    onClick = onToggleTreeView,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    colors =
+                        if (treeView) {
+                            ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            )
+                        } else {
+                            ButtonDefaults.outlinedButtonColors()
+                        },
+                ) {
+                    Text(
+                        stringResource(R.string.session_tree_btn),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (treeView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
                 if (historyCount > 0) {
                     OutlinedButton(
                         onClick = onToggleShowHistory,
@@ -788,12 +925,12 @@ private fun stateChipColor(key: String): Color {
 
 @Composable
 private fun SessionSkeletonList() {
-    val transition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
-        label = "skeletonAlpha",
+    val alpha by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 0.3f,
+        target = 0.7f,
+        durationMs = 900,
+        staticValue = 0.5f,
+        label = "skeleton",
     )
     val shimmer = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -857,6 +994,7 @@ private fun EmptyState(showHint: Boolean = true) {
 private fun SessionRow(
     session: Session,
     backend: String?,
+    onExpand: () -> Unit = {},
     deleteSupported: Boolean,
     selectionMode: Boolean = false,
     isSelected: Boolean = false,
@@ -1024,6 +1162,15 @@ private fun SessionRow(
                 }
             }
             if (!reorderMode && !selectionMode) {
+                // BL303 — PWA `sess-maximize-btn`: open in Dashboard expand mode.
+                IconButton(onClick = onExpand, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Filled.Fullscreen,
+                        contentDescription = stringResource(R.string.dash_expand_session),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 IconButton(
                     onClick = onWatchToggle,
                     modifier = Modifier.size(32.dp),
@@ -1059,7 +1206,51 @@ private fun SessionRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            // PWA server badge (federated row from a non-local server).
+            val serverName = session.server
+            if (!serverName.isNullOrBlank() && serverName != "local") {
+                OutlineBadge(serverName, colors.accent2)
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            // PWA `↳ child of [host]` parent badge (BL347 lineage).
+            val parentId = session.parentId
+            if (!parentId.isNullOrBlank()) {
+                OutlineBadge(
+                    "↳ " + stringResource(R.string.session_child_of) + " [" + parentId.substringBefore('-') + "]",
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.alpha(0.7f),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            // PWA `⚠ zombie` (claude_alive === false).
+            if (session.claudeAlive == false) {
+                OutlineBadge("⚠ zombie", Color(0xFFF59E0B))
+                Spacer(modifier = Modifier.width(4.dp))
+            }
             Spacer(modifier = Modifier.weight(1f))
+            // BL383 live elapsed clock on active cards (1 s tick, tabular, accent2).
+            val isActiveRow =
+                session.state == SessionState.Running || session.state == SessionState.Waiting ||
+                    session.state == SessionState.RateLimited
+            val createdMs = session.createdAt.toEpochMilliseconds()
+            if (isActiveRow && createdMs > 0L) {
+                val nowMs by androidx.compose.runtime.produceState(System.currentTimeMillis(), session.id) {
+                    while (true) {
+                        kotlinx.coroutines.delay(1000)
+                        value = System.currentTimeMillis()
+                    }
+                }
+                val elapsed = nowMs - createdMs
+                if (elapsed >= 0) {
+                    Text(
+                        formatElapsed(elapsed),
+                        fontSize = 10.sp,
+                        color = colors.accent2.copy(alpha = 0.85f),
+                        style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+            }
             if (!session.lastResponse.isNullOrBlank()) {
                 TextButton(
                     onClick = { responseOpen = true },
@@ -1622,16 +1813,13 @@ private fun ReachabilityDot(
     // so the user sees that work is happening rather than a static
     // amber. Steady green / red doesn't pulse — those are settled
     // states.
-    val infinite = androidx.compose.animation.core.rememberInfiniteTransition(label = "probe-pulse")
-    val scale by infinite.animateFloat(
-        initialValue = 1f,
-        targetValue = if (reachable == null) 1.4f else 1f,
-        animationSpec =
-            androidx.compose.animation.core.infiniteRepeatable(
-                animation = androidx.compose.animation.core.tween(900),
-                repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
-            ),
-        label = "probe-pulse-scale",
+    val scale by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 1f,
+        target = 1.4f,
+        durationMs = 900,
+        staticValue = 1f,
+        active = reachable == null,
+        label = "probe-pulse",
     )
     Box(
         modifier =
@@ -2242,4 +2430,38 @@ private fun SessionIdPill(id: String) {
             maxLines = 1,
         )
     }
+}
+
+/** PWA `formatElapsed` (BL383): `Hh Mm` / `Mm SSs` / `Ss`. */
+internal fun formatElapsed(ms: Long): String {
+    val s = ms / 1000
+    val h = s / 3600
+    val m = (s % 3600) / 60
+    val sec = s % 60
+    return when {
+        h > 0 -> "${h}h ${m}m"
+        m > 0 -> "${m}m ${sec.toString().padStart(2, '0')}s"
+        else -> "${sec}s"
+    }
+}
+
+/** Outlined meta badge (PWA server / parent / zombie badges): 10 sp, 8 dp radius, tinted fill. */
+@Composable
+private fun OutlineBadge(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = color,
+        maxLines = 1,
+        modifier =
+            modifier
+                .border(1.dp, color, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                .background(color.copy(alpha = 0.12f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                .padding(horizontal = 7.dp, vertical = 2.dp),
+    )
 }

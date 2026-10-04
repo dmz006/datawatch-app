@@ -106,6 +106,26 @@ public data class Session(
      * Not persisted to SQLite; populated from live REST responses only.
      */
     val prdId: String? = null,
+    /**
+     * BL347 lineage — full id (`host-xxxx`) of the session that spawned this
+     * one. Drives the PWA `↳ child of [host]` badge and the BL348 tree view.
+     */
+    val parentId: String? = null,
+    /**
+     * Server liveness probe of the LLM process (`claude_alive`). `false`
+     * renders the PWA `⚠ zombie` badge; null = not reported.
+     */
+    val claudeAlive: Boolean? = null,
+    /**
+     * Federation source server name (`server`). The PWA shows a server
+     * badge when present and not `"local"`.
+     */
+    val server: String? = null,
+    /**
+     * `channel_ready` — the MCP channel (claude) / ACP server (opencode-acp)
+     * is connected. Drives the PWA "Waiting for MCP channel…" banner.
+     */
+    val channelReady: Boolean = false,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =

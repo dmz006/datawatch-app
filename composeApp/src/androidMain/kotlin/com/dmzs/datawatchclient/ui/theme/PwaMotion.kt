@@ -54,3 +54,34 @@ public fun rememberRunningPulseAlpha(active: Boolean): State<Float> {
         label = "dw-running-pulse-alpha",
     )
 }
+
+/**
+ * Generic infinite pulse (reverse-repeating [initial] -> [target]) that
+ * collapses to [staticValue] under reduced motion — the Android analogue of
+ * the PWA's `@media (prefers-reduced-motion: reduce) { animation: none }`
+ * blocks. Every decorative pulse in the app should go through this.
+ */
+@Composable
+public fun rememberDwPulse(
+    initial: Float,
+    target: Float,
+    durationMs: Int,
+    staticValue: Float = target,
+    easing: Easing = CssEaseInOut,
+    active: Boolean = true,
+    label: String = "dw-pulse",
+): State<Float> {
+    val reduced = rememberReducedMotion()
+    if (!active || reduced) return remember(staticValue) { mutableFloatStateOf(staticValue) }
+    val transition = rememberInfiniteTransition(label = label)
+    return transition.animateFloat(
+        initialValue = initial,
+        targetValue = target,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMs, easing = easing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "$label-value",
+    )
+}

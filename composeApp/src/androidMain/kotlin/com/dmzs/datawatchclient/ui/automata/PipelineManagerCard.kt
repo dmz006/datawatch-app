@@ -36,7 +36,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun PipelineManagerCard() {
+internal fun PipelineManagerCard(
+    /** When set, re-poll at this cadence and show the live dot (PWA Observer pipelines block, 8 s). */
+    liveRefreshMs: Long? = null,
+) {
     var pipelines by remember { mutableStateOf<List<PipelineListItemDto>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -59,7 +62,15 @@ internal fun PipelineManagerCard() {
         loading = false
     }
 
-    LaunchedEffect(Unit) { runCatching { load() } }
+    LaunchedEffect(liveRefreshMs) {
+        runCatching { load() }
+        if (liveRefreshMs != null) {
+            while (true) {
+                kotlinx.coroutines.delay(liveRefreshMs)
+                runCatching { load() }
+            }
+        }
+    }
 
     Column(
         modifier =
@@ -75,7 +86,11 @@ internal fun PipelineManagerCard() {
                 modifier = Modifier.weight(1f),
                 docsAnchor = "pipeline-manager",
             )
-            if (loading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            if (liveRefreshMs != null) {
+                com.dmzs.datawatchclient.ui.common.LiveDot()
+            } else if (loading) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            }
         }
 
         if (pipelines.isEmpty() && !loading) {

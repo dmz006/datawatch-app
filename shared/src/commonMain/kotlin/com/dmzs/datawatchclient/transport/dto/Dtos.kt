@@ -90,6 +90,12 @@ public data class SessionDto(
     @SerialName("summary_generated_at") val summaryGeneratedAt: String? = null,
     /** Automaton that spawned this session (PRD executor / decomposer). */
     @SerialName("prd_id") val prdId: String? = null,
+    /** BL347 — full id of the parent session (spawned-by lineage). */
+    @SerialName("parent_id") val parentId: String? = null,
+    /** BL361 — LLM process liveness; `false` = zombie. Omitted when unknown. */
+    @SerialName("claude_alive") val claudeAlive: Boolean? = null,
+    /** True once the MCP channel / ACP server for this session is connected. */
+    @SerialName("channel_ready") val channelReady: Boolean? = null,
 )
 
 @Serializable
@@ -923,9 +929,12 @@ public data class ScanConfigDto(
     @SerialName("secrets_enabled") val secrets: Boolean = false,
     @SerialName("deps_enabled") val deps: Boolean = false,
     @SerialName("fail_on_severity") val failOnSeverity: String = "error",
-    val grader: Boolean = false,
-    @SerialName("fix_loop") val fixLoop: Boolean = false,
-    @SerialName("max_retries") val maxRetries: Int = 3,
+    // Server keys (autonomous/scan.Config): rules_grader_enabled, fix_loop_enabled,
+    // fix_loop_max_retries — the old grader / fix_loop / max_retries names never matched.
+    @SerialName("rules_grader_enabled") val grader: Boolean = false,
+    @SerialName("fix_loop_enabled") val fixLoop: Boolean = false,
+    @SerialName("fix_loop_max_retries") val maxRetries: Int = 3,
+    @SerialName("max_findings") val maxFindings: Int = 0,
 )
 
 @Serializable
@@ -1822,6 +1831,16 @@ public data class SessionTelemetryDto(
     val progress: Float = 0f,
     @SerialName("guardrail_verdicts") val guardrailVerdicts: List<GuardrailVerdictDto> = emptyList(),
     @SerialName("parent_session_id") val parentSessionId: String = "",
+    /** Hook events buffered before a task failed (PWA "Last 5 events before failure"). */
+    @SerialName("failed_task_buf") val failedTaskBuf: List<TelemetryHookEventDto> = emptyList(),
+)
+
+/** One buffered hook event (`SessionHookEvent`): `{event, tool?, ts}`. */
+@Serializable
+public data class TelemetryHookEventDto(
+    val event: String = "",
+    val tool: String = "",
+    val ts: String = "",
 )
 
 @Serializable

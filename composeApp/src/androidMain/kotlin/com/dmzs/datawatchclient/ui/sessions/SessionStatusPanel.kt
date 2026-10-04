@@ -47,11 +47,16 @@ import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.serialization.json.Json
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.unit.sp
 
 @Composable
 public fun SessionStatusPanel(
     sessionId: String,
     modifier: Modifier = Modifier,
+    /** Parent-session link target (PWA `renderParentSessionLink`); receives the full id. */
+    onOpenSession: (String) -> Unit = {},
     vm: SessionStatusViewModel =
         viewModel(
             factory = viewModelFactory { initializer { SessionStatusViewModel(sessionId) } },
@@ -92,6 +97,25 @@ public fun SessionStatusPanel(
 
         HookHealthPill(hookHealth = board.hookHealth, onClick = vm::refreshStatus)
         Spacer(Modifier.height(4.dp))
+        // PWA renderParentSessionLink — "Parent session: <id>" link.
+        uiState.telemetry?.parentSessionId?.takeIf { it.isNotBlank() }?.let { pid ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.status_parent_session) + " ",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    pid,
+                    fontSize = 11.sp,
+                    color = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2,
+                    modifier = Modifier.clickable { onOpenSession(pid) },
+                )
+            }
+        }
 
         // BL368: always show all four cards; use placeholder text when data is null
         FocusCard(board.currentFocus, board.lastEvent, board.idleSince)
@@ -117,7 +141,7 @@ public fun SessionStatusPanel(
 
         // BL303 Telemetry: task tree, progress, guardrail verdicts
         uiState.telemetry?.let { telem ->
-            if (telem.tasks.isNotEmpty()) TaskTreeCard(telem.tasks, telem.progress)
+            if (telem.tasks.isNotEmpty()) TaskTreeCard(telem.tasks, telem.progress, telem.failedTaskBuf)
             if (telem.guardrailVerdicts.isNotEmpty()) GuardrailVerdictsCard(telem.guardrailVerdicts)
             // Sprint ancestry breadcrumb (only if richer than board.sprint)
             telem.sprint?.let { sprint ->
@@ -357,6 +381,7 @@ private fun StatusCard(
 private fun TaskTreeCard(
     tasks: List<TelemetryTaskDto>,
     progress: Float,
+    failedBuf: List<com.dmzs.datawatchclient.transport.dto.TelemetryHookEventDto> = emptyList(),
 ) {
     StatusCard(title = stringResource(R.string.telemetry_task_tree_title)) {
         // Progress bar
@@ -404,6 +429,10 @@ private fun TaskTreeCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+            // PWA renderFailedDrilldown (T10): last 5 hook events before failure.
+            if (task.status == "failed" && failedBuf.isNotEmpty()) {
+                FailedDrilldown(failedBuf.takeLast(5))
             }
         }
     }
@@ -483,3 +512,39 @@ public fun statusTabBadge(board: SessionStatusBoardDto?): String =
         "waiting", "waiting_input" -> "🟠"
         else -> "⚪"
     }
+
+/** PWA `renderFailedDrilldown`: red-edged inset listing the buffered hook events. */
+@Composable
+private fun FailedDrilldown(events: List<com.dmzs.datawatchclient.transport.dto.TelemetryHookEventDto>) {
+    val error = MaterialTheme.colorScheme.error
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 4.dp, bottom = 4.dp)
+                .background(MaterialTheme.colorScheme.background, androidx.compose.foundation.shape.RoundedCornerShape(2.dp))
+                .drawBehind { drawRect(error, size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height)) }
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            stringResource(R.string.status_last_events),
+            fontSize = 10.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            color = error,
+        )
+        events.forEach { e ->
+            val time =
+                runCatching {
+                    val inst = kotlinx.datetime.Instant.parse(e.ts)
+                    java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.UK).format(java.util.Date(inst.toEpochMilliseconds()))
+                }.getOrDefault("")
+            Text(
+                listOf(time, e.event).filter { it.isNotBlank() }.joinToString(" ") +
+                    (if (e.tool.isNotBlank()) " · ${e.tool}" else ""),
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 2.dp),
+            )
+        }
+    }
+}

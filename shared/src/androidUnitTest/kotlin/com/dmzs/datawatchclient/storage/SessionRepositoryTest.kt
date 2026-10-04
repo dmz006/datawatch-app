@@ -219,4 +219,22 @@ class SessionRepositoryTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    @Test
+    fun `lineage liveness and server columns round-trip`() =
+        runTest(dispatcher) {
+            seedProfile()
+            sessionRepo.upsert(
+                session(id = "kid").copy(parentId = "laptop-pp01", claudeAlive = false, server = "peer-a"),
+            )
+            sessionRepo.upsert(session(id = "plain"))
+            sessionRepo.observeForProfile("srv-1").test {
+                val byId = awaitItem().associateBy { it.id }
+                assertEquals("laptop-pp01", byId.getValue("kid").parentId)
+                assertEquals(false, byId.getValue("kid").claudeAlive)
+                assertEquals("peer-a", byId.getValue("kid").server)
+                assertEquals(null, byId.getValue("plain").claudeAlive)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 }

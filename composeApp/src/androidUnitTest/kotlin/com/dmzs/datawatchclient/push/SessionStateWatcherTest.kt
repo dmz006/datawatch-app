@@ -12,7 +12,10 @@ class SessionStateWatcherTest {
     private val t0 = 1_000_000L
 
     @BeforeTest
-    fun reset() = SessionStateWatcher.reset()
+    fun reset() {
+        SessionStateWatcher.reset()
+        SessionStateWatcher.isForeground = { false }
+    }
 
     private fun session(
         id: String,
@@ -146,5 +149,37 @@ class SessionStateWatcherTest {
         update(listOf(session("s1", SessionState.Waiting, "q")), t0 + 1_000)
         val (_, cancel) = update(listOf(session("s1", SessionState.Running)), t0 + 5_000)
         assertTrue(cancel.contains("s1"), "Leaving Waiting must cancel notification")
+    }
+
+    // ── PWA pendingNeedsInputPopup replay ──────────────────────────────────
+
+    @Test
+    fun `waiting while away is stashed once and expires after an hour`() {
+        SessionStateWatcher.isForeground = { false }
+        try {
+            SessionStateWatcher.computeUpdates(listOf(session("a", SessionState.Running)), nowMs = t0)
+            SessionStateWatcher.computeUpdates(listOf(session("a", SessionState.Waiting, "Proceed?")), nowMs = t0 + 1)
+            assertEquals("Proceed?", SessionStateWatcher.consumePendingNeedsInput("a", nowMs = t0 + 2))
+            assertEquals(null, SessionStateWatcher.consumePendingNeedsInput("a", nowMs = t0 + 3))
+
+            SessionStateWatcher.computeUpdates(listOf(session("a", SessionState.Running)), nowMs = t0 + 4)
+            SessionStateWatcher.computeUpdates(listOf(session("a", SessionState.Waiting, "Again?")), nowMs = t0 + 5)
+            val later = t0 + 5 + SessionStateWatcher.PENDING_TTL_MS + 1
+            assertEquals(null, SessionStateWatcher.consumePendingNeedsInput("a", nowMs = later))
+        } finally {
+            SessionStateWatcher.isForeground = { false }
+        }
+    }
+
+    @Test
+    fun `waiting while viewing the session is not stashed`() {
+        SessionStateWatcher.isForeground = { it == "b" }
+        try {
+            SessionStateWatcher.computeUpdates(listOf(session("b", SessionState.Running)), nowMs = t0)
+            SessionStateWatcher.computeUpdates(listOf(session("b", SessionState.Waiting, "Q")), nowMs = t0 + 1)
+            assertEquals(null, SessionStateWatcher.consumePendingNeedsInput("b", nowMs = t0 + 2))
+        } finally {
+            SessionStateWatcher.isForeground = { false }
+        }
     }
 }

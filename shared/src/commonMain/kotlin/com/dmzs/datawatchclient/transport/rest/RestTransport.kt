@@ -2167,13 +2167,10 @@ public class RestTransport(
             Unit
         }
 
+    // The server wraps the list as {models: [...], kind, note?}; decoding a bare
+    // List<String> always failed. Delegate to the tolerant parser.
     override suspend fun getComputeNodeModels(name: String, kind: String): Result<List<String>> =
-        request {
-            client.get("${profile.baseUrl}/api/compute/nodes/$name/models") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-                parameter("kind", kind)
-            }.body()
-        }
+        computeNodeModelNames(name, kind)
 
     // ---- v0.74.0 LLM Registry (S5-2) ----
 
@@ -3969,6 +3966,114 @@ public class RestTransport(
             client.get("${profile.baseUrl}/api/link/status") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
+        }
+
+    // ---- Android-missing parity ----
+
+    override suspend fun sendChannelMessage(
+        sessionId: String,
+        text: String,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/channel/send") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("text", kotlinx.serialization.json.JsonPrimitive(text))
+                        put("session_id", kotlinx.serialization.json.JsonPrimitive(sessionId))
+                    },
+                )
+            }
+            Unit
+        }
+
+    override suspend fun fetchCrossHostEnvelopesJson(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/envelopes/all-peers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun listExitHooksJson(): Result<kotlinx.serialization.json.JsonArray> =
+        request {
+            val el: JsonElement =
+                client.get("${profile.baseUrl}/api/exit-hooks") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            el as? kotlinx.serialization.json.JsonArray ?: kotlinx.serialization.json.JsonArray(emptyList())
+        }
+
+    override suspend fun createExitHook(body: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/exit-hooks") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+            Unit
+        }
+
+    override suspend fun updateExitHook(
+        id: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/exit-hooks/${iosPathPart(id)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+            Unit
+        }
+
+    override suspend fun deleteExitHook(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/exit-hooks/${iosPathPart(id)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun listQueueJson(
+        role: String?,
+        state: String?,
+    ): Result<kotlinx.serialization.json.JsonArray> =
+        request {
+            val el: JsonElement =
+                client.get("${profile.baseUrl}/api/queue") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    role?.takeIf { it.isNotBlank() }?.let { parameter("role", it) }
+                    state?.takeIf { it.isNotBlank() }?.let { parameter("state", it) }
+                }.body()
+            // The server encodes an empty queue as `null`.
+            el as? kotlinx.serialization.json.JsonArray ?: kotlinx.serialization.json.JsonArray(emptyList())
+        }
+
+    override suspend fun pushQueueItem(
+        role: String,
+        payload: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/queue/push") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("role", kotlinx.serialization.json.JsonPrimitive(role))
+                        put("payload", payload)
+                    },
+                )
+            }
+            Unit
+        }
+
+    override suspend fun deleteQueueItem(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/queue/${iosPathPart(id)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
         }
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }

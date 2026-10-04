@@ -106,7 +106,11 @@ public fun ObserverScreen(
                 com.dmzs.datawatchclient.ui.monitoring.CooldownCard()
                 com.dmzs.datawatchclient.ui.monitoring.SessionAnalyticsCard()
                 com.dmzs.datawatchclient.ui.monitoring.AuditLogCard()
+                // PWA renders the live pipelines block under the audit log (8 s).
+                com.dmzs.datawatchclient.ui.automata.PipelineManagerCard(liveRefreshMs = 8_000L)
                 KnowledgeGraphCard()
+                // PWA identity panel (/api/identity) sits under the KG browser.
+                com.dmzs.datawatchclient.ui.settings.IdentityCard()
                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
             }
         }

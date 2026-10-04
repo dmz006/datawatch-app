@@ -45,15 +45,13 @@ public fun DatawatchLoadingContent(
     eyeSize: Dp = 40.dp,
     verticalPadding: Dp = 24.dp,
 ) {
-    val infinite = rememberInfiniteTransition(label = "dw-loading")
-    val textAlpha by infinite.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.90f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(850, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "label-pulse",
+    val textAlpha by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 0.35f,
+        target = 0.90f,
+        durationMs = 850,
+        staticValue = 0.7f,
+        easing = FastOutSlowInEasing,
+        label = "dw-loading",
     )
 
     Box(
