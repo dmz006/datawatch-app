@@ -129,6 +129,7 @@ struct PrdDetailView: View {
                     specSection(spec)
                 }
                 storiesSection
+                PrdDecisionsSection(decisions: prd.decisions ?? [])
                 PrdScanCard(profile: vm.profile, prdId: prd.id) { _ in Task { await vm.refresh() } }
                 Button { SessionsNav.shared.jumpTo(prd.name) } label: {
                     Text("→ View sessions").font(DatawatchFonts.bodyMedium)

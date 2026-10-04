@@ -701,6 +701,12 @@ public data class DecisionDto(
     val kind: String? = null,
     val actor: String? = null,
     val note: String? = null,
+    val backend: String? = null,
+    val model: String? = null,
+    @SerialName("prompt_chars") val promptChars: Int = 0,
+    @SerialName("response_chars") val responseChars: Int = 0,
+    @SerialName("cost_usd") val costUsd: Double = 0.0,
+    @SerialName("verdict_outcome") val verdictOutcome: String? = null,
 )
 
 /** v8.30.0 BL386 — memory seeding config on PRD create/detail. */
