@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import AVFoundation
 import DatawatchShared
 
@@ -35,6 +36,10 @@ struct SessionDetailView: View {
     @StateObject private var terminal = TerminalController()
     /// PWA scroll mode (tmux copy-mode): the scroll strip replaces the input bar.
     @State private var scrollMode = false
+    @State private var showSchedule = false
+    @State private var photoItem: PhotosPickerItem? = nil
+    /// nil = idle; "uploading" or "✓ <name>" for the composer banner (PWA _composerBanner).
+    @State private var imageBanner: String? = nil
 
     var body: some View {
         ZStack {
@@ -112,6 +117,13 @@ struct SessionDetailView: View {
         }
         .sheet(isPresented: $showDeleteSheet) {
             SessionDeleteSheet(profile: profile, session: session) { dismiss() }
+        }
+        .sheet(isPresented: $showSchedule) {
+            ScheduleInputSheet(profile: profile, session: session, prefill: replyText)
+        }
+        .onChange(of: photoItem) { item in
+            guard let item else { return }
+            attachImage(item)
         }
         .sheet(isPresented: $showTimeline) {
             SessionTimelineSheet(profile: profile, session: session)
@@ -274,6 +286,34 @@ struct SessionDetailView: View {
         }
         .padding(.horizontal, 12)
         .padding(.top, 6)
+    }
+
+    // ── Image attach (PWA sessionImageInput → [image:<path>]) ─────────────
+
+    private func attachImage(_ item: PhotosPickerItem) {
+        imageBanner = "uploading"
+        Task {
+            guard let raw = try? await item.loadTransferable(type: Data.self),
+                  let jpeg = UIImage(data: raw)?.jpegData(compressionQuality: 0.85) else {
+                await MainActor.run { imageBanner = nil; killError = "Couldn't read that image."; photoItem = nil }
+                return
+            }
+            let name = "photo_\(Int(Date().timeIntervalSince1970)).jpg"
+            IosServiceLocator.shared.uploadImageData(
+                profile: profile, imageData: jpeg, fileName: name, mimeType: "image/jpeg",
+                onSuccess: { path in
+                    DispatchQueue.main.async {
+                        let trimmed = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        replyText = (trimmed.isEmpty ? "" : trimmed + "\n") + "[image:\(path)]"
+                        imageBanner = "✓ \(name)"
+                        photoItem = nil
+                    }
+                },
+                onError: { msg in
+                    DispatchQueue.main.async { imageBanner = nil; killError = msg; photoItem = nil }
+                }
+            )
+        }
     }
 
     // ── Keys strip (PWA: ␛ · ↑ ↓ ← → · ⏎, right-aligned) ────────────────
@@ -499,7 +539,28 @@ struct SessionDetailView: View {
                 Divider().background(DatawatchColors.border)
             }
             keysStrip
+            if let banner = imageBanner {
+                Text(banner == "uploading" ? "Uploading image…" : banner)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(banner == "uploading" ? DatawatchColors.warning : DatawatchColors.success)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 4)
+            }
             HStack(spacing: 8) {
+                Button {
+                    showSchedule = true
+                } label: {
+                    Image(systemName: "clock.badge")
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+                .accessibilityLabel("Schedule input")
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Image(systemName: "camera")
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+                .disabled(imageBanner == "uploading")
+                .accessibilityLabel("Attach image")
                 TextField(isWaiting ? "Type a reply…" : "Reply or press Enter", text: $replyText)
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
@@ -586,8 +647,13 @@ struct SessionDetailView: View {
     }
 
     private func sendReply() {
+        if imageBanner == "uploading" {
+            killError = "Wait for image upload to finish"
+            return
+        }
         let text = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+        imageBanner = nil
         replyText = ""
         // TerminalView forwards this as a `send_input` frame on the session's
         // /ws hub (WsOutbound) — the only reply path the server exposes.

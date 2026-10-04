@@ -780,6 +780,38 @@ public object IosServiceLocator {
         transcribeAudio(bytes, audioMime, sessionId, profile, onSuccess, onError)
     }
 
+    /**
+     * Upload an image for a session reply (parity B11; PWA sessionImageInput / Android
+     * attach). Stored under the server file root as `dw_attach_<ts>_<name>`;
+     * [onSuccess] gets the server path to append as `[image:<path>]`.
+     */
+    @OptIn(ExperimentalForeignApi::class)
+    public fun uploadImageData(
+        profile: ServerProfile,
+        imageData: NSData,
+        fileName: String,
+        mimeType: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val length = imageData.length.toInt()
+        val bytes = imageData.bytes?.reinterpret<ByteVar>()?.readBytes(length) ?: ByteArray(0)
+        ioScope.launch {
+            val t = transportFor(profile)
+            val root = t.getFileServiceMeta().getOrNull()?.root?.trimEnd('/')
+            if (root == null) {
+                onError("Could not resolve server file root.")
+                return@launch
+            }
+            val safe = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            val destName = "dw_attach_${Clock.System.now().toEpochMilliseconds()}_$safe"
+            t.uploadImageAttachment(bytes, destName, mimeType, "$root/$destName").fold(
+                onSuccess = { onSuccess(it) },
+                onFailure = { onError(it.message ?: "Image upload failed.") },
+            )
+        }
+    }
+
     /** Returns true if whisper.enabled is set in server config. */
     public fun fetchWhisperEnabled(
         profile: ServerProfile,
