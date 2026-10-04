@@ -359,13 +359,21 @@ struct PrdListView: View {
     }
 
     private func row(_ prd: PrdDto) -> PrdRow {
-        PrdRow(
+        var watchToggle: (() -> Void)? = nil
+        var parent: (() -> Void)? = nil
+        var action: ((String) -> Void)? = nil
+        if !vm.selectMode {
+            watchToggle = { toggleWatch(prd) }
+            parent = parentTap(prd)
+            action = { (a: String) in cardAction(prd, a) }
+        }
+        return PrdRow(
             prd: prd,
             pinned: vm.pinned.contains(prd.id),
             watched: isWatched(prd),
-            onWatchToggle: vm.selectMode ? nil : { toggleWatch(prd) },
-            onParent: vm.selectMode ? nil : parentTap(prd),
-            onAction: vm.selectMode ? nil : { cardAction(prd, $0) }
+            onWatchToggle: watchToggle,
+            onParent: parent,
+            onAction: action
         )
     }
 

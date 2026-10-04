@@ -11,7 +11,7 @@ Verification was code-level (grep/read), not visual. `~ unverified` = present in
 | nav | Entry point (`+` FAB / header) → new-session surface | ✓ FAB (`fab` ×16) → panel-modal | ✓ `Destinations.NewSession` full screen | ✓ Sessions FAB → NewSessionView | aligned | | |
 | element | Session name input | ✓ :5569 `new_session_name` | ✓ NewSessionScreen.kt:337–345 | ✓ NewSessionView | aligned | | |
 | element | Task description (expandable textarea) | ✓ `<details>` textarea | ✓ :368–431 + mic (`MicAttachableTextField`) | ✓ NewSessionView | aligned | | |
-| element | Saved-command library picker inside task field | ✗ (0 hits `savedCmd\|saved_command` in modal) | ✓ `SavedCommandLibraryDropdown` :379 | ✗ | pwa-missing | needs-decision | Android-only convenience — D1 |
+| element | Saved-command library picker inside task field | ✗ (0 hits `savedCmd\|saved_command` in modal) | ✓ `SavedCommandLibraryDropdown` :379 | ✓ NewSessionView "From library ▾" menu (`/api/commands`) | pwa-missing | decided D81a | Android-only convenience — D1 · iOS done 2026-10-04 |
 | element | Project directory input | ✓ `#sessDirRow` :5560 | ✓ `new_session_working_dir` :714–726 | ✓ NewSessionView | aligned | | |
 | interaction | Directory browser (breadcrumb, mkdir, click-to-navigate) | ✓ `#dirBrowser` :5558 | ✗ (`FilePickerDialog` not used here) | ✗ | android-missing | | iOS also missing |
 | element | Profile select (project profiles, "— project directory —" first) | ✓ `#sessProfile` :5615 | ✓ `new_session_profile_label` :590 | ✓ NewSessionView | aligned | | |
@@ -21,7 +21,7 @@ Verification was code-level (grep/read), not visual. `~ unverified` = present in
 | element | Model / effort for non-Claude + OpenCode grouped models | ~ (model select only) | ✓ :546–568, `openCodeModelGroups` :170 | ~ NewSessionView flat non-Claude model picker (as PWA; no OpenCode grouping) | misaligned | needs-decision | Android groups OpenCode models by provider — D2 |
 | element | Chrome integration checkbox | ✓ `#newSessionChrome` :5681 (not in May spec) | ✓ `chromeIntegration` Switch :701 | ✓ NewSessionView | aligned | | spec drift: §9 omits it |
 | element | Git auto-init / auto-commit toggles | ✓ (`auto_git`/`git_init`/`auto_commit` ×18) | ✓ :756–779 | ✓ NewSessionView git toggles | aligned | | |
-| element | Resume previous session field | ✗ (0 hits `resume_session\|sessResume`) | ✓ `new_session_resume_label` :743 | ✗ | pwa-missing | needs-decision | D3 |
+| element | Resume previous session field | ✗ (0 hits `resume_session\|sessResume`) | ✓ `new_session_resume_label` :743 | ✓ NewSessionView "Resume previous (optional)" picker → `resume_id` | pwa-missing | decided D82a | D3 · iOS done 2026-10-04 |
 | element | Session backlog / recent done sessions (restart) | ✓ `renderSessionBacklog` :5765 | ✓ :785–820 (20 most recent, restart) | ✓ "Recently finished" + Restart | aligned | | |
 | element | Backend setup hint when backend not configured | ~ spec §9 item 9 (live ref not located) | ✗ not found | ✗ | misaligned | | verify in PWA before acting |
 | element | Server picker (which datawatch server) | n/a (single server) | ✓ `new_session_server_label` :476 | ✗ | n/a | | mobile multi-server concept |
@@ -85,8 +85,8 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | element | Secrets vault card (Settings → General) | ✓ (`secret` ×58) | ✗ not found | ✗ | android-missing | | iOS also missing |
 | element | Compute node telemetry / declared capacity | ✓ :7911, :8120 | ✓ `compute/` (#192 capacity-aware) | ✗ | ios-missing | | |
 | nav | Docs / diagrams help links (`/diagrams.html#…`) | ✓ ×17 | ✓ `common/DocsViewerSheet.kt`, `settings/DocsSearchCard.kt` | ✓ `DocsLinkButton` (SFSafariViewController) | aligned | | Android in-app viewer vs iOS Safari — verify intent |
-| element | Memory recall / scope inventory / lifecycle UI (BL385–387) | ✗ (0 hits `memory/recall\|memory_scope`; only Observer "Memory Browser" card) | ✓ `memory/` (#174–176) | ✗ | pwa-missing | needs-decision | D6 |
-| element | Inline file viewer for story/task file chips | ✗ (0 hits `api/files\|browseFiles`) | ✓ `autonomous/FileViewerSheet.kt` (#181) | ✓ PrdFileViewerSheet (PrdItemEditSheets.swift) | pwa-missing | needs-decision | D7 |
+| element | Memory recall / scope inventory / lifecycle UI (BL385–387) | ✗ (0 hits `memory/recall\|memory_scope`; only Observer "Memory Browser" card) | ✓ `memory/` (#174–176) | ~ PRD memory UI (`PrdMemorySection`: stats, report, recall); no standalone scope inventory | pwa-missing | decided D77a | D6 · iOS done 2026-10-04 |
+| element | Inline file viewer for story/task file chips | ✗ (0 hits `api/files\|browseFiles`) | ✓ `autonomous/FileViewerSheet.kt` (#181) | ✓ PrdFileViewerSheet (PrdItemEditSheets.swift) | pwa-missing | decided D83a | D7 · iOS verified 2026-10-04 |
 | element | Knowledge Graph card | ✓ ("Knowledge Graph" ×4) | ✓ `observer/KnowledgeGraphCard.kt` | ✗ | ios-missing | | |
 | nav | Onboarding flow, deep links, multi-server profile picker, biometric lock | n/a | ✓ `onboarding/`, `DeepLinks.kt`, `servers/ServerPickerSheet.kt`, biometric | ~ `BiometricGate.swift` ✓; onboarding/deep links ✗ | n/a | | mobile-only; iOS lacks onboarding + deep links (track in 01) |
 | nav | Version staleness reload (spec §1.6) | ✗ (0 hits `staleVersion\|serverVersion\|checkVersion`) | ~ unverified | ✗ | pwa-missing | | spec item not found in live PWA — likely removed/renamed; verify |
