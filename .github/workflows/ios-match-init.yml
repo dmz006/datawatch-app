@@ -32,7 +32,7 @@ permissions:
 jobs:
   match-init:
     name: fastlane match (${{ inputs.type }})
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
       MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}

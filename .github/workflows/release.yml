@@ -213,7 +213,7 @@ jobs:
   # .github/workflows/ios-match-init.yml and docs/plans/ios-testflight-setup.md.
   testflight:
     name: iOS — sign + upload to TestFlight
-    runs-on: macos-15
+    runs-on: macos-26
     needs: test
     if: ${{ vars.IOS_SIGNING_CONFIGURED == 'true' && needs.test.result == 'success' }}
     steps:
@@ -233,6 +233,15 @@ jobs:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
+
+      # App Store Connect rejects uploads built with an SDK older than iOS 26.
+      - name: Require Xcode 26+ / iOS 26 SDK
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          sdk=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iphoneos SDK: $sdk"
+          [ "${sdk%%.*}" -ge 26 ] || { echo "::error::iOS SDK $sdk < 26 — App Store Connect will reject the upload."; exit 1; }
 
       - name: Assemble KMP XCFramework (release)
         run: ./gradlew :shared:assembleDatawatchSharedReleaseXCFramework --no-daemon --stacktrace
