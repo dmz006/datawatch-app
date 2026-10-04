@@ -19,9 +19,13 @@ final class SessionsViewModel: ObservableObject {
 
     // ── Private ───────────────────────────────────────────────────────────
 
+    /// All profiles being shown (one normally; every enabled one in "All servers").
+    @Published private(set) var profiles: [ServerProfile] = []
+    private var byProfile: [String: [DwSession]] = [:]
+
     private var pollTask: Task<Void, Never>? = nil
-    private var wsSubscription: IosSubscription? = nil
-    private var diffSubscription: IosSubscription? = nil
+    private var wsSubscriptions: [IosSubscription] = []
+    private var diffSubscriptions: [IosSubscription] = []
     private var inFlight = false
     private var polling = false
     private static let restFallbackInterval: Duration = .seconds(30)
@@ -30,13 +34,15 @@ final class SessionsViewModel: ObservableObject {
 
     // ── Profile wiring ────────────────────────────────────────────────────
 
-    /// Called by the view whenever the profiles array changes.
-    /// Uses the first profile as the "active" server.
-    func update(profiles: [ServerProfile]) {
-        let newActive = profiles.first
-        guard newActive?.id != activeProfile?.id else { return }
-        activeProfile = newActive
-        if newActive != nil {
+    /// Called by the view with the profile(s) to show: the active server, or
+    /// every enabled server in "All servers" mode (D2a / PWA picker "All").
+    func update(profiles newProfiles: [ServerProfile]) {
+        let newIds = newProfiles.map { $0.id }
+        guard newIds != profiles.map({ $0.id }) else { return }
+        profiles = newProfiles
+        byProfile = byProfile.filter { newIds.contains($0.key) }
+        activeProfile = newProfiles.first
+        if !newProfiles.isEmpty {
             if polling {
                 startPolling(restart: true)
             } else {
@@ -61,22 +67,24 @@ final class SessionsViewModel: ObservableObject {
         if polling && !restart { return }
         tearDown()
         polling = true
-        guard let profile = activeProfile else { return }
+        guard !profiles.isEmpty else { return }
 
-        wsSubscription = IosServiceLocator.shared.subscribeGlobalStream(
-            profile: profile,
-            onStats: { _ in },
-            onSessions: { [weak self] list in
-                Task { @MainActor [weak self] in
-                    self?.sessions = list
-                    self?.error = nil
-                    self?.isLoading = false
+        for profile in profiles {
+            let pid = profile.id
+            wsSubscriptions.append(IosServiceLocator.shared.subscribeGlobalStream(
+                profile: profile,
+                onStats: { _ in },
+                onSessions: { [weak self] list in
+                    Task { @MainActor [weak self] in
+                        self?.setSessions(list, for: pid)
+                        self?.error = nil
+                        self?.isLoading = false
+                    }
                 }
-            }
-        )
-
-        diffSubscription = IosServiceLocator.shared.subscribeSessionDiffs(profile: profile) { [weak self] updated in
-            Task { @MainActor [weak self] in self?.upsert(updated) }
+            ))
+            diffSubscriptions.append(IosServiceLocator.shared.subscribeSessionDiffs(profile: profile) { [weak self] updated in
+                Task { @MainActor [weak self] in self?.upsert(updated, for: pid) }
+            })
         }
 
         pollTask = Task { [weak self] in
@@ -98,32 +106,43 @@ final class SessionsViewModel: ObservableObject {
     private func tearDown() {
         pollTask?.cancel()
         pollTask = nil
-        wsSubscription?.cancel()
-        wsSubscription = nil
-        diffSubscription?.cancel()
-        diffSubscription = nil
+        wsSubscriptions.forEach { $0.cancel() }
+        wsSubscriptions = []
+        diffSubscriptions.forEach { $0.cancel() }
+        diffSubscriptions = []
+    }
+
+    private func setSessions(_ list: [DwSession], for profileId: String) {
+        byProfile[profileId] = list
+        sessions = profiles.flatMap { byProfile[$0.id] ?? [] }
     }
 
     /// Apply a single-row `session_state` diff without refetching the list.
-    private func upsert(_ updated: DwSession) {
-        if let i = sessions.firstIndex(where: { $0.id == updated.id }) {
-            sessions[i] = updated
+    private func upsert(_ updated: DwSession, for profileId: String) {
+        var list = byProfile[profileId] ?? []
+        if let i = list.firstIndex(where: { $0.id == updated.id }) {
+            list[i] = updated
         } else {
-            sessions.append(updated)
+            list.append(updated)
         }
+        setSessions(list, for: profileId)
     }
 
     private func refreshAsync() async {
-        guard let profile = activeProfile, !inFlight else { return }
+        guard !profiles.isEmpty, !inFlight else { return }
         inFlight = true
         defer { inFlight = false }
         if sessions.isEmpty { isLoading = true }
-        do {
-            sessions = try await ServiceLocatorAsync.listSessions(profile: profile)
-            error = nil
-        } catch {
-            self.error = error.localizedDescription
+        var firstError: String? = nil
+        for profile in profiles {
+            do {
+                let list = try await ServiceLocatorAsync.listSessions(profile: profile)
+                setSessions(list, for: profile.id)
+            } catch {
+                if firstError == nil { firstError = error.localizedDescription }
+            }
         }
+        self.error = firstError
         isLoading = false
     }
 }

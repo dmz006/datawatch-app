@@ -70,7 +70,7 @@ struct SessionsView: View {
             get: { quickCmdSession != nil },
             set: { if !$0 { quickCmdSession = nil } }
         )) {
-            if let s = quickCmdSession, let profile = viewModel.activeProfile {
+            if let s = quickCmdSession, let profile = profileFor(s) {
                 QuickCommandsSheet(profile: profile, session: s)
             }
         }
@@ -143,7 +143,7 @@ struct SessionsView: View {
             HeaderView(
                 title: "datawatch",
                 subtitle: sessionsSubtitle,
-                serverName: viewModel.activeProfile?.displayName
+                serverName: store.isAllServers ? L("All servers") : viewModel.activeProfile?.displayName
             )
         }
         ToolbarItem(placement: .navigationBarTrailing) {
@@ -171,7 +171,7 @@ struct SessionsView: View {
     // ── Row actions ───────────────────────────────────────────────────────
 
     private func fetchCurrentStatus(for session: DwSession) {
-        guard let profile = viewModel.activeProfile else { return }
+        guard let profile = profileFor(session) else { return }
         let key = session.fullId
         var st = cardStatus[key] ?? CardStatus()
         st.loading = true
@@ -194,7 +194,7 @@ struct SessionsView: View {
     }
 
     private func runOp(_ session: DwSession, _ op: (ServerProfile, String, @escaping () -> Void, @escaping (String) -> Void) -> Void) {
-        guard let profile = viewModel.activeProfile else { return }
+        guard let profile = profileFor(session) else { return }
         actionInProgress = session.id
         op(profile, session.id, {
             DispatchQueue.main.async { actionInProgress = nil; viewModel.refresh() }
@@ -223,11 +223,11 @@ struct SessionsView: View {
 
     /// PWA deleteSelectedSessions.
     private func performBulkDelete() {
-        guard let profile = viewModel.activeProfile else { return }
         let targets = viewModel.sessions.filter { selected.contains($0.fullId) }
         let group = DispatchGroup()
         var failures = 0
         for s in targets {
+            guard let profile = profileFor(s) else { continue }
             group.enter()
             IosServiceLocator.shared.deleteSession(
                 profile: profile, sessionId: s.id,
@@ -262,12 +262,20 @@ struct SessionsView: View {
         }
     }
 
-    /// D2a: the app-wide active server only.
-    private var activeList: [ServerProfile] { store.activeProfile.map { [$0] } ?? [] }
+    /// D2a: the app-wide active server, or every enabled server in "All".
+    private var activeList: [ServerProfile] {
+        if store.isAllServers { return store.enabledProfiles }
+        return store.activeProfile.map { [$0] } ?? []
+    }
+
+    /// The server a session belongs to (matters in "All servers").
+    private func profileFor(_ s: DwSession) -> ServerProfile? {
+        store.profiles.first { $0.id == s.serverProfileId } ?? viewModel.activeProfile
+    }
 
     private var sessionList: some View {
         VStack(spacing: 0) {
-            ServerPickerBar()
+            ServerPickerBar(showsAll: true)
             if showFilter { filterBar }
             if let actionError {
                 Text(actionError)
@@ -609,6 +617,7 @@ struct SessionsView: View {
         let card = SessionCardView(
             session: session,
             showHost: store.profiles.count > 1,
+            serverName: store.isAllServers ? profileFor(session)?.displayName : nil,
             status: cardStatus[session.fullId],
             selecting: selectMode,
             selected: selected.contains(session.fullId),
@@ -630,7 +639,7 @@ struct SessionsView: View {
                 card.onTapGesture { if SessionStateStyle.isDone(session.state) { toggleSelect(session) } }
             } else {
                 NavigationLink {
-                    if let profile = viewModel.activeProfile {
+                    if let profile = profileFor(session) {
                         SessionDetailView(session: session, profile: profile)
                     }
                 } label: { card }
@@ -661,12 +670,12 @@ struct SessionsView: View {
 
     private func isLocal(_ kind: LocalSessionPrefs.Kind, _ session: DwSession) -> Bool {
         _ = localPrefs.revision
-        guard let pid = viewModel.activeProfile?.id else { return false }
+        guard let pid = profileFor(session)?.id else { return false }
         return localPrefs.contains(kind, profileId: pid, id: session.id)
     }
 
     private func toggleLocal(_ kind: LocalSessionPrefs.Kind, _ session: DwSession) {
-        guard let pid = viewModel.activeProfile?.id else { return }
+        guard let pid = profileFor(session)?.id else { return }
         localPrefs.toggle(kind, profileId: pid, id: session.id)
     }
 

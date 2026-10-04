@@ -76,6 +76,8 @@ struct SessionStatePill: View {
 struct SessionCardView: View {
     let session: DwSession
     var showHost: Bool = false
+    /// PWA server-badge: set in "All servers" mode.
+    var serverName: String? = nil
     var status: CardStatus? = nil
     var selecting: Bool = false
     var selected: Bool = false
@@ -185,6 +187,7 @@ struct SessionCardView: View {
             }
             if session.agentId != nil { accentBadge("⬡ worker") }
             if SessionCardView.isCouncil(session) { accentBadge("🎭").accessibilityLabel("Council session") }
+            if let server = serverName, !server.isEmpty { accentBadge(server) }
             if showHost, let host = session.hostnamePrefix, !host.isEmpty { accentBadge(host) }
             if muted || session.muted {
                 Image(systemName: "speaker.slash.fill").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
