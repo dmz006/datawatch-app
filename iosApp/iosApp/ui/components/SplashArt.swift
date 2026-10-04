@@ -85,7 +85,13 @@ enum SplashArt {
     }
 
     static func makeFlickers(_ n: Int) -> [(dur: Double, delay: Double)] {
-        (0..<n).map { i in (Double(900 + (i * 73) % 900), Double((i * 41) % 500)) }
+        var out: [(dur: Double, delay: Double)] = []
+        for i in 0..<n {
+            let dur: Int = 900 + (i * 73) % 900
+            let delay: Int = (i * 41) % 500
+            out.append((dur: Double(dur), delay: Double(delay)))
+        }
+        return out
     }
 
     // Scene constants (computed once, like the JS `_cols` caches).
@@ -149,7 +155,7 @@ enum SplashArt {
     }
 
     static func drawScene(_ ctx: inout GraphicsContext, size: CGSize, compact: Bool, t: Double) {
-        let w = size.width, h = size.height
+        let w: Double = Double(size.width), h: Double = Double(size.height)
         ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(bg))
         let cx = w / 2, cy = h / 2
         let discRadius = min(w, h) / 2.2
@@ -200,8 +206,12 @@ enum SplashArt {
         ctx.stroke(bezel, with: .color(border), lineWidth: 3)
         ctx.fill(Path(roundedRect: CGRect(x: cx - 20, y: tt + 8, width: 40, height: 4), cornerRadius: 2), with: .color(speaker))
 
-        let pad = 14.0
-        let screen = CGRect(x: tl + pad, y: tt + pad + 14, width: tw - 2 * pad, height: th - 2 * pad - 14)
+        let pad: Double = 14.0
+        let sX: Double = tl + pad
+        let sY: Double = tt + pad + 14
+        let sW: Double = tw - 2 * pad
+        let sH: Double = th - 2 * pad - 14
+        let screen = CGRect(x: sX, y: sY, width: sW, height: sH)
         let screenPath = Path(roundedRect: screen, cornerRadius: 18)
         ctx.fill(screenPath, with: .color(screenDark))
         ctx.stroke(screenPath, with: .color(screenBorder), lineWidth: 1)
@@ -210,11 +220,11 @@ enum SplashArt {
         rain.clip(to: screenPath)
         for (ci, col) in sceneCols.enumerated() {
             let phase = (rainTime + col.delayFrac).truncatingRemainder(dividingBy: 1)
-            let colY = screen.minY - 20 + phase * (screen.height + 40)
-            let colX = screen.minX + col.xFrac * screen.width
+            let colY: Double = sY - 20 + phase * (sH + 40)
+            let colX: Double = sX + col.xFrac * sW
             for (ri, ch) in sceneChars[ci].enumerated() {
                 let y = colY + Double(ri) * 16
-                if y < screen.minY - 16 || y > screen.maxY { continue }
+                if y < sY - 16 || y > sY + sH { continue }
                 let f = sceneFlick[(ci * 7 + ri) % sceneFlick.count]
                 let base = lerp(0.25, 0.85, smooth(triangleWave(t, f.dur, f.delay)))
                 let posW = 1 - Double(ri) / Double(col.charCount)
@@ -226,14 +236,15 @@ enum SplashArt {
                 )
             }
         }
-        rain.fill(Path(CGRect(x: screen.minX, y: screen.minY + scanY * screen.height, width: screen.width, height: 2)),
+        let scanTop: Double = sY + scanY * sH
+        rain.fill(Path(CGRect(x: sX, y: scanTop, width: sW, height: 2)),
                   with: .color(border.opacity(0.30)))
 
-        drawEye(&ctx, cx: cx, cy: screen.midY, radius: discRadius * 0.44, pupilScale: pupilScale, glowAlpha: 0)
+        drawEye(&ctx, cx: cx, cy: sY + sH / 2, radius: discRadius * 0.44, pupilScale: pupilScale, glowAlpha: 0)
     }
 
     static func drawEyeOnly(_ ctx: inout GraphicsContext, size: CGSize, t: Double) {
-        let w = size.width, h = size.height
+        let w: Double = Double(size.width), h: Double = Double(size.height)
         ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(bg))
         let pupilScale = lerp(0.90, 1.10, smooth(triangleWave(t, 2000)))
         let glowAlpha = lerp(0.10, 0.28, smooth(triangleWave(t, 3200)))
@@ -255,11 +266,12 @@ enum SplashArt {
     }
 
     static func drawLightningBolt(_ ctx: inout GraphicsContext, size: CGSize, t: Double) {
-        let cx = size.width / 2, cy = size.height / 2
+        let cx: Double = Double(size.width) / 2, cy: Double = Double(size.height) / 2
         let boltAlpha = lerp(0.55, 1.0, triangleWave(t, 220))
         let jitter = lerp(-1.5, 1.5, triangleWave(t, 80))
         let stroke = lerp(2.0, 3.5, smooth(triangleWave(t, 600)))
-        let bh = min(size.width, size.height) * 0.085, bw = bh * 0.55
+        let bh: Double = Double(min(size.width, size.height)) * 0.085
+        let bw: Double = bh * 0.55
         let x = cx + jitter
         var p = Path()
         p.move(to: CGPoint(x: x + bw * 0.35, y: cy - bh))
