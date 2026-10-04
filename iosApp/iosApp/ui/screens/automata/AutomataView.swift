@@ -55,6 +55,12 @@ struct AutomataView: View {
     @StateObject private var vm = AutomataViewModel()
     @State private var selectedProfileId: String? = nil
     @State private var showAddSheet = false
+    @State private var section: AutomataSection = .prds
+
+    private enum AutomataSection: String, CaseIterable {
+        case prds = "PRDs"
+        case types = "Types"
+    }
 
     private var selectedProfile: ServerProfile? {
         if let id = selectedProfileId {
@@ -84,7 +90,7 @@ struct AutomataView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
                     DocsLinkButton(profile: selectedProfile, anchor: "automata")
-                    if !store.profiles.isEmpty {
+                    if !store.profiles.isEmpty && section == .types {
                         Button {
                             showAddSheet = true
                         } label: {
@@ -133,18 +139,35 @@ struct AutomataView: View {
                     .background(DatawatchColors.surface)
             }
 
-            if vm.isLoading && vm.types.isEmpty {
-                LoadingIndicator(message: "Loading automata types…")
-            } else if let err = vm.error, vm.types.isEmpty {
-                ErrorCard(message: err) {
-                    if let profile = selectedProfile {
-                        vm.load(profile: profile)
-                    }
+            Picker("Section", selection: $section) {
+                ForEach(AutomataSection.allCases, id: \.self) { s in
+                    Text(s.rawValue).tag(s)
                 }
-            } else if vm.types.isEmpty {
-                emptyTypesView
-            } else {
-                typesList
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .accessibilityLabel("Automata section")
+
+            switch section {
+            case .prds:
+                if let profile = selectedProfile {
+                    PrdListView(profile: profile)
+                }
+            case .types:
+                if vm.isLoading && vm.types.isEmpty {
+                    LoadingIndicator(message: "Loading automata types…")
+                } else if let err = vm.error, vm.types.isEmpty {
+                    ErrorCard(message: err) {
+                        if let profile = selectedProfile {
+                            vm.load(profile: profile)
+                        }
+                    }
+                } else if vm.types.isEmpty {
+                    emptyTypesView
+                } else {
+                    typesList
+                }
             }
         }
         .task(id: selectedProfile?.id ?? "") {

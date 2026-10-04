@@ -470,6 +470,80 @@ public object IosServiceLocator {
     public fun getToken(alias: String): String? =
         alias.takeIf { it.isNotBlank() }?.let { tokenStore.get(it) }
 
+    // ── Autonomous PRD callbacks ───────────────────────────────────────────
+
+    /** GET /api/autonomous/prds — all PRDs for [profile]. */
+    public fun listPrds(
+        profile: ServerProfile,
+        onSuccess: (List<com.dmzs.datawatchclient.transport.dto.PrdDto>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).listPrds().fold(
+                onSuccess = { onSuccess(it.prds) },
+                onFailure = { onError(it.message ?: "Failed to load PRDs.") },
+            )
+        }
+    }
+
+    /** GET /api/autonomous/prds/{id} — full PRD with stories and tasks. */
+    public fun getPrd(
+        profile: ServerProfile,
+        prdId: String,
+        onSuccess: (com.dmzs.datawatchclient.transport.dto.PrdDto) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).getPrd(prdId).fold(
+                onSuccess = { onSuccess(it) },
+                onFailure = { onError(it.message ?: "Failed to load PRD.") },
+            )
+        }
+    }
+
+    /**
+     * POST /api/autonomous/prds/{id}/{action} — approve | reject | request_revision |
+     * run | decompose | … [bodyJson] is an optional JSON object string
+     * (e.g. `{"reason":"…"}`), parsed here so Swift needs no Kotlin JSON types.
+     */
+    public fun prdAction(
+        profile: ServerProfile,
+        prdId: String,
+        action: String,
+        bodyJson: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            val body =
+                bodyJson?.let {
+                    runCatching {
+                        kotlinx.serialization.json.Json.parseToJsonElement(it) as kotlinx.serialization.json.JsonObject
+                    }.getOrNull()
+                }
+            transportFor(profile).prdAction(prdId, action, body).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "PRD action '$action' failed.") },
+            )
+        }
+    }
+
+    /** DELETE /api/autonomous/prds/{id} — cancel (hard=false) or hard-delete (hard=true). */
+    public fun cancelPrd(
+        profile: ServerProfile,
+        prdId: String,
+        hard: Boolean,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).deletePrd(prdId, hard = hard).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Failed to cancel PRD.") },
+            )
+        }
+    }
+
     // ── Automata type callbacks ────────────────────────────────────────────
 
     /** Fetch all registered automata types for [profile]. */
