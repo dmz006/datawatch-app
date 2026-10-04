@@ -84,18 +84,39 @@ jobs:
 
       # Simulator builds need no signing. ONLY_ACTIVE_ARCH=NO ensures all
       # simulator slices build (catches arm64/x64 portability issues).
+      # Must fail the job when xcodebuild fails. (A previous `| grep … || cat log`
+      # tail swallowed the exit code, so Swift compile errors reported green.)
       - name: Build for iOS Simulator
         working-directory: iosApp
         run: |
-          set -o pipefail
-          xcodebuild build \
-            -project DatawatchClient.xcodeproj \
-            -scheme DatawatchClient \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-            -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            ONLY_ACTIVE_ARCH=NO \
-            | tee xcodebuild.log | grep -E '^(Build|CompileSwift|error:|warning:|note:)' || cat xcodebuild.log
+          set -uo pipefail
+          if xcodebuild build \
+              -project DatawatchClient.xcodeproj \
+              -scheme DatawatchClient \
+              -destination 'generic/platform=iOS Simulator' \
+              -configuration Debug \
+              CODE_SIGNING_ALLOWED=NO \
+              ONLY_ACTIVE_ARCH=NO \
+              > xcodebuild.log 2>&1; then
+            echo "BUILD SUCCEEDED — $(grep -c ' warning: ' xcodebuild.log || true) warnings"
+          else
+            echo "::group::Compiler errors"
+            grep -E '(\.swift|\.m|\.h):[0-9]+:[0-9]+: error: ' xcodebuild.log | sort -u || true
+            echo "::endgroup::"
+            grep -E '(\.swift):[0-9]+:[0-9]+: error: ' xcodebuild.log | sort -u | \
+              sed -E 's#^.*/(iosApp/[^:]+):([0-9]+):([0-9]+): error: (.*)$#::error file=iosApp/\1,line=\2,col=\3::\4#' || true
+            tail -40 xcodebuild.log
+            exit 1
+          fi
+
+      - name: Upload xcodebuild log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: iosApp/xcodebuild.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       # Cache derived data between runs to speed up incremental Xcode builds.
       - name: Cache Xcode derived data
