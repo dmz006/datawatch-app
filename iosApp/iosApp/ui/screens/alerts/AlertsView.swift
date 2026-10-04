@@ -295,6 +295,8 @@ struct AlertsView: View {
     @State private var savedCommands: [IosSavedCommand] = []
 
     var body: some View {
+        VStack(spacing: 0) {
+        ServerPickerBar()
         Group {
             if store.profiles.isEmpty {
                 noProfilesView
@@ -306,6 +308,7 @@ struct AlertsView: View {
                 alertListView
             }
         }
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DatawatchColors.background)
         .navigationBarTitleDisplayMode(.inline)
@@ -316,16 +319,16 @@ struct AlertsView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
                     DocsLinkButton(
-                        profile: store.profiles.first,
+                        profile: store.activeProfile,
                         anchor: "alerts"
                     )
-                    ReachabilityDotView(profile: store.profiles.first)
+                    ReachabilityDotView(profile: store.activeProfile)
                 }
             }
         }
         .onAppear {
-            vm.load(from: store.profiles)
-            if let p = store.profiles.first {
+            vm.load(from: store.activeProfile.map { [$0] } ?? [])
+            if let p = store.activeProfile {
                 IosQuickCommands.shared.loadSaved(profile: p) { list in
                     DispatchQueue.main.async { savedCommands = list }
                 }
@@ -334,8 +337,11 @@ struct AlertsView: View {
         .onDisappear {
             vm.stopPolling()
         }
-        .onChange(of: store.profiles) { newProfiles in
-            vm.load(from: newProfiles)
+        .onChange(of: store.profiles) { _ in
+            vm.load(from: store.activeProfile.map { [$0] } ?? [])
+        }
+        .onChange(of: store.activeProfileId) { _ in
+            vm.load(from: store.activeProfile.map { [$0] } ?? [])
         }
     }
 

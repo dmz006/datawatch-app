@@ -11,7 +11,7 @@ struct SettingsView: View {
     @AppStorage("settingsCollapsedGroups") private var collapsedRaw: String = ""
 
     private var profile: ServerProfile? {
-        store.profiles.first { $0.enabled } ?? store.profiles.first
+        store.activeProfile
     }
 
     var body: some View {

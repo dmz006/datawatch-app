@@ -52,7 +52,7 @@ final class AutomataViewModel: ObservableObject {
 
 struct AutomataView: View {
     @EnvironmentObject private var store: ServerProfileStore
-    @State private var selectedProfileId: String? = nil
+    @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
     @State private var section: AutomataSection = .prds
 
     // D22a/D25a: PRDs | Templates. The type registry moved to
@@ -94,6 +94,9 @@ struct AutomataView: View {
                     ReachabilityDotView(profile: selectedProfile)
                 }
             }
+        }
+        .onChange(of: store.activeProfileId) { id in
+            if id != selectedProfileId { selectedProfileId = id; }
         }
         .onChange(of: store.profiles) { profiles in
             // If the selected profile was removed, reset selection
@@ -141,7 +144,7 @@ struct AutomataView: View {
     private var profilePicker: some View {
         Picker("Server", selection: Binding(
             get: { selectedProfileId ?? store.profiles.first?.id ?? "" },
-            set: { selectedProfileId = $0 }
+            set: { selectedProfileId = $0; store.selectActive($0) }
         )) {
             ForEach(store.profiles, id: \.id) { profile in
                 Text(profile.displayName).tag(profile.id)

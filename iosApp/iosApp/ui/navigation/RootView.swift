@@ -15,11 +15,14 @@ struct RootView: View {
     @AppStorage("dw.alert.badge") private var alertBadgeCount: Int = 0
 
     var body: some View {
-        if horizontalSizeClass == .regular {
-            iPadLayout
-        } else {
-            iPhoneLayout
+        Group {
+            if horizontalSizeClass == .regular {
+                iPadLayout
+            } else {
+                iPhoneLayout
+            }
         }
+        .modifier(ServerPickerDialogModifier())
     }
 
     // ── iPhone: TabView ───────────────────────────────────────────────────

@@ -9,6 +9,21 @@ import DatawatchShared
 final class ServerProfileStore: ObservableObject {
     @Published private(set) var profiles: [ServerProfile] = []
     @Published private(set) var isLoading = true
+    /// D2a: one app-wide active server (persisted), chosen from the PWA-style
+    /// "Server:" picker bar. Falls back to the first enabled profile.
+    @Published private(set) var activeProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
+
+    var enabledProfiles: [ServerProfile] { profiles.filter { $0.enabled } }
+
+    var activeProfile: ServerProfile? {
+        if let id = activeProfileId, let p = profiles.first(where: { $0.id == id && $0.enabled }) { return p }
+        return enabledProfiles.first ?? profiles.first
+    }
+
+    func selectActive(_ id: String) {
+        activeProfileId = id
+        UserDefaults.standard.set(id, forKey: "dw.active_profile_id")
+    }
 
     private var collectionTask: Task<Void, Never>?
 
