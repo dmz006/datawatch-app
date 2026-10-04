@@ -12,7 +12,7 @@ final class SessionsViewModel: ObservableObject {
 
     // ── Published state ───────────────────────────────────────────────────
 
-    @Published private(set) var sessions: [Session] = []
+    @Published private(set) var sessions: [DwSession] = []
     @Published private(set) var isLoading = false
     @Published private(set) var error: String? = nil
     @Published private(set) var activeProfile: ServerProfile? = nil

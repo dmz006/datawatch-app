@@ -13,15 +13,15 @@ struct SessionsView: View {
     @State private var sortOrder: SortOrder = .recentActivity
 
     // Confirmation state for per-row actions.
-    @State private var sessionToKill: Session? = nil
-    @State private var sessionToRestart: Session? = nil
-    @State private var sessionToDelete: Session? = nil
+    @State private var sessionToKill: DwSession? = nil
+    @State private var sessionToRestart: DwSession? = nil
+    @State private var sessionToDelete: DwSession? = nil
     @State private var actionInProgress: String? = nil
 
     // Current-status sheet state.
     @State private var currentStatusShort: String? = nil
     @State private var currentStatusLong: String? = nil
-    @State private var currentStatusSession: Session? = nil
+    @State private var currentStatusSession: DwSession? = nil
     @State private var currentStatusLoadingId: String? = nil
 
     enum SessionStateFilter: String, CaseIterable {
@@ -140,7 +140,7 @@ struct SessionsView: View {
 
     // ── Row actions ───────────────────────────────────────────────────────
 
-    private func fetchCurrentStatus(for session: Session) {
+    private func fetchCurrentStatus(for session: DwSession) {
         guard let profile = viewModel.activeProfile else { return }
         currentStatusLoadingId = session.id
         IosServiceLocator.shared.fetchSessionCurrentStatus(
@@ -358,7 +358,7 @@ struct SessionsView: View {
         }
     }
 
-    private var filteredSessions: [Session] {
+    private var filteredSessions: [DwSession] {
         var result = viewModel.sessions
 
         switch stateFilter {
@@ -460,10 +460,10 @@ struct SessionsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // ── Session row ───────────────────────────────────────────────────────
+    // ── DwSession row ───────────────────────────────────────────────────────
 
     @ViewBuilder
-    private func sessionRow(_ session: Session) -> some View {
+    private func sessionRow(_ session: DwSession) -> some View {
         NavigationLink {
             if let profile = viewModel.activeProfile {
                 SessionDetailView(session: session, profile: profile)
@@ -648,7 +648,7 @@ struct SessionsView: View {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private func sessionDisplayName(_ session: Session) -> String {
+    private func sessionDisplayName(_ session: DwSession) -> String {
         if let name = session.name, !name.isEmpty { return name }
         if let task = session.taskSummary, !task.isEmpty { return task }
         return session.id
@@ -689,7 +689,7 @@ struct SessionsView: View {
         return "\(seconds / 86400)d ago"
     }
 
-    private func accessibilityLabel(for session: Session) -> String {
+    private func accessibilityLabel(for session: DwSession) -> String {
         "\(sessionDisplayName(session)), \(stateLabel(for: session.state))"
     }
 

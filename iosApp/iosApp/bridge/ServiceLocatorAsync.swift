@@ -10,7 +10,7 @@ enum ServiceLocatorAsync {
         var errorDescription: String? { message }
     }
 
-    static func listSessions(profile: ServerProfile) async throws -> [Session] {
+    static func listSessions(profile: ServerProfile) async throws -> [DwSession] {
         try await withCheckedThrowingContinuation { cont in
             IosServiceLocator.shared.listSessions(
                 profile: profile,

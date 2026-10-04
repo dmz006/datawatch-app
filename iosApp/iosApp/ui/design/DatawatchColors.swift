@@ -30,7 +30,7 @@ enum DatawatchColors {
     static let onSurfaceMuted = Color(hex: 0x94A3B8)
     /// Divider / border (#2D3148)
     static let border      = Color(hex: 0x2D3148)
-    /// Session-count chip background (#22263A)
+    /// DwSession-count chip background (#22263A)
     static let chipBackground = Color(hex: 0x22263A)
     /// TopAppBar / navigation bar surface (#1E2130)
     static let surfaceBar = Color(hex: 0x1E2130)

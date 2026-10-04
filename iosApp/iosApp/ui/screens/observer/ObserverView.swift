@@ -239,25 +239,25 @@ struct ObserverView: View {
             MetricCard(
                 label: "CPU",
                 icon: "cpu",
-                value: stats?.cpuPct,
+                value: stats?.cpuPct?.doubleValue,
                 formatAsPercent: true
             )
             MetricCard(
                 label: "Memory",
                 icon: "memorychip",
-                value: stats?.memPct,
+                value: stats?.memPct?.doubleValue,
                 formatAsPercent: true
             )
             MetricCard(
                 label: "Disk",
                 icon: "internaldrive",
-                value: stats?.diskPct,
+                value: stats?.diskPct?.doubleValue,
                 formatAsPercent: true
             )
             MetricCard(
                 label: "VRAM",
                 icon: "memorychip.fill",
-                value: stats?.gpuPct,
+                value: stats?.gpuPct?.doubleValue,
                 formatAsPercent: true
             )
             SessionMetricCard(
@@ -385,7 +385,7 @@ private struct MetricCard: View {
     }
 }
 
-// ── Session count card ────────────────────────────────────────────────────
+// ── DwSession count card ────────────────────────────────────────────────────
 
 private struct SessionMetricCard: View {
     let label: String

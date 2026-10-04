@@ -211,7 +211,7 @@ public object IosServiceLocator {
     }
 
     /** Generate a new profile id (UUID). */
-    public fun newProfileId(): String =
+    public fun generateProfileId(): String =
         NSUUID().UUIDString.lowercase()
 
     /** Epoch millis for use in [ServerProfile.createdTs]. */

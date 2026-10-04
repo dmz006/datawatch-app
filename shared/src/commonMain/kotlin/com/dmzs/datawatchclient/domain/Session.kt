@@ -2,12 +2,18 @@ package com.dmzs.datawatchclient.domain
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlin.experimental.ExperimentalObjCName
+import kotlin.native.ObjCName
 
 /**
  * A single datawatch session (tmux + LLM runner pair) as observed by the mobile client.
  * Source of truth is the server — this is a cache representation. See
  * `docs/data-model.md` and `docs/api-parity.md`.
  */
+// Swift sees this as `DwSession`: SQLDelight also generates a `db.Session` row class, and
+// without an explicit name Kotlin/Native mangles one of the two arbitrarily.
+@OptIn(ExperimentalObjCName::class)
+@ObjCName("DwSession", exact = true)
 @Serializable
 public data class Session(
     val id: String,
