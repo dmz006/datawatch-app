@@ -491,6 +491,8 @@ struct PrdRow: View {
                     .tint(PrdStatusStyle.color(prd.status))
                     .accessibilityLabel("\(done) of \(total) tasks complete")
             }
+            // PWA card lifecycle strip (display-only here; actions live in the detail).
+            PrdLifecycleStrip(prd: prd)
         }
         .padding(.vertical, 6)
     }
