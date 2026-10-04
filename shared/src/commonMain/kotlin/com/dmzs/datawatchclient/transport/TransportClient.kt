@@ -951,6 +951,7 @@ public interface TransportClient {
         cron: String,
         enabled: Boolean = true,
         sessionId: String? = null,
+        runAt: String? = null,
     ): Result<Schedule>
 
     /** DELETE /api/schedules?id=<id> — cancel a scheduled command. */

@@ -560,8 +560,10 @@ class RestTransportTest {
             assertEquals("POST", sent.method)
             assertEquals("/api/schedules", sent.path)
             val body = sent.body.readUtf8()
-            assertTrue(body.contains("\"task\":\"weekly\""), body)
-            assertTrue(body.contains("\"cron\":\"0 0 * * 0\""), body)
+            // Server (handlePostSchedule) reads `command` / `cron_expr`, not `task` / `cron`.
+            assertTrue(body.contains("\"command\":\"weekly\""), body)
+            assertTrue(body.contains("\"cron_expr\":\"0 0 * * 0\""), body)
+            assertTrue(!body.contains("\"task\""), body)
             assertTrue(body.contains("\"enabled\":true"), body)
         }
 

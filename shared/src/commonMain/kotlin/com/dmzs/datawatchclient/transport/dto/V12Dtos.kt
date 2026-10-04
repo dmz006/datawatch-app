@@ -37,11 +37,14 @@ public data class ScheduleDto(
 
 @Serializable
 public data class CreateScheduleDto(
-    val task: String,
-    val cron: String,
+    /** Server field `command` (handlePostSchedule); `task`/`cron` were silently ignored. */
+    @SerialName("command") val task: String,
+    @SerialName("cron_expr") val cron: String = "",
     val enabled: Boolean = true,
     /** Attach the schedule to a specific session so it shows up in that session's strip. */
     @SerialName("session_id") val sessionId: String? = null,
+    /** Natural language ("in 30m", "at 14:00") or RFC3339; blank = on next input. */
+    @SerialName("run_at") val runAt: String? = null,
 )
 
 // ---- Files (/api/files?path=) ----
