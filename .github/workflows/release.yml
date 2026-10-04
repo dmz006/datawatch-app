@@ -206,3 +206,75 @@ jobs:
       - name: Clean up key file
         if: always()
         run: rm -f "$RUNNER_TEMP/play-key.json"
+
+  # iOS: build, sign with fastlane match, upload to TestFlight. Gated on the
+  # same test job as Play, and on the IOS_SIGNING_CONFIGURED repo variable so
+  # tags keep working before Apple secrets exist. Secrets are listed in
+  # .github/workflows/ios-match-init.yml and docs/plans/ios-testflight-setup.md.
+  testflight:
+    name: iOS — sign + upload to TestFlight
+    runs-on: macos-15
+    needs: test
+    if: ${{ vars.IOS_SIGNING_CONFIGURED == 'true' && needs.test.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name || github.ref }}
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Cache Kotlin/Native artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
+      - name: Assemble KMP XCFramework (release)
+        run: ./gradlew :shared:assembleDatawatchSharedReleaseXCFramework --no-daemon --stacktrace
+
+      - name: Install xcodegen + fastlane
+        run: |
+          brew install xcodegen
+          gem install fastlane --no-document
+
+      - name: Export version env vars
+        run: |
+          echo "DATAWATCH_APP_VERSION=$(grep -oP '^DATAWATCH_APP_VERSION=\K.+' gradle.properties)" >> "$GITHUB_ENV"
+          echo "DATAWATCH_APP_VERSION_CODE=$(grep -oP '^DATAWATCH_APP_VERSION_CODE=\K.+' gradle.properties)" >> "$GITHUB_ENV"
+
+      - name: Generate Xcode project
+        working-directory: iosApp
+        run: xcodegen generate --spec project.yml
+
+      - name: Sign, build and upload (fastlane beta)
+        working-directory: iosApp
+        env:
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          fastlane beta
+
+      - name: Attach IPA to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag_name || github.ref_name }}
+          files: iosApp/build/DatawatchClient.ipa
+
+      - name: Remove temporary keychain
+        if: always()
+        run: security delete-keychain build.keychain || true
