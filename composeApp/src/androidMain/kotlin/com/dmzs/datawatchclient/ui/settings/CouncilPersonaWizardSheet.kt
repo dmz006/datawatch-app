@@ -29,7 +29,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import android.widget.Toast
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +40,8 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.CouncilRefineStepRequest
 import kotlinx.coroutines.flow.first
 import com.dmzs.datawatchclient.ui.common.MicAttachableTextField
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -202,11 +203,10 @@ fun CouncilPersonaWizardSheet(
                                                     refineInput = ""
                                                 }
                                                 .onFailure { err ->
-                                                    Toast.makeText(
-                                                        context,
+                                                    AlertDockChannel.post(
                                                         "Refine failed: ${err.message}",
-                                                        Toast.LENGTH_SHORT,
-                                                    ).show()
+                                                        DockLevel.Error,
+                                                    )
                                                 }
                                         }
                                         refining = false

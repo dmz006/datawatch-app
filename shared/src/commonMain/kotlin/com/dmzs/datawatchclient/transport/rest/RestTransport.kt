@@ -651,6 +651,15 @@ public class RestTransport(
             }
         }
 
+    override suspend fun deleteAllAlerts(): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/alerts") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(MarkAlertReadDto(all = true, delete = true))
+            }
+        }
+
     override suspend fun fetchInfo(): Result<ServerInfo> =
         request {
             val dto: ServerInfoDto =
@@ -3041,7 +3050,7 @@ public class RestTransport(
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
                 setBody(kotlinx.serialization.json.buildJsonObject {
-                    put("title", kotlinx.serialization.json.JsonPrimitive("Datawatch test"))
+                    put("title", kotlinx.serialization.json.JsonPrimitive("datawatch test"))
                     put("message", kotlinx.serialization.json.JsonPrimitive("Push notification test from Settings"))
                 })
             }

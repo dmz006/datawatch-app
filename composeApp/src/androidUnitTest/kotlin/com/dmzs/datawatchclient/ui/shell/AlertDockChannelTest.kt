@@ -1,71 +1,106 @@
 package com.dmzs.datawatchclient.ui.shell
 
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * Sprint 20 test-debt — AlertDockChannel state machine coverage.
- *
- * AlertDockOverlay callbacks (dismiss/mute) are tested at the channel level:
- * - dismiss = AlertDockChannel.close()
- * - mute    = caller's local `dockMuted = true` (AppRoot state, not in channel)
- *
- * The channel is a singleton `object` so tests access it directly;
- * reset to closed after each test by calling close().
- */
+/** Parity D41a / D47a / D51a — the dock that replaced Android toasts. */
 class AlertDockChannelTest {
+    @BeforeTest
+    fun reset() = AlertDockChannel.resetForTest()
+
+    @AfterTest
+    fun cleanup() = AlertDockChannel.resetForTest()
+
+    // ── open/close state machine (Sprint 20 coverage, kept) ──────────────
 
     @Test
-    fun `initial state is closed`() {
-        AlertDockChannel.close() // guard: ensure clean state
-        assertFalse(AlertDockChannel.open.value)
-    }
+    fun `initial state is closed`() = assertFalse(AlertDockChannel.open.value)
 
     @Test
-    fun `toggle opens the dock`() {
-        AlertDockChannel.close()
+    fun `toggle opens the dock and toggle again closes it`() {
         AlertDockChannel.toggle()
         assertTrue(AlertDockChannel.open.value)
-        AlertDockChannel.close() // cleanup
-    }
-
-    @Test
-    fun `toggle twice returns to closed`() {
-        AlertDockChannel.close()
         AlertDockChannel.toggle()
-        AlertDockChannel.toggle()
-        assertFalse(AlertDockChannel.open.value)
-    }
-
-    @Test
-    fun `close while already closed stays closed`() {
-        AlertDockChannel.close()
-        AlertDockChannel.close()
         assertFalse(AlertDockChannel.open.value)
     }
 
     @Test
     fun `close after open sets dock to closed`() {
-        // Simulates onDismiss callback behaviour from AlertDockOverlay.
-        AlertDockChannel.close()
         AlertDockChannel.toggle()
-        assertTrue(AlertDockChannel.open.value, "expected open after toggle")
         AlertDockChannel.close()
-        assertFalse(AlertDockChannel.open.value, "expected closed after dismiss")
+        assertFalse(AlertDockChannel.open.value)
+    }
+
+    // ── dock entries (parity D41a / D47a / D51a) ──────────────────────────
+
+    @Test
+    fun `post adds an entry without opening the dock`() {
+        AlertDockChannel.post("Saved", DockLevel.Success)
+        assertEquals(1, AlertDockChannel.entries.value.size)
+        assertFalse(AlertDockChannel.open.value)
     }
 
     @Test
-    fun `mute logic is caller-side boolean independent of channel`() {
-        // AppRoot tracks dockMuted as a local `var remember { false }`.
-        // Muting does NOT flow through AlertDockChannel — it only suppresses
-        // the overlay render in AppRoot. This test documents the contract.
-        var dockMuted = false
-        AlertDockChannel.toggle()
-        dockMuted = true
-        // Channel is still open; mute is a separate flag.
+    fun `same family within 60 s coalesces with a counter`() {
+        AlertDockChannel.post("Recording failed: busy", DockLevel.Error, nowMs = 1_000)
+        AlertDockChannel.post("Recording failed: other", DockLevel.Error, nowMs = 2_000)
+        val e = AlertDockChannel.entries.value.single()
+        assertEquals(2, e.count)
+        assertEquals("Recording failed: other", e.message)
+    }
+
+    @Test
+    fun `coalescing stops after the window`() {
+        AlertDockChannel.post("Saved: a", nowMs = 0)
+        AlertDockChannel.post("Saved: b", nowMs = 61_000)
+        assertEquals(2, AlertDockChannel.entries.value.size)
+    }
+
+    @Test
+    fun `app errors open the dock so they are never silent`() {
+        AlertDockChannel.post("Upload failed", DockLevel.Error)
         assertTrue(AlertDockChannel.open.value)
-        assertTrue(dockMuted)
-        AlertDockChannel.close()
+    }
+
+    @Test
+    fun `server alerts never auto-open the dock`() {
+        AlertDockChannel.post("session x: error", DockLevel.Error, fromServerAlert = true)
+        assertFalse(AlertDockChannel.open.value)
+        assertEquals(0, AlertDockChannel.localCount(AlertDockChannel.entries.value))
+    }
+
+    @Test
+    fun `mute drops info and server alerts but keeps app errors`() {
+        AlertDockChannel.mute()
+        AlertDockChannel.post("Saved", DockLevel.Info)
+        AlertDockChannel.post("alert", DockLevel.Error, fromServerAlert = true)
+        assertTrue(AlertDockChannel.entries.value.isEmpty())
+        AlertDockChannel.post("Upload failed", DockLevel.Error)
+        assertEquals(1, AlertDockChannel.entries.value.size)
+    }
+
+    @Test
+    fun `pill click while muted unmutes and opens`() {
+        AlertDockChannel.mute()
+        AlertDockChannel.toggle()
+        assertFalse(AlertDockChannel.muted.value)
+        assertTrue(AlertDockChannel.open.value)
+    }
+
+    @Test
+    fun `dismiss clears entries and closes`() {
+        AlertDockChannel.post("Upload failed", DockLevel.Error)
+        AlertDockChannel.dismiss()
+        assertTrue(AlertDockChannel.entries.value.isEmpty())
+        assertFalse(AlertDockChannel.open.value)
+    }
+
+    @Test
+    fun `family strips a bracket prefix and keeps text before the separator`() {
+        assertEquals("Transcribe failed", AlertDockChannel.familyOf("[mic] Transcribe failed: timeout"))
     }
 }

@@ -26,6 +26,11 @@ public class AddServerViewModel : ViewModel() {
         val token: String = "",
         val noToken: Boolean = false,
         val selfSigned: Boolean = false,
+        /** Parity D91a — pinned leaf SHA-256 (lowercase hex), null when unpinned. */
+        val pinnedSha: String? = null,
+        val pinning: Boolean = false,
+        val pinCandidate: com.dmzs.datawatchclient.transport.CertFingerprint? = null,
+        val pinError: String? = null,
         val probing: Boolean = false,
         val error: String? = null,
         val canSubmit: Boolean = false,
@@ -48,7 +53,37 @@ public class AddServerViewModel : ViewModel() {
             it.copy(noToken = v, token = if (v) "" else it.token).recompute()
         }
 
-    public fun onSelfSigned(v: Boolean): Unit = _state.update { it.copy(selfSigned = v).recompute() }
+    public fun onSelfSigned(v: Boolean): Unit =
+        _state.update { it.copy(selfSigned = v, pinnedSha = if (v) null else it.pinnedSha).recompute() }
+
+    /** Parity D91a — fetch the server's leaf certificate for the user to review. */
+    public fun probePin() {
+        val url = _state.value.baseUrl.trim()
+        _state.update { it.copy(pinning = true, pinError = null) }
+        viewModelScope.launch {
+            com.dmzs.datawatchclient.transport.probeServerCertificate(url).fold(
+                onSuccess = { fp -> _state.update { it.copy(pinning = false, pinCandidate = fp) } },
+                onFailure = { err ->
+                    _state.update {
+                        it.copy(
+                            pinning = false,
+                            pinError = err.message ?: "Could not reach the server or it presented no certificate.",
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    public fun confirmPin(): Unit =
+        _state.update { s ->
+            val fp = s.pinCandidate ?: return@update s
+            s.copy(pinnedSha = fp.sha256Hex, selfSigned = false, pinCandidate = null).recompute()
+        }
+
+    public fun cancelPin(): Unit = _state.update { it.copy(pinCandidate = null) }
+
+    public fun removePin(): Unit = _state.update { it.copy(pinnedSha = null).recompute() }
 
     @OptIn(ExperimentalUuidApi::class)
     public fun submit() {
@@ -71,14 +106,14 @@ public class AddServerViewModel : ViewModel() {
                     displayName = snapshot.displayName.trim(),
                     baseUrl = snapshot.baseUrl.trim().trimEnd('/'),
                     bearerTokenRef = alias,
-                    // "Self-signed" checkbox → ServiceLocator picks the trust-all Ktor
-                    // client for this profile. Disables TLS identity verification for
-                    // this server only.
+                    // Trust-all switch → ServiceLocator picks the trust-all Ktor client
+                    // (no TLS identity checks for this server). A pinned SHA-256 →
+                    // a client that accepts exactly that leaf cert (D91a).
                     trustAnchorSha256 =
                         if (snapshot.selfSigned) {
                             ServiceLocator.TRUST_ALL_SENTINEL
                         } else {
-                            null
+                            snapshot.pinnedSha
                         },
                     reachabilityProfileId = "lan-default",
                     enabled = true,
@@ -112,7 +147,12 @@ public class AddServerViewModel : ViewModel() {
                                     "Token rejected by server."
                                 }
                             is TransportError.Unreachable -> "Server not reachable. Check URL, Tailscale, or VPN."
-                            is TransportError.TrustFailure -> "Certificate not trusted. Import your self-signed CA first."
+                            is TransportError.TrustFailure ->
+                                if (snapshot.pinnedSha != null) {
+                                    "Certificate doesn't match the pin, or doesn't name this host."
+                                } else {
+                                    "Certificate not trusted. Pin the server certificate, or import your CA."
+                                }
                             is TransportError -> err.message ?: "Probe failed."
                             else -> "Probe failed: ${err.message ?: err::class.simpleName}"
                         }

@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
-import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -88,6 +87,8 @@ import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
 import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
 import com.dmzs.datawatchclient.ui.config.ConfigViewerCard
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
@@ -607,29 +608,26 @@ private suspend fun downloadAndInstallCert(
             val filename = "datawatch-${profile.displayName.sanitizeForFilename()}-ca.pem"
             val saved = savePemToDownloads(context, filename, bytes)
             if (saved) {
-                Toast.makeText(
-                    context,
+                AlertDockChannel.post(
                     "Saved to Downloads as $filename. Opening system trust-anchor screen…",
-                    Toast.LENGTH_LONG,
-                ).show()
+                    DockLevel.Success,
+                )
                 // Hand off to the OS flow. User picks the PEM from Downloads.
                 val intent =
                     Intent(Settings.ACTION_SECURITY_SETTINGS)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
                     .onFailure {
-                        Toast.makeText(
-                            context,
+                        AlertDockChannel.post(
                             "Couldn't open security settings — install manually from Downloads.",
-                            Toast.LENGTH_LONG,
-                        ).show()
+                            DockLevel.Error,
+                        )
                     }
             } else {
-                Toast.makeText(
-                    context,
+                AlertDockChannel.post(
                     "Downloaded cert but couldn't save to Downloads.",
-                    Toast.LENGTH_LONG,
-                ).show()
+                    DockLevel.Error,
+                )
             }
         },
         onFailure = { err ->
@@ -639,7 +637,10 @@ private suspend fun downloadAndInstallCert(
                         "Server doesn't expose /api/cert (parent-repo support pending)."
                     else -> "Cert download failed — ${err.message ?: err::class.simpleName}"
                 }
-            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            AlertDockChannel.post(
+                msg,
+                DockLevel.Error,
+            )
         },
     )
 }
@@ -977,6 +978,7 @@ private fun AboutCard(activeProfile: ServerProfile?) {
             url = url,
             onDismiss = { docsUrl = null },
             allowSelfSigned = activeProfile?.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL,
+            pinSha256 = ServiceLocator.pinFor(activeProfile),
         )
     }
 }

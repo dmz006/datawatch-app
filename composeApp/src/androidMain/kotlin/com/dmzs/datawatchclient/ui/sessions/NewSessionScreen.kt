@@ -52,6 +52,8 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -101,11 +103,10 @@ public fun NewSessionScreen(
                         showVoiceDialog = true
                     }
                     .onFailure { e ->
-                        android.widget.Toast.makeText(
-                            context,
+                        AlertDockChannel.post(
                             "Recording failed: ${e.message ?: e::class.simpleName}",
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
+                            DockLevel.Error,
+                        )
                     }
             }
         }
@@ -409,11 +410,10 @@ public fun NewSessionScreen(
                                         ).onSuccess { result ->
                                             task = (task + " " + result.transcript.trim()).trim()
                                         }.onFailure { err ->
-                                            android.widget.Toast.makeText(
-                                                context,
+                                            AlertDockChannel.post(
                                                 "Transcribe failed: ${err.message}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                                DockLevel.Error,
+                                            )
                                         }
                                 }
                                 transcribingVoice = false
@@ -449,11 +449,10 @@ public fun NewSessionScreen(
                                             showVoiceDialog = true
                                         }
                                         .onFailure { e ->
-                                            android.widget.Toast.makeText(
-                                                context,
+                                            AlertDockChannel.post(
                                                 "Recording failed: ${e.message}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                                DockLevel.Error,
+                                            )
                                         }
                                 } else {
                                     micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)

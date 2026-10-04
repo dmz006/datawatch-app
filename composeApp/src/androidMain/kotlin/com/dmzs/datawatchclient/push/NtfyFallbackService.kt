@@ -184,7 +184,7 @@ public class NtfyFallbackService : Service() {
             NotificationPoster.Event(
                 sessionId = sessionId,
                 type = inferType(msg.title.orEmpty()),
-                title = msg.title ?: "Datawatch",
+                title = msg.title ?: "datawatch",
                 body = msg.message ?: "",
             ),
         )
@@ -200,7 +200,7 @@ public class NtfyFallbackService : Service() {
 
     private fun foregroundNotification(): Notification =
         NotificationCompat.Builder(this, NotificationChannels.FOREGROUND)
-            .setContentTitle("Datawatch — listening for ntfy")
+            .setContentTitle("datawatch — listening for ntfy")
             .setSmallIcon(R.drawable.ic_stat_dw)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)

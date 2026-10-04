@@ -42,6 +42,8 @@ public data class DeleteSessionDto(
 public data class MarkAlertReadDto(
     val id: String? = null,
     val all: Boolean? = null,
+    /** `true` deletes instead of acking (PWA dismiss-all, parity D48a). */
+    val delete: Boolean? = null,
 )
 
 /**

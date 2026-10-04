@@ -28,7 +28,6 @@
     <string name="action_edit">Modifier</string>
     <string name="action_browse">Parcourir…</string>
     <string name="action_back">Retour</string>
-    <string name="action_kill">Terminer</string>
     <string name="action_yes">Oui</string>
     <string name="action_no">Non</string>
 
@@ -61,13 +60,10 @@
     <string name="sessions_fab_new">Nouvelle session</string>
     <string name="sessions_clear_filter">Effacer le filtre</string>
     <string name="sessions_collapse_toolbar">Réduire la barre</string>
-    <string name="sessions_sort_prefix">Tri : %1$s</string>
     <string name="sessions_history_count">Historique (%1$d)</string>
-    <string name="sessions_empty_state">Aucune session pour l\'instant. Utilisez `new : &lt;tâche&gt;` depuis un backend de messagerie ou attendez que le daemon en envoie une.</string>
+    <string name="sessions_empty_state">Aucune session active</string>
+    <string name="sessions_empty_hint">Touchez + pour démarrer une session, ou envoyez des commandes via Signal.</string>
     <string name="sessions_no_task">(aucune tâche)</string>
-    <string name="sessions_selected_count">%1$d sélectionné(s)</string>
-    <string name="sessions_cancel_selection">Annuler la sélection</string>
-    <string name="sessions_delete_selected">Supprimer la sélection</string>
     <string name="sessions_move_up">Monter</string>
     <string name="sessions_move_down">Descendre</string>
     <string name="sessions_more_menu">Plus</string>
@@ -114,15 +110,16 @@
     <string name="session_detail_generating">génération</string>
     <string name="session_detail_no_messages">Aucun message pour l\'instant. En attente de la sortie de la session…</string>
     <string name="session_detail_no_events">Aucun événement pour l\'instant — ouvrez une session avec une sortie pour voir les transitions d\'état, les invites et les complétions.</string>
-    <string name="session_detail_unreachable_banner">Serveur inaccessible — flux du terminal en pause, dernière image affichée.</string>
-    <string name="session_detail_kill_title">Terminer la session ?</string>
+    <string name="session_detail_kill_title">Arrêter la session ?</string>
     <string name="session_detail_kill_body">Cela arrête la session tmux sur le serveur. La session ne peut pas être reprise.</string>
     <string name="session_detail_delete_title">Supprimer la session ?</string>
     <string name="session_detail_delete_body">L\'enregistrement de session sera supprimé du serveur. Les données sur le disque sont préservées. Cette action est irréversible.</string>
     <string name="session_detail_override_state">Forcer l\'état</string>
     <string name="session_detail_reply_waiting">Répondre (saisie requise)…</string>
     <string name="session_detail_reply_hint">Répondre…</string>
-    <string name="session_detail_saved_commands">Commandes enregistrées</string>
+    <string name="session_detail_commands_select">Commandes…</string>
+    <string name="session_detail_commands_custom">Personnalisée…</string>
+    <string name="session_detail_commands_custom_ph">Saisir une commande…</string>
     <string name="session_detail_schedule_action">Planifier une réponse</string>
     <string name="session_detail_on_input">à la saisie</string>
     <string name="session_detail_cancel_schedule">Annuler la planification</string>
@@ -168,8 +165,7 @@
     <string name="alerts_title">Alertes</string>
     <string name="alerts_active_tab">Actif (%1$d)</string>
     <string name="alerts_inactive_tab">Inactif (%1$d)</string>
-    <string name="alerts_empty_active">Aucune session n\'attend de saisie. Vous êtes à jour.</string>
-    <string name="alerts_empty_inactive">Aucune alerte historique.</string>
+    <string name="alerts_empty">Aucune alerte.</string>
     <string name="alerts_action_reply">Répondre…</string>
     <string name="alerts_action_schedule">Planifier…</string>
 
@@ -414,7 +410,7 @@
     <string name="mermaid_render_hint">Diagramme Mermaid (rendre dans les docs)</string>
     <string name="mermaid_title">Diagramme Mermaid</string>
     <string name="nav_automata">Automates</string>
-    <string name="nav_home">Datawatch</string>
+    <string name="nav_home">datawatch</string>
     <string name="nav_new_session">Nouvelle session</string>
     <string name="nav_observer">Observer</string>
     <string name="header_alerts_pill_cd">%1$d alertes</string>
@@ -954,9 +950,12 @@
     <string name="session_llm_any_node">N\'importe quel nœud</string>
     <string name="session_llm_legacy_notice">Backend hérité (compat v6)</string>
     <string name="session_filter_all">Tous</string>
-    <string name="session_filter_active">Actif</string>
     <string name="session_filter_waiting">En attente</string>
-    <string name="session_filter_done">Terminé</string>
+    <string name="session_chip_running">En cours</string>
+    <string name="session_chip_rate_limited">Limitée</string>
+    <string name="session_chip_complete">Terminée</string>
+    <string name="session_chip_failed">Échouée</string>
+    <string name="session_chip_killed">Arrêtée</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">Nœud de calcul</string>
     <!-- Sprint 15 #106 — Compute CRUD overhaul -->

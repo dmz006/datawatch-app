@@ -28,7 +28,6 @@
     <string name="action_edit">編集</string>
     <string name="action_browse">参照…</string>
     <string name="action_back">戻る</string>
-    <string name="action_kill">強制終了</string>
     <string name="action_yes">はい</string>
     <string name="action_no">いいえ</string>
 
@@ -61,13 +60,10 @@
     <string name="sessions_fab_new">新しいセッション</string>
     <string name="sessions_clear_filter">フィルターをクリア</string>
     <string name="sessions_collapse_toolbar">ツールバーを閉じる</string>
-    <string name="sessions_sort_prefix">並べ替え: %1$s</string>
     <string name="sessions_history_count">履歴 (%1$d)</string>
-    <string name="sessions_empty_state">まだセッションがありません。メッセージングバックエンドから `new: &lt;タスク&gt;` を使うか、デーモンのプッシュをお待ちください。</string>
+    <string name="sessions_empty_state">アクティブなセッションなし</string>
+    <string name="sessions_empty_hint">+ ボタンでセッションを開始するか、Signal からコマンドを送信します。</string>
     <string name="sessions_no_task">(タスクなし)</string>
-    <string name="sessions_selected_count">%1$d 件選択中</string>
-    <string name="sessions_cancel_selection">選択を解除</string>
-    <string name="sessions_delete_selected">選択を削除</string>
     <string name="sessions_move_up">上へ</string>
     <string name="sessions_move_down">下へ</string>
     <string name="sessions_more_menu">その他</string>
@@ -114,15 +110,16 @@
     <string name="session_detail_generating">生成中</string>
     <string name="session_detail_no_messages">まだメッセージがありません。セッションの出力を待っています…</string>
     <string name="session_detail_no_events">まだイベントがありません — 出力のあるセッションを開くと状態遷移、プロンプト、完了が表示されます。</string>
-    <string name="session_detail_unreachable_banner">サーバーに接続できません — ターミナルストリームが一時停止中、最後のフレームを表示しています。</string>
-    <string name="session_detail_kill_title">セッションを強制終了しますか？</string>
+    <string name="session_detail_kill_title">セッションを停止しますか？</string>
     <string name="session_detail_kill_body">サーバー上の tmux セッションを停止します。セッションを再開することはできません。</string>
     <string name="session_detail_delete_title">セッションを削除しますか？</string>
     <string name="session_detail_delete_body">セッションレコードがサーバーから削除されます。ディスク上のデータは保持されます。この操作は取り消せません。</string>
     <string name="session_detail_override_state">状態を強制変更</string>
     <string name="session_detail_reply_waiting">返答（入力が必要）…</string>
     <string name="session_detail_reply_hint">返答…</string>
-    <string name="session_detail_saved_commands">保存済みコマンド</string>
+    <string name="session_detail_commands_select">コマンド…</string>
+    <string name="session_detail_commands_custom">カスタム…</string>
+    <string name="session_detail_commands_custom_ph">コマンドを入力…</string>
     <string name="session_detail_schedule_action">返答をスケジュール</string>
     <string name="session_detail_on_input">入力時</string>
     <string name="session_detail_cancel_schedule">スケジュールをキャンセル</string>
@@ -168,8 +165,7 @@
     <string name="alerts_title">アラート</string>
     <string name="alerts_active_tab">アクティブ (%1$d)</string>
     <string name="alerts_inactive_tab">非アクティブ (%1$d)</string>
-    <string name="alerts_empty_active">入力待ちのセッションはありません。すべて完了しています。</string>
-    <string name="alerts_empty_inactive">過去のアラートはありません。</string>
+    <string name="alerts_empty">アラートはありません。</string>
     <string name="alerts_action_reply">返答…</string>
     <string name="alerts_action_schedule">スケジュール…</string>
 
@@ -414,7 +410,7 @@
     <string name="mermaid_render_hint">Mermaidダイアグラム（ドキュメントでレンダリング）</string>
     <string name="mermaid_title">Mermaidダイアグラム</string>
     <string name="nav_automata">オートマタ</string>
-    <string name="nav_home">Datawatch</string>
+    <string name="nav_home">datawatch</string>
     <string name="nav_new_session">新しいセッション</string>
     <string name="nav_observer">オブザーバー</string>
     <string name="header_alerts_pill_cd">%1$d 件のアラート</string>
@@ -954,9 +950,12 @@
     <string name="session_llm_any_node">どのノードでも可</string>
     <string name="session_llm_legacy_notice">レガシーバックエンド（v6互換）</string>
     <string name="session_filter_all">すべて</string>
-    <string name="session_filter_active">アクティブ</string>
     <string name="session_filter_waiting">待機中</string>
-    <string name="session_filter_done">完了</string>
+    <string name="session_chip_running">実行中</string>
+    <string name="session_chip_rate_limited">レート制限</string>
+    <string name="session_chip_complete">完了</string>
+    <string name="session_chip_failed">失敗</string>
+    <string name="session_chip_killed">終了済み</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">コンピュートノード</string>
     <!-- Sprint 15 #106 — Compute CRUD overhaul -->

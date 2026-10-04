@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,7 +18,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -74,7 +74,12 @@ public fun EditServerScreen(
             return@Scaffold
         }
         Column(
-            modifier = Modifier.padding(padding).padding(24.dp).fillMaxWidth(),
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .padding(24.dp)
+                    .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedTextField(
@@ -124,13 +129,19 @@ public fun EditServerScreen(
                         },
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = state.selfSigned, onCheckedChange = vm::onSelfSigned)
-                Text(
-                    "  Server uses a self-signed certificate",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+            ServerTrustSection(
+                baseUrl = state.baseUrl,
+                selfSigned = state.selfSigned,
+                pinnedSha = state.pinnedSha,
+                pinning = state.pinning,
+                pinCandidate = state.pinCandidate,
+                pinError = state.pinError,
+                onProbe = vm::probePin,
+                onConfirmPin = vm::confirmPin,
+                onCancelPin = vm::cancelPin,
+                onRemovePin = vm::removePin,
+                onSelfSigned = vm::onSelfSigned,
+            )
             state.error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }

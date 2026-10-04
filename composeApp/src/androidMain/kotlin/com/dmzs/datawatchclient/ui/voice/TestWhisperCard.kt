@@ -2,7 +2,6 @@ package com.dmzs.datawatchclient.ui.voice
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +33,8 @@ import androidx.core.content.ContextCompat
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.ui.settings.Section
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.voice.VoiceRecorder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -141,7 +142,10 @@ public fun TestWhisperCard() {
                         recording = true
                         status = "recording — tap ■ to stop"
                         // S6-7 (#88): mic recording toast.
-                        Toast.makeText(context, R.string.mic_toast_recording, Toast.LENGTH_SHORT).show()
+                        AlertDockChannel.post(
+                            context.getString(R.string.mic_toast_recording),
+                            DockLevel.Info,
+                        )
                     }
                     .onFailure { status = "mic start failed: ${it.message}" }
             } else {
@@ -194,7 +198,10 @@ public fun TestWhisperCard() {
                                         recording = true
                                         status = "recording — tap ■ to stop"
                                         // S6-7 (#88): mic recording toast.
-                                        Toast.makeText(context, R.string.mic_toast_recording, Toast.LENGTH_SHORT).show()
+                                        AlertDockChannel.post(
+                                            context.getString(R.string.mic_toast_recording),
+                                            DockLevel.Info,
+                                        )
                                     }
                                     .onFailure { status = "mic start failed: ${it.message}" }
                             } else {

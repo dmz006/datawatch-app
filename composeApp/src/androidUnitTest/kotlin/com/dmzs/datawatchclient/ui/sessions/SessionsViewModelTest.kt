@@ -35,12 +35,12 @@ class SessionsViewModelTest {
         backend = backend,
     )
 
-    // ── SessionStateFilter default ─────────────────────────────────────────
+    // ── State chip (parity D12a) ───────────────────────────────────────────
 
     @Test
-    fun `stateFilter defaults to ALL`() {
+    fun `stateChip defaults to all`() {
         val state = SessionsViewModel.UiState()
-        assertEquals(SessionsViewModel.SessionStateFilter.ALL, state.stateFilter)
+        assertEquals(SessionsViewModel.UiState.STATE_CHIP_ALL, state.stateChip)
     }
 
     @Test
@@ -132,22 +132,67 @@ class SessionsViewModelTest {
         assertFalse(state.showHistory)
     }
 
-    // ── State filter chip highlighting ─────────────────────────────────────
+    // ── State filter chips (parity D12a) ───────────────────────────────────
 
     @Test
-    fun `ACTIVE filter differs from ALL`() {
-        assertFalse(
-            SessionsViewModel.SessionStateFilter.ACTIVE ==
-                SessionsViewModel.SessionStateFilter.ALL,
+    fun `stateCounts counts every real state and all`() {
+        val state = SessionsViewModel.UiState(
+            sessions = listOf(
+                session("a", SessionState.Running),
+                session("b", SessionState.Running),
+                session("c", SessionState.Waiting),
+                session("d", SessionState.Killed),
+            ),
         )
+        val c = state.stateCounts
+        assertEquals(4, c["all"])
+        assertEquals(2, c["running"])
+        assertEquals(1, c["waiting_input"])
+        assertEquals(1, c["killed"])
+        assertEquals(0, c["failed"])
     }
 
     @Test
-    fun `non-ALL filter is highlighted — ALL is not`() {
-        val filters = SessionsViewModel.SessionStateFilter.values()
-        val nonAll = filters.filter { it != SessionsViewModel.SessionStateFilter.ALL }
-        assertTrue(nonAll.isNotEmpty())
-        // Every filter except ALL is a "highlighted" state
-        nonAll.forEach { assertFalse(it == SessionsViewModel.SessionStateFilter.ALL) }
+    fun `visibleStateChips hides zero-count chips but keeps all and the selected one`() {
+        val state = SessionsViewModel.UiState(
+            sessions = listOf(session("a", SessionState.Running)),
+            stateChip = "failed",
+        )
+        assertEquals(listOf("all", "running", "failed"), state.visibleStateChips)
+    }
+
+    @Test
+    fun `state chip filters to that wire state`() {
+        val state = SessionsViewModel.UiState(
+            sessions = listOf(
+                session("a", SessionState.Running),
+                session("b", SessionState.Waiting),
+            ),
+            stateChip = "waiting_input",
+        )
+        assertEquals(listOf("b"), state.visibleSessions.map { it.id })
+    }
+
+    // ── Ordering (parity D42a) ─────────────────────────────────────────────
+
+    @Test
+    fun `manual order first, then last activity descending, no state buckets`() {
+        val t0 = Instant.fromEpochMilliseconds(1_000)
+        val t1 = Instant.fromEpochMilliseconds(2_000)
+        val t2 = Instant.fromEpochMilliseconds(3_000)
+        val sessions = listOf(
+            session("waiting", SessionState.Waiting, lastActivityAt = t0),
+            session("old", SessionState.Running, lastActivityAt = t1),
+            session("new", SessionState.Running, lastActivityAt = t2),
+        )
+        val sorted = SessionsViewModel.UiState.sortByManualOrder(sessions, listOf("old"))
+        assertEquals(listOf("old", "new", "waiting"), sorted.map { it.id })
+    }
+
+    @Test
+    fun `manual order ignores ids no longer present`() {
+        val sessions = listOf(session("a"), session("b"))
+        val sorted = SessionsViewModel.UiState.sortByManualOrder(sessions, listOf("gone", "b"))
+        assertEquals(listOf("b", "a"), sorted.map { it.id })
     }
 }

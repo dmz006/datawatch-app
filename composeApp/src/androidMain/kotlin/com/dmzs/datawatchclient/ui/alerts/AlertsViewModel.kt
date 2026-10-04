@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -555,14 +555,22 @@ public class AlertsViewModel : ViewModel() {
     }
 
     /**
-     * Mark a single alert as read server-side. The PWA uses this to
-     * drop rows from its unread-count badge.
+     * Profiles the current Alerts view is scoped to — the active profile, or
+     * every enabled profile in "All servers" mode.
+     */
+    private suspend fun targetProfiles(): List<com.dmzs.datawatchclient.domain.ServerProfile> {
+        val all = _allProfiles.value.filter { it.enabled }
+        if (_allServersModeFlow.value) return all
+        return listOfNotNull(_computedActiveProfile.first() ?: all.firstOrNull())
+    }
+
+    /**
+     * Mark a single alert as read server-side. No longer reachable from the
+     * UI (parity D49a dropped the per-alert ✓); kept for callers/tests.
      */
     public fun markAlertRead(alertId: String) {
         viewModelScope.launch {
-            val profile =
-                ServiceLocator.profileRepository.observeAll().firstOrNull()
-                    ?.firstOrNull { it.enabled } ?: return@launch
+            val profile = targetProfiles().firstOrNull() ?: return@launch
             ServiceLocator.transportFor(profile).markAlertRead(alertId, all = false)
             // Optimistic local drop so the UI updates before next poll.
             _alerts.value =
@@ -573,15 +581,38 @@ public class AlertsViewModel : ViewModel() {
     }
 
     /**
-     * Dismiss all alerts server-side. Mirrors PWA alpha.30 "dismiss all" action.
+     * Parity D49a — PWA marks every alert read the moment the Alerts page
+     * renders (`renderAlertsView` → POST `{all:true}`). Called when the tab
+     * opens. Ack only; the rows stay listed.
+     */
+    public fun ackAllOnOpen() {
+        viewModelScope.launch {
+            targetProfiles().forEach { p ->
+                ServiceLocator.transportFor(p).markAlertRead(alertId = null, all = true)
+            }
+            _alerts.value = _alerts.value.map { it.copy(read = true) }
+        }
+    }
+
+    /**
+     * Parity D48a — dismiss-all deletes server-side like the PWA
+     * (`dismissAlertsAll` → POST `{all:true, delete:true}`).
      */
     public fun dismissAll() {
         viewModelScope.launch {
-            val profile =
-                ServiceLocator.profileRepository.observeAll().firstOrNull()
-                    ?.firstOrNull { it.enabled } ?: return@launch
-            ServiceLocator.transportFor(profile).markAlertRead(alertId = null, all = true)
-            _alerts.value = emptyList()
+            val failures =
+                targetProfiles().mapNotNull { p ->
+                    ServiceLocator.transportFor(p).deleteAllAlerts().exceptionOrNull()?.let { p.displayName to it }
+                }
+            if (failures.isEmpty()) {
+                _alerts.value = emptyList()
+            } else {
+                _banner.value =
+                    "Dismiss all failed — " +
+                    failures.take(2).joinToString("; ") { (name, err) ->
+                        "$name: ${err.message ?: err::class.simpleName}"
+                    }
+            }
         }
     }
 

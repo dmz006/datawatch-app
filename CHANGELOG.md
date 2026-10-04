@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed (Android — PWA parity decisions, 2026-10-04)
+- **Accent colour** is the PWA `--accent` #7C3AED again (was #8B5CF6).
+- **Brand** is lowercase "datawatch" everywhere it is shown, including the Sessions header title (the active server is shown under it) and Android Auto voice strings.
+- **Stop, not Kill**: the stop-session confirm dialog says "Stop session?" / "Stop" in every language.
+- **Toasts retired**: every in-app message now goes to the alert dock (🔔 pill in the header). The dock opens by itself only for app errors. The dock is available on every screen, has no expand animation, and 🔕 mutes it for the app session. Live server alerts are added to the dock as they arrive.
+- **Alerts page**: opening it marks all alerts read (the per-alert ✓ is gone), ✕ dismiss-all deletes alerts on the server like the web UI, swipe-to-dismiss on alert groups is removed, and every tab shows "No alerts." when empty.
+- **Alerts tab badge** is hidden when there are no alerts.
+- **Session detail**: the "server unreachable" banner is gone (the header status dot shows the connection), the mode badge shows only for plain tmux sessions, and the ⌨ saved-commands sheet is replaced by a "Commands…" dropdown with a Custom… input in the keys row.
+- **Sessions list**: a `State (N)` button opens chips for every real session state; the Sort menu is gone (drag order, then most recent activity); ☑ enters select mode with a bottom bar (All/None · Delete · Cancel); the card shows the name (or task) with a short-id pill; the empty state matches the web UI.
+- **PRD status pills** use the session state-badge colours and pulse while running, planning or decomposing; running pills pulse at the web UI's timing and stop pulsing when system animations are off.
+- **Splash** shows only on first launch, after an app update, or when more than 24 h have passed since it was last shown.
+
+### Added (Android)
+- **Certificate pinning**: Add/Edit server has a Security section that fetches the server certificate, shows its SHA-256 fingerprint, and pins it once you confirm. A pinned server is trusted for exactly that certificate, and its name must still match the host. "Trust all certificates" stays available as a separate, insecure option.
+
 ## [1.23.7] — 2026-09-18
 
 ### Fixed

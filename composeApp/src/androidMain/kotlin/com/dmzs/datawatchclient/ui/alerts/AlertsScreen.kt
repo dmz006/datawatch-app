@@ -3,7 +3,6 @@ package com.dmzs.datawatchclient.ui.alerts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,8 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +63,7 @@ import com.dmzs.datawatchclient.domain.AlertSeverity
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 
 /**
  * Alerts tab — matches PWA `renderAlertsView` (app.js:5516) structure:
@@ -86,6 +85,8 @@ public fun AlertsScreen(
     val state by vm.state.collectAsState()
     val reachable by vm.reachable.collectAsState()
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
+    // Parity D49a — opening the Alerts page acks every alert (PWA rule).
+    LaunchedEffect(Unit) { vm.ackAllOnOpen() }
 
     Scaffold(
         topBar = {
@@ -219,7 +220,8 @@ public fun AlertsScreen(
                             )
                         }
                         ControlBtn("✕", vm::dismissAll)
-                        ControlBtn("🔕") { vm.dismissAll() }
+                        // Parity D47a — 🔕 mutes the alert dock (PWA muteAlertDock).
+                        ControlBtn("🔕") { AlertDockChannel.mute() }
                         ControlBtn("↻", vm::refresh)
                     }
                     HorizontalDivider(color = dwBorder.copy(alpha = 0.5f))
@@ -304,7 +306,7 @@ public fun AlertsScreen(
                 if (flatChrono.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            stringResource(R.string.alerts_empty_active),
+                            stringResource(R.string.alerts_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -318,7 +320,6 @@ public fun AlertsScreen(
                                 alert = alert,
                                 showQuickReply = false,
                                 onQuickReply = { alert.sessionId?.let { onOpenSession(it) } },
-                                onMarkRead = { vm.markAlertRead(alert.id) },
                             )
                         }
                     }
@@ -331,12 +332,8 @@ public fun AlertsScreen(
                             CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
                         } else {
                             Text(
-                                text =
-                                    when (state.selectedTab) {
-                                        AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
-                                        AlertsViewModel.Tab.Historical -> stringResource(R.string.alerts_empty_inactive)
-                                        AlertsViewModel.Tab.System -> stringResource(R.string.alerts_empty_inactive)
-                                    },
+                                // Parity D35a — PWA single "No alerts." on every tab.
+                                text = stringResource(R.string.alerts_empty),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -359,8 +356,6 @@ public fun AlertsScreen(
                                 onOpenSession = {
                                     group.session?.let { onOpenSession(it.id) }
                                 },
-                                onDismiss = { vm.dismissSession(group.sessionId) },
-                                onMarkRead = vm::markAlertRead,
                             )
                         }
                     }
@@ -492,9 +487,8 @@ private fun AlertsTopBar(
 
 /**
  * Per-session group — header row with state pill + alert count + chevron.
- * Expanded body lists the per-alert cards. Swipe-left on the header
- * mutes the session (no-op when the group is the SYSTEM_BUCKET, which
- * has no underlying session).
+ * Expanded body lists the per-alert cards. No swipe-to-dismiss (parity D50d:
+ * the PWA has none).
  */
 @Composable
 private fun AlertGroupCard(
@@ -503,11 +497,7 @@ private fun AlertGroupCard(
     serverName: String? = null,
     onToggleExpand: () -> Unit,
     onOpenSession: () -> Unit,
-    onDismiss: () -> Unit,
-    onMarkRead: (String) -> Unit,
 ) {
-    val density = LocalDensity.current
-    val swipeThresholdPx = with(density) { 80.dp.toPx() }
     val stateColor = stateAccentColor(group.state)
     val dwBorder = Color(0xFF2D3148)
     val cardShape = RoundedCornerShape(6.dp)
@@ -518,16 +508,7 @@ private fun AlertGroupCard(
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 5.dp)
                 .border(1.dp, dwBorder, cardShape)
-                .background(MaterialTheme.colorScheme.surface, cardShape)
-                .pointerInput(group.sessionId) {
-                    if (group.sessionId == AlertsViewModel.AlertGroup.SYSTEM_BUCKET) return@pointerInput
-                    var dx = 0f
-                    detectHorizontalDragGestures(
-                        onDragStart = { dx = 0f },
-                        onDragEnd = { if (dx < -swipeThresholdPx) onDismiss() },
-                        onDragCancel = { dx = 0f },
-                    ) { _, delta -> dx += delta }
-                },
+                .background(MaterialTheme.colorScheme.surface, cardShape),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Session header: ▼/▶ | name | state | [auto] count · last HH:MM:SS
@@ -608,7 +589,6 @@ private fun AlertGroupCard(
                             alert = alert,
                             showQuickReply = canQuickReply && idx == 0,
                             onQuickReply = { onOpenSession() },
-                            onMarkRead = { onMarkRead(alert.id) },
                             sessionState = group.state,
                         )
                     }
@@ -627,7 +607,6 @@ private fun AlertCard(
     alert: Alert,
     showQuickReply: Boolean,
     onQuickReply: () -> Unit,
-    onMarkRead: () -> Unit,
     sessionState: SessionState? = null,
 ) {
     // Prompt: waiting_input session OR type contains "input" OR title matches PWA regex.
@@ -742,21 +721,6 @@ private fun AlertCard(
                         ),
                 ) {
                     Text(stringResource(R.string.alerts_quick_reply_ph), fontSize = 11.sp)
-                }
-            }
-            // ✓ mark-read — subtle; not in PWA but needed for Android UX
-            if (!alert.read) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(
-                        onClick = onMarkRead,
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 6.dp,
-                                vertical = 2.dp,
-                            ),
-                    ) {
-                        Text("✓", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
                 }
             }
         }

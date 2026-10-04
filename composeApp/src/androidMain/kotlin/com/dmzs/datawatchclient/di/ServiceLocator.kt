@@ -99,6 +99,44 @@ public object ServiceLocator {
 
     public const val TRUST_ALL_SENTINEL: String = "ALLOW_ALL_INSECURE"
 
+    // Parity D91a — one client per pinned leaf fingerprint (REST + WS).
+    private val pinnedClients: MutableMap<String, HttpClient> = mutableMapOf()
+    private val pinnedWsClients: MutableMap<String, HttpClient> = mutableMapOf()
+
+    /** The profile's SHA-256 certificate pin (normalized), or null when unpinned. */
+    public fun pinFor(profile: ServerProfile?): String? =
+        profile?.trustAnchorSha256
+            ?.takeIf { com.dmzs.datawatchclient.transport.CertPins.isPin(it, TRUST_ALL_SENTINEL) }
+            ?.let { com.dmzs.datawatchclient.transport.CertPins.normalize(it) }
+
+    private fun restClientFor(profile: ServerProfile): HttpClient {
+        val anchor = profile.trustAnchorSha256
+        return when {
+            anchor == TRUST_ALL_SENTINEL -> trustAllClient
+            com.dmzs.datawatchclient.transport.CertPins.isPin(anchor, TRUST_ALL_SENTINEL) -> {
+                val pin = com.dmzs.datawatchclient.transport.CertPins.normalize(anchor!!)
+                synchronized(pinnedClients) {
+                    pinnedClients.getOrPut(pin) { com.dmzs.datawatchclient.transport.createPinnedHttpClient(pin) }
+                }
+            }
+            else -> httpClient
+        }
+    }
+
+    private fun wsClientFor(profile: ServerProfile): HttpClient {
+        val anchor = profile.trustAnchorSha256
+        return when {
+            anchor == TRUST_ALL_SENTINEL -> wsTrustAllClient
+            com.dmzs.datawatchclient.transport.CertPins.isPin(anchor, TRUST_ALL_SENTINEL) -> {
+                val pin = com.dmzs.datawatchclient.transport.CertPins.normalize(anchor!!)
+                synchronized(pinnedWsClients) {
+                    pinnedWsClients.getOrPut(pin) { createHttpClientWithWebSockets(pinSha256 = pin) }
+                }
+            }
+            else -> wsClient
+        }
+    }
+
     /**
      * Per-profile [TransportClient] cache. Reused so downstream observers of
      * [TransportClient.isReachable] see a stable Flow across refreshes instead
@@ -110,7 +148,8 @@ public object ServiceLocator {
     /**
      * Build a [TransportClient] for a given server profile. When the profile has
      * [ServerProfile.trustAnchorSha256] == [TRUST_ALL_SENTINEL], a trust-all
-     * HttpClient is used instead of the system-trust default.
+     * HttpClient is used instead of the system-trust default; when it holds a
+     * SHA-256 pin, a client that accepts exactly that leaf certificate (D91a).
      *
      * Returns the cached instance when the profile's base URL + trust-anchor +
      * bearer-ref have not changed — so `isReachable` flows are stable.
@@ -124,12 +163,7 @@ public object ServiceLocator {
             alias?.let {
                 { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
             }
-        val client =
-            if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) {
-                trustAllClient
-            } else {
-                httpClient
-            }
+        val client = restClientFor(profile)
         val transport = RestTransport(profile, client, tokenProvider)
         transportCache[profile.id] = transport to signature
         return transport
@@ -176,12 +210,7 @@ public object ServiceLocator {
             alias?.let {
                 { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
             }
-        val client =
-            if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) {
-                wsTrustAllClient
-            } else {
-                wsClient
-            }
+        val client = wsClientFor(profile)
         return WebSocketTransport(profile, client, tokenProvider)
     }
 }

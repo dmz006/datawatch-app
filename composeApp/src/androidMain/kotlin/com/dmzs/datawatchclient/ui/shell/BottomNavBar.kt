@@ -29,7 +29,6 @@ internal fun BottomNavBar(
     /** S6-2 (#74): show red dot on Settings icon when any federated peer is >6h stale. */
     anyPeerStale: Boolean = false,
     /** Sprint 22 (#115): when true the alerts badge dims and shows 🔕 instead of a count. */
-    alertsMuted: Boolean = false,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.hierarchy?.firstOrNull()?.route
@@ -95,27 +94,13 @@ internal fun BottomNavBar(
                 },
                 icon = {
                     when {
-                        // Sprint 22 (#115): always-on alerts badge; dims when muted or zero.
-                        item.route == Destinations.Tabs.Alerts ->
+                        // Parity D39a: PWA rule — badge hidden at 0, no muted
+                        // state on the tab (mute is shown on the header pill).
+                        item.route == Destinations.Tabs.Alerts && alertsBadge > 0 ->
                             BadgedBox(
                                 badge = {
-                                    Badge(
-                                        containerColor =
-                                            if (alertsMuted || alertsBadge == 0) {
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                            } else {
-                                                MaterialTheme.colorScheme.error
-                                            },
-                                    ) {
-                                        val label =
-                                            when {
-                                                alertsMuted -> "🔕"
-                                                alertsBadge > 0 -> alertsBadge.toString()
-                                                else -> ""
-                                            }
-                                        if (label.isNotEmpty()) {
-                                            Text(label, style = MaterialTheme.typography.labelSmall)
-                                        }
+                                    Badge(containerColor = MaterialTheme.colorScheme.error) {
+                                        Text(alertsBadge.toString(), style = MaterialTheme.typography.labelSmall)
                                     }
                                 },
                             ) {

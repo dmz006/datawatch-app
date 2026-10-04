@@ -2,7 +2,7 @@
 <resources>
     <!-- Public variant: "datawatch" (lowercase brand per ADR-0041). Dev flavor overrides in flavor-specific strings.xml. -->
     <string name="app_name">datawatch</string>
-    <string name="tile_voice_label">Datawatch voice</string>
+    <string name="tile_voice_label">datawatch voice</string>
     <string name="widget_description">Running / waiting / total session counts at a glance.</string>
     <string name="widget_monitor_description">CPU load, memory and session counts from the active datawatch server.</string>
     <string name="widget_monitor_label">datawatch Monitor</string>
@@ -34,7 +34,6 @@
     <string name="action_edit">Edit</string>
     <string name="action_browse">Browse…</string>
     <string name="action_back">Back</string>
-    <string name="action_kill">Kill</string>
     <string name="action_yes">Yes</string>
     <string name="action_no">No</string>
 
@@ -69,13 +68,10 @@
     <string name="sessions_fab_new">New session</string>
     <string name="sessions_clear_filter">Clear filter</string>
     <string name="sessions_collapse_toolbar">Collapse toolbar</string>
-    <string name="sessions_sort_prefix">Sort: %1$s</string>
     <string name="sessions_history_count">History (%1$d)</string>
-    <string name="sessions_empty_state">No sessions yet. Use `new: &lt;task&gt;` from a messaging backend to start one, or wait for the daemon to push one here.</string>
+    <string name="sessions_empty_state">No active sessions</string>
+    <string name="sessions_empty_hint">Tap the + button to start a session, or send commands via Signal.</string>
     <string name="sessions_no_task">(no task)</string>
-    <string name="sessions_selected_count">%1$d selected</string>
-    <string name="sessions_cancel_selection">Cancel selection</string>
-    <string name="sessions_delete_selected">Delete selected</string>
     <string name="sessions_move_up">Move up</string>
     <string name="sessions_move_down">Move down</string>
     <string name="sessions_more_menu">More</string>
@@ -175,15 +171,16 @@
     <string name="session_detail_generating">generating</string>
     <string name="session_detail_no_messages">No messages yet. Waiting for session output…</string>
     <string name="session_detail_no_events">No events yet — open a session that has produced output to see state transitions, prompts, and completions here.</string>
-    <string name="session_detail_unreachable_banner">Server unreachable — terminal stream paused, last frame shown.</string>
-    <string name="session_detail_kill_title">Kill session?</string>
+    <string name="session_detail_kill_title">Stop session?</string>
     <string name="session_detail_kill_body">This stops the tmux session on the server. The session cannot be resumed (a new session would need to be started).</string>
     <string name="session_detail_delete_title">Delete session?</string>
     <string name="session_detail_delete_body">This removes the session record from the server. Tracking data on disk is preserved. This cannot be undone.</string>
     <string name="session_detail_override_state">Override state</string>
     <string name="session_detail_reply_waiting">Reply (input required)…</string>
     <string name="session_detail_reply_hint">Reply…</string>
-    <string name="session_detail_saved_commands">Saved commands</string>
+    <string name="session_detail_commands_select">Commands…</string>
+    <string name="session_detail_commands_custom">Custom…</string>
+    <string name="session_detail_commands_custom_ph">Type command…</string>
     <string name="session_detail_schedule_action">Schedule reply</string>
     <string name="session_detail_on_input">on input</string>
     <string name="session_detail_cancel_schedule">Cancel schedule</string>
@@ -229,8 +226,7 @@
     <string name="alerts_title">Alerts</string>
     <string name="alerts_active_tab">Active (%1$d)</string>
     <string name="alerts_inactive_tab">Inactive (%1$d)</string>
-    <string name="alerts_empty_active">No sessions need input. You\'re caught up.</string>
-    <string name="alerts_empty_inactive">No historical alerts.</string>
+    <string name="alerts_empty">No alerts.</string>
     <string name="alerts_action_reply">Reply…</string>
     <string name="alerts_action_schedule">Schedule…</string>
 
@@ -562,7 +558,7 @@
     <string name="mermaid_render_hint">Mermaid diagram (render in docs)</string>
     <string name="mermaid_title">Mermaid diagram</string>
     <string name="nav_automata">Automata</string>
-    <string name="nav_home">Datawatch</string>
+    <string name="nav_home">datawatch</string>
     <string name="nav_new_session">New Session</string>
     <string name="nav_observer">Observer</string>
     <string name="header_alerts_pill_cd">%1$d alerts</string>
@@ -1116,9 +1112,12 @@
     <string name="session_llm_any_node">Any node OK</string>
     <string name="session_llm_legacy_notice">Legacy backend (v6 compat)</string>
     <string name="session_filter_all">All</string>
-    <string name="session_filter_active">Active</string>
     <string name="session_filter_waiting">Waiting</string>
-    <string name="session_filter_done">Done</string>
+    <string name="session_chip_running">Running</string>
+    <string name="session_chip_rate_limited">Rate-limited</string>
+    <string name="session_chip_complete">Complete</string>
+    <string name="session_chip_failed">Failed</string>
+    <string name="session_chip_killed">Killed</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">Compute Node</string>
     <!-- Sprint 15 #106 — Compute CRUD overhaul -->
