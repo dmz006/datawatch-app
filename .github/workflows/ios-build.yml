@@ -68,10 +68,15 @@ jobs:
 
       # Export version env vars so project.yml can substitute them into
       # MARKETING_VERSION and CURRENT_PROJECT_VERSION build settings.
+      # BSD grep on macOS has no -P; use sed.
       - name: Export version env vars
         run: |
-          echo "DATAWATCH_APP_VERSION=$(grep -oP '^DATAWATCH_APP_VERSION=\K.+' gradle.properties)" >> "$GITHUB_ENV"
-          echo "DATAWATCH_APP_VERSION_CODE=$(grep -oP '^DATAWATCH_APP_VERSION_CODE=\K.+' gradle.properties)" >> "$GITHUB_ENV"
+          set -euo pipefail
+          v=$(sed -n 's/^DATAWATCH_APP_VERSION=//p' gradle.properties)
+          c=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)
+          [ -n "$v" ] && [ -n "$c" ] || { echo "::error::version not found in gradle.properties"; exit 1; }
+          echo "DATAWATCH_APP_VERSION=$v" >> "$GITHUB_ENV"
+          echo "DATAWATCH_APP_VERSION_CODE=$c" >> "$GITHUB_ENV"
 
       - name: Generate Xcode project
         working-directory: iosApp
