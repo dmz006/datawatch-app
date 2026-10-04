@@ -48,13 +48,19 @@ struct SessionDetailView: View {
             VStack(spacing: 0) {
                 metadataBar
                 detailTabBar
-                if detailTab == "tmux" { terminalFontBar }
+                if detailTab == "tmux" && !isChatMode { terminalFontBar }
                 ZStack {
+                    if isChatMode {
+                        ChatTranscriptView(profile: profile, session: session)
+                            .opacity(detailTab == "tmux" ? 1 : 0)
+                            .allowsHitTesting(detailTab == "tmux")
+                    } else {
                     // Kept mounted while Status is shown so the session socket stays open.
                     TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput, controller: terminal)
                         .ignoresSafeArea(edges: .bottom)
                         .opacity(detailTab == "tmux" ? 1 : 0)
                         .allowsHitTesting(detailTab == "tmux")
+                    }
                     if detailTab == "status" {
                         VStack(spacing: 0) {
                             statusSubtabStrip
@@ -239,11 +245,14 @@ struct SessionDetailView: View {
         session.state == .completed || session.state == .killed || session.state == .error
     }
 
+    /// PWA: chat-transcript sessions (OpenWebUI / Ollama) render bubbles, not a terminal.
+    private var isChatMode: Bool { session.outputMode == "chat" }
+
     // ── Output tab bar (PWA: Tmux · Status) ──────────────────────────────
 
     private var detailTabBar: some View {
         HStack(spacing: 0) {
-            ForEach([("tmux", "Tmux"), ("status", "Status")], id: \.0) { tab in
+            ForEach([("tmux", isChatMode ? "Chat" : "Tmux"), ("status", "Status")], id: \.0) { tab in
                 Button {
                     detailTab = tab.0
                 } label: {
@@ -654,6 +663,13 @@ struct SessionDetailView: View {
         let text = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         imageBanner = nil
+        if isChatMode {
+            replyText = ""
+            if !IosSessionOps.shared.sendText(session: session, text: text + "\r") {
+                killError = "Chat isn't connected yet — try again in a moment."
+            }
+            return
+        }
         replyText = ""
         // TerminalView forwards this as a `send_input` frame on the session's
         // /ws hub (WsOutbound) — the only reply path the server exposes.
