@@ -33,11 +33,12 @@ base64 -i AuthKey_XXXXXXXXXX.p8 | tr -d '\n'   # macOS
 
 ### 3. Private certs repo for fastlane match
 1. Create an **empty private** GitHub repo, e.g. `dmz006/datawatch-match-certs`.
-2. Create a GitHub **personal access token** (classic, `repo` scope, or fine-grained with
-   Contents: read/write on that one repo). Encode it with your GitHub username:
-   ```bash
-   printf '%s:%s' 'dmz006' '<PAT>' | base64 -w0     # → MATCH_GIT_BASIC_AUTHORIZATION
-   ```
+2. Create a GitHub **fine-grained personal access token**: Settings → Developer settings →
+   Personal access tokens → Fine-grained → name `datawatch-match-ci`, 1-year expiry,
+   repository access *only* `datawatch-match-certs`, permission **Contents: Read and write**.
+   Store the raw token as the `MATCH_GIT_PAT` secret — the workflows encode it themselves.
+   (Legacy alternative: `MATCH_GIT_BASIC_AUTHORIZATION` = base64 of `user:PAT`; easy to get
+   wrong because `base64` line-wraps on Linux without `-w0`, which yields an HTTP 400 on clone.)
 3. Pick a passphrase for the certs repo encryption → `MATCH_PASSWORD`.
 
 ### 4. GitHub secrets + variable
@@ -49,7 +50,7 @@ Repo → Settings → Secrets and variables → Actions.
 | `APP_STORE_CONNECT_API_ISSUER_ID` | Issuer UUID |
 | `APP_STORE_CONNECT_API_KEY_BASE64` | base64 of the `.p8` |
 | `MATCH_GIT_URL` | `https://github.com/dmz006/datawatch-match-certs.git` |
-| `MATCH_GIT_BASIC_AUTHORIZATION` | base64 of `user:PAT` from step 3 |
+| `MATCH_GIT_PAT` | the raw fine-grained PAT from step 3 (preferred; or `MATCH_GIT_BASIC_AUTHORIZATION` = base64 `user:PAT`) |
 | `MATCH_PASSWORD` | your passphrase |
 | `KEYCHAIN_PASSWORD` | `openssl rand -base64 24` |
 

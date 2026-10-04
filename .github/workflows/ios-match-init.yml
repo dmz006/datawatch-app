@@ -8,9 +8,10 @@ name: iOS signing — match init (one-shot)
 #
 # Required secrets (Settings → Secrets and variables → Actions):
 #   APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID,
-#   APP_STORE_CONNECT_API_KEY_BASE64  — ASC API key (App Manager role)
+#   APP_STORE_CONNECT_API_KEY_BASE64  — ASC API key (Admin role)
 #   MATCH_GIT_URL                     — https URL of the private certs repo
-#   MATCH_GIT_BASIC_AUTHORIZATION     — base64("<github-user>:<PAT with repo scope>")
+#   MATCH_GIT_PAT                     — fine-grained PAT (Contents RW on that repo)
+#                                       — OR — MATCH_GIT_BASIC_AUTHORIZATION = base64("user:PAT")
 #   MATCH_PASSWORD                    — passphrase that encrypts the certs repo
 #   KEYCHAIN_PASSWORD                 — any random string (temporary CI keychain)
 #
@@ -32,8 +33,42 @@ jobs:
   match-init:
     name: fastlane match (${{ inputs.type }})
     runs-on: macos-15
+    env:
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}
+      MATCH_GIT_BASIC_AUTHORIZATION_IN: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
     steps:
       - uses: actions/checkout@v4
+
+      # Prefer a raw PAT and encode it here (no base64 pitfalls on the operator's
+      # side). Falls back to a pre-encoded MATCH_GIT_BASIC_AUTHORIZATION, with any
+      # stray whitespace/newlines stripped. Prints diagnostics only — never values.
+      - name: Preflight — certs repo access
+        id: preflight
+        run: |
+          set -uo pipefail
+          if [ -n "${MATCH_GIT_PAT:-}" ]; then
+            auth=$(printf 'x-access-token:%s' "$MATCH_GIT_PAT" | base64 | tr -d '\n')
+            echo "auth source: MATCH_GIT_PAT"
+          else
+            auth=$(printf '%s' "${MATCH_GIT_BASIC_AUTHORIZATION_IN:-}" | tr -d '[:space:]')
+            echo "auth source: MATCH_GIT_BASIC_AUTHORIZATION (stripped $(( ${#MATCH_GIT_BASIC_AUTHORIZATION_IN} - ${#auth} )) whitespace chars)"
+          fi
+          decoded=$(printf '%s' "$auth" | base64 -d 2>/dev/null || true)
+          case "$decoded" in
+            *:github_pat_*) kind="fine-grained PAT" ;;
+            *:ghp_*)        kind="classic PAT" ;;
+            *:*)            kind="other token" ;;
+            *)              kind="MALFORMED (no user:token after decode)" ;;
+          esac
+          echo "decoded shape: $kind"
+          echo "::add-mask::$auth"
+          echo "MATCH_GIT_BASIC_AUTHORIZATION=$auth" >> "$GITHUB_ENV"
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Basic $auth" \
+            "${MATCH_GIT_URL%.git}.git/info/refs?service=git-upload-pack")
+          echo "certs repo probe: HTTP $code  (200 ok · 401 bad token · 404 token lacks access to repo · 400 malformed header)"
+          [ "$code" = "200" ] || { echo "::error::Cannot access the certs repo with the provided credentials (HTTP $code)."; exit 1; }
 
       - name: Install fastlane
         run: gem install fastlane --no-document
@@ -42,13 +77,12 @@ jobs:
         working-directory: iosApp
         env:
           MATCH_TYPE: ${{ inputs.type }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          GIT_TERMINAL_PROMPT: "0"
         run: |
           set -euo pipefail
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain

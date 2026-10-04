@@ -251,12 +251,28 @@ jobs:
         working-directory: iosApp
         run: xcodegen generate --spec project.yml
 
+      # Same credential handling as ios-match-init.yml: prefer raw MATCH_GIT_PAT,
+      # fall back to a pre-encoded MATCH_GIT_BASIC_AUTHORIZATION (whitespace-stripped).
+      - name: Resolve certs repo credentials
+        env:
+          MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}
+          MATCH_GIT_BASIC_AUTHORIZATION_IN: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+        run: |
+          set -uo pipefail
+          if [ -n "${MATCH_GIT_PAT:-}" ]; then
+            auth=$(printf 'x-access-token:%s' "$MATCH_GIT_PAT" | base64 | tr -d '\n')
+          else
+            auth=$(printf '%s' "${MATCH_GIT_BASIC_AUTHORIZATION_IN:-}" | tr -d '[:space:]')
+          fi
+          echo "::add-mask::$auth"
+          echo "MATCH_GIT_BASIC_AUTHORIZATION=$auth" >> "$GITHUB_ENV"
+
       - name: Sign, build and upload (fastlane beta)
         working-directory: iosApp
         env:
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          GIT_TERMINAL_PROMPT: "0"
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
