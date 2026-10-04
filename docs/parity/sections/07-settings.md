@@ -38,8 +38,8 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Discussion Scopes card (scopes list, write message, New Discussion) | ✓ discussion_scopes A:23897 | ✓ DiscussionScopesCard | ~ list card (scopes) read-only; no write / New Discussion | misaligned | | |
 | element | Security card: biometric lock toggle | ✗ (platform n/a) | ✓ S:703 BiometricPrompt via FragmentActivity | ~ SV toggle `biometricLockEnabled`; `BiometricLockModifier` never applied anywhere → toggle is a no-op | misaligned | | **iOS bug**: gate not enforced |
 | element | Secrets vault status | ✓ inside Secrets Store card (Compute) | ✓ SecretsStatusCard as separate card on General | ✓ vault status row inside Secrets Store list card (PWA placement) | misaligned | needs-decision | D5 |
-| element | Config Viewer card (read-only effective config) | ✗ | ✓ ConfigViewerCard | ✓ SettingsConfigViewerCard (D79a) | pwa-missing | needs-decision | D6 |
-| element | Raw config editor card | ✗ | ✓ RawConfigCard | ✓ SettingsRawConfigCard — diffed dotted-key PUT, masked values never sent (D79a) | pwa-missing | needs-decision | D6 |
+| element | Config Viewer card (read-only effective config) | ✗ | ✓ ConfigViewerCard | ✓ SettingsConfigViewerCard (D79a) | pwa-missing | decided D79a | D6 · iOS verified 2026-10-04 |
+| element | Raw config editor card | ✗ | ✓ RawConfigCard | ✓ SettingsRawConfigCard — diffed dotted-key PUT, masked values never sent (D79a) | pwa-missing | decided D79a | D6 · iOS verified 2026-10-04 |
 | element | Encryption status card (local DB cipher / keystore, file list) | ✗ (no local DB) | ✓ EncryptionStatusCard (About tab) | ✓ SettingsEncryptionCard: Data Protection class per file, Keychain accessibility + token count, server secure_mode (D90a) | aligned | needs-decision | D7 |
 
 ## Comms tab
@@ -132,9 +132,9 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Branding / Splash (tagline + logo path → `session.splash_tagline` / `session.splash_logo_path`) | ✓ A:25502–25534 | ✗ (splash consumed, not edited) | ✗ | android-missing | | iOS also missing |
 | element | Update: Check now → Update button + progress overlay | ✓ checkForUpdate / runUpdate A:13596 | ✓ UpdateDaemonCard | ✓ SettingsAboutCard Check now → Update (confirm) | aligned | | |
 | element | Restart daemon | ✓ restartDaemon A:14222 | ✓ RestartDaemonCard | ✓ SettingsAboutCard Restart (confirm) | aligned | | |
-| element | Subsystem reload card | ✗ | ✓ SubsystemReloadCard | ✓ SettingsSubsystemReloadCard (config / filters / memory) (D80a) | pwa-missing | needs-decision | D11 |
+| element | Subsystem reload card | ✗ | ✓ SubsystemReloadCard | ✓ SettingsSubsystemReloadCard (config / filters / memory) (D80a) | pwa-missing | decided D80a | D11 · iOS verified 2026-10-04 |
 | element | API links card (endpoint list) | ✓ 'api' header | ✓ ApiLinksCard | ✓ SettingsApiLinksCard (Swagger, OpenAPI, docs, MCP tools) | aligned | | |
-| element | MCP channel card + MCP tools card | ✗ | ✓ McpChannelCard, McpToolsCard | ✓ SettingsMcpChannelCard + SettingsMcpToolsCard (D80a) | pwa-missing | needs-decision | D11 |
+| element | MCP channel card + MCP tools card | ✗ | ✓ McpChannelCard, McpToolsCard | ✓ SettingsMcpChannelCard + SettingsMcpToolsCard (D80a) | pwa-missing | decided D80a | D11 · iOS verified 2026-10-04 |
 
 ## Coverage
 rows: 97 · aligned: 42 · ios-missing: 8 · android-missing: 5 · pwa-missing: 4 · misaligned: 38 · n/a: 0

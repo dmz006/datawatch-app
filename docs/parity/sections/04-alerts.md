@@ -17,7 +17,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | data | WS `alert` frame → unread++ + toast | ✓ js:879 handleAlert, showToast 4 s | ✓ global stream routes `alert` → `AlertsHub` → dock entry (`LiveAlertFeed`); badge from REST poll | ✗ | misaligned | decided D51a | D11 — shared EventMapper maps `alert` (EventMapper.kt:69) but neither app consumes it · Android done 2026-10-04 |
 | data | Unread count source | state.alertUnread (WS increments, reset on page open) | AlertsView.unreadCount from REST | AlertsView.unreadCount from REST → @AppStorage dw.alert.badge | misaligned | | Falls out of D3/D11 |
 | data | Alert rules GET/POST/DELETE /api/alert-rules, POST …/enable/disable | ✓ js:21179–21260 (Settings) | ✓ A:AlertRulesCard.kt:73–125 | ✓ I:IosAlertRules.kt list/create/delete/setEnabled | aligned | | Lives in Settings on PWA+Android; listed here per README §04 |
-| data | Alert rule firings GET (listAlertRuleFirings) | ✗ | ✓ A:AlertRulesCard.kt:76,132 "Recent Firings (N)" ×20 | ✗ | pwa-missing | needs-decision | D8 |
+| data | Alert rule firings GET (listAlertRuleFirings) | ✗ | ✓ A:AlertRulesCard.kt:76,132 "Recent Firings (N)" ×20 | ✓ AlertRulesView "Recent Firings (N)" ×20 (`IosExtras.alertRuleFirings`) | pwa-missing | decided D70a | D8 · iOS done 2026-10-04 |
 | data | Detection filters (/api/filters, detection.*_patterns, settle/repeat timing) | ✓ Settings → Detection section | ✓ A:DetectionFiltersCard.kt | ~ I:RulesEditorsViews.swift `FiltersView` (/api/filters CRUD + toggle); detection.*_patterns + settle/repeat timing missing | misaligned | |  |
 | data | Push delivery: UnifiedPush SSE self-registration (Tier 1) | n/a (browser) | ✓ A:push/UnifiedPushSseService.kt | ✗ | n/a | | Android-specific tier; iOS path is APNs |
 | data | Push delivery: ntfy fallback service | n/a | ✓ A:push/NtfyFallbackService.kt | ✗ | n/a | | FCM removed v0.33.17 |
@@ -54,7 +54,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Per-alert ✓ mark-read control | ✗ | ✗ removed | ~ I unread dot + dimmed read rows | pwa-missing | decided D49a | D4 · Android done 2026-10-04 |
 | interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✗ removed | ✗ | pwa-missing | decided D50d | D6 · Android done 2026-10-04 |
 | interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ✓ I:AlertsView.swift:302 swipeActions | pwa-missing | needs-decision | D6 |
-| data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✗ | pwa-missing | needs-decision | D7 |
+| data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✓ `LocalSessionPrefs.badgeCount` — unread alerts of watched sessions once any is watched | pwa-missing | decided D61a | D7 · iOS done 2026-10-04 |
 | element | Alert dock panel (header chips per type, collapse chevron, ✕, 🔕; body cards with ×N, 3-line clamp, left rail) | ✓ js:15044 | ~ A:AlertDockOverlay.kt (pill + category pills + expand + dismiss + mute); feed/coalescing not verified | ✗ | misaligned | | Verify what populates Android dock rows |
 | data | Dock coalescing: family key, 60 s window, ×N, max 100 | ✓ js:15004–15040 | ~ not verified | ✗ | misaligned | | |
 | data | Dock mute persisted per browser session (sessionStorage cs_alert_muted) | ✓ js:15204 | ~ A onMute callback "suppresses for session" | ✗ | misaligned | | |

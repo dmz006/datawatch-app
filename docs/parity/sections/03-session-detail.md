@@ -15,8 +15,8 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | element | LLM badge `⚡ llm_ref` green bordered | ✓ 2934 | ✓ SDS:1123 #10B981 | ✓ SDV:156 success | aligned | | |
 | element | Compute node badge `⚙ ref` purple | ✓ 2935 #a855f7 | ✓ SDS:1126 #8B5CF6 | ✓ SDV:159 secondary(#A855F7) | misaligned | | Android uses 8B5CF6 vs PWA/iOS A855F7 |
 | element | Mode badge only for non-tmux modes (channel/chat/acp) | ✓ 2940 shows only `tmux`?? — live shows badge **only when mode==tmux** | ✓ shown only when mode == tmux | ~ SDV:161 messagingBackend badge | misaligned | decided D17a | PWA and Android invert the condition (D1) · Android done 2026-10-04 |
-| element | Agent badge `⬡ agent_id` | ✗ | ✗ | ✓ SDV:164 | pwa-missing | needs-decision | iOS-only (D2) |
-| element | "Chrome" badge when `sess.chrome` | ✗ | ✗ (session_chrome string exists in settings) | ✓ SDV:167 | pwa-missing | needs-decision | D2 |
+| element | Agent badge `⬡ agent_id` | ✗ | ✗ | ✓ SDV:164 | pwa-missing | decided D66a | iOS-only (D2) · iOS verified 2026-10-04 |
+| element | "Chrome" badge when `sess.chrome` | ✗ | ✗ (session_chrome string exists in settings) | ✓ SDV:167 | pwa-missing | decided D66a | D2 · iOS verified 2026-10-04 |
 | interaction | State badge clickable → state override | ✓ 2941 showStateOverride 14843 | ✓ SDS:1156 DropdownMenu on pill; StateOverrideDialog 2578 | ✓ SDV `stateMenu` Menu on state pill → IosSessionOps.overrideState | aligned | | |
 | element | State override options running / waiting_input / complete / error / killed | ✓ 14843 | ✓ SDS:1160 | ✓ SDV `overrideStates` (running / waiting_input / complete / killed / failed) | aligned | | PWA wire list is running/waiting_input/complete/killed/failed (app.js showStateOverride) |
 | motion | Running state pill pulses alpha (static for waiting/rate_limited) | ✓ style.css `.state-badge-running` `dw-running-pulse` 700 ms .55↔1.0 | ✓ SDS SessionInfoBar via `rememberRunningPulseAlpha` (PWA timing, reduced-motion aware) | ✗ | ios-missing | decided D18 (keep) | Android-only motion (D3) · audit corrected: the live PWA pulses too; user kept the pulse 2026-10-04 |
@@ -27,9 +27,9 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | element | Delete dialog: memory strategy Keep/Purge/Archive + role filter (#199) | ~ 5406 (verify fields) | ✓ SDS:123 deleteMemoryStrategy/Roles | ✓ SessionOpsSheets `SessionDeleteSheet` (Keep/Purge/Archive + role filter + scope) | aligned | | PWA picker confirmed in app.js deleteSession (memory_strategy, role filter, archive scope) |
 | interaction | Timeline button 🕐 (right cluster, first) | ✓ 2949 toggleSessionTimeline | ✓ SDS:1243 | ✓ SDV toolbar `clock` button (first in trailing cluster) | aligned | | |
 | interaction | Response button 📄 (right cluster, second; only when last_response) | ✓ 2950 (always) | ~ SDS:1253 only if hasResponse | ~ SDV:62 toolbar icon, only if lastResponse | misaligned | | PWA always shows; apps hide when empty — PWA drives: show, loading/empty state in modal |
-| interaction | Watch/unwatch toggle (session_watch_on/off) in top bar | ✗ | ✓ SDS:408 isWatched | ✗ | pwa-missing | needs-decision | D6 |
+| interaction | Watch/unwatch toggle (session_watch_on/off) in top bar | ✗ | ✓ SDS:408 isWatched | ✓ SDV `watchButton` (bell in top bar) | pwa-missing | decided D61a | D6 · iOS done 2026-10-04 |
 | interaction | Docs link button in top bar | ✗ (global help) | ✓ DocsLinkButton pattern | ✓ SDV:61 | pwa-missing | | App-wide convention, see §01 |
-| string | Hooks-installed toast for claude-code sessions | ✗ | ✓ SDS:161 status_hooks_installed_toast | ✗ | pwa-missing | needs-decision | D6 |
+| string | Hooks-installed toast for claude-code sessions | ✗ | ✓ SDS:161 status_hooks_installed_toast | ✓ SDV one-time `SessionToast` "Hooks installed in {path}/.claude/" | pwa-missing | decided D67a | D6 · iOS done 2026-10-04 |
 | token | Info bar: bg2, padding 10px 14px, bottom border | ✓ style.css:2977 | ✓ SDS:1062 Surface | ~ SDV:150 surface, 12/6 padding | misaligned | | Padding differs |
 | token | Pill buttons: 10px, radius 10, 1px border, text2 | ✓ style.css:2538 | ~ SDS labelSmall OutlinedButton | ~ SDV badge capsule | misaligned | | Token sheet in §01 |
 
@@ -41,7 +41,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | element | Process stats bar (CPU/RAM/Threads/FDs/Net/GPU) above output, 5 s poll of /api/stats envelopes | ✓ 3576 setInterval 5000 | ✗ (Stats sub-tab instead) | ✗ | misaligned | needs-decision | PWA shows inline bar AND Stats sub-tab; Android only sub-tab (D7) |
 | element | Connection banner for channel/acp: "Waiting for {mode}… [— answer the input prompt below first] ✕" | ✓ 2783–2811 dismissConnBanner 894 | ✗ (not found) | ✗ (CSB unused) | android-missing | | iOS has CSB component but never mounts it |
 | element | Server-unreachable banner "terminal stream paused, last frame shown" (OFFLINE_GRACE 3.5 s debounce) | ✗ (WS status dot global) | ✗ removed (header reachability dot only) | ~ iTV reconnect overlay (full-screen, blocks view) | misaligned | decided D46b | Android toast-style vs iOS blocking overlay (D8) · Android done 2026-10-04 |
-| element | Rate-limit inline notice (yellow #FEF3C7/#92400E, dismissible, retry-at) | ✗ (state badge only) | ✓ SDS:1330 InlineNotices | ✗ | pwa-missing | needs-decision | D6 |
+| element | Rate-limit inline notice (yellow #FEF3C7/#92400E, dismissible, retry-at) | ✗ (state badge only) | ✓ SDS:1330 InlineNotices | ✓ `RateLimitNotice` (state + live `rate_limited` events, retry-at) | pwa-missing | decided D67a | D6 · iOS done 2026-10-04 |
 | element | Needs-input: yellow `.input-bar.needs-input` border (banner removed v6.13.9) | ✓ 2965 | ✓ composer waiting tint | ~ SDV:246 2px blue top rule + tinted field | misaligned | | PWA yellow vs iOS `waiting` blue |
 | motion | Connecting splash until first pane_capture: favicon 64px @0.3 + "CONNECTING TO SESSION…" (#00E5A0, 12px, 600, ls 2px) | ✓ 2999–3005 | ~ SLO: EyeOnlyAnimated + bolt (teal/pink), text alpha 900 ms FastOutSlowIn, bolt 220/80/600 ms, fadeOut 400 ms | ~ iSLO: SF `eye` + ring pulse 1.2 s easeInOut, "datawatch" + status | misaligned | decided D10b | Three different splashes (D9) · Android NOT changed: live PWA now draws the eye + bolt (`DWSplashArt.startSessionLoading`, app.js:3013-3023) — D10 premise stale, needs re-confirmation |
 | motion | Splash min/max dwell (new session 2 s/15 s; existing 0.5 s/8 s) | ✗ (watchdog only) | ✓ SDS:181–233 | ✗ | pwa-missing | needs-decision | D9 |
@@ -61,7 +61,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | element | `?` channel help popup ("Channel Commands") when Channel tab active | ✓ 2873 showChannelHelp 4525 | ✗ | ✗ | android-missing | | |
 | element | Font control `Aa ▾` dropdown (A−, size, A+, Fit) in tab bar right | ✓ 2839–2855 | ✓ TT:125–156 inline DropdownMenu | ~ SDV `terminalFontBar` always-visible row A− px A+ Fit, no Aa▾ dropdown | misaligned | needs-decision | D10 |
 | element | Scroll-mode button `⤒` (U+2912 18px bold) / `⏹` exit | ✓ 2854 toggleScrollMode 3238 | ✓ TT:160 | ✓ SDV `terminalFontBar` ⤒ / ⏹ 18pt bold → `toggleScrollMode` | aligned | | |
-| nav | Mode preference persisted (Terminal default, Chat remembered) | ✗ (per render) | ✓ SDS:131 modePrefs chat_mode | ✗ | pwa-missing | | Android convenience |
+| nav | Mode preference persisted (Terminal default, Chat remembered) | ✗ (per render) | ✓ SDS:131 modePrefs chat_mode | ✓ output tab persisted (`dw.session.detail.tab`) | pwa-missing | decided D67a | Android convenience · iOS done 2026-10-04 — iOS has no Terminal/Chat toggle; the Tmux/Chat · Channel · Status tab is remembered |
 | nav | Deep-link open in Status mode (`openInStatusMode`) | ✗ | ✓ SDS:117 | ✗ | pwa-missing | | Used by alerts → status |
 
 ## 3.4 Status sub-tab (board)
@@ -103,7 +103,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | interaction | Send via channel `▶ ch` (POST /api/channel/send) vs tmux `▶` switching with active tab | ✓ 2920–2924, 4565 | ✗ (single send path) | ✗ | android-missing | | |
 | element | Chat bubbles: avatar U/AI/S, role label, time, radius 12, 13px; user #3b82f6, assistant #10b981, system #64748b | ✓ 3015–3045; css 3055–3144 | ~ CTP: U/AI, primaryContainer / surfaceVariant | ~ ChatTranscriptView bubbles (user primary @25 %, assistant surface, radius 12); no avatar/role label/time | misaligned | | Apps use theme colours, not PWA chat palette |
 | element | Collapsed "N earlier messages" `<details>` when > 6 | ✓ 3023 | ✗ | ✗ | android-missing | | |
-| element | Chat empty state 💬 + "Send a message to begin…" + memory hint | ✓ 3057–3061 | ~ "No messages yet. Waiting for session output…" + Yes/No/Stop chips | ~ ChatTranscriptView "No messages yet." / "connecting…" | misaligned | needs-decision | Quick-reply chips are Android-only (D11) |
+| element | Chat empty state 💬 + "Send a message to begin…" + memory hint | ✓ 3057–3061 | ~ "No messages yet. Waiting for session output…" + Yes/No/Stop chips | ✓ ChatTranscriptView 💬 "Send a message to begin the conversation" + memory hint | misaligned | decided D68a | Quick-reply chips are Android-only (D11) · iOS done 2026-10-04 |
 | element | Chat quick-cmd bar: 📚 memories · 🔍 recall · 🔗 kg query · 🔬 research | ✓ 3050–3055 chatQuickCmd 25201 | ✗ | ✗ | android-missing | | |
 | element | Chat markdown (code blocks, inline code, thinking `<details>`, images, mermaid), streaming bubble | ✓ renderChatMarkdown 1245; css 3249–3331 | ~ CTP streaming bubble; markdown? (MarkdownView exists in autonomous) | ~ ChatTranscriptView inline-only AttributedString markdown + streaming bubble; no code blocks / thinking / images / mermaid | misaligned | | Verify CTP renders markdown |
 | element | Log mode lines with acp-status/processing/ready/error classes | ✓ 3072–3085 | ✗ (not found) | ✗ | android-missing | | |
@@ -126,8 +126,8 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | interaction | Interactive keyboard: xterm onData → sendkey/send_input | ✓ 3545 | ✓ HH onData → DwBridge.onInput | ✓ iTV onInput | aligned | | |
 | interaction | Samsung/IME spurious-Enter suppression (150 ms window), composing-text tracking | n/a | ✓ TV:129–232 | n/a | n/a | | Android-specific IME |
 | interaction | Pinch-zoom WebView as escape hatch for 80-col TUIs | n/a | ✓ TV:558 | ✗ | n/a | | iOS scrollView zoom disabled |
-| interaction | Terminal search (next/prev/clear) via search addon | ✗ | ✓ TV:325–342 dwSearch* (UI removed v0.42 — controller only) | ✗ | pwa-missing | needs-decision | Dormant on Android; keep/revive? (D13) |
-| interaction | Copy selection to clipboard | ✗ (browser native) | ✓ TV:349 dwCopySelection (controller only) | ✗ | n/a | | Native selection on web/iOS |
+| interaction | Terminal search (next/prev/clear) via search addon | ✗ | ✓ TV:325–342 dwSearch* (UI removed v0.42 — controller only) | ✓ `TerminalSearchBar` (dwSearchNext/Prev/Clear) | pwa-missing | decided D69a | Dormant on Android; keep/revive? (D13) · iOS done 2026-10-04 |
+| interaction | Copy selection to clipboard | ✗ (browser native) | ✓ TV:349 dwCopySelection (controller only) | ✓ `TerminalSearchBar` copy: dwCopySelection, else visible rows | n/a | decided D69a | Native selection on web/iOS · iOS done 2026-10-04 |
 | interaction | Prepend backlog on open (`dwPrependBacklog`) | ~ 3523 bufferedLines | ~ TV:373 `prepend()` defined but never called | ✗ | misaligned | | Not live on Android either (verified 2026-10-04); iOS gets live frames only |
 | element | DATAWATCH_COMPLETE marker lines filtered from captures | ✓ app.js ~609 | ✓ HH:519 | ✓ (HH) | aligned | | |
 | element | Terminal exit: black-screen-safe WebView teardown | n/a | ✓ TV:694–705 | ✓ iTV dismantleUIView | n/a | | |
@@ -150,7 +150,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | interaction | Hold-to-repeat arrows (250 ms delay, 80 ms interval) | ✓ startArrowRepeat 4440 | ✗ onClick only | ✗ | android-missing | | |
 | element | Saved commands: dropdown `<select>` with system set (approve/reject/enter/continue/skip/abort/ESC/Ctrl-b/quit) + user `/api/commands`, custom command input | ✓ loadSavedCmdsQuick 5259, sendCustomCmd 5361 | ✓ "Commands…" dropdown (System · Saved · Custom…) + inline custom row; Guardrails group omitted (no named-guardrail API) | ✗ | misaligned | decided D21b | Dropdown vs sheet (D14) · Android done 2026-10-04 |
 | interaction | Quick inputs Enter / C-c / Escape / C-b via `sendkey` | ✓ 4509–4520, 5376–5390 | ✓ sendCommand sendkey | ~ keys strip sends Escape / Enter via sendKey; no C-c / C-b | misaligned | | |
-| element | Quick-reply chips Yes / No / Stop | ✗ | ✓ SDS:1824 (chat empty state only) | ✗ | pwa-missing | needs-decision | D11 |
+| element | Quick-reply chips Yes / No / Stop | ✗ | ✓ SDS:1824 (chat empty state only) | ✓ D68a: PWA memory quick-cmd bar (`ChatMemoryCmdBar`) instead of chips | pwa-missing | decided D68a | D11 · iOS done 2026-10-04 |
 | element | Pending-image / transcribing composer banners | ✓ _composerBanner | ✓ | ✓ SDV `imageBanner` + "Transcribing voice message…" banner | aligned | | |
 
 ## 3.9 Timeline & response viewer
