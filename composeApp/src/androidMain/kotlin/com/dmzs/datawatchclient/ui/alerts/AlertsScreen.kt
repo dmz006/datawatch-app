@@ -306,7 +306,7 @@ public fun AlertsScreen(
                 if (flatChrono.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            stringResource(R.string.alerts_empty_active),
+                            stringResource(R.string.alerts_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -332,12 +332,8 @@ public fun AlertsScreen(
                             CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
                         } else {
                             Text(
-                                text =
-                                    when (state.selectedTab) {
-                                        AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
-                                        AlertsViewModel.Tab.Historical -> stringResource(R.string.alerts_empty_inactive)
-                                        AlertsViewModel.Tab.System -> stringResource(R.string.alerts_empty_inactive)
-                                    },
+                                // Parity D35a — PWA single "No alerts." on every tab.
+                                text = stringResource(R.string.alerts_empty),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

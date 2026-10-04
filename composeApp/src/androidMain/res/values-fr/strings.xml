@@ -60,13 +60,10 @@
     <string name="sessions_fab_new">Nouvelle session</string>
     <string name="sessions_clear_filter">Effacer le filtre</string>
     <string name="sessions_collapse_toolbar">Réduire la barre</string>
-    <string name="sessions_sort_prefix">Tri : %1$s</string>
     <string name="sessions_history_count">Historique (%1$d)</string>
-    <string name="sessions_empty_state">Aucune session pour l\'instant. Utilisez `new : &lt;tâche&gt;` depuis un backend de messagerie ou attendez que le daemon en envoie une.</string>
+    <string name="sessions_empty_state">Aucune session active</string>
+    <string name="sessions_empty_hint">Touchez + pour démarrer une session, ou envoyez des commandes via Signal.</string>
     <string name="sessions_no_task">(aucune tâche)</string>
-    <string name="sessions_selected_count">%1$d sélectionné(s)</string>
-    <string name="sessions_cancel_selection">Annuler la sélection</string>
-    <string name="sessions_delete_selected">Supprimer la sélection</string>
     <string name="sessions_move_up">Monter</string>
     <string name="sessions_move_down">Descendre</string>
     <string name="sessions_more_menu">Plus</string>
@@ -166,8 +163,7 @@
     <string name="alerts_title">Alertes</string>
     <string name="alerts_active_tab">Actif (%1$d)</string>
     <string name="alerts_inactive_tab">Inactif (%1$d)</string>
-    <string name="alerts_empty_active">Aucune session n\'attend de saisie. Vous êtes à jour.</string>
-    <string name="alerts_empty_inactive">Aucune alerte historique.</string>
+    <string name="alerts_empty">Aucune alerte.</string>
     <string name="alerts_action_reply">Répondre…</string>
     <string name="alerts_action_schedule">Planifier…</string>
 
@@ -952,9 +948,12 @@
     <string name="session_llm_any_node">N\'importe quel nœud</string>
     <string name="session_llm_legacy_notice">Backend hérité (compat v6)</string>
     <string name="session_filter_all">Tous</string>
-    <string name="session_filter_active">Actif</string>
     <string name="session_filter_waiting">En attente</string>
-    <string name="session_filter_done">Terminé</string>
+    <string name="session_chip_running">En cours</string>
+    <string name="session_chip_rate_limited">Limitée</string>
+    <string name="session_chip_complete">Terminée</string>
+    <string name="session_chip_failed">Échouée</string>
+    <string name="session_chip_killed">Arrêtée</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">Nœud de calcul</string>
     <!-- Sprint 15 #106 — Compute CRUD overhaul -->
