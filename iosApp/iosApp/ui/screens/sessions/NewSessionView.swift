@@ -31,6 +31,11 @@ struct NewSessionView: View {
     @State private var autoGitInit = false
     @State private var autoGitCommit = false
 
+    /// D82a: "" = start fresh, else the finished session id to warm-resume.
+    @State private var resumeId = ""
+    /// D81a: saved-command library for the task field.
+    @State private var savedCommands: [IosSavedCommand] = []
+
     @State private var submitting = false
     @State private var errorMessage: String? = nil
     @State private var restartingId: String? = nil
@@ -55,7 +60,11 @@ struct NewSessionView: View {
                     TextField("Session name", text: $name, prompt: Text("e.g. Auth refactor"))
                         .autocorrectionDisabled()
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Task").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        HStack {
+                            Text("Task").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            Spacer()
+                            libraryMenu
+                        }
                         TextEditor(text: $task)
                             .frame(minHeight: 110)
                             .font(DatawatchFonts.bodyMedium)
@@ -127,6 +136,18 @@ struct NewSessionView: View {
                     }
                 }
 
+                if !profileMode, let recent = options?.recentDone, !recent.isEmpty {
+                    // D82a (Android ResumePickerDropdown / PWA populateResumeDropdown).
+                    Section("Resume previous (optional)") {
+                        Picker("Resume", selection: $resumeId) {
+                            Text("Start fresh").tag("")
+                            ForEach(recent, id: \.id) { s in
+                                Text(resumeLabel(s)).tag(s.id)
+                            }
+                        }
+                    }
+                }
+
                 if !profileMode {
                     Section {
                         Toggle("Chrome integration", isOn: $chrome)
@@ -184,6 +205,29 @@ struct NewSessionView: View {
         .preferredColorScheme(.dark)
     }
 
+    /// D81a "From library ▾" (Android SavedCommandLibraryDropdown): hidden while the
+    /// server has no saved commands; picking one replaces the task text.
+    @ViewBuilder
+    private var libraryMenu: some View {
+        if !savedCommands.isEmpty {
+            Menu {
+                ForEach(savedCommands, id: \.name) { cmd in
+                    Button { task = cmd.command } label: {
+                        Text(cmd.name)
+                        Text(cmd.command)
+                    }
+                }
+            } label: {
+                Text("From library ▾").font(DatawatchFonts.labelSmall)
+            }
+        }
+    }
+
+    private func resumeLabel(_ s: DwSession) -> String {
+        let title: String = s.name ?? String((s.taskSummary ?? "(no task)").prefix(60))
+        return title + " · " + s.id
+    }
+
     private func recentRow(_ s: DwSession) -> some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
@@ -218,6 +262,9 @@ struct NewSessionView: View {
                 loading = false
             }
         }
+        IosQuickCommands.shared.loadSaved(profile: profile) { list in
+            DispatchQueue.main.async { savedCommands = list }
+        }
     }
 
     private func loadNonClaudeModels() {
@@ -235,7 +282,7 @@ struct NewSessionView: View {
         guard canSubmit else { return }
         submitting = true
         errorMessage = nil
-        IosNewSession.shared.submit(
+        IosExtras.shared.startSession(
             profile: profile,
             task: task,
             name: name,
@@ -250,6 +297,7 @@ struct NewSessionView: View {
             chrome: chrome,
             autoGitInit: autoGitInit,
             autoGitCommit: autoGitCommit,
+            resumeId: profileMode ? "" : resumeId,
             onSuccess: { id in
                 DispatchQueue.main.async {
                     submitting = false
