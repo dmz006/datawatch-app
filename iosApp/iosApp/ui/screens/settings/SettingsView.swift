@@ -35,7 +35,7 @@ struct SettingsView: View {
                     .listRowBackground(DatawatchColors.surface)
                 }
 
-                // ── Session ──────────────────────────────────────────────
+                // ── DwSession ──────────────────────────────────────────────
                 Section {
                     NavigationLink {
                         SettingsSessionView()

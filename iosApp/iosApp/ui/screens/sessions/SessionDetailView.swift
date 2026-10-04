@@ -4,7 +4,7 @@ import DatawatchShared
 
 /// Detail screen for a single session — shows the live terminal plus metadata bar.
 struct SessionDetailView: View {
-    let session: Session
+    let session: DwSession
     let profile: ServerProfile
 
     @State private var isKilling = false
@@ -534,7 +534,7 @@ private extension Int {
 // ── Last response sheet ───────────────────────────────────────────────────────
 
 private struct LastResponseSheet: View {
-    let session: Session
+    let session: DwSession
     let onDismiss: () -> Void
 
     var body: some View {

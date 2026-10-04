@@ -13,7 +13,7 @@ import DatawatchShared
 /// sees the bearer token. `host.html` and the xterm libs are the same files
 /// Android ships (bundled under `xterm/`), so terminal behaviour is identical.
 struct TerminalView: View {
-    let session: Session
+    let session: DwSession
     let profile: ServerProfile
     @Binding var fontSize: Int
     /// Set to a non-nil string to send input to the session. The view clears it
@@ -86,7 +86,7 @@ struct TerminalView: View {
 // MARK: - TerminalWebView (UIViewRepresentable)
 
 private struct TerminalWebView: UIViewRepresentable {
-    let session: Session
+    let session: DwSession
     let profile: ServerProfile
     let fontSize: Int
     let reconnectGeneration: Int
@@ -201,7 +201,7 @@ extension TerminalWebView {
         var generation = 0
         var requestedFontSize = 9
 
-        private let session: Session
+        private let session: DwSession
         private let profile: ServerProfile
         private var subscription: IosSubscription?
         private var ready = false
@@ -212,7 +212,7 @@ extension TerminalWebView {
         private var storageId: String { session.id }
 
         init(
-            session: Session,
+            session: DwSession,
             profile: ServerProfile,
             connected: Binding<Bool>,
             disconnected: Binding<Bool>,

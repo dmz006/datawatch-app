@@ -6,7 +6,7 @@ import DatawatchShared
 struct DashboardServerCard: Identifiable {
     var id: String { profile.id }
     let profile: ServerProfile
-    var sessions: [Session] = []
+    var sessions: [DwSession] = []
     var stats: StatsDto? = nil
     var error: String? = nil
     var isLoading: Bool = true
@@ -47,7 +47,7 @@ final class DashboardViewModel: ObservableObject {
     private func fetchCard(for profile: ServerProfile) {
         let group = DispatchGroup()
 
-        var fetchedSessions: [Session] = []
+        var fetchedSessions: [DwSession] = []
         var fetchedStats: StatsDto? = nil
         var fetchError: String? = nil
 
@@ -318,10 +318,10 @@ private struct ResourceBars: View {
     var body: some View {
         if let stats {
             VStack(spacing: 6) {
-                if let cpu = stats.cpuPct {
+                if let cpu = stats.cpuPct?.doubleValue {
                     MiniBar(label: "CPU", value: cpu / 100.0)
                 }
-                if let mem = stats.memPct {
+                if let mem = stats.memPct?.doubleValue {
                     MiniBar(label: "MEM", value: mem / 100.0)
                 }
             }

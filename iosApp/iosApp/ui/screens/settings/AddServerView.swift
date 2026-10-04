@@ -103,12 +103,12 @@ struct AddServerView: View {
 
         let svc = IosServiceLocator.shared
         let profile = ServerProfile(
-            id: svc.newProfileId(),
+            id: svc.generateProfileId(),
             displayName: displayName.trimmingCharacters(in: .whitespaces),
             baseUrl: baseUrl.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "/")),
             bearerTokenRef: "",
             trustAnchorSha256: selfSigned ? IosServiceLocator.shared.TRUST_ALL_SENTINEL : pinnedSha,
-            reachabilityProfileId: svc.newProfileId(),
+            reachabilityProfileId: svc.generateProfileId(),
             enabled: true,
             createdTs: svc.nowMillis(),
             lastSeenTs: nil,
