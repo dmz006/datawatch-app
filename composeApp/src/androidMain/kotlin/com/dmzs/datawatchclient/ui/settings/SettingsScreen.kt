@@ -964,6 +964,7 @@ private fun AboutCard(activeProfile: ServerProfile?) {
             url = url,
             onDismiss = { docsUrl = null },
             allowSelfSigned = activeProfile?.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL,
+            pinSha256 = ServiceLocator.pinFor(activeProfile),
         )
     }
 }

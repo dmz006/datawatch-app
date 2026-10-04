@@ -21,8 +21,14 @@ import javax.net.ssl.X509TrustManager
  * @param trustAll when true, installs an accept-anything X509TrustManager
  *   + hostname verifier bypass. Only used when the user-owned server
  *   profile has `trustAnchorSha256 == TRUST_ALL_SENTINEL`.
+ * @param pinSha256 when non-null (and [trustAll] is false), accept exactly the
+ *   leaf certificate with this SHA-256 (parity D91a); hostname verification
+ *   stays at OkHttp's default.
  */
-public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient =
+public fun createHttpClientWithWebSockets(
+    trustAll: Boolean = false,
+    pinSha256: String? = null,
+): HttpClient =
     HttpClient(OkHttp) {
         engine {
             config {
@@ -54,6 +60,9 @@ public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient
                         }
                     sslSocketFactory(ctx.socketFactory, tm)
                     hostnameVerifier { _, _ -> true }
+                } else if (pinSha256 != null) {
+                    val tm = PinnedTrustManager(pinSha256)
+                    sslSocketFactory(pinnedSslContext(tm).socketFactory, tm)
                 }
             }
         }

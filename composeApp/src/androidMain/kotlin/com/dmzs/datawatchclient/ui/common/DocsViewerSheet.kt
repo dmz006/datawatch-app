@@ -78,6 +78,11 @@ internal fun DocsViewerSheet(
      * `false` — trust-all must be opted in by the profile config.
      */
     allowSelfSigned: Boolean = false,
+    /**
+     * Parity D91a — when the profile pins its certificate, sub-resource
+     * fetches accept exactly that leaf (hostname verification unchanged).
+     */
+    pinSha256: String? = null,
 ) {
     // WebView ref + tracked back-stack state so the title bar back arrow
     // and the device back button both navigate within the docs first and
@@ -246,6 +251,9 @@ internal fun DocsViewerSheet(
                                                     if (allowSelfSigned) {
                                                         sslSocketFactory = trustAllSslContext.socketFactory
                                                         hostnameVerifier = TrustAllHostnameVerifier
+                                                    } else if (pinSha256 != null) {
+                                                        sslSocketFactory =
+                                                            com.dmzs.datawatchclient.transport.pinnedSocketFactory(pinSha256)
                                                     }
                                                     connectTimeout = 10_000
                                                     readTimeout = 10_000
