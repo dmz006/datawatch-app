@@ -16,7 +16,7 @@ struct AddServerView: View {
 
     private var canSubmit: Bool {
         !displayName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        (baseUrl.hasPrefix("http://") || baseUrl.hasPrefix("https://"))
+        baseUrl.hasPrefix("https://")
     }
 
     var body: some View {
@@ -30,8 +30,8 @@ struct AddServerView: View {
                             .keyboardType(.URL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                        if !baseUrl.isEmpty && !baseUrl.hasPrefix("http://") && !baseUrl.hasPrefix("https://") {
-                            Text("URL must start with https:// or http://")
+                        if !baseUrl.isEmpty && !baseUrl.hasPrefix("https://") {
+                            Text("URL must start with https:// — datawatch servers must expose TLS.")
                                 .font(DatawatchFonts.labelSmall)
                                 .foregroundStyle(DatawatchColors.error)
                         }
@@ -55,7 +55,7 @@ struct AddServerView: View {
                     Toggle("Trust all certificates", isOn: $selfSigned)
                         .tint(DatawatchColors.error)
                     if selfSigned {
-                        Text("Allows self-signed TLS. Do not enable for production servers.")
+                        Text("Disables certificate validation for this server. Prefer installing the server CA certificate instead (Edit Server → Download CA certificate).")
                             .font(DatawatchFonts.labelSmall)
                             .foregroundStyle(DatawatchColors.error)
                     }

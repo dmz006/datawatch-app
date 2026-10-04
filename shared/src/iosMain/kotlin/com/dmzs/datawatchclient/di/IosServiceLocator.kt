@@ -382,10 +382,57 @@ public object IosServiceLocator {
         }
     }
 
+    /**
+     * GET /api/cert — PEM text of the server's CA certificate so the user can
+     * install it on-device (Settings → Profile Downloaded → Certificate Trust).
+     * Uses [transportFor], so a profile with the trust-all sentinel can fetch
+     * its own cert before the anchor is installed.
+     */
+    public fun fetchServerCertPem(
+        profile: ServerProfile,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).fetchCert().fold(
+                onSuccess = { onSuccess(it.decodeToString()) },
+                onFailure = { onError(it.message ?: "Failed to fetch server certificate.") },
+            )
+        }
+    }
+
     // ── WebSocket transport accessor ──────────────────────────────────────
 
     /** Returns a configured [WebSocketTransport] for [profile]. */
     public fun wsTransport(profile: ServerProfile): WebSocketTransport = wsTransportFor(profile)
+
+    /** Handle for [subscribeSessionEvents]; [cancel] closes the socket and stops reconnects. */
+    public class EventSubscription internal constructor(
+        private val job: kotlinx.coroutines.Job,
+    ) {
+        public fun cancel(): Unit = job.cancel()
+    }
+
+    /**
+     * Collect [WebSocketTransport.events] for one session and deliver each event
+     * to [onEvent] (called on a background thread). While subscribed, outbound
+     * [com.dmzs.datawatchclient.transport.ws.WsOutbound] frames tagged with
+     * [storageId] are relayed to the server. Swift must keep the returned handle
+     * and call [EventSubscription.cancel] on teardown — the flow reconnects forever
+     * on its own and would otherwise leak a live socket.
+     */
+    public fun subscribeSessionEvents(
+        profile: ServerProfile,
+        subscriptionId: String,
+        storageId: String,
+        onEvent: (com.dmzs.datawatchclient.domain.SessionEvent) -> Unit,
+    ): EventSubscription {
+        val job =
+            ioScope.launch {
+                wsTransportFor(profile).events(subscriptionId, storageId).collect { onEvent(it) }
+            }
+        return EventSubscription(job)
+    }
 
     // ── Keychain token accessor ───────────────────────────────────────────
 

@@ -10,6 +10,12 @@ targets:
     platform: iOS
     sources:
       - iosApp
+      # xterm.js host page + vendored libs, shared byte-for-byte with Android.
+      # Folder reference so the bundle keeps the xterm/ subdirectory;
+      # TerminalView loads host.html from it (no CDN, works offline).
+      - path: ../composeApp/src/androidMain/assets/xterm
+        type: folder
+        buildPhase: resources
     info:
       path: iosApp/Info.plist
       properties:

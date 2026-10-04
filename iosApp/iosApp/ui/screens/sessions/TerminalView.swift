@@ -4,41 +4,43 @@ import DatawatchShared
 
 // MARK: - TerminalView (public SwiftUI entry point)
 
-/// SwiftUI view that embeds an xterm.js terminal inside a `WKWebView`.
+/// xterm.js terminal in a `WKWebView`, driven by the session's `/ws` hub.
 ///
-/// Layers a loading spinner until the WebSocket connects, and a reconnect
-/// button when the socket drops. The underlying WebView (`TerminalWebView`)
-/// is a `UIViewRepresentable` that holds all WKWebView / JS bridge logic.
+/// Rendering: `pane_capture` frames from the shared `WebSocketTransport` are
+/// pushed into `host.html` via `window.dwPaneCapture`. Input: xterm's
+/// `onData` reaches Swift through the `DwBridge` shim and is forwarded as a
+/// `send_input` frame via `WsOutbound`. The page opens no sockets and never
+/// sees the bearer token. `host.html` and the xterm libs are the same files
+/// Android ships (bundled under `xterm/`), so terminal behaviour is identical.
 struct TerminalView: View {
     let session: Session
     let profile: ServerProfile
     @Binding var fontSize: Int
-    /// Set to a non-nil string to inject input into the terminal's WebSocket.
-    /// The view clears it back to nil after the JS call so callers can watch for completion.
+    /// Set to a non-nil string to send input to the session. The view clears it
+    /// back to nil after forwarding so callers can watch for completion.
     @Binding var terminalInput: String?
 
     @State private var connected = false
     @State private var disconnected = false
+    @State private var reconnectGeneration = 0
 
     var body: some View {
         ZStack {
-            // Underlying WKWebView.
             TerminalWebView(
                 session: session,
                 profile: profile,
                 fontSize: fontSize,
+                reconnectGeneration: reconnectGeneration,
                 connected: $connected,
                 disconnected: $disconnected,
                 terminalInput: $terminalInput
             )
 
-            // Loading overlay until WS opens.
             if !connected && !disconnected {
                 LoadingIndicator(message: "Connecting to terminal…")
                     .transition(.opacity)
             }
 
-            // Reconnect overlay after WS drops.
             if disconnected {
                 reconnectOverlay
                     .transition(.opacity)
@@ -48,8 +50,6 @@ struct TerminalView: View {
         .animation(.easeInOut(duration: 0.25), value: disconnected)
         .background(DatawatchColors.background)
     }
-
-    // ── Reconnect overlay ─────────────────────────────────────────────────
 
     private var reconnectOverlay: some View {
         VStack(spacing: 20) {
@@ -63,17 +63,16 @@ struct TerminalView: View {
                 .foregroundStyle(DatawatchColors.onSurface)
 
             Button("Reconnect") {
-                // Reset UI state; JS in the WebView will report back via
-                // the "connected"/"disconnected" messages.
                 disconnected = false
                 connected = false
+                reconnectGeneration += 1
             }
             .font(DatawatchFonts.bodyMedium)
             .foregroundStyle(DatawatchColors.primary)
             .padding(.horizontal, 24)
             .padding(.vertical, 10)
             .overlay(Capsule().stroke(DatawatchColors.primary, lineWidth: 1))
-            .accessibilityHint("Attempts to reconnect the WebSocket")
+            .accessibilityHint("Resubscribes to the session stream")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DatawatchColors.background.opacity(0.92))
@@ -82,224 +81,100 @@ struct TerminalView: View {
 
 // MARK: - TerminalWebView (UIViewRepresentable)
 
-/// Internal `UIViewRepresentable` that owns the `WKWebView` and the
-/// Swift ↔ JS message bridge. Not used directly — use `TerminalView` instead.
 private struct TerminalWebView: UIViewRepresentable {
-
     let session: Session
     let profile: ServerProfile
     let fontSize: Int
+    let reconnectGeneration: Int
     @Binding var connected: Bool
     @Binding var disconnected: Bool
     @Binding var terminalInput: String?
 
-    // MARK: UIViewRepresentable
+    static let bridgeName = "dwBridge"
+
+    // host.html calls DwBridge.* exactly as on Android (where it is a Java
+    // object); here each call becomes a WKScriptMessage to the Coordinator.
+    private static let bridgeShim = """
+    window.DwBridge = {
+      onReady: function () {
+        window.webkit.messageHandlers.dwBridge.postMessage({ type: 'ready' });
+      },
+      onInput: function (d) {
+        window.webkit.messageHandlers.dwBridge.postMessage({ type: 'input', data: String(d) });
+      },
+      onResize: function (c, r) {
+        window.webkit.messageHandlers.dwBridge.postMessage({ type: 'resize', cols: Number(c), rows: Number(r) });
+      },
+      onAutoFontSize: function (px) {
+        window.webkit.messageHandlers.dwBridge.postMessage({ type: 'autoFontSize', px: Number(px) });
+      }
+    };
+    """
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(connected: $connected, disconnected: $disconnected, terminalInput: $terminalInput)
+        Coordinator(
+            session: session,
+            profile: profile,
+            connected: $connected,
+            disconnected: $disconnected,
+            terminalInput: $terminalInput
+        )
     }
 
     func makeUIView(context: Context) -> WKWebView {
         let contentController = WKUserContentController()
-        contentController.add(context.coordinator, name: "terminalMsg")
+        contentController.add(context.coordinator, name: Self.bridgeName)
+        contentController.addUserScript(
+            WKUserScript(source: Self.bridgeShim, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
 
         let config = WKWebViewConfiguration()
         config.userContentController = contentController
-        config.allowsInlineMediaPlayback = true
 
         let webView = DwWKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = UIColor(red: 0x0f/255, green: 0x11/255, blue: 0x17/255, alpha: 1)
-        webView.scrollView.backgroundColor = UIColor(red: 0x0f/255, green: 0x11/255, blue: 0x17/255, alpha: 1)
+        webView.scrollView.backgroundColor = webView.backgroundColor
         webView.scrollView.isScrollEnabled = false
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
+        context.coordinator.requestedFontSize = fontSize
+        context.coordinator.generation = reconnectGeneration
         webView.onLayout = { [weak coordinator = context.coordinator] size in
             coordinator?.onFrameChanged(size: size)
         }
 
-        let html = Self.buildHTML(session: session, profile: profile, fontSize: fontSize)
-        webView.loadHTMLString(html, baseURL: nil)
+        if let xtermDir = Bundle.main.resourceURL?.appendingPathComponent("xterm", isDirectory: true) {
+            let host = xtermDir.appendingPathComponent("host.html")
+            webView.loadFileURL(host, allowingReadAccessTo: xtermDir)
+        }
+
+        context.coordinator.start()
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // Propagate font-size changes from the toolbar without reloading the page.
-        webView.evaluateJavaScript(
-            "window.dwChangeFontSize && window.dwChangeFontSize(\(fontSize));",
-            completionHandler: nil
-        )
-        // Inject pending terminal input (reply text, quick commands) via the
-        // live WebSocket — same path as keyboard keystrokes through xterm.js.
+        context.coordinator.setFontSize(fontSize)
         if terminalInput != nil {
             context.coordinator.flushPendingInput()
         }
+        if context.coordinator.generation != reconnectGeneration {
+            context.coordinator.generation = reconnectGeneration
+            context.coordinator.start()
+        }
     }
 
-    // MARK: HTML / WS URL builder
-
-    private static func buildHTML(session: Session, profile: ServerProfile, fontSize: Int) -> String {
-        let wsUrl = buildWSUrl(session: session, profile: profile)
-        return xtermHTML
-            .replacingOccurrences(of: "__WS_URL__", with: wsUrl)
-            .replacingOccurrences(of: "__FONT_SIZE__", with: "\(fontSize)")
+    static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
+        coordinator.stop()
+        uiView.configuration.userContentController.removeScriptMessageHandler(forName: bridgeName)
+        uiView.configuration.userContentController.removeAllUserScripts()
     }
-
-    /// Converts `http(s)://host` → `ws(s)://host/api/terminal/<sessionId>?token=<tok>`.
-    private static func buildWSUrl(session: Session, profile: ServerProfile) -> String {
-        var base = profile.baseUrl
-        if base.hasSuffix("/") { base = String(base.dropLast()) }
-
-        if base.hasPrefix("https://") {
-            base = "wss://" + base.dropFirst("https://".count)
-        } else if base.hasPrefix("http://") {
-            base = "ws://" + base.dropFirst("http://".count)
-        }
-
-        var url = "\(base)/api/terminal/\(session.id)"
-
-        let alias = profile.bearerTokenRef
-        if !alias.isEmpty,
-           let token = IosServiceLocator.shared.getToken(alias: alias),
-           !token.isEmpty {
-            let encoded = token.addingPercentEncoding(
-                withAllowedCharacters: .urlQueryAllowed
-            ) ?? token
-            url += "?token=\(encoded)"
-        }
-        return url
-    }
-
-    // MARK: xterm.js HTML template
-
-    // swiftlint:disable:next line_length
-    private static let xtermHTML: String = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-      <style>
-        * { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; background: #0f1117; height: 100%; overflow: hidden; }
-        #terminal { height: 100vh; width: 100vw; }
-        .xterm-viewport { overflow: hidden !important; }
-      </style>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css"/>
-    </head>
-    <body>
-      <div id="terminal"></div>
-      <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
-      <script>
-        var term = new Terminal({
-          cursorBlink: true,
-          allowTransparency: false,
-          fontSize: __FONT_SIZE__,
-          scrollback: 5000,
-          theme: {
-            background: '#0f1117',
-            foreground: '#e2e8f0',
-            cursor: '#a855f7',
-            cursorAccent: '#0f1117',
-            selection: 'rgba(168, 85, 247, 0.3)'
-          }
-        });
-        var fitAddon = new FitAddon.FitAddon();
-        term.loadAddon(fitAddon);
-        term.open(document.getElementById('terminal'));
-        fitAddon.fit();
-        window.addEventListener('resize', function() { fitAddon.fit(); });
-
-        // Called from native (TerminalToolbar A−/A+) to change font size.
-        window.dwChangeFontSize = function(size) {
-          term.options.fontSize = size;
-          fitAddon.fit();
-        };
-
-        // Called from native when the WKWebView frame changes size (keyboard, rotation).
-        // Takes pixel dimensions of the WKWebView frame, computes char cell size from
-        // the terminal's current font metrics, and resizes xterm to fit exactly.
-        window.dwExplicitSize = function(w, h) {
-          var core = term._core;
-          var cw = core._renderService.dimensions.css.cell.width;
-          var ch = core._renderService.dimensions.css.cell.height;
-          if (!cw || !ch) { fitAddon.fit(); return; }
-          var cols = Math.max(2, Math.floor(w / cw));
-          var rows = Math.max(1, Math.floor(h / ch));
-          if (cols !== term.cols || rows !== term.rows) {
-            term.resize(cols, rows);
-          }
-          fitAddon.fit();
-        };
-
-        var wsUrl = '__WS_URL__';
-        var ws;
-
-        function connect() {
-          ws = new WebSocket(wsUrl);
-          ws.binaryType = 'arraybuffer';
-
-          ws.onopen = function() {
-            window.webkit.messageHandlers.terminalMsg.postMessage({ type: 'connected' });
-            var dims = fitAddon.proposeDimensions();
-            if (dims) {
-              ws.send(JSON.stringify({ type: 'resize', cols: dims.cols, rows: dims.rows }));
-            }
-          };
-
-          ws.onclose = function() {
-            window.webkit.messageHandlers.terminalMsg.postMessage({ type: 'disconnected' });
-            term.write('\\r\\n\\x1b[31m[Disconnected]\\x1b[0m\\r\\n');
-          };
-
-          ws.onerror = function() {
-            window.webkit.messageHandlers.terminalMsg.postMessage({ type: 'error' });
-          };
-
-          ws.onmessage = function(e) {
-            if (typeof e.data === 'string') {
-              term.write(e.data);
-            } else {
-              term.write(new Uint8Array(e.data));
-            }
-          };
-        }
-
-        term.onData(function(data) {
-          if (ws && ws.readyState === WebSocket.OPEN) ws.send(data);
-        });
-
-        term.onResize(function(size) {
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
-          }
-        });
-
-        window.sendInput = function(data) {
-          if (ws && ws.readyState === WebSocket.OPEN) ws.send(data);
-        };
-
-        window.resizeTerm = function(cols, rows) {
-          term.resize(cols, rows);
-        };
-
-        window.reconnect = function() {
-          if (ws) { try { ws.close(); } catch(e) {} }
-          connect();
-        };
-
-        connect();
-      </script>
-    </body>
-    </html>
-    """
 }
 
 // MARK: - DwWKWebView
 
-/// WKWebView subclass that calls `onLayout` whenever its bounds change.
-/// This fires after SwiftUI's keyboard-avoidance shrinks the view, giving
-/// the terminal a chance to re-fit its rows/cols to the new visible area.
+/// WKWebView subclass that calls `onLayout` whenever its bounds change, so the
+/// terminal can re-fit rows/cols after keyboard show/hide, rotation or split view.
 private final class DwWKWebView: WKWebView {
     var onLayout: ((CGSize) -> Void)?
     override func layoutSubviews() {
@@ -316,82 +191,162 @@ extension TerminalWebView {
         @Binding var disconnected: Bool
         @Binding var terminalInput: String?
         weak var webView: WKWebView?
+        var generation = 0
+        var requestedFontSize = 9
 
-        init(connected: Binding<Bool>, disconnected: Binding<Bool>, terminalInput: Binding<String?>) {
+        private let session: Session
+        private let profile: ServerProfile
+        private var subscription: IosServiceLocatorEventSubscription?
+        private var ready = false
+        private var pendingCapture: SessionEventPaneCapture?
+        private var appliedFontSize: Int?
+
+        /// Short id — the key WsOutbound filters on and host storage uses.
+        private var storageId: String { session.id }
+
+        init(
+            session: Session,
+            profile: ServerProfile,
+            connected: Binding<Bool>,
+            disconnected: Binding<Bool>,
+            terminalInput: Binding<String?>
+        ) {
+            self.session = session
+            self.profile = profile
             _connected = connected
             _disconnected = disconnected
             _terminalInput = terminalInput
         }
 
-        /// Injects `terminalInput` into the xterm WebSocket via `window.sendInput` and
-        /// clears the binding so the caller can detect completion.
-        func flushPendingInput() {
-            guard let text = terminalInput else { return }
-            // Escape for JS single-quoted string literal.
-            let escaped = text
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "'", with: "\\'")
-                .replacingOccurrences(of: "\r", with: "\\r")
-                .replacingOccurrences(of: "\n", with: "\\n")
-            webView?.evaluateJavaScript(
-                "window.sendInput && window.sendInput('\(escaped)');",
-                completionHandler: nil
-            )
-            terminalInput = nil
+        // MARK: Stream lifecycle
+
+        /// (Re)subscribe to the session's event stream. Safe to call repeatedly.
+        func start() {
+            stop()
+            EventMapperKt.resetPaneCaptureSeen(sessionId: storageId)
+            subscription = IosServiceLocator.shared.subscribeSessionEvents(
+                profile: profile,
+                subscriptionId: session.fullId,
+                storageId: storageId
+            ) { [weak self] event in
+                DispatchQueue.main.async { self?.handle(event: event) }
+            }
         }
 
-        // WKScriptMessageHandler — JS → Swift bridge.
-        func userContentController(
-            _ userContentController: WKUserContentController,
-            didReceive message: WKScriptMessage
-        ) {
-            guard message.name == "terminalMsg",
-                  let body = message.body as? [String: Any],
-                  let type = body["type"] as? String
-            else { return }
+        func stop() {
+            subscription?.cancel()
+            subscription = nil
+        }
 
-            DispatchQueue.main.async { [weak self] in
-                switch type {
-                case "connected":
-                    self?.connected = true
-                    self?.disconnected = false
-                case "disconnected", "error":
-                    self?.connected = false
-                    self?.disconnected = true
-                default:
-                    break
+        // MARK: Inbound (Kotlin → xterm)
+
+        private func handle(event: SessionEvent) {
+            if event is SessionEventError {
+                connected = false
+                disconnected = true
+                return
+            }
+            if !connected || disconnected {
+                connected = true
+                disconnected = false
+            }
+            if let capture = event as? SessionEventPaneCapture {
+                if ready {
+                    write(capture: capture)
+                } else {
+                    pendingCapture = capture
                 }
             }
         }
 
-        // WKNavigationDelegate — allow all navigations inside the WebView.
+        private func write(capture: SessionEventPaneCapture) {
+            // host.html expects a JS *string* containing the JSON array (it JSON.parses it),
+            // matching Android's JSONObject.quote(arrayLiteral) — hence the double encode.
+            guard let arrayData = try? JSONSerialization.data(withJSONObject: capture.lines),
+                  let arrayString = String(data: arrayData, encoding: .utf8),
+                  let quotedData = try? JSONSerialization.data(withJSONObject: arrayString, options: .fragmentsAllowed),
+                  let literal = String(data: quotedData, encoding: .utf8)
+            else { return }
+            evaluate("window.dwPaneCapture && window.dwPaneCapture(\(literal), \(capture.isFirst ? "true" : "false"));")
+        }
+
+        // MARK: Outbound (Swift → Kotlin → /ws)
+
+        /// Forwards `terminalInput` as a `send_input` frame and clears the binding.
+        func flushPendingInput() {
+            guard let text = terminalInput else { return }
+            terminalInput = nil
+            _ = WsOutbound.shared.sendInput(sessionId: storageId, text: text)
+        }
+
+        // MARK: Sizing
+
+        func setFontSize(_ px: Int) {
+            requestedFontSize = px
+            guard ready, appliedFontSize != px else { return }
+            appliedFontSize = px
+            evaluate("window.dwSetFontSize && window.dwSetFontSize(\(px));")
+        }
+
+        /// Called by `DwWKWebView.onLayout` with the new pixel size so xterm can
+        /// recompute cols/rows exactly.
+        func onFrameChanged(size: CGSize) {
+            let w = Int(size.width)
+            let h = Int(size.height)
+            guard w > 0, h > 0 else { return }
+            evaluate("window.dwExplicitSize && window.dwExplicitSize(\(w), \(h));")
+        }
+
+        private func evaluate(_ script: String) {
+            webView?.evaluateJavaScript(script, completionHandler: nil)
+        }
+
+        // MARK: WKScriptMessageHandler (DwBridge shim → Swift)
+
+        func userContentController(
+            _ userContentController: WKUserContentController,
+            didReceive message: WKScriptMessage
+        ) {
+            guard message.name == TerminalWebView.bridgeName,
+                  let body = message.body as? [String: Any],
+                  let type = body["type"] as? String
+            else { return }
+
+            switch type {
+            case "ready":
+                ready = true
+                appliedFontSize = requestedFontSize
+                evaluate("window.dwSetFontSize && window.dwSetFontSize(\(requestedFontSize));")
+                if let capture = pendingCapture {
+                    pendingCapture = nil
+                    write(capture: capture)
+                }
+            case "input":
+                if let data = body["data"] as? String {
+                    _ = WsOutbound.shared.sendInput(sessionId: storageId, text: data)
+                }
+            case "resize":
+                if let cols = body["cols"] as? Int, let rows = body["rows"] as? Int {
+                    _ = WsOutbound.shared.sendResizeTerm(sessionId: storageId, cols: Int32(cols), rows: Int32(rows))
+                }
+            case "autoFontSize":
+                if let px = body["px"] as? Int, px > 0 {
+                    UserDefaults.standard.set(px, forKey: "dw.terminal.font_size_px")
+                }
+            default:
+                break
+            }
+        }
+
+        // MARK: WKNavigationDelegate
+
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
-            decisionHandler(.allow)
-        }
-
-        /// Called by `DwWKWebView.onLayout` whenever the WebView frame changes
-        /// (keyboard show/hide, rotation, split-view resize). Passes the new
-        /// pixel dimensions into JS so xterm can recalculate cols/rows exactly.
-        func onFrameChanged(size: CGSize) {
-            let w = Int(size.width)
-            let h = Int(size.height)
-            guard w > 0, h > 0 else { return }
-            webView?.evaluateJavaScript(
-                "window.dwExplicitSize && window.dwExplicitSize(\(w), \(h));",
-                completionHandler: nil
-            )
-        }
-
-        /// Triggers a JS-level WebSocket reconnect without reloading the page.
-        func reconnect() {
-            webView?.evaluateJavaScript(
-                "window.reconnect && window.reconnect();",
-                completionHandler: nil
-            )
+            // Only the bundled host page may load; nothing else navigates this view.
+            decisionHandler(navigationAction.request.url?.isFileURL == true ? .allow : .cancel)
         }
     }
 }
@@ -401,7 +356,7 @@ extension TerminalWebView {
     let profile = ServerProfile(
         id: "preview-server",
         displayName: "Local dev",
-        baseUrl: "http://localhost:8080",
+        baseUrl: "https://localhost:8443",
         bearerTokenRef: "",
         trustAnchorSha256: nil,
         reachabilityProfileId: nil,
