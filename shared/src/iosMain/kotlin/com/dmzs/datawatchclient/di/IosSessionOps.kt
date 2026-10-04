@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.dmzs.datawatchclient.transport.ws.WsOutbound
 
 /**
  * Session-detail operations for Swift (parity B6): state override, delete with a
@@ -88,4 +89,16 @@ public object IosSessionOps {
             )
         }
     }
+
+    /**
+     * `sendkey <fullId>: <Key>` over the session's open /ws (PWA keys strip / quick inputs).
+     * [key] is a tmux key name: Escape, Up, Down, Left, Right, Enter, C-c, C-b.
+     * Returns false when no socket is subscribed to the session.
+     */
+    public fun sendKey(session: Session, key: String): Boolean =
+        WsOutbound.sendCommand(session.id, "sendkey ${session.fullId}: $key")
+
+    /** tmux scroll commands (PWA): tmux-copy-mode | tmux-page-up | tmux-page-down. */
+    public fun tmuxCommand(session: Session, command: String): Boolean =
+        WsOutbound.sendCommand(session.id, "$command ${session.fullId}")
 }

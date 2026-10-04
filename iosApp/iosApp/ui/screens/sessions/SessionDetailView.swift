@@ -32,6 +32,9 @@ struct SessionDetailView: View {
     @State private var detailTab = "tmux"
     /// Status tab sub-tabs (PWA switchStatusSubtab): "status" | "stats".
     @State private var statusSubtab = "status"
+    @StateObject private var terminal = TerminalController()
+    /// PWA scroll mode (tmux copy-mode): the scroll strip replaces the input bar.
+    @State private var scrollMode = false
 
     var body: some View {
         ZStack {
@@ -43,7 +46,7 @@ struct SessionDetailView: View {
                 if detailTab == "tmux" { terminalFontBar }
                 ZStack {
                     // Kept mounted while Status is shown so the session socket stays open.
-                    TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput)
+                    TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput, controller: terminal)
                         .ignoresSafeArea(edges: .bottom)
                         .opacity(detailTab == "tmux" ? 1 : 0)
                         .allowsHitTesting(detailTab == "tmux")
@@ -61,6 +64,8 @@ struct SessionDetailView: View {
                 }
                 if isTerminalState {
                     terminalActionBar
+                } else if scrollMode && detailTab == "tmux" {
+                    scrollStrip
                 } else {
                     composerBar
                 }
@@ -136,6 +141,7 @@ struct SessionDetailView: View {
         }
         .animation(.easeInOut, value: killError)
         .onAppear {
+            terminal.onAutoFontSize = { px in termFontSize = px }
             fetchMessagingBackend()
             IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
                 DispatchQueue.main.async { self.whisperEnabled = enabled.boolValue }
@@ -270,6 +276,81 @@ struct SessionDetailView: View {
         .padding(.top, 6)
     }
 
+    // ── Keys strip (PWA: ␛ · ↑ ↓ ← → · ⏎, right-aligned) ────────────────
+
+    private var keysStrip: some View {
+        HStack(spacing: 6) {
+            Spacer()
+            keyButton("␛", key: "Escape", label: "Escape")
+            Text("·").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            keyButton("↑", key: "Up", label: "Arrow up")
+            keyButton("↓", key: "Down", label: "Arrow down")
+            keyButton("←", key: "Left", label: "Arrow left")
+            keyButton("→", key: "Right", label: "Arrow right")
+            Text("·").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            keyButton("⏎", key: "Enter", label: "Enter")
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
+    }
+
+    private func keyButton(_ glyph: String, key: String, label: String) -> some View {
+        Button {
+            _ = IosSessionOps.shared.sendKey(session: session, key: key)
+        } label: {
+            Text(glyph)
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .foregroundStyle(DatawatchColors.onSurface)
+                .frame(minWidth: 34, minHeight: 30)
+                .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 6))
+        }
+        .accessibilityLabel(label)
+    }
+
+    // ── Scroll mode (PWA toggleScrollMode / scrollPage / exitScrollMode) ─
+
+    private func toggleScrollMode() {
+        if scrollMode { exitScrollMode(); return }
+        scrollMode = true
+        terminal.setScrollMode(true)
+        _ = IosSessionOps.shared.tmuxCommand(session: session, command: "tmux-copy-mode")
+    }
+
+    private func scrollPage(up: Bool) {
+        terminal.scrollPendingRefresh()
+        _ = IosSessionOps.shared.tmuxCommand(session: session, command: up ? "tmux-page-up" : "tmux-page-down")
+    }
+
+    private func exitScrollMode() {
+        _ = IosSessionOps.shared.sendKey(session: session, key: "Escape")
+        terminal.setScrollMode(false)
+        scrollMode = false
+    }
+
+    private var scrollStrip: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(DatawatchColors.warning).frame(height: 2)
+            HStack(spacing: 8) {
+                scrollButton("▲ Page Up") { scrollPage(up: true) }
+                scrollButton("▼ Page Down") { scrollPage(up: false) }
+                scrollButton("ESC — Exit Scroll", tint: DatawatchColors.warning) { exitScrollMode() }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(DatawatchColors.background)
+        }
+    }
+
+    private func scrollButton(_ title: String, tint: Color = DatawatchColors.onSurface, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(DatawatchFonts.labelSmall.weight(.semibold))
+                .foregroundStyle(tint)
+                .frame(maxWidth: .infinity, minHeight: 36)
+                .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 6))
+        }
+    }
+
     // ── State badge → state override (PWA showStateOverride) ─────────────
 
     private static let overrideStates: [(wire: String, label: String)] = [
@@ -375,6 +456,30 @@ struct SessionDetailView: View {
             }
             .disabled(termFontSize >= 20)
             .accessibilityLabel("Increase font size")
+
+            Button {
+                terminal.fitToWidth()
+            } label: {
+                Text("Fit")
+                    .font(.system(.caption, design: .monospaced).weight(.medium))
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Fit terminal to width")
+
+            if !isTerminalState {
+                Button {
+                    toggleScrollMode()
+                } label: {
+                    Text(scrollMode ? "⏹" : "⤒")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(scrollMode ? DatawatchColors.warning : DatawatchColors.onSurface)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(scrollMode ? "Exit scroll mode" : "Scroll mode")
+            }
         }
         .background(DatawatchColors.surface)
         .overlay(Divider().background(DatawatchColors.border), alignment: .bottom)
@@ -393,6 +498,7 @@ struct SessionDetailView: View {
             } else {
                 Divider().background(DatawatchColors.border)
             }
+            keysStrip
             HStack(spacing: 8) {
                 TextField(isWaiting ? "Type a reply…" : "Reply or press Enter", text: $replyText)
                     .font(DatawatchFonts.bodyMedium)
