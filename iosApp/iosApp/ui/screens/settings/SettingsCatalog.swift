@@ -145,7 +145,7 @@ enum SettingsCatalog {
     // MARK: General
 
     static let general: [SettingsCard] = [
-        .config("gc_dw", "Datawatch", "gearshape", [
+        .config("gc_dw", "datawatch", "gearshape", [
             .select("session.log_level", "Log level", ["info", "debug", "warn", "error"]),
             .toggle("server.auto_restart_on_config", "Auto-restart on config save"),
             SettingsField(key: "session.backend_family", label: "Default LLM backend", kind: .llm),
