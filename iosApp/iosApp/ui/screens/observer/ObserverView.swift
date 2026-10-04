@@ -3,41 +3,54 @@ import DatawatchShared
 
 // ── ViewModel ─────────────────────────────────────────────────────────────
 
-/// WS-first like Android's StatsViewModel (v1.23.113/114): live `stats` frames
-/// arrive over a global `/ws` stream at the server's cadence; REST `/api/stats`
-/// runs once on start and every 30 s as a fallback, sequentially, only while the
-/// screen is visible (the view calls `startPolling` / `stopPolling`).
+/// Observer tab state (parity B20–B23). Refresh model per D54b (PWA):
+/// `/api/stats` is fetched once when the view opens and then follows the
+/// WS `stats` frames (IosServiceLocator.subscribeGlobalStream → StatsHub).
+/// The per-system grid, peer resources, observer peers and cluster blocks
+/// refresh every 8 s while visible (PWA setInterval 8000); web-search usage
+/// every third tick (~24 s; PWA 20 s).
 @MainActor
 final class ObserverViewModel: ObservableObject {
     @Published private(set) var stats: StatsDto? = nil
+    @Published private(set) var panel: IosStatsPanel? = nil
     @Published private(set) var isLoading: Bool = false
     @Published private(set) var error: String? = nil
-    @Published private(set) var lastUpdated: Date? = nil
+    @Published private(set) var systems: IosSystemsSnapshot? = nil
+    @Published private(set) var serverInfo: IosObsCard? = nil
+    @Published private(set) var ebpf: IosEbpfSnapshot? = nil
+    @Published private(set) var plugins: [IosPluginRow]? = nil
+    @Published private(set) var pluginsError: String? = nil
+    @Published private(set) var cluster: [IosClusterRow] = []
+    @Published private(set) var bridge: [IosObsLine]? = nil
+    @Published private(set) var diagnostics: IosChannelDiagnostics? = nil
+    @Published private(set) var comm: IosCommBackends? = nil
+    @Published private(set) var matrix: IosMatrixStatus? = nil
+    @Published private(set) var webSearch: IosWebSearchStats? = nil
+    @Published private(set) var webSearchError: String? = nil
 
-    private var profile: ServerProfile?
-    private var pollTask: Task<Void, Never>? = nil
+    private(set) var profile: ServerProfile?
+    private var extras = IosStatsExtras(hostname: "", activeSessions: -1, rtkLatestVersion: "")
+    private var maxSessions: Int32 = 0
+    private var liveTask: Task<Void, Never>? = nil
     private var wsSubscription: IosSubscription? = nil
-    private var inFlight = false
-    private static let restFallbackInterval: Duration = .seconds(30)
+    private static let liveIntervalNs: UInt64 = 8_000_000_000
 
     func update(profiles: [ServerProfile]) {
         let newActive = profiles.first
         guard newActive?.id != profile?.id else { return }
-        profile = newActive
-        if newActive != nil {
-            startPolling()
+        if let newActive {
+            selectProfile(newActive)
         } else {
             stopPolling()
-            stats = nil
-            error = nil
+            profile = nil
+            reset()
         }
     }
 
     func selectProfile(_ newProfile: ServerProfile) {
-        guard newProfile.id != profile?.id else { return }
+        guard newProfile.id != profile?.id || liveTask == nil else { return }
+        if newProfile.id != profile?.id { reset() }
         profile = newProfile
-        stats = nil
-        error = nil
         startPolling()
     }
 
@@ -53,32 +66,165 @@ final class ObserverViewModel: ObservableObject {
             onSessions: { _ in }
         )
 
-        pollTask = Task { [weak self] in
+        let pid = profile.id
+        liveTask = Task { [weak self] in
+            await self?.fetchStatsOnce()
+            self?.loadOnce()
+            var tick = 0
             while !Task.isCancelled {
-                guard let self else { return }
-                await self.fetchOnce()
-                try? await Task.sleep(for: Self.restFallbackInterval)
+                guard let self, self.profile?.id == pid else { return }
+                self.loadLive(includeWebSearch: tick % 3 == 0)
+                tick += 1
+                try? await Task.sleep(nanoseconds: Self.liveIntervalNs)
             }
         }
     }
 
     func stopPolling() {
-        pollTask?.cancel()
-        pollTask = nil
+        liveTask?.cancel()
+        liveTask = nil
         wsSubscription?.cancel()
         wsSubscription = nil
     }
 
-    private func fetchOnce() async {
-        guard let profile, !inFlight else { return }
-        inFlight = true
-        defer { inFlight = false }
+    func refreshDiagnostics() {
+        guard let p = profile else { return }
+        IosObserver.shared.loadChannelDiagnostics(profile: p) { [weak self] d in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.diagnostics = d
+            }
+        }
+    }
+
+    // ── Loading ───────────────────────────────────────────────────────────
+
+    private func reset() {
+        stats = nil
+        panel = nil
+        error = nil
+        systems = nil
+        serverInfo = nil
+        ebpf = nil
+        plugins = nil
+        pluginsError = nil
+        cluster = []
+        bridge = nil
+        diagnostics = nil
+        comm = nil
+        matrix = nil
+        webSearch = nil
+        webSearchError = nil
+        extras = IosStatsExtras(hostname: "", activeSessions: -1, rtkLatestVersion: "")
+        maxSessions = 0
+    }
+
+    private func fetchStatsOnce() async {
+        guard let profile else { return }
         if stats == nil { isLoading = true }
         do {
             apply(stats: try await ServiceLocatorAsync.getStats(profile: profile))
         } catch {
-            self.error = error.localizedDescription
+            if stats == nil { self.error = error.localizedDescription }
             isLoading = false
+        }
+    }
+
+    /// One-shot blocks (PWA loaders fired on view render).
+    private func loadOnce() {
+        guard let p = profile else { return }
+        let obs = IosObserver.shared
+        obs.loadServerContext(profile: p) { [weak self] ctx in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.serverInfo = ctx.serverInfo
+                self.maxSessions = ctx.maxSessions
+                self.recomputePanel()
+            }
+        }
+        obs.loadEbpf(profile: p) { [weak self] snap in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.ebpf = snap
+            }
+        }
+        obs.loadPlugins(
+            profile: p,
+            onSuccess: { [weak self] rows in
+                Task { @MainActor [weak self] in
+                    guard let self, self.profile?.id == p.id else { return }
+                    self.plugins = rows
+                    self.pluginsError = nil
+                }
+            },
+            onError: { [weak self] msg in
+                Task { @MainActor [weak self] in
+                    guard let self, self.profile?.id == p.id else { return }
+                    self.pluginsError = msg
+                }
+            }
+        )
+        obs.loadChannelBridge(profile: p) { [weak self] lines in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.bridge = lines
+            }
+        }
+        refreshDiagnostics()
+        obs.loadCommBackends(profile: p) { [weak self] c in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.comm = c
+                if c.matrixEnabled { self.loadMatrix() }
+            }
+        }
+    }
+
+    func loadMatrix() {
+        guard let p = profile else { return }
+        IosObserver.shared.loadMatrixStatus(profile: p) { [weak self] st in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.matrix = st
+            }
+        }
+    }
+
+    /// 8 s blocks: per-system grid + peer resources/peers share one fetch.
+    private func loadLive(includeWebSearch: Bool) {
+        guard let p = profile else { return }
+        let obs = IosObserver.shared
+        obs.loadSystems(profile: p) { [weak self] snap in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.systems = snap
+                self.extras = snap.extras
+                self.recomputePanel()
+            }
+        }
+        obs.loadCluster(profile: p) { [weak self] rows in
+            Task { @MainActor [weak self] in
+                guard let self, self.profile?.id == p.id else { return }
+                self.cluster = rows
+            }
+        }
+        if includeWebSearch {
+            obs.loadWebSearchStats(
+                profile: p,
+                onSuccess: { [weak self] st in
+                    Task { @MainActor [weak self] in
+                        guard let self, self.profile?.id == p.id else { return }
+                        self.webSearch = st
+                        self.webSearchError = nil
+                    }
+                },
+                onError: { [weak self] msg in
+                    Task { @MainActor [weak self] in
+                        guard let self, self.profile?.id == p.id else { return }
+                        self.webSearchError = msg
+                    }
+                }
+            )
         }
     }
 
@@ -86,15 +232,46 @@ final class ObserverViewModel: ObservableObject {
         stats = dto
         error = nil
         isLoading = false
-        lastUpdated = Date()
+        recomputePanel()
+    }
+
+    private func recomputePanel() {
+        guard let stats else { return }
+        panel = IosObserver.shared.buildStatsPanel(s: stats, extras: extras, maxSessions: maxSessions)
+    }
+}
+
+/// Toast host for Observer actions (PWA showToast).
+@MainActor
+final class ObserverToastCenter: ObservableObject {
+    @Published private(set) var message: String? = nil
+    private var dismissTask: Task<Void, Never>? = nil
+
+    func show(_ text: String) {
+        dismissTask?.cancel()
+        withAnimation { message = text }
+        dismissTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation { self?.message = nil }
+        }
     }
 }
 
 // ── Main view ─────────────────────────────────────────────────────────────
 
+/// Observer tab — PWA `renderObserverView()` card order (D28a): System
+/// Statistics (grid, statistics panel, eBPF, network, plugins, peer
+/// resources, federated peers, cluster, MCP bridge, diagnostics, comm
+/// backends) → Memory Browser → Memory Maintenance → Scheduled Events →
+/// Global Cooldown → Session Analytics → Audit Log → Knowledge Graph →
+/// Daemon Log → Federated Peers. Cards collapse with persisted state (D27a)
+/// and carry a per-card docs link (D26a).
 struct ObserverView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @StateObject private var vm = ObserverViewModel()
+    @StateObject private var collapse = ObserverCollapseStore()
+    @StateObject private var toaster = ObserverToastCenter()
     @State private var selectedProfileId: String? = nil
 
     private var selectedProfile: ServerProfile? {
@@ -114,6 +291,10 @@ struct ObserverView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DatawatchColors.background)
+        .overlay(alignment: .bottom) {
+            if let msg = toaster.message { ObsToast(text: msg) }
+        }
+        .environmentObject(toaster)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -161,12 +342,8 @@ struct ObserverView: View {
                     .padding(.vertical, 8)
                     .background(DatawatchColors.surface)
             }
-            if vm.isLoading && vm.stats == nil {
-                LoadingIndicator(message: "Loading stats…")
-            } else if let err = vm.error, vm.stats == nil {
-                ErrorCard(message: err) { vm.startPolling() }
-            } else {
-                observerContent
+            if let profile = selectedProfile {
+                observerContent(profile: profile)
             }
         }
         .task(id: selectedProfile?.id ?? "") {
@@ -209,216 +386,45 @@ struct ObserverView: View {
         }
     }
 
-    // ── Observer content ──────────────────────────────────────────────────
+    // ── Cards (PWA order) ─────────────────────────────────────────────────
 
-    private var observerContent: some View {
+    private func observerContent(profile: ServerProfile) -> some View {
         ScrollView {
-            VStack(spacing: 16) {
-                metricsGrid
-                    .padding(.horizontal)
-
-                if let stats = vm.stats {
-                    uptimeRow(seconds: stats.uptimeSeconds)
-                        .padding(.horizontal)
+            VStack(spacing: 12) {
+                ObsSection(key: "stats", title: "System Statistics", profile: profile, store: collapse) {
+                    ObserverStatsBlock(vm: vm, profile: profile)
                 }
-
-                if let updated = vm.lastUpdated {
-                    Text("Updated \(lastUpdatedString(updated))")
-                        .font(DatawatchFonts.labelSmall)
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                ObsSection(key: "membrowser", title: "Memory Browser", profile: profile, store: collapse) {
+                    ObserverMemoryBrowser(profile: profile)
+                }
+                ObsSection(key: "memmaint", title: "Memory Maintenance", profile: profile, store: collapse) {
+                    ObserverMemoryMaintenance(profile: profile)
+                }
+                ObsSection(key: "schedules", title: "Scheduled Events", profile: profile, store: collapse) {
+                    ObserverSchedulesCard(profile: profile)
+                }
+                ObsSection(key: "cooldown", title: "Global Cooldown", profile: profile, store: collapse) {
+                    ObserverCooldownCard(profile: profile)
+                }
+                ObsSection(key: "analytics", title: "Session Analytics", profile: profile, store: collapse) {
+                    ObserverAnalyticsCard(profile: profile)
+                }
+                ObsSection(key: "audit", title: "Audit Log", profile: profile, store: collapse) {
+                    ObserverAuditCard(profile: profile)
+                }
+                ObsSection(key: "kg", title: "Knowledge Graph", profile: profile, store: collapse) {
+                    ObserverKnowledgeGraphCard(profile: profile)
+                }
+                ObsSection(key: "daemonlog", title: "Daemon Log", profile: profile, store: collapse) {
+                    ObserverDaemonLogCard(profile: profile)
+                }
+                ObsSection(key: "observer_peers", title: "Federated Peers", profile: profile, store: collapse) {
+                    ObserverFederatedPeersCard(profile: profile)
                 }
             }
-            .padding(.vertical, 16)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
         }
-    }
-
-    private var metricsGrid: some View {
-        let columns = [GridItem(.flexible()), GridItem(.flexible())]
-        let stats = vm.stats
-        return LazyVGrid(columns: columns, spacing: 12) {
-            MetricCard(
-                label: "CPU",
-                icon: "cpu",
-                value: stats?.cpuPct?.doubleValue,
-                formatAsPercent: true
-            )
-            MetricCard(
-                label: "Memory",
-                icon: "memorychip",
-                value: stats?.memPct?.doubleValue,
-                formatAsPercent: true
-            )
-            MetricCard(
-                label: "Disk",
-                icon: "internaldrive",
-                value: stats?.diskPct?.doubleValue,
-                formatAsPercent: true
-            )
-            MetricCard(
-                label: "VRAM",
-                icon: "memorychip.fill",
-                value: stats?.gpuPct?.doubleValue,
-                formatAsPercent: true
-            )
-            SessionMetricCard(
-                label: "Running",
-                icon: "play.circle",
-                count: Int(stats?.sessionsRunning ?? 0),
-                color: DatawatchColors.success
-            )
-            SessionMetricCard(
-                label: "Waiting",
-                icon: "clock.circle",
-                count: Int(stats?.sessionsWaiting ?? 0),
-                color: DatawatchColors.waiting
-            )
-        }
-    }
-
-    private func uptimeRow(seconds: Int64) -> some View {
-        HStack {
-            Image(systemName: "timer")
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-            Text("Uptime: \(formatUptime(seconds))")
-                .font(DatawatchFonts.bodyMedium)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-            Spacer()
-        }
-        .padding()
-        .background(DatawatchColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(DatawatchColors.border, lineWidth: 1)
-        )
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-
-    private func formatUptime(_ seconds: Int64) -> String {
-        let s = Int(seconds)
-        let days = s / 86400
-        let hours = (s % 86400) / 3600
-        let mins = (s % 3600) / 60
-        if days > 0 {
-            return "\(days)d \(hours)h \(mins)m"
-        } else if hours > 0 {
-            return "\(hours)h \(mins)m"
-        } else {
-            return "\(mins)m"
-        }
-    }
-
-    private func lastUpdatedString(_ date: Date) -> String {
-        let delta = Date().timeIntervalSince(date)
-        if delta < 5 { return "just now" }
-        if delta < 60 { return "\(Int(delta))s ago" }
-        let mins = Int(delta / 60)
-        return "\(mins)m ago"
-    }
-}
-
-// ── Metric card (percent) ─────────────────────────────────────────────────
-
-private struct MetricCard: View {
-    let label: String
-    let icon: String
-    let value: Double?
-    var formatAsPercent: Bool = true
-
-    private var displayText: String {
-        guard let v = value else { return "N/A" }
-        return String(format: "%.1f%%", v)
-    }
-
-    private var accentColor: Color {
-        guard let v = value else { return DatawatchColors.onSurfaceMuted }
-        switch v {
-        case 90...: return DatawatchColors.error
-        case 70..<90: return DatawatchColors.warning
-        default: return DatawatchColors.primary
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundStyle(accentColor)
-                    .font(DatawatchFonts.bodyMedium)
-                Text(label)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                Spacer()
-            }
-
-            Text(displayText)
-                .font(DatawatchFonts.titleLarge)
-                .foregroundStyle(accentColor)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-
-            if let v = value {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(DatawatchColors.border)
-                            .frame(height: 4)
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(accentColor)
-                            .frame(width: geo.size.width * CGFloat(min(v, 100) / 100), height: 4)
-                    }
-                }
-                .frame(height: 4)
-            }
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(DatawatchColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(DatawatchColors.border, lineWidth: 1)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(displayText)")
-    }
-}
-
-// ── Session count card ────────────────────────────────────────────────────
-
-private struct SessionMetricCard: View {
-    let label: String
-    let icon: String
-    let count: Int
-    var color: Color = DatawatchColors.primary
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundStyle(color)
-                    .font(DatawatchFonts.bodyMedium)
-                Text(label)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                Spacer()
-            }
-
-            Text("\(count)")
-                .font(DatawatchFonts.titleLarge)
-                .foregroundStyle(color)
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(DatawatchColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(DatawatchColors.border, lineWidth: 1)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Sessions \(label): \(count)")
     }
 }
 

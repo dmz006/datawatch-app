@@ -48,8 +48,8 @@ public data class IosObsBar(val label: String, val value: String, val fraction: 
 /** Key/value line (stat-card rows). Empty [key] = free-text line. */
 public data class IosObsKv(val key: String, val value: String, val tone: String)
 
-/** A PWA `.stat-card` block. [copyCommand] non-empty = tap-to-copy row (RTK upgrade). */
-public data class IosObsCard(val title: String, val rows: List<IosObsKv>, val copyCommand: String)
+/** A PWA `.stat-card` block. [clipboardCommand] non-empty = tap-to-copy row (RTK upgrade). */
+public data class IosObsCard(val title: String, val rows: List<IosObsKv>, val clipboardCommand: String)
 
 /** Peer-resource chip; [gpu] chips use the accent2 tint. */
 public data class IosObsChip(val text: String, val gpu: Boolean)
