@@ -55,6 +55,8 @@ struct SettingsField: Identifiable {
 enum SettingsConfigExtra {
     case none
     case summarizerTest
+    /// PWA loadAutomataSettingsPanel scan config (Autonomous Config card).
+    case scanDefaults
 }
 
 /// Bespoke (non-schema) cards.
@@ -62,7 +64,7 @@ enum SettingsCustomCard {
     case notifications, security, docsSearch, configViewer, rawConfig
     case servers, commBackends, push
     case alertRules, savedCommands, outputFilters
-    case identity, automataTypes, pipelineManager, orchestratorGraphs
+    case identity, automataTypes, pipelineManager, orchestratorGraphs, algorithmMode
     case about, apiLinks, mcpTools, mcpChannel, subsystemReload, encryption
 }
 
@@ -381,6 +383,7 @@ enum SettingsCatalog {
 
     static let automata: [SettingsCard] = [
         .custom("identity", "Identity", "person.text.rectangle", .identity),
+        .custom("algorithm", "Algorithm Mode", "dial.medium", .algorithmMode),
         .list("evals", "Evals", "checkmark.seal", kind: "evals"),
         .list("council", "Council Mode", "person.3.sequence", kind: "council_personas"),
         .config("gc_autonomous", "Autonomous Automata planning", "wand.and.stars", [
@@ -424,6 +427,11 @@ enum SettingsCatalog {
             .text("pipeline.default_backend", "Default backend (empty = session default)"),
         ]),
         .list("automata_scan", "Guardrail Library", "shield.lefthalf.filled", kind: "guardrail_library"),
+        .config("automata_autonomous", "Autonomous Config", "slider.horizontal.3", [
+            .number("autonomous.poll_interval_seconds", "Poll interval (s)", "30"),
+            .number("autonomous.max_parallel_tasks", "Max parallel tasks", "3"),
+            .number("autonomous.auto_fix_retries", "Auto-fix retries", "0"),
+        ], extra: .scanDefaults),
         .list("automata_guardrail_profiles", "Guardrail Profiles", "shield.checkered", kind: "guardrail_profiles"),
         .list("automata_skills", "Skill Registries", "books.vertical", kind: "skill_registries", add: [
             SettingsAddField(key: "name", label: "Name"),

@@ -75,7 +75,7 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | element | Status board: lifecycle strip, sprint breadcrumb, failed drill-down | ✓ :11212 / :4199 / :4312 | ~ unverified | ~ SessionStatusView sprint breadcrumb + task tree; no failed drill-down | misaligned | | |
 | element | Sessions rendered as tree + parent-session link + page controls | ✓ `renderSessionsAsTree` :2124, `renderParentSessionLink`, `renderPageControls` :6544 | ~ unverified | ✗ | ios-missing | | |
 | element | Discussion Scopes card (Settings → General, BL332) | ✓ :7246 | ~ `memory/` (#191 scope dirs) unverified | ✗ | ios-missing | | |
-| element | Algorithm Mode settings section | ✓ :6902 | ✓ `settings/AlgorithmModeCard.kt` | ✗ | ios-missing | | |
+| element | Algorithm Mode settings section | ✓ :6902 | ✓ `settings/AlgorithmModeCard.kt` | ✓ `SettingsAlgorithmModeCard` (Settings › Automata) | aligned | | |
 | interaction | Ollama marketplace modal / catalog | ✓ `openOllamaMarketplace` :8224, `renderOllamaCatalog` :8247 | ~ `compute/LlmRegistryCard.kt` unverified | ✗ | ios-missing | | |
 | element | Project profiles panel + cluster/project YAML editors | ✓ `renderProfilesPanel` :15778, `renderClusterEditorForm` :15852, `renderProjectEditorForm` | ✗ not found | ✗ | android-missing | | iOS also missing; smoke buttons per profile |
 | element | Web search stats + provider registry | ✓ `renderWebSearchStatsHTML` :20397 | ✓ `websearch/WebSearchRegistryCard.kt` + Observer (v1.23.107) | ✗ | ios-missing | | |
