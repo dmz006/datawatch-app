@@ -479,3 +479,78 @@ public object IosPrdScan {
         }
     }
 }
+
+/**
+ * Story/task structure edits (parity B18; PWA story/task edit groups, Android
+ * PrdDetailDialog). `files` is newline- or comma-separated. Every call reports
+ * null on success or an error message.
+ */
+public object IosPrdItemEdit {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private fun parseFiles(s: String): List<String> =
+        s.split('\n', ',').map { it.trim() }.filter { it.isNotEmpty() }
+
+    private fun run(
+        profile: ServerProfile,
+        fallback: String,
+        onDone: (String?) -> Unit,
+        block: suspend (com.dmzs.datawatchclient.transport.TransportClient) -> Result<*>,
+    ) {
+        scope.launch {
+            val r = block(IosServiceLocator.transportFor(profile))
+            onDone(r.exceptionOrNull()?.let { it.message ?: fallback })
+        }
+    }
+
+    public fun editStory(profile: ServerProfile, prdId: String, storyId: String, title: String, description: String, onDone: (String?) -> Unit) {
+        run(profile, "Couldn't save the story.", onDone) {
+            it.editStory(prdId, storyId, newTitle = title.trim(), newDescription = description.trim(), actor = "operator")
+        }
+    }
+
+    public fun editStoryFiles(profile: ServerProfile, prdId: String, storyId: String, files: String, onDone: (String?) -> Unit) {
+        run(profile, "Couldn't save the files.", onDone) {
+            it.editFiles(prdId, storyId = storyId, files = parseFiles(files), actor = "operator")
+        }
+    }
+
+    public fun editTaskFiles(profile: ServerProfile, prdId: String, taskId: String, files: String, onDone: (String?) -> Unit) {
+        run(profile, "Couldn't save the files.", onDone) {
+            it.editFiles(prdId, taskId = taskId, files = parseFiles(files), actor = "operator")
+        }
+    }
+
+    public fun editTaskSpec(profile: ServerProfile, prdId: String, taskId: String, spec: String, onDone: (String?) -> Unit) {
+        run(profile, "Couldn't save the task.", onDone) { it.editPrdTask(prdId, taskId, spec.trim()) }
+    }
+
+    public fun addStory(profile: ServerProfile, prdId: String, title: String, description: String, onDone: (String?) -> Unit) {
+        run(profile, "Couldn't add the story.", onDone) {
+            it.addStory(prdId, title.trim(), description.trim(), actor = "operator")
+        }
+    }
+
+    public fun addTask(profile: ServerProfile, prdId: String, storyId: String, title: String, spec: String, onDone: (String?) -> Unit) {
+        run(profile, "Couldn't add the task.", onDone) {
+            it.addTask(prdId, storyId, title.trim(), spec.trim(), actor = "operator")
+        }
+    }
+
+    /** File viewer: relative paths resolve against the PRD project dir (Android openFileViewer). */
+    public fun fileContent(
+        profile: ServerProfile,
+        path: String,
+        projectDir: String?,
+        onSuccess: (String, String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val abs = if (path.startsWith("/")) path else "${projectDir.orEmpty().trimEnd('/')}/$path"
+        scope.launch {
+            IosServiceLocator.transportFor(profile).getFileContent(abs).fold(
+                onSuccess = { onSuccess(abs, it) },
+                onFailure = { onError("Unable to load file") },
+            )
+        }
+    }
+}

@@ -108,6 +108,8 @@ struct PrdDetailView: View {
     @State private var templateSaved = false
     @State private var showSetLlm = false
     @State private var showSettings = false
+    @State private var itemEdit: PrdItemEdit? = nil
+    @State private var openFile: PrdOpenFile? = nil
     @State private var capacity: CapacityResponseDto? = nil
     @Environment(\.dismiss) private var dismissDetail
 
@@ -183,6 +185,12 @@ struct PrdDetailView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Find it in Automata → Templates.")
+        }
+        .sheet(item: $itemEdit) { edit in
+            PrdItemEditSheet(profile: vm.profile, prdId: prd.id, edit: edit) { Task { await vm.refresh() } }
+        }
+        .sheet(item: $openFile) { f in
+            PrdFileViewerSheet(profile: vm.profile, path: f.path, projectDir: prd.projectDir)
         }
         .sheet(isPresented: $showSettings) {
             PrdSettingsView(profile: vm.profile, prd: prd) { Task { await vm.refresh() } }
@@ -401,6 +409,32 @@ struct PrdDetailView: View {
             ForEach(prd.stories, id: \.id) { story in
                 storyGroup(story)
             }
+            if editable {
+                Button { itemEdit = .addStory } label: {
+                    Text("+ Add story").font(DatawatchFonts.bodyMedium)
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+    }
+
+    /// Planned files claimed by more than one open story (PWA ⚠ conflict).
+    private var fileConflicts: Set<String> {
+        var seen: [String: Int] = [:]
+        for st in prd.stories where !["complete", "completed", "rejected"].contains(st.status.lowercased()) {
+            for f in Set(st.files) { seen[f, default: 0] += 1 }
+        }
+        return Set(seen.filter { $0.value > 1 }.keys)
+    }
+
+    @ViewBuilder
+    private func storyEditRow(_ story: PrdStoryDto) -> some View {
+        if editable {
+            HStack(spacing: 8) {
+                smallAction("✎ Edit", DatawatchColors.primary) { itemEdit = .editStory(story) }
+                smallAction("📁 Files", DatawatchColors.primary) { itemEdit = .storyFiles(story) }
+                smallAction("+ Add task", DatawatchColors.primary) { itemEdit = .addTask(story) }
+            }
         }
     }
 
@@ -416,16 +450,21 @@ struct PrdDetailView: View {
         return DisclosureGroup(isExpanded: binding(for: story.id)) {
             VStack(alignment: .leading, spacing: 6) {
                 storyActions(story)
+                storyEditRow(story)
                 if let d = story.description_, !d.isEmpty {
                     Text(d)
                         .font(DatawatchFonts.labelSmall)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                         .padding(.bottom, 2)
                 }
+                PrdFileChips(label: "PLANNED FILES", files: story.files, conflicts: fileConflicts) { openFile = PrdOpenFile(path: $0) }
+                PrdFileChips(label: "FILES TOUCHED", files: story.filesTouched) { openFile = PrdOpenFile(path: $0) }
                 ForEach(story.tasks, id: \.id) { task in
-                    PrdTaskRow(task: task, actions: taskActions(task), busy: itemBusy == task.id) { action in
-                        runTaskAction(action, story: story, task: task)
-                    }
+                    PrdTaskRow(
+                        task: task, actions: taskActions(task), busy: itemBusy == task.id,
+                        onAction: { action in runTaskAction(action, story: story, task: task) },
+                        onOpenFile: { openFile = PrdOpenFile(path: $0) }
+                    )
                 }
                 if story.tasks.isEmpty {
                     Text("No tasks").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -588,7 +627,7 @@ struct PrdDetailView: View {
         if (st == "completed" || st == "cancelled") && ["running", "cancelled"].contains(prdStatus) && editable {
             out.append(.requeue)
         }
-        if editable { out.append(.remove) }
+        if editable { out.append(contentsOf: [.edit, .files, .remove]) }
         return out
     }
 
@@ -605,6 +644,8 @@ struct PrdDetailView: View {
             }
         case .retry: taskOp(story.id, task.id, "retry")
         case .requeue: taskOp(story.id, task.id, "requeue")
+        case .edit: itemEdit = .taskSpec(task)
+        case .files: itemEdit = .taskFiles(task)
         }
     }
 
@@ -639,12 +680,13 @@ struct PrdDetailView: View {
 // ── Task row ──────────────────────────────────────────────────────────────
 
 struct PrdTaskRow: View {
-    enum Action { case retry, cancel, requeue, remove }
+    enum Action { case retry, cancel, requeue, edit, files, remove }
 
     let task: PrdTaskDto
     var actions: [Action] = []
     var busy: Bool = false
     var onAction: (Action) -> Void = { _ in }
+    var onOpenFile: (String) -> Void = { _ in }
 
     var body: some View {
         let (glyph, color) = PrdStatusStyle.taskGlyph(task.status)
@@ -687,6 +729,13 @@ struct PrdTaskRow: View {
                 .padding(.leading, 24)
                 .accessibilityLabel("Open worker session \(sid)")
             }
+            if !task.files.isEmpty || !task.filesTouched.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    PrdFileChips(label: "PLANNED", files: task.files, onOpen: onOpenFile)
+                    PrdFileChips(label: "OUTPUT", files: task.filesTouched, onOpen: onOpenFile)
+                }
+                .padding(.leading, 24)
+            }
             if !actions.isEmpty || busy {
                 HStack(spacing: 6) {
                     ForEach(actions, id: \.self) { a in
@@ -715,6 +764,8 @@ struct PrdTaskRow: View {
         case .retry: return "↻ Retry"
         case .cancel: return "⏹ Cancel"
         case .requeue: return "↻ Re-run"
+        case .edit: return "✎ Edit"
+        case .files: return "📁 Files"
         case .remove: return "🗑 Remove"
         }
     }
