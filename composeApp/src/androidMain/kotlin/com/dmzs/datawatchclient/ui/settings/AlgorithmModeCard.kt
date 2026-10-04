@@ -464,19 +464,15 @@ private fun PhaseDot(
     color: Color,
     pulse: Boolean,
 ) {
-    val alpha =
-        if (pulse) {
-            val transition = rememberInfiniteTransition(label = "pulseDot")
-            val a by transition.animateFloat(
-                initialValue = 0.4f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Reverse),
-                label = "dotAlpha",
-            )
-            a
-        } else {
-            1f
-        }
+    val alpha by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 0.4f,
+        target = 1f,
+        durationMs = 800,
+        staticValue = 1f,
+        easing = LinearEasing,
+        active = pulse,
+        label = "pulseDot",
+    )
 
     Box(
         modifier =
