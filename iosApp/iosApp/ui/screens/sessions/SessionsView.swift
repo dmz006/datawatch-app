@@ -24,6 +24,8 @@ struct SessionsView: View {
     @State private var currentStatusSession: DwSession? = nil
     @State private var currentStatusLoadingId: String? = nil
 
+    @State private var showNewSession = false
+
     enum SessionStateFilter: String, CaseIterable {
         case all     = "All"
         case active  = "Active"
@@ -38,10 +40,21 @@ struct SessionsView: View {
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             DatawatchColors.background.ignoresSafeArea()
 
             content
+
+            if viewModel.activeProfile != nil {
+                newSessionFab
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 20)
+            }
+        }
+        .sheet(isPresented: $showNewSession) {
+            if let profile = viewModel.activeProfile {
+                NewSessionView(profile: profile) { _ in viewModel.refresh() }
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -418,6 +431,22 @@ struct SessionsView: View {
         case .rateLimited: return 2
         default:           return 3
         }
+    }
+
+    // ── New Session FAB (PWA `+` / Android FAB) ─────────────────────────────
+
+    private var newSessionFab: some View {
+        Button {
+            showNewSession = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(DatawatchColors.primary, in: Circle())
+                .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+        }
+        .accessibilityLabel("New session")
     }
 
     // ── Empty states ──────────────────────────────────────────────────────
