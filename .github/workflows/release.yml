@@ -237,15 +237,31 @@ jobs:
       - name: Assemble KMP XCFramework (release)
         run: ./gradlew :shared:assembleDatawatchSharedReleaseXCFramework --no-daemon --stacktrace
 
+      # project.yml embeds the framework from the debug/ path (xcodegen has no
+      # per-config dependency paths). Stage the release build there so the archive
+      # links and embeds the release XCFramework.
+      - name: Stage release XCFramework at the embedded path
+        run: |
+          set -euo pipefail
+          rm -rf shared/build/XCFrameworks/debug
+          mkdir -p shared/build/XCFrameworks/debug
+          cp -R shared/build/XCFrameworks/release/DatawatchShared.xcframework shared/build/XCFrameworks/debug/
+
       - name: Install xcodegen + fastlane
         run: |
           brew install xcodegen
           gem install fastlane --no-document
 
+      # BSD grep on macOS has no -P; use sed.
       - name: Export version env vars
         run: |
-          echo "DATAWATCH_APP_VERSION=$(grep -oP '^DATAWATCH_APP_VERSION=\K.+' gradle.properties)" >> "$GITHUB_ENV"
-          echo "DATAWATCH_APP_VERSION_CODE=$(grep -oP '^DATAWATCH_APP_VERSION_CODE=\K.+' gradle.properties)" >> "$GITHUB_ENV"
+          set -euo pipefail
+          v=$(sed -n 's/^DATAWATCH_APP_VERSION=//p' gradle.properties)
+          c=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)
+          [ -n "$v" ] && [ -n "$c" ] || { echo "::error::version not found in gradle.properties"; exit 1; }
+          echo "DATAWATCH_APP_VERSION=$v" >> "$GITHUB_ENV"
+          echo "DATAWATCH_APP_VERSION_CODE=$c" >> "$GITHUB_ENV"
+          echo "iOS build: $v ($c)"
 
       - name: Generate Xcode project
         working-directory: iosApp
