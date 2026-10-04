@@ -99,8 +99,8 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Evals card (suites, runs, Run) | ✓ evals | ✓ EvalsCard | ✗ | ios-missing | | |
 | element | Council panel (persona checkboxes, proposal, Quick/Debate, live SSE runs, recent 5, subsystem config, persona modal + 🤖 wizard) | ✓ council A:26111 | ✓ CouncilCard + CouncilPersonaWizardSheet | ✗ | ios-missing | | |
 | element | Project Profiles card (list, Edit / Smoke Test / Delete, form ↔ YAML) | ✓ gc_projectprofiles | ✓ KindProfilesCard(project) + SmokeProgressCard | ✗ | ios-missing | | |
-| element | Pipeline Manager card | ✓ pipelines A:25649 | ✓ PipelineManagerCard | ✗ | ios-missing | | |
-| element | Automata Orchestrator (graphs) card | ✓ orchestrator_graphs A:24574 | ✓ OrchestratorGraphsCard | ✗ | ios-missing | | |
+| element | Pipeline Manager card | ✓ pipelines A:25649 | ✓ PipelineManagerCard | ✓ PipelinesView | aligned | | |
+| element | Automata Orchestrator (graphs) card | ✓ orchestrator_graphs A:24574 | ✓ OrchestratorGraphsCard | ✓ OrchestratorGraphsView | aligned | | |
 | element | Guardrail Library card | ✓ automata_scan A:24770 | ✓ GuardrailLibraryCard + ScanConfigCard | ✗ | ios-missing | | |
 | element | Guardrail Profiles card | ✓ A:24789 | ~ folded into GuardrailLibraryCard (GuardrailProfileRow) | ✗ | ios-missing | | |
 | element | Autonomous Config card (26 `autonomous.*` keys incl. `verification_backends` editor, quality gates, capacity, per-task/story guardrails, injection guard) | ✓ automata_autonomous | ~ AutonomousConfigCard + CFS.Autonomous: has `decomposition_backend/effort`, `verification_effort`, `stale_task_seconds`; lacks `planning_backend/model/timeout_seconds`, `capacity_*`, `max_recursion_depth`, `auto_approve_children`, `per_task/per_story_guardrails`, `block_on_injection`, `injection_guard`, `verification_model` | ✗ | misaligned | | verify key set against server config schema |

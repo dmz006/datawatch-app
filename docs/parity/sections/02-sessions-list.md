@@ -84,8 +84,8 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | string | Filter placeholder | ✓ "Filter sessions…" | ✓ `sessions_filter_hint` same | ~ "Filter by name / task / id / backend" | misaligned | | |
 | string | Stop / Restart / Delete labels | ✓ "■ Stop" "↺ Restart" "🗑" | ✓ action_stop/restart/delete | ✓ Stop/Restart/Delete | aligned | | glyphs differ only |
 | string | "What's it doing?" | ✓ "▶ What's it doing?" | ✓ `sessions_current_status_btn` (ℹ icon) | ✓ (sparkles icon) | aligned | | icon differs |
-| element | Session filters CRUD (`/api/filters`) | ✓ P:21124 `showFilterEdit` (Settings) | ✓ `filters/FiltersCard.kt` | ✗ | ios-missing | | lives in Settings — detail in §07 |
-| element | Saved commands editor (`/api/commands`) | ~ consumer only here; editor location → §07 | ✓ `commands/SavedCommandsCard.kt` | ✗ | ios-missing | | §07 |
+| element | Session filters CRUD (`/api/filters`) | ✓ P:21124 `showFilterEdit` (Settings) | ✓ `filters/FiltersCard.kt` | ✓ FiltersView (Settings link) | aligned | | lives in Settings — detail in §07 |
+| element | Saved commands editor (`/api/commands`) | ~ consumer only here; editor location → §07 | ✓ `commands/SavedCommandsCard.kt` | ✓ SavedCommandsView (Settings link) | aligned | | §07 |
 | element | Kind profiles card | ✓ P:15785 `renderProfilesPanel` | ✓ `profiles/KindProfilesCard.kt` | ✗ | ios-missing | | §07 |
 | interaction | Three-finger swipe-up gesture (64 dp, 500 ms debounce) | ✗ | ✓ `gesture/ThreeFingerSwipe.kt` | ✗ | pwa-missing | needs-decision | D14 — call site outside this section |
 | interaction | Refresh on foreground/resume | ~ (visibilitychange not verified) | ✓ A:170 ON_RESUME | ~ I:84 onAppear → immediate fetch | aligned | | |

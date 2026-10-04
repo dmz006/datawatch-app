@@ -53,7 +53,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
-| element | Channel-mode tabs: Tmux/Chat · Channel · Status(+badge dot) | ✓ 2866–2872 | ✓ SDS:2609 SessionModeTab (tmux/channel/Status) | ✗ | ios-missing | | |
+| element | Channel-mode tabs: Tmux/Chat · Channel · Status(+badge dot) | ✓ 2866–2872 | ✓ SDS:2609 SessionModeTab (tmux/channel/Status) | ✓ Tmux/Chat · Channel · Status (claude backends) | aligned | | |
 | element | Tmux-only tabs: Tmux · Status | ✓ 2900 | ✓ | ✗ | ios-missing | | iOS is terminal-only |
 | element | Chat-only sessions: no tab bar, `#chatArea` | ✓ 2897 | ✓ SDS chatMode pref + CTP | ✗ | ios-missing | | |
 | string | Tab labels "Tmux"/"Chat"/"Channel"/"Status" | ✓ t() keys | ~ "tmux"/"channel"/"Status" (lowercase first two) | ✗ | misaligned | | Case differs |
@@ -98,8 +98,8 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
-| element | Channel tab lines → / ← / ⚡ with classes send/reply/notify | ✓ 2760–2765; css 3031–3039 | ✓ SDS EventList/EventRow 1847 (verify glyphs) | ✗ | ios-missing | | |
-| data | Seed from /api/channel/history?session_id (dedupe, 1000 cap) | ✓ 2718 | ✓ (SDVM history) | ✗ | ios-missing | | |
+| element | Channel tab lines → / ← / ⚡ with classes send/reply/notify | ✓ 2760–2765; css 3031–3039 | ✓ SDS EventList/EventRow 1847 (verify glyphs) | ✓ ChannelTabView → / ← / ⚡ | aligned | | |
+| data | Seed from /api/channel/history?session_id (dedupe, 1000 cap) | ✓ 2718 | ✓ (SDVM history) | ✓ IosChannel.history + ChannelHub | aligned | | |
 | interaction | Send via channel `▶ ch` (POST /api/channel/send) vs tmux `▶` switching with active tab | ✓ 2920–2924, 4565 | ✗ (single send path) | ✗ | android-missing | | |
 | element | Chat bubbles: avatar U/AI/S, role label, time, radius 12, 13px; user #3b82f6, assistant #10b981, system #64748b | ✓ 3015–3045; css 3055–3144 | ~ CTP: U/AI, primaryContainer / surfaceVariant | ✗ | misaligned | | Android uses theme colours, not PWA chat palette |
 | element | Collapsed "N earlier messages" `<details>` when > 6 | ✓ 3023 | ✗ | ✗ | android-missing | | |
@@ -143,7 +143,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | element | Schedule-input button 🕐 → popup (command, when) | ✓ 2925 showScheduleInputPopup 3681 | ✓ ReplyComposer:2747 Icons.Schedule → scheduleOpen | ✗ | ios-missing | | |
 | element | Voice button 🎙 (hold-to-record / click toggle) when whisper enabled | ✓ 2926 | ✓ ReplyComposer:2787 | ✓ SDV:262 | aligned | | |
 | element | Recording modal: waveform, "Recording…", Cancel / Send | ✓ _showVoiceRecordingModal 4713 (voice-waveform) | ~ ReplyComposer:2440 dialog | ~ SDV:444 mic pulse 0.6 s, Cancel/Send | misaligned | | No waveform on apps; iOS pulse-only |
-| string | Transcribing state: placeholder "Transcribing…" + banner "Transcribing voice message…", toast "✓ Transcribed (n chars)" | ✓ 4776–4800 | ✓ ReplyComposer:2697/2714 | ~ spinner only | misaligned | | |
+| string | Transcribing state: placeholder "Transcribing…" + banner "Transcribing voice message…", toast "✓ Transcribed (n chars)" | ✓ 4776–4800 | ✓ ReplyComposer:2697/2714 | ✓ banner + placeholder + ✓ Transcribed note | aligned | | |
 | data | POST /api/voice/transcribe (webm/ogg/mp4) | ✓ 4787 | ✓ transcribeAudio | ✓ transcribeAudioData (audio/mp4) | aligned | | |
 | element | Image attach 📷 (gallery / camera), upload chip "Uploading…/✓ name", `[image:path]` appended | ✓ 2927 sessionImageInput; "Wait for image upload" | ✓ ReplyComposer:2274–2370, 2608, 2795–2860 | ✗ | ios-missing | | |
 | element | Keys strip: ␛ · ↑ ↓ ← → · ⏎ right-aligned | ✓ 2957–2964 | ✓ ReplyComposer:2527–2605 (icons) | ✗ | ios-missing | | |
