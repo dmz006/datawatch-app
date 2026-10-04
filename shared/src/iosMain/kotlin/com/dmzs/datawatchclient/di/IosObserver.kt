@@ -43,7 +43,7 @@ import kotlin.math.round
 // ─────────────────────────────────────────────────────────────────────────
 
 /** One labelled gauge bar (PWA `bar(label, val, max, color, extra)`). */
-public data class IosObsBar(val label: String, val value: String, val fraction: Double, val tone: String)
+public data class IosObsBar(val label: String, val fraction: Double, val tone: String, val value: String)
 
 /** Key/value line (stat-card rows). Empty [key] = free-text line. */
 public data class IosObsKv(val key: String, val value: String, val tone: String)

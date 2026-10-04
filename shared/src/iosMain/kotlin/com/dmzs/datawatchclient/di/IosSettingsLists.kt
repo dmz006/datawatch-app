@@ -95,7 +95,7 @@ public object IosSettingsLists {
                     "compute_nodes" -> tr.toggleComputeNodeEnabled(id, enabled)
                     "web_search_providers" -> tr.enableWebSearchProvider(id, enabled)
                     "plugins" -> tr.pluginAction(id, if (enabled) "enable" else "disable")
-                    else -> Result.failure(UnsupportedOperationException("Not supported"))
+                    else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             onDone(msg(r.exceptionOrNull(), "Update failed."))
         }
@@ -133,7 +133,7 @@ public object IosSettingsLists {
                             val idx = id.toIntOrNull() ?: -1
                             tr.setRoutingRules(cur.rules.filterIndexed { i, _ -> i != idx }).getOrThrow()
                         }
-                    else -> Result.failure(UnsupportedOperationException("Not supported"))
+                    else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             onDone(msg(r.exceptionOrNull(), "Delete failed."))
         }
@@ -160,7 +160,7 @@ public object IosSettingsLists {
                     "web_search_providers" ->
                         tr.testWebSearchProvider(id).map { if (it.ok) "OK · ${it.resultCount} results" else "Failed: ${it.error.orEmpty()}" }
                     "project_profiles" -> tr.smokeKindProfile("project", id).map { "Smoke test started" }
-                    else -> Result.failure(UnsupportedOperationException("Not supported"))
+                    else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Action failed.") })
         }
@@ -182,7 +182,7 @@ public object IosSettingsLists {
                         if (index == 0) tr.generateTailscaleAcl().map { "ACL generated" }
                         else tr.pushTailscaleAcl().map { "ACL generated and pushed" }
                     "plugins" -> tr.reloadPlugins().map { "Reloaded: $it plugin(s)" }
-                    else -> Result.failure(UnsupportedOperationException("Not supported"))
+                    else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Action failed.") })
         }
@@ -225,7 +225,7 @@ public object IosSettingsLists {
                         }
                     "remote_servers" ->
                         tr.addRemoteServer(RemoteServerDto(name = v("name"), url = v("url"), token = v("token").ifEmpty { null }))
-                    else -> Result.failure(UnsupportedOperationException("Not supported"))
+                    else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             onDone(msg(r.exceptionOrNull(), "Save failed."))
         }
