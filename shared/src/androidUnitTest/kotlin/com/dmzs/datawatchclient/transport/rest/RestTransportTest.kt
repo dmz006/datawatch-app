@@ -568,6 +568,30 @@ class RestTransportTest {
         }
 
     @Test
+    fun cancelPipelinePostsIdAndActionAsQuery() =
+        runTest {
+            server.enqueue(jsonResponse("""{"status":"ok"}"""))
+            val res = transport.cancelPipeline("pipe-1")
+            assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+            val sent = server.takeRequest()
+            assertEquals("POST", sent.method)
+            assertEquals("/api/pipeline?id=pipe-1&action=cancel", sent.path)
+        }
+
+    @Test
+    fun createOrchestratorGraphSendsProjectDir() =
+        runTest {
+            server.enqueue(jsonResponse("""{"id":"g-1","title":"T","status":"pending"}"""))
+            val res = transport.createOrchestratorGraph("T", "/work/repo", listOf("p1"))
+            assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+            val body = server.takeRequest().body.readUtf8()
+            // Server (orchestrator.go) reads `project_dir`, not `directory`.
+            assertTrue(body.contains("\"project_dir\":\"/work/repo\""), body)
+            assertTrue(!body.contains("\"directory\""), body)
+            assertTrue(body.contains("\"prd_ids\":[\"p1\"]"), body)
+        }
+
+    @Test
     fun deleteSchedulePassesIdAsQueryParam() =
         runTest {
             server.enqueue(jsonResponse("""{"status":"ok"}"""))

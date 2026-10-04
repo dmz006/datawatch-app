@@ -78,6 +78,42 @@ struct SettingsView: View {
                         }
                         .listRowBackground(DatawatchColors.surface)
                     }
+
+                    // ── Automata (PWA Settings → Automata; final grouping per D31) ──
+                    Section {
+                        NavigationLink {
+                            OrchestratorGraphsView(profile: profile)
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Automata Orchestrator").foregroundStyle(DatawatchColors.onSurface)
+                                    Text("Graphs that run several automata together")
+                                        .font(DatawatchFonts.labelSmall)
+                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                }
+                            } icon: {
+                                Image(systemName: "point.3.connected.trianglepath.dotted")
+                                    .foregroundStyle(DatawatchColors.primary)
+                            }
+                        }
+                        .listRowBackground(DatawatchColors.surface)
+                        NavigationLink {
+                            PipelinesView(profile: profile)
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Pipeline Manager").foregroundStyle(DatawatchColors.onSurface)
+                                    Text("Live pipelines and their task progress")
+                                        .font(DatawatchFonts.labelSmall)
+                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                }
+                            } icon: {
+                                Image(systemName: "arrow.triangle.branch")
+                                    .foregroundStyle(DatawatchColors.primary)
+                            }
+                        }
+                        .listRowBackground(DatawatchColors.surface)
+                    }
                 }
 
                 // ── Security ─────────────────────────────────────────────

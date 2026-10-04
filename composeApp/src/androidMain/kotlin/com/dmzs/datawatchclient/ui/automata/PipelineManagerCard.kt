@@ -91,7 +91,11 @@ internal fun PipelineManagerCard() {
                 PipelineRow(p, onCancel = {
                     scope.launch {
                         runCatching {
-                            // Cancel: placeholder — see dmz006/datawatch issue for proper cancel endpoint
+                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
+                            val sp =
+                                ServiceLocator.profileRepository.observeAll().first()
+                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            ServiceLocator.transportFor(sp).cancelPipeline(p.id)
                         }
                         runCatching { load() }
                     }

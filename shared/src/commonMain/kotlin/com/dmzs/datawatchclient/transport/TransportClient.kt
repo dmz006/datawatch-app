@@ -1297,6 +1297,9 @@ public interface TransportClient {
     /** GET /api/pipelines — list active pipelines. */
     public suspend fun getPipelines(): Result<List<com.dmzs.datawatchclient.transport.dto.PipelineListItemDto>>
 
+    /** POST /api/pipeline?id={id}&action=cancel — cancel a running/pending pipeline (PWA pipelineCancel). */
+    public suspend fun cancelPipeline(id: String): Result<Unit>
+
     /** GET /api/orchestrator/graphs — list orchestrator graphs. */
     public suspend fun getOrchestratorGraphsList(): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto>
 
