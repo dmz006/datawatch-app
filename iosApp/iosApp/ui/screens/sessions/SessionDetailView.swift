@@ -109,7 +109,7 @@ struct SessionDetailView: View {
         .onAppear {
             fetchMessagingBackend()
             IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
-                DispatchQueue.main.async { self.whisperEnabled = enabled }
+                DispatchQueue.main.async { self.whisperEnabled = enabled.boolValue }
             }
         }
         // Recording overlay — shown while mic is active.
@@ -508,7 +508,7 @@ struct SessionDetailView: View {
             return
         }
         IosServiceLocator.shared.transcribeAudioData(
-            audioData: audioData as NSData,
+            audioData: audioData,
             audioMime: VoiceRecorder.mimeType,
             sessionId: session.id,
             profile: profile,

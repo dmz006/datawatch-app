@@ -51,7 +51,7 @@ struct RootView: View {
 
     private var iPadLayout: some View {
         NavigationSplitView {
-            List(AppTab.allCases, selection: $selectedTab) { tab in
+            List(AppTab.allCases, selection: Binding<AppTab?>(get: { selectedTab }, set: { if let t = $0 { selectedTab = t } })) { tab in
                 NavigationLink(value: tab) {
                     Label(tab.title, systemImage: tab.iconName)
                         .foregroundStyle(DatawatchColors.onSurface)
