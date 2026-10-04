@@ -1,11 +1,14 @@
 import SwiftUI
 import DatawatchShared
 
-// MARK: - Delete with memory strategy (PWA delete-session modal)
+// MARK: - Delete with memory strategy (PWA delete modal — shared by sessions and PRDs)
 
-struct SessionDeleteSheet: View {
-    let profile: ServerProfile
-    let session: DwSession
+/// Keep / Purge / Archive memories, with role-prefix filter + scope for Archive.
+/// `perform(strategy, roleFilter, scope, completion)` runs the delete and reports an error message or nil.
+struct MemoryStrategyDeleteSheet: View {
+    let title: String
+    let question: String
+    let perform: (_ strategy: String, _ roleFilter: String, _ scope: String, _ done: @escaping (String?) -> Void) -> Void
     var onDeleted: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -27,7 +30,7 @@ struct SessionDeleteSheet: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 } header: {
-                    Text("What should happen to this session's memories?")
+                    Text(question)
                 }
                 if strategy == "archive" {
                     Section("Archive") {
@@ -50,7 +53,7 @@ struct SessionDeleteSheet: View {
             }
             .scrollContentBackground(.hidden)
             .background(DatawatchColors.background)
-            .navigationTitle("Delete this session?")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -73,25 +76,37 @@ struct SessionDeleteSheet: View {
     private func delete() {
         deleting = true
         errorMessage = nil
-        IosSessionOps.shared.delete(
-            profile: profile,
-            session: session,
-            strategy: strategy,
-            roleFilter: roleFilter,
-            archiveScope: archiveScope,
-            onSuccess: {
-                DispatchQueue.main.async {
-                    deleting = false
+        perform(strategy, roleFilter, archiveScope) { err in
+            DispatchQueue.main.async {
+                deleting = false
+                if let err {
+                    errorMessage = err
+                } else {
                     dismiss()
                     onDeleted()
                 }
-            },
-            onError: { msg in
-                DispatchQueue.main.async {
-                    deleting = false
-                    errorMessage = msg
-                }
             }
+        }
+    }
+}
+
+struct SessionDeleteSheet: View {
+    let profile: ServerProfile
+    let session: DwSession
+    var onDeleted: () -> Void
+
+    var body: some View {
+        MemoryStrategyDeleteSheet(
+            title: "Delete this session?",
+            question: "What should happen to this session's memories?",
+            perform: { strategy, roles, scope, done in
+                IosSessionOps.shared.delete(
+                    profile: profile, session: session, strategy: strategy,
+                    roleFilter: roles, archiveScope: scope,
+                    onSuccess: { done(nil) }, onError: { done($0) }
+                )
+            },
+            onDeleted: onDeleted
         )
     }
 }

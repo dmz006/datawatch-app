@@ -81,6 +81,9 @@ struct PrdDetailView: View {
     @State private var showRevision = false
     @State private var revisionNote = ""
     @State private var showCancel = false
+    @State private var showEdit = false
+    @State private var showDelete = false
+    @Environment(\.dismiss) private var dismissDetail
 
     init(profile: ServerProfile, initial: PrdDto) {
         _vm = StateObject(wrappedValue: PrdDetailViewModel(profile: profile, initial: initial))
@@ -108,6 +111,42 @@ struct PrdDetailView: View {
         .background(DatawatchColors.background)
         .navigationTitle(prd.displayTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button { showEdit = true } label: { Label("Edit title / spec", systemImage: "pencil") }
+                    if !["running", "planning", "archived"].contains(prd.status.lowercased()) {
+                        Button {
+                            Task { await vm.perform("reset_to_draft", body: ["actor": "operator"]) }
+                        } label: { Label("Reset to Draft", systemImage: "arrow.uturn.backward") }
+                    }
+                    Divider()
+                    Button(role: .destructive) { showDelete = true } label: { Label("Delete", systemImage: "trash") }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel("Automaton actions")
+            }
+        }
+        .sheet(isPresented: $showEdit) {
+            EditPrdView(profile: vm.profile, prdId: prd.id, title: prd.displayTitle, spec: prd.spec ?? "") {
+                Task { await vm.refresh() }
+            }
+        }
+        .sheet(isPresented: $showDelete) {
+            MemoryStrategyDeleteSheet(
+                title: "Delete this automaton?",
+                question: "What should happen to this Automaton's memories?",
+                perform: { strategy, roles, scope, done in
+                    IosAutomata.shared.deletePrd(
+                        profile: vm.profile, prdId: prd.id, strategy: strategy,
+                        roleFilter: roles, archiveScope: scope,
+                        onSuccess: { done(nil) }, onError: { done($0) }
+                    )
+                },
+                onDeleted: { dismissDetail() }
+            )
+        }
         .onAppear {
             expandedStories = Set(prd.stories.filter { $0.status == "in_progress" }.map { $0.id })
             vm.start()
