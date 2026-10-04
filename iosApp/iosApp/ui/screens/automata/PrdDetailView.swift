@@ -12,8 +12,10 @@ final class PrdDetailViewModel: ObservableObject {
 
     let profile: ServerProfile
     private var pollTask: Task<Void, Never>? = nil
+    private var prdSubscription: IosSubscription? = nil
     private var inFlight = false
-    private static let interval: Duration = .seconds(10)
+    /// REST fallback; live changes arrive as prd_update frames.
+    private static let interval: Duration = .seconds(30)
 
     init(profile: ServerProfile, initial: PrdDto) {
         self.profile = profile
@@ -22,6 +24,11 @@ final class PrdDetailViewModel: ObservableObject {
 
     func start() {
         stop()
+        let id = prd.id
+        prdSubscription = IosServiceLocator.shared.subscribePrdUpdates(profile: profile) { [weak self] updated in
+            guard updated.id == id else { return }
+            Task { @MainActor [weak self] in self?.prd = updated }
+        }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
@@ -34,6 +41,8 @@ final class PrdDetailViewModel: ObservableObject {
     func stop() {
         pollTask?.cancel()
         pollTask = nil
+        prdSubscription?.cancel()
+        prdSubscription = nil
     }
 
     func refresh() async {

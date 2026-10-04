@@ -196,8 +196,10 @@ final class PrdListViewModel: ObservableObject {
 
     private var profile: ServerProfile?
     private var pollTask: Task<Void, Never>? = nil
+    private var prdSubscription: IosSubscription? = nil
     private var inFlight = false
-    private static let interval: Duration = .seconds(15)
+    /// REST is a fallback now that prd_update frames patch the list live (PWA/Android #178).
+    private static let interval: Duration = .seconds(30)
 
     func start(profile: ServerProfile) {
         if self.profile?.id != profile.id {
@@ -206,6 +208,9 @@ final class PrdListViewModel: ObservableObject {
         }
         self.profile = profile
         stop()
+        prdSubscription = IosServiceLocator.shared.subscribePrdUpdates(profile: profile) { [weak self] updated in
+            Task { @MainActor [weak self] in self?.patch(updated) }
+        }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
@@ -218,6 +223,17 @@ final class PrdListViewModel: ObservableObject {
     func stop() {
         pollTask?.cancel()
         pollTask = nil
+        prdSubscription?.cancel()
+        prdSubscription = nil
+    }
+
+    /// Replace (or insert) one PRD from a `prd_update` frame — no refetch, no flicker.
+    private func patch(_ updated: PrdDto) {
+        if let i = prds.firstIndex(where: { $0.id == updated.id }) {
+            prds[i] = updated
+        } else {
+            prds.insert(updated, at: 0)
+        }
     }
 
     func refreshAsync() async {

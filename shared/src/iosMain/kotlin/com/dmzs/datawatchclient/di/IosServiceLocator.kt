@@ -474,6 +474,23 @@ public object IosServiceLocator {
         return IosSubscription(job)
     }
 
+    /**
+     * Live `prd_update` frames (parity B19). Keeps a global `/ws` open for [profile]
+     * (no session subscription) and forwards every PRD the server pushes. Callbacks
+     * run on a background thread; cancel the handle when the screen disappears.
+     */
+    public fun subscribePrdUpdates(
+        profile: ServerProfile,
+        onPrd: (com.dmzs.datawatchclient.transport.dto.PrdDto) -> Unit,
+    ): IosSubscription {
+        val job =
+            ioScope.launch {
+                launch { wsTransportFor(profile).globalStream().collect { } }
+                launch { com.dmzs.datawatchclient.transport.ws.PrdHub.flow.collect { onPrd(it) } }
+            }
+        return IosSubscription(job)
+    }
+
     // ── Keychain token accessor ───────────────────────────────────────────
 
     /**
