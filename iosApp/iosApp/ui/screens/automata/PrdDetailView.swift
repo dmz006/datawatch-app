@@ -124,6 +124,15 @@ struct PrdDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
                 if prd.scopeWarnings { scopeWarningsBanner }
+                PrdLifecycleStrip(prd: prd, compact: false) { action in
+                    switch action {
+                    case "reject": showReject = true
+                    case "request_revision": showRevision = true
+                    case "cancel": showCancel = true
+                    case "approve": Task { await vm.perform("approve", body: ["actor": "operator"]) }
+                    default: Task { await vm.perform(action) }
+                    }
+                }
                 actions
                 if ["completed", "archived"].contains(prd.status.lowercased()) {
                     // PWA prd_terminal_state_hint (not shown for cancelled, which can reset to draft).
