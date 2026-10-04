@@ -1224,4 +1224,7 @@
     <string name="automata_wizard_skills_hint_link">Configura skills en Ajustes → Agentes → Perfiles de proyecto → Skills</string>
     <string name="prd_action_archive">Archivar</string>
     <string name="action_clear">Borrar</string>
+    <string name="signal_link_copy">Copiar enlace</string>
+    <string name="signal_link_open">Abrir en Signal</string>
+    <string name="signal_link_no_app">Signal no está instalado en este dispositivo: escanea o pega el enlace en el teléfono que vas a vincular.</string>
 </resources>

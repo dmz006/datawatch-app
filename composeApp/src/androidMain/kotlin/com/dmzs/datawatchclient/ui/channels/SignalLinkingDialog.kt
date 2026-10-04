@@ -1,19 +1,22 @@
 package com.dmzs.datawatchclient.ui.channels
 
-import android.graphics.BitmapFactory
-import android.util.Base64
-import androidx.compose.foundation.Image
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,23 +30,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.transport.dto.LinkQrFrameDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * Modal dialog that renders live QR frames streamed from /api/link/qr (SSE).
- * When Signal completes pairing the status flips to linked — the dialog surfaces
- * that state and persists it to the local profile row (migration 6).
+ * Signal device linking — mirrors the PWA `startLinking` / `streamLinkEvents`
+ * flow: `POST /api/link/start {device_name}` returns a `stream_id`, then the
+ * SSE stream `GET /api/link/stream?id=` emits `qr` (a `sgnl://linkdevice…`
+ * URI), `linked`, or `error`. (The previous implementation called `/api/link/qr`
+ * without the required id and a non-existent `/api/link/cancel`.)
+ *
+ * The app has no QR encoder, so the link URI is shown the way the PWA's
+ * no-QRCode.js fallback does (white box, selectable text), with Copy and an
+ * "Open in Signal" intent for a Signal install on this device. Dismissing just
+ * closes the stream — the server has no cancel route.
  */
 @Composable
 public fun SignalLinkingDialog(
@@ -51,72 +63,60 @@ public fun SignalLinkingDialog(
     onLinked: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val strWaiting = stringResource(R.string.signal_link_waiting)
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     val strScanPrompt = stringResource(R.string.signal_link_scan_prompt)
-    val strSuccess = stringResource(R.string.signal_link_success)
     val strNoServer = stringResource(R.string.servers_none_available)
-    var qrFrame by remember { mutableStateOf<LinkQrFrameDto?>(null) }
-    var status by remember { mutableStateOf(strWaiting) }
+    var linkUri by remember { mutableStateOf<String?>(null) }
     var linked by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var sseJob by remember { mutableStateOf<Job?>(null) }
+    var job by remember { mutableStateOf<Job?>(null) }
 
-    suspend fun activeTransport() =
-        ServiceLocator.profileRepository.observeAll().first().let { profiles ->
-            val activeId = ServiceLocator.activeServerStore.get()
-            (
-                profiles.firstOrNull {
-                    it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-                } ?: profiles.firstOrNull { it.enabled }
-            )?.let { ServiceLocator.transportFor(it) }
-        }
-
-    suspend fun checkLinked(profile: ServerProfile): Boolean {
-        val transport = ServiceLocator.transportFor(profile)
-        return transport.getSignalLinkStatus()
-            .getOrNull()?.linked == true
+    suspend fun activeProfile(): ServerProfile? {
+        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val activeId = ServiceLocator.activeServerStore.get()
+        return profiles.firstOrNull {
+            it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
+        } ?: profiles.firstOrNull { it.enabled }
     }
 
     LaunchedEffect(Unit) {
-        val transport =
-            activeTransport() ?: run {
+        val profile =
+            activeProfile() ?: run {
                 error = strNoServer
                 return@LaunchedEffect
             }
-        sseJob =
+        val transport = ServiceLocator.transportFor(profile)
+        job =
             scope.launch {
-                transport.startSignalLinking()
-                    .catch { e -> error = e.message ?: "Stream error" }
-                    .collect { frame ->
-                        qrFrame = frame
-                        status = strScanPrompt
-                        // Check if pairing completed after each frame
-                        val profiles = ServiceLocator.profileRepository.observeAll().first()
-                        val activeId = ServiceLocator.activeServerStore.get()
-                        val profile =
-                            profiles.firstOrNull {
-                                it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-                            } ?: profiles.firstOrNull { it.enabled } ?: return@collect
-                        if (checkLinked(profile)) {
-                            ServiceLocator.profileRepository.setSignalLinked(profile.id, true)
-                            linked = true
-                            status = strSuccess
-                            onLinked()
+                val streamId =
+                    transport.startSignalLink(deviceName = "").getOrElse { e ->
+                        error = e.message ?: "Failed to start linking"
+                        return@launch
+                    }
+                transport.signalLinkEvents(streamId)
+                    .catch { e -> if (!linked) error = e.message ?: "Stream error" }
+                    .collect { ev ->
+                        when (ev.event) {
+                            "qr" -> linkUri = ev.data.trim()
+                            "linked" -> {
+                                ServiceLocator.profileRepository.setSignalLinked(profile.id, true)
+                                linked = true
+                                onLinked()
+                            }
+                            "error" -> error = ev.data.ifBlank { "unknown error" }
                         }
                     }
             }
     }
 
     DisposableEffect(Unit) {
-        onDispose { sseJob?.cancel() }
+        onDispose { job?.cancel() }
     }
 
     AlertDialog(
         onDismissRequest = {
-            sseJob?.cancel()
-            if (!linked) {
-                scope.launch { activeTransport()?.cancelSignalLink() }
-            }
+            job?.cancel()
             onDismiss()
         },
         title = { Text(stringResource(R.string.signal_link_title)) },
@@ -125,28 +125,56 @@ public fun SignalLinkingDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                if (linked) {
-                    Text(
-                        stringResource(R.string.signal_link_success),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                } else {
-                    error?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    } ?: run {
-                        val frame = qrFrame
-                        if (frame != null) {
-                            QrImageView(frame.imageBase64)
-                        } else {
-                            Box(
-                                modifier = Modifier.size(200.dp),
-                                contentAlignment = Alignment.Center,
-                            ) { CircularProgressIndicator() }
+                when {
+                    linked ->
+                        Text(
+                            stringResource(R.string.signal_link_success),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    error != null ->
+                        Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    linkUri == null -> {
+                        Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                        Text(
+                            stringResource(R.string.signal_link_waiting),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    else -> {
+                        val uri = linkUri.orEmpty()
+                        SelectionContainer {
+                            Text(
+                                uri,
+                                fontSize = 10.sp,
+                                color = Color.Black,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(Color.White)
+                                        .padding(8.dp),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row {
+                            OutlinedButton(onClick = { clipboard.setText(AnnotatedString(uri)) }) {
+                                Text(stringResource(R.string.signal_link_copy))
+                            }
+                            Spacer(Modifier.size(8.dp))
+                            OutlinedButton(onClick = {
+                                try {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+                                } catch (_: ActivityNotFoundException) {
+                                    error = context.getString(R.string.signal_link_no_app)
+                                }
+                            }) { Text(stringResource(R.string.signal_link_open)) }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            status,
+                            strScanPrompt,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -162,41 +190,10 @@ public fun SignalLinkingDialog(
         dismissButton = {
             if (!linked) {
                 TextButton(onClick = {
-                    sseJob?.cancel()
-                    scope.launch { activeTransport()?.cancelSignalLink() }
+                    job?.cancel()
                     onDismiss()
                 }) { Text(stringResource(R.string.action_cancel)) }
             }
         },
     )
-}
-
-@Composable
-private fun QrImageView(imageBase64: String) {
-    val bitmap =
-        remember(imageBase64) {
-            runCatching {
-                val bytes = Base64.decode(imageBase64, Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            }.getOrNull()
-        }
-    if (bitmap != null) {
-        Box(
-            modifier =
-                Modifier
-                    .size(200.dp)
-                    .background(Color.White)
-                    .padding(8.dp),
-        ) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.signal_link_title),
-                modifier = Modifier.size(184.dp),
-            )
-        }
-    } else {
-        Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.signal_link_qr_unavailable), style = MaterialTheme.typography.bodySmall)
-        }
-    }
 }

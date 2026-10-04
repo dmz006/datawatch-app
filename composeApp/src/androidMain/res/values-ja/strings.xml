@@ -1224,4 +1224,7 @@
     <string name="automata_wizard_skills_hint_link">設定 → エージェント → プロジェクトプロファイル → スキル でスキルを設定</string>
     <string name="prd_action_archive">アーカイブ</string>
     <string name="action_clear">クリア</string>
+    <string name="signal_link_copy">リンクをコピー</string>
+    <string name="signal_link_open">Signalで開く</string>
+    <string name="signal_link_no_app">このデバイスには Signal がインストールされていません — リンクする電話でスキャンまたは貼り付けてください。</string>
 </resources>

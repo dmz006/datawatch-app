@@ -2167,13 +2167,10 @@ public class RestTransport(
             Unit
         }
 
+    // The server wraps the list as {models: [...], kind, note?}; decoding a bare
+    // List<String> always failed. Delegate to the tolerant parser.
     override suspend fun getComputeNodeModels(name: String, kind: String): Result<List<String>> =
-        request {
-            client.get("${profile.baseUrl}/api/compute/nodes/$name/models") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-                parameter("kind", kind)
-            }.body()
-        }
+        computeNodeModelNames(name, kind)
 
     // ---- v0.74.0 LLM Registry (S5-2) ----
 
