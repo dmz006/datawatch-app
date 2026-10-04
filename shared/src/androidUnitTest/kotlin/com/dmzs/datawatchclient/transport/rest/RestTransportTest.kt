@@ -798,4 +798,42 @@ class RestTransportTest {
             assertEquals(55.0, dto.gpu[0].utilPct, 0.01)
             assertEquals(90.0, dto.gpu[1].utilPct, 0.01)
         }
+
+    // ---- iOS Settings parity ----
+
+    @Test
+    fun `pluginAction posts to encoded plugin path`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"ok":true}"""))
+            val result = transport.pluginAction("my plugin", "disable")
+            assertTrue(result.isSuccess, "expected success, got ${result.exceptionOrNull()}")
+            val req = server.takeRequest()
+            assertEquals("POST", req.method)
+            assertEquals("/api/plugins/my%20plugin/disable", req.path)
+            assertEquals("Bearer secret-token", req.getHeader("Authorization"))
+        }
+
+    @Test
+    fun `reloadPlugins returns server count`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"count":3}"""))
+            assertEquals(3, transport.reloadPlugins().getOrThrow())
+            val req = server.takeRequest()
+            assertEquals("POST", req.method)
+            assertEquals("/api/plugins/reload", req.path)
+        }
+
+    @Test
+    fun `listFederationPeers parses array and delete hits peer path`() =
+        runTest {
+            server.enqueue(jsonResponse("""[{"name":"alpha","url":"http://peer.example","enabled":true,"capabilities":["federation-peer"]}]"""))
+            val peers = transport.listFederationPeers().getOrThrow()
+            assertEquals(1, peers.size)
+            assertEquals("/api/federation/peers", server.takeRequest().path)
+            server.enqueue(MockResponse().setResponseCode(204))
+            assertTrue(transport.deleteFederationPeer("alpha").isSuccess)
+            val del = server.takeRequest()
+            assertEquals("DELETE", del.method)
+            assertEquals("/api/federation/peers/alpha", del.path)
+        }
 }
