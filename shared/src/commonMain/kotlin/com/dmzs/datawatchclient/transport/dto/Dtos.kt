@@ -1699,7 +1699,8 @@ public data class OrchestratorGraphsListDto(
 @Serializable
 public data class CreateOrchestratorGraphRequestDto(
     val title: String,
-    val directory: String = "",
+    /** Server field is `project_dir` (orchestrator.go); `directory` was silently ignored. */
+    @SerialName("project_dir") val directory: String = "",
     @SerialName("prd_ids") val prdIds: List<String> = emptyList(),
 )
 

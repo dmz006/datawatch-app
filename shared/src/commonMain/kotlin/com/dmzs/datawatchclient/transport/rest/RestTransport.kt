@@ -2676,6 +2676,16 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun cancelPipeline(id: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/pipeline") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("id", id)
+                parameter("action", "cancel")
+            }
+            Unit
+        }
+
     override suspend fun getOrchestratorGraphsList(): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto> =
         request {
             client.get("${profile.baseUrl}/api/orchestrator/graphs") {
