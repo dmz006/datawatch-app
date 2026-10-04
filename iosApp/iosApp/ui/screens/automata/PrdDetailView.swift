@@ -106,6 +106,7 @@ struct PrdDetailView: View {
     @State private var showEdit = false
     @State private var showDelete = false
     @State private var templateSaved = false
+    @State private var capacity: CapacityResponseDto? = nil
     @Environment(\.dismiss) private var dismissDetail
 
     init(profile: ServerProfile, initial: PrdDto) {
@@ -119,6 +120,8 @@ struct PrdDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
                 actions
+                statusGraphs
+                capacityCard
                 if let spec = prd.spec, !spec.isEmpty {
                     specSection(spec)
                 }
@@ -187,6 +190,12 @@ struct PrdDetailView: View {
             vm.start()
         }
         .onDisappear { vm.stop() }
+        .task(id: prd.status) {
+            guard ["running", "decomposing", "planning", "approved"].contains(prd.status.lowercased()) else { capacity = nil; return }
+            IosPrdCapacity.shared.load(profile: vm.profile, prdId: prd.id) { c in
+                DispatchQueue.main.async { capacity = c }
+            }
+        }
         .refreshable { await vm.refresh() }
         .alert("Reject PRD", isPresented: $showReject) {
             TextField("Reason", text: $rejectReason)
@@ -415,6 +424,71 @@ struct PrdDetailView: View {
         .tint(DatawatchColors.primary)
         .padding(12)
         .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    // ── Status graphs + capacity (parity B17; PWA _renderStatusGraphs) ─────
+
+    @ViewBuilder
+    private var statusGraphs: some View {
+        let status = prd.status.lowercased()
+        if ["decomposing", "planning", "running"].contains(status) {
+            let stories = prd.stories
+            let storiesDone = stories.filter { s in !s.tasks.isEmpty && s.tasks.allSatisfy { PrdStatusStyle.isDone($0.status) } }.count
+            let tasks = prd.allTasks
+            let tasksDone = prd.doneTaskCount
+            VStack(alignment: .leading, spacing: 8) {
+                graphRow("Decomposed", value: stories.isEmpty ? "…" : "\(stories.count) stories",
+                         fraction: stories.isEmpty ? 0 : 1)
+                graphRow("Stories", value: "\(storiesDone)/\(stories.count)",
+                         fraction: stories.isEmpty ? 0 : Double(storiesDone) / Double(stories.count))
+                graphRow("Tasks", value: "\(tasksDone)/\(tasks.count)",
+                         fraction: tasks.isEmpty ? 0 : Double(tasksDone) / Double(tasks.count))
+            }
+            .padding(14)
+            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private func graphRow(_ label: String, value: String, fraction: Double) -> some View {
+        HStack(spacing: 10) {
+            Text(label)
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .frame(width: 84, alignment: .leading)
+            ProgressView(value: max(0, min(1, fraction)))
+                .tint(DatawatchColors.primary)
+            Text(value)
+                .font(DatawatchFonts.terminalSmall)
+                .foregroundStyle(DatawatchColors.onSurface)
+                .frame(minWidth: 64, alignment: .trailing)
+        }
+    }
+
+    @ViewBuilder
+    private var capacityCard: some View {
+        if let c = capacity, !c.pools.isEmpty || !c.waiting.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("CAPACITY")
+                    .font(DatawatchFonts.badge)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                ForEach(c.pools, id: \.name) { pool in
+                    HStack {
+                        Text(pool.name).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurface)
+                        Spacer()
+                        Text("\(pool.held)/\(pool.limit)" + (pool.external > 0 ? " (+\(pool.external) external)" : ""))
+                            .font(DatawatchFonts.terminalSmall)
+                            .foregroundStyle(pool.limit > 0 && pool.held >= pool.limit ? DatawatchColors.warning : DatawatchColors.onSurface)
+                    }
+                }
+                if !c.waiting.isEmpty {
+                    Text("\(c.waiting.count) waiting for capacity")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.warning)
+                }
+            }
+            .padding(14)
+            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        }
     }
 
     // ── Story / task operations (parity B18; PWA visibility rules) ────────
