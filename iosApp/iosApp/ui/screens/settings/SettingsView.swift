@@ -140,6 +140,16 @@ struct SettingsView: View {
 
                 // ── About ────────────────────────────────────────────────
                 Section("About") {
+                    // Compact Earthrise scene (PWA About: startScene compact; Android MatrixLogoAnimated).
+                    VStack(spacing: 10) {
+                        SplashSceneView(compact: true)
+                            .frame(height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        SplashTextBlock(version: appVersion)
+                    }
+                    .padding(.vertical, 6)
+                    .listRowBackground(DatawatchColors.surface)
+
                     HStack {
                         Label("Version", systemImage: "info.circle")
                             .foregroundStyle(DatawatchColors.onSurface)
