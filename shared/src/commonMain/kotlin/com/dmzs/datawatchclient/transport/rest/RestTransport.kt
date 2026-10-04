@@ -3688,6 +3688,69 @@ public class RestTransport(
             Unit
         }
 
+    // ---- iOS Dashboard parity ----
+
+    override suspend fun fetchDashboardLayoutJson(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/dashboard/layout") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun putDashboardLayout(layout: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/dashboard/layout") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(layout)
+            }
+            Unit
+        }
+
+    override suspend fun listSmokeRunsJson(): Result<kotlinx.serialization.json.JsonArray> =
+        request {
+            client.get("${profile.baseUrl}/api/smoke/progress") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun fetchSmokeRunJson(id: String): Result<kotlinx.serialization.json.JsonObject?> {
+        val result: Result<kotlinx.serialization.json.JsonObject> =
+            request {
+                client.get("${profile.baseUrl}/api/smoke/progress/${iosPathPart(id)}") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            }
+        // 404 = the run was deleted elsewhere; the PWA drops its selection.
+        if (result.exceptionOrNull() is TransportError.NotFound) {
+            return Result.success<kotlinx.serialization.json.JsonObject?>(null)
+        }
+        return result.map<kotlinx.serialization.json.JsonObject?, kotlinx.serialization.json.JsonObject> { it }
+    }
+
+    override suspend fun deleteSmokeRun(id: String?): Result<Unit> =
+        request {
+            val path = if (id.isNullOrBlank()) "/api/smoke/progress" else "/api/smoke/progress/${iosPathPart(id)}"
+            client.delete("${profile.baseUrl}$path") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun fetchCostSummaryJson(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/cost") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun fetchSessionStatusJson(sessionId: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/sessions/${iosPathPart(sessionId)}/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
