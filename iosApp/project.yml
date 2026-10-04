@@ -34,7 +34,8 @@ targets:
         MARKETING_VERSION: ${DATAWATCH_APP_VERSION}
         CURRENT_PROJECT_VERSION: ${DATAWATCH_APP_VERSION_CODE}
         FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/debug
-        OTHER_LDFLAGS: $(inherited) -framework DatawatchShared
+        # SQLDelight native driver (SQLiter) calls the system SQLite.
+        OTHER_LDFLAGS: $(inherited) -framework DatawatchShared -lsqlite3
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Release:
