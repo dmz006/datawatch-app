@@ -1190,4 +1190,8 @@
     <string name="stats_row_ws_errors">Errores</string>
     <string name="stats_row_ws_last_query">Última consulta</string>
     <string name="splash_updated_to">Actualizado a %1$s</string>
+    <string name="session_tree_btn">Árbol</string>
+    <string name="session_tree_orphaned">huérfano — el padre ya no existe</string>
+    <string name="session_child_of">hijo de</string>
+    <string name="sessions_pending_schedules">Programaciones pendientes</string>
 </resources>

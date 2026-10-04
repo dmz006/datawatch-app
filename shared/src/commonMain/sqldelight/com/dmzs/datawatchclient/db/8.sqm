@@ -1,0 +1,10 @@
+-- Migration 8 -> 9 (Android parity: session lineage / liveness / federation badges).
+--
+-- parent_id    — BL347 spawned-by lineage (PWA `child of` badge + BL348 tree view)
+-- claude_alive — BL361 LLM-process liveness (PWA zombie badge); NULL = unknown
+-- server_name  — federation source server (PWA server badge)
+-- All nullable, default NULL, so existing rows are unaffected on upgrade.
+
+ALTER TABLE session ADD COLUMN parent_id TEXT;
+ALTER TABLE session ADD COLUMN claude_alive INTEGER;
+ALTER TABLE session ADD COLUMN server_name TEXT;

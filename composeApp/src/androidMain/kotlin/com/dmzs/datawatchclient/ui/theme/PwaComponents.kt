@@ -117,9 +117,22 @@ public fun Modifier.pwaStateEdge(state: SessionState): Modifier {
             SessionState.Completed, SessionState.Killed, SessionState.New ->
                 MaterialTheme.colorScheme.onSurfaceVariant
         }
+    // PWA `pulse-border`: waiting_input 2 s (waiting <-> #93c5fd), rate_limited 3 s
+    // (warning <-> amber-300); static under reduced motion.
+    val pulsing = state == SessionState.Waiting || state == SessionState.RateLimited
+    val t by rememberDwPulse(
+        initial = 0f,
+        target = 1f,
+        durationMs = if (state == SessionState.RateLimited) 1500 else 1000,
+        staticValue = 0f,
+        active = pulsing,
+        label = "pulse-border",
+    )
+    val peak = if (state == SessionState.RateLimited) Color(0xFFFCD34D) else Color(0xFF93C5FD)
+    val edge = if (pulsing) androidx.compose.ui.graphics.lerp(color, peak, t) else color
     return drawBehind {
         drawRect(
-            brush = SolidColor(color),
+            brush = SolidColor(edge),
             topLeft = Offset.Zero,
             size = Size(4.dp.toPx(), size.height),
         )
