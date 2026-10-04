@@ -1234,4 +1234,24 @@
     <string name="observer_remove_peer_title">Peer „%1$s“ entfernen?</string>
     <string name="observer_remove_peer_body">Er registriert sich beim nächsten Push automatisch neu (Token wird rotiert).</string>
     <string name="action_remove">Entfernen</string>
+    <string name="loading_ellipsis">Wird geladen…</string>
+    <string name="action_refresh">Aktualisieren</string>
+    <string name="settings_profile_pinned_badge">Zertifikat gepinnt</string>
+    <string name="exit_hooks_title">Exit-Hooks</string>
+    <string name="exit_hooks_help">Exit-Hooks werden ausgelöst, wenn eine benannte Sitzung zum Zombie wird (Claude-Prozess beendet) oder in den Status failed/killed wechselt. Aktion restart startet die Sitzung mit derselben Aufgabe neu. Aktion notify sendet eine Nachricht an eine andere benannte Sitzung.</string>
+    <string name="exit_hooks_empty">Keine Exit-Hooks konfiguriert.</string>
+    <string name="exit_hooks_add">Exit-Hook hinzufügen</string>
+    <string name="exit_hooks_name_hint">Zu überwachender Sitzungsname (exakt)</string>
+    <string name="exit_hooks_action_restart">restart — mit derselben Aufgabe neu starten</string>
+    <string name="exit_hooks_action_notify">notify — Nachricht an andere Sitzung senden</string>
+    <string name="exit_hooks_notify_session_hint">Ziel-Sitzungsname (für notify)</string>
+    <string name="exit_hooks_notify_message_hint">Nachricht (optional)</string>
+    <string name="exit_hooks_cooldown_hint">Abklingzeit in Sekunden (Standard 300)</string>
+    <string name="work_queue_title">Arbeitswarteschlange</string>
+    <string name="work_queue_help">WAL-gestützte dauerhafte Warteschlange. Sitzungen mit einer Rolle beanspruchen Einträge atomar. Nicht abgeschlossene Einträge mit abgelaufener Lease kehren automatisch zu pending zurück.</string>
+    <string name="work_queue_role_hint">Rolle filtern (z. B. worker)</string>
+    <string name="work_queue_empty">Keine Warteschlangeneinträge gefunden.</string>
+    <string name="work_queue_push">Arbeitseintrag hinzufügen</string>
+    <string name="work_queue_new_role_hint">Rolle (z. B. worker)</string>
+    <string name="work_queue_delete_title">Warteschlangeneintrag %1$s löschen?</string>
 </resources>

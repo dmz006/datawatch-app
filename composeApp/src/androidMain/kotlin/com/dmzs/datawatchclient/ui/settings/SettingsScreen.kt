@@ -386,6 +386,9 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.filters.FiltersCard()
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleSettingsCard()
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleMeshCard()
+                                // PWA Settings → Compute: BL356 Exit Hooks + BL357 Work Queue.
+                                ExitHooksCard()
+                                WorkQueueCard()
                                 // v0.88.0 Sprint 19 (#111) — alpha.25 settings move
                                 SecretsCard()
                                 // PWA alpha.25 #230 — Observer quicklink moved from General → Compute
@@ -541,6 +544,14 @@ private fun ServerRow(
                     badges.joinToString("  ·  "),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
+                )
+            }
+            // Parity D91a — certificate pin set (TOFU): a positive security badge.
+            if (ServiceLocator.pinFor(profile) != null) {
+                Text(
+                    "🔒 " + stringResource(R.string.settings_profile_pinned_badge),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.success,
                 )
             }
         }
