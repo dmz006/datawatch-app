@@ -37,14 +37,14 @@
     <string>datawatch connects to server addresses you configure, which may be on your local network.</string>
 
     <!--
-      App Transport Security: the app supports user-configured servers that
-      may use HTTP (not HTTPS) or self-signed TLS certificates. HTTP is
-      explicitly warned about in the UI and is the user's deliberate choice.
+      App Transport Security stays at its defaults: HTTPS only, matching the
+      Android network_security_config (cleartext blocked). Self-signed servers
+      are supported by installing the server CA on the device (Edit Server →
+      Download CA certificate) or the per-profile trust-all client.
     -->
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsArbitraryLoads</key>
-        <true/>
-    </dict>
+
+    <!-- Export compliance: standard TLS only (exempt) — skips the per-build questionnaire -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>

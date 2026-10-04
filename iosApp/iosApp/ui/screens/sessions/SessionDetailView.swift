@@ -339,8 +339,8 @@ struct SessionDetailView: View {
         let text = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         replyText = ""
-        // Route through the terminal WebSocket (window.sendInput) so input lands
-        // in the PTY exactly as if typed — REST /api/sessions/reply returns 404.
+        // TerminalView forwards this as a `send_input` frame on the session's
+        // /ws hub (WsOutbound) — the only reply path the server exposes.
         // Append \r so the shell executes the command.
         terminalInput = text + "\r"
     }

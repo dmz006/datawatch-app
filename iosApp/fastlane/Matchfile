@@ -6,4 +6,5 @@
 
 # git_url("https://github.com/your-org/datawatch-ios-certs")
 app_identifier(["com.dmzs.datawatchclient"])
-username("davidzendzian@gmail.com")
+# Apple ID comes from the FASTLANE_USER env var when running locally; CI
+# authenticates with the App Store Connect API key and needs no Apple ID.

@@ -17,6 +17,9 @@ struct EditServerView: View {
     @State private var deleting = false
     @State private var confirmDelete = false
     @State private var errorMessage: String?
+    @State private var fetchingCert = false
+    @State private var certFileURL: URL?
+    @State private var certError: String?
 
     init(profile: ServerProfile) {
         self.profile = profile
@@ -28,7 +31,7 @@ struct EditServerView: View {
 
     private var canSubmit: Bool {
         !displayName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        (baseUrl.hasPrefix("http://") || baseUrl.hasPrefix("https://"))
+        baseUrl.hasPrefix("https://")
     }
 
     var body: some View {
@@ -37,12 +40,12 @@ struct EditServerView: View {
                 TextField("Display name", text: $displayName)
                     .autocorrectionDisabled()
                 VStack(alignment: .leading, spacing: 4) {
-                    TextField("Base URL", text: $baseUrl)
+                    TextField("Base URL (https://…)", text: $baseUrl)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    if !baseUrl.isEmpty && !baseUrl.hasPrefix("http://") && !baseUrl.hasPrefix("https://") {
-                        Text("URL must start with https:// or http://")
+                    if !baseUrl.isEmpty && !baseUrl.hasPrefix("https://") {
+                        Text("URL must start with https:// — datawatch servers must expose TLS.")
                             .font(DatawatchFonts.labelSmall)
                             .foregroundStyle(DatawatchColors.error)
                     }
@@ -65,14 +68,42 @@ struct EditServerView: View {
                 }
             }
 
-            Section("Security") {
+            Section {
                 Toggle("Trust all certificates", isOn: $selfSigned)
                     .tint(DatawatchColors.error)
                 if selfSigned {
-                    Text("Allows self-signed TLS. Do not enable for production servers.")
+                    Text("Disables certificate validation for this server. Prefer installing the server CA certificate below.")
                         .font(DatawatchFonts.labelSmall)
                         .foregroundStyle(DatawatchColors.error)
                 }
+
+                Button {
+                    downloadCert()
+                } label: {
+                    HStack {
+                        Label("Download server CA certificate", systemImage: "lock.doc")
+                        if fetchingCert {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(fetchingCert || probing || deleting)
+
+                if let url = certFileURL {
+                    ShareLink(item: url) {
+                        Label("Share certificate…", systemImage: "square.and.arrow.up")
+                    }
+                }
+                if let certError {
+                    Text(certError)
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.error)
+                }
+            } header: {
+                Text("Security")
+            } footer: {
+                Text("For self-signed servers: download, then open the file (Save to Files → tap it) to install the profile. Enable it under Settings → General → About → Certificate Trust Settings. If the download fails, enable Trust all certificates, download, install, then turn Trust all off.")
             }
 
             if let msg = errorMessage {
@@ -114,6 +145,39 @@ struct EditServerView: View {
         } message: {
             Text("This removes the profile and its bearer token from this device. The server daemon is not affected.")
         }
+    }
+
+    private func downloadCert() {
+        fetchingCert = true
+        certError = nil
+        certFileURL = nil
+        IosServiceLocator.shared.fetchServerCertPem(
+            profile: profile,
+            onSuccess: { pem in
+                DispatchQueue.main.async {
+                    fetchingCert = false
+                    let safeName = profile.displayName
+                        .components(separatedBy: CharacterSet.alphanumerics.inverted)
+                        .filter { !$0.isEmpty }
+                        .joined(separator: "-")
+                        .lowercased()
+                    let url = FileManager.default.temporaryDirectory
+                        .appendingPathComponent("datawatch-\(safeName.isEmpty ? "server" : safeName)-ca.pem")
+                    do {
+                        try Data(pem.utf8).write(to: url, options: .atomic)
+                        certFileURL = url
+                    } catch {
+                        certError = "Could not write certificate file."
+                    }
+                }
+            },
+            onError: { msg in
+                DispatchQueue.main.async {
+                    fetchingCert = false
+                    certError = msg
+                }
+            }
+        )
     }
 
     private func save() {
@@ -165,7 +229,7 @@ struct EditServerView: View {
     let profile = ServerProfile(
         id: "preview-1",
         displayName: "Local dev",
-        baseUrl: "http://localhost:8080",
+        baseUrl: "https://localhost:8443",
         bearerTokenRef: "tok-preview",
         trustAnchorSha256: nil,
         reachabilityProfileId: nil,

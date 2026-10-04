@@ -7,20 +7,38 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
+import platform.Foundation.NSURLCredential
+import platform.Foundation.NSURLSessionAuthChallengePerformDefaultHandling
+import platform.Foundation.NSURLSessionAuthChallengeUseCredential
+import platform.Foundation.credentialForTrust
+import platform.Foundation.serverTrust
 
 /**
  * iOS Ktor HttpClient with WebSockets installed. Mirrors [AndroidWsHttpClient].
  *
- * @param trustAll reserved for future use — iOS currently uses ATS for certificate
- *   policy. For self-signed / private-CA servers configure NSExceptionDomains in
- *   Info.plist, or use a certificate issued by a public CA (Let's Encrypt).
- *   Per-profile SHA-256 pinning via SecTrustEvaluateWithError is tracked for v1.1.
- *
- * App Transport Security note: for HTTP (non-TLS) servers add the server's host
- * to NSExceptionDomains with NSExceptionAllowsInsecureHTTPLoads = true.
+ * @param trustAll when true, accepts any server certificate (the iOS analogue of
+ *   Android's accept-all X509TrustManager). Only selected when the profile has
+ *   `trustAnchorSha256 == TRUST_ALL_SENTINEL`. The preferred path for self-signed
+ *   servers is installing the server CA on the device, which URLSession honours
+ *   with no exception here. Per-profile SHA-256 pinning is the planned follow-up.
  */
 public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient =
     HttpClient(Darwin) {
+        if (trustAll) {
+            engine {
+                handleChallenge { _, _, challenge, completionHandler ->
+                    val trust = challenge.protectionSpace.serverTrust
+                    if (trust != null) {
+                        completionHandler(
+                            NSURLSessionAuthChallengeUseCredential,
+                            NSURLCredential.credentialForTrust(trust),
+                        )
+                    } else {
+                        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, null)
+                    }
+                }
+            }
+        }
         install(WebSockets) {
             pingInterval = 30_000
         }
