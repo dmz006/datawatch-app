@@ -4,7 +4,7 @@ import SwiftUI
 /// Matches Android's `HeaderComponents.kt` composable pattern and PWA header.
 ///
 /// Usage: attach via `.navigationTitle` overrides or embed directly in a
-/// `ToolbarItem(.principal)` for full customisation.
+/// `ToolbarItem(placement: .principal)` for full customisation.
 struct HeaderView: View {
     let title: String
     var subtitle: String? = nil
@@ -40,10 +40,10 @@ struct HeaderView: View {
 #if DEBUG
 #Preview("Header — full") {
     NavigationStack {
-        Color(DatawatchColors.background)
+        DatawatchColors.background
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(.principal) {
+                ToolbarItem(placement: .principal) {
                     HeaderView(
                         title: "Sessions",
                         subtitle: "3 active",
@@ -57,9 +57,9 @@ struct HeaderView: View {
 
 #Preview("Header — title only") {
     NavigationStack {
-        Color(DatawatchColors.background)
+        DatawatchColors.background
             .toolbar {
-                ToolbarItem(.principal) {
+                ToolbarItem(placement: .principal) {
                     HeaderView(title: "Alerts")
                 }
             }

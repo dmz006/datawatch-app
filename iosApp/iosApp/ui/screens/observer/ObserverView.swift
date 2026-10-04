@@ -16,7 +16,7 @@ final class ObserverViewModel: ObservableObject {
 
     private var profile: ServerProfile?
     private var pollTask: Task<Void, Never>? = nil
-    private var wsSubscription: IosServiceLocatorEventSubscription? = nil
+    private var wsSubscription: IosSubscription? = nil
     private var inFlight = false
     private static let restFallbackInterval: Duration = .seconds(30)
 
@@ -116,7 +116,7 @@ struct ObserverView: View {
         .background(DatawatchColors.background)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(.principal) {
+            ToolbarItem(placement: .principal) {
                 HeaderView(
                     title: "Observer",
                     serverName: selectedProfile?.displayName

@@ -81,7 +81,7 @@ struct AutomataView: View {
         .background(DatawatchColors.background)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(.principal) {
+            ToolbarItem(placement: .principal) {
                 HeaderView(
                     title: "Automata",
                     serverName: selectedProfile?.displayName

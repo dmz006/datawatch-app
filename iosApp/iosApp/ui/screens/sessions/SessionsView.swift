@@ -45,7 +45,7 @@ struct SessionsView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(.principal) {
+            ToolbarItem(placement: .principal) {
                 HeaderView(
                     title: "Sessions",
                     subtitle: sessionsSubtitle,

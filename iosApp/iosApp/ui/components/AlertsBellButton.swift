@@ -37,7 +37,7 @@ struct AlertsBellButton: View {
 #if DEBUG
 #Preview("With badge") {
     NavigationStack {
-        Color(DatawatchColors.background)
+        DatawatchColors.background
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     AlertsBellButton()

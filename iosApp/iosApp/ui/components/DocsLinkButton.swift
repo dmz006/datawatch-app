@@ -68,14 +68,14 @@ private struct SafariView: UIViewControllerRepresentable {
         baseUrl: "https://datawatch.example",
         bearerTokenRef: "",
         trustAnchorSha256: nil,
-        reachabilityProfileId: nil,
+        reachabilityProfileId: "preview",
         enabled: true,
         createdTs: 0,
         lastSeenTs: 0,
         signalLinked: false
     )
     NavigationStack {
-        Color(DatawatchColors.background)
+        DatawatchColors.background
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     DocsLinkButton(profile: profile, anchor: "sessions-list")
