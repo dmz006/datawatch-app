@@ -106,6 +106,7 @@ struct PrdDetailView: View {
     @State private var showEdit = false
     @State private var showDelete = false
     @State private var templateSaved = false
+    @State private var showSetLlm = false
     @State private var capacity: CapacityResponseDto? = nil
     @Environment(\.dismiss) private var dismissDetail
 
@@ -141,6 +142,7 @@ struct PrdDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button { showEdit = true } label: { Label("Edit title / spec", systemImage: "pencil") }
+                    Button { showSetLlm = true } label: { Label("Set LLM", systemImage: "cpu") }
                     Button {
                         IosTemplates.shared.clonePrd(
                             profile: vm.profile, prdId: prd.id, description: "",
@@ -165,6 +167,9 @@ struct PrdDetailView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Find it in Automata → Templates.")
+        }
+        .sheet(isPresented: $showSetLlm) {
+            SetPrdLlmView(profile: vm.profile, prd: prd) { Task { await vm.refresh() } }
         }
         .sheet(isPresented: $showEdit) {
             EditPrdView(profile: vm.profile, prdId: prd.id, title: prd.displayTitle, spec: prd.spec ?? "") {
