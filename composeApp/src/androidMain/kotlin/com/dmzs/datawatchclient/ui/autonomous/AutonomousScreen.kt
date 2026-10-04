@@ -86,6 +86,7 @@ import com.dmzs.datawatchclient.ui.settings.IdentityWizardSheet
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Close
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -332,7 +333,8 @@ public fun AutonomousScreen(
                         }
                         item {
                             AssistChip(onClick = {
-                                state.selectedIds.forEach { vm.setPrdType(it, "archived") }
+                                // PWA batch archive → POST /api/autonomous/prds/{id}/archive
+                                state.selectedIds.forEach { vm.archivePrd(it) }
                                 vm.clearSelection()
                             }, label = { Text("Archive") })
                         }
@@ -359,6 +361,8 @@ public fun AutonomousScreen(
                 currentTab = 1
                 newOpen = false
             },
+            // PWA skills hint → Settings → Agents (Project Profiles → Skills).
+            onOpenSettings = { com.dmzs.datawatchclient.ui.shell.SettingsNavChannel.request("agents") },
         )
     }
 
@@ -497,6 +501,7 @@ public fun AutonomousScreen(
                 onDeleteWithMemory = { strategy, roleFilter, archiveToScope ->
                     vm.hardDeletePrdWithMemory(id, strategy, roleFilter, archiveToScope)
                 },
+                onArchive = { vm.archivePrd(id) },
                 prdEnvelopes = state.prdEnvelopes,
                 prdComputeNodeDetail = state.prdComputeNodeDetail,
                 prdComputeNodeRef = state.prdComputeNodeRef,
@@ -577,6 +582,28 @@ private fun PrdsBody(
     onReject: (String, String) -> Unit = { _, _ -> },
     onRevise: (String, String) -> Unit = { _, _ -> },
 ) {
+    // PWA automata filter bar text search (`automata_filter_search`): title / id.
+    var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    if (filterOpen) {
+        androidx.compose.material3.OutlinedTextField(
+            value = search,
+            onValueChange = { search = it },
+            placeholder = { Text(stringResource(R.string.automata_filter_search), style = MaterialTheme.typography.bodySmall) },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodySmall,
+            trailingIcon = {
+                if (search.isNotEmpty()) {
+                    androidx.compose.material3.IconButton(onClick = { search = "" }) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.action_clear),
+                        )
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
     if (filterOpen) {
         androidx.compose.foundation.lazy.LazyRow(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -675,7 +702,8 @@ private fun PrdsBody(
                     (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
                     (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
                     // History filter: override when a status filter is explicitly set
-                    (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses)
+                    (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses) &&
+                    matchesAutomataSearch(prd, search)
             }
             .sortedWith(
                 compareBy(
@@ -903,6 +931,16 @@ private fun PrdRow(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                         )
                     }
+                }
+                // PWA renderCurrentPosition: "▶ Story i: … · Task j: … (verifying/testing)".
+                currentPositionLine(prd)?.let { line ->
+                    Text(
+                        line,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 2.dp),
+                        maxLines = 2,
+                    )
                 }
                 // Lifecycle strip (5 steps matching PWA: Plan → Review → Approve → Run → Done)
                 LifecycleStrip(
@@ -1569,4 +1607,33 @@ private fun AutonomousTab(
             fontWeight = FontWeight.SemiBold,
         )
     }
+}
+
+/** PWA automata search: case-insensitive substring over title (or name) and id. */
+internal fun matchesAutomataSearch(
+    prd: PrdDto,
+    query: String,
+): Boolean {
+    val q = query.trim().lowercase()
+    if (q.isEmpty()) return true
+    val title = (prd.title?.takeIf { it.isNotBlank() } ?: prd.name).lowercase()
+    return title.contains(q) || prd.id.lowercase().contains(q)
+}
+
+/** PWA `renderCurrentPosition`: first active task of a running automaton, 1-based. */
+internal fun currentPositionLine(prd: PrdDto): String? {
+    if (prd.status != "running") return null
+    prd.stories.forEachIndexed { si, story ->
+        story.tasks.forEachIndexed { ti, task ->
+            val st = task.status
+            if (st == "in_progress" || st == "verifying" || st == "running_tests") {
+                val icon = when (st) { "verifying" -> "⟳"; "running_tests" -> "🧪"; else -> "▶" }
+                val label = when (st) { "verifying" -> " (verifying)"; "running_tests" -> " (testing)"; else -> "" }
+                val storyTitle = story.title.ifBlank { "?" }
+                val taskTitle = task.task.ifBlank { "?" }
+                return "$icon Story ${si + 1}: $storyTitle · Task ${ti + 1}: $taskTitle$label"
+            }
+        }
+    }
+    return null
 }

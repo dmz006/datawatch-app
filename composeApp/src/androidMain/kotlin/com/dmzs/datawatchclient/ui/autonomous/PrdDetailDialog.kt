@@ -81,6 +81,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.ui.sessions.SessionStatsViewModel
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
+import androidx.compose.material3.OutlinedButton
 
 private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
 
@@ -163,6 +164,8 @@ internal fun PrdDetailDialog(
     onSetDirs: ((readDirs: List<String>, writeDirs: List<String>) -> Unit)? = null,
     /** #202 — re-resolve stuck depends_on refs (v8.36.6). */
     onRepairDependsOn: (() -> Unit)? = null,
+    /** PWA overflow "Archive" — completed / rejected / cancelled automata. */
+    onArchive: (() -> Unit)? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -371,6 +374,14 @@ internal fun PrdDetailDialog(
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
+                    }
+
+                    // PWA lifecycle overflow: Archive for terminal (non-archived) automata.
+                    if (onArchive != null && status in setOf("completed", "rejected", "cancelled")) {
+                        OutlinedButton(
+                            onClick = onArchive,
+                            modifier = Modifier.padding(top = 8.dp),
+                        ) { Text("📦 " + stringResource(R.string.prd_action_archive)) }
                     }
 
                     // Primary action buttons

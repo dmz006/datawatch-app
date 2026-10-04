@@ -36,6 +36,7 @@ import com.dmzs.datawatchclient.transport.dto.WebSearchStatsV2Dto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
+import androidx.compose.foundation.border
 
 /**
  * Live stats dashboard — PWA Settings → Monitor parity. Polls
@@ -741,7 +742,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
             // GPU probe error — shown when probe failed but no GPU data was returned.
             val gpuErr = s.gpuError?.takeIf { it.isNotBlank() }
             if (gpuErr != null && s.gpuName == null && gpuUtilPct == null && (vramTotal == null || vramTotal == 0L)) {
-                DegradedBanner("GPU probe failed: $gpuErr")
+                GpuProbeFailedCard(gpuErr)
             }
         }
     }
@@ -992,5 +993,35 @@ private fun PwaCardContainer(content: @Composable () -> Unit) {
                 .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) { content() }
+    }
+}
+
+/**
+ * PWA GPU-probe-failed stat card (full grid width, red border): a GPU probe
+ * exists but its last poll failed (driver/library mismatch after an update),
+ * which must not look like "no GPU present".
+ */
+@Composable
+private fun GpuProbeFailedCard(error: String) {
+    val red = MaterialTheme.colorScheme.error
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .border(1.dp, red, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                .padding(10.dp),
+    ) {
+        Text(
+            stringResource(R.string.stats_gpu_error_title),
+            style = MaterialTheme.typography.labelSmall,
+            color = red,
+        )
+        Text(
+            error,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }

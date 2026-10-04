@@ -201,16 +201,18 @@ private fun Nav(
             val splashContext = LocalContext.current
             // Parity D37a — splash only on first launch, app version change,
             // or >24 h since last shown; otherwise go straight in.
-            val showSplash =
-                rememberSaveable {
-                    SplashGate.consume(splashContext, com.dmzs.datawatchclient.Version.VERSION)
+            val splashDecision =
+                remember {
+                    SplashGate.consumeDecision(splashContext, com.dmzs.datawatchclient.Version.VERSION)
                 }
+            val showSplash = rememberSaveable { splashDecision.show }
             var splashStatus by remember { mutableStateOf("unlocking vault…") }
             if (showSplash) {
                 MatrixSplashScreen(
                     replay = false,
                     autoAdvance = false,
                     statusText = splashStatus,
+                    updatedTo = splashDecision.updatedTo,
                     onFinished = { /* managed by LaunchedEffect below */ },
                 )
             } else {
@@ -352,6 +354,7 @@ private fun Nav(
                 isNew = isNew,
                 openInStatusMode = openInStatusMode,
                 onBack = { navController.popBackStack() },
+                onOpenSession = { other -> navController.navigate(Destinations.sessionDetail(other)) },
                 onNavigateToSettings = { tab ->
                     context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                         .edit().putString("settings_active_tab", tab).apply()
@@ -505,6 +508,7 @@ private fun HomeShell(
                             onEditServer = onEditServer,
                             onAddServer = onAddServer,
                             onNewSession = onNewSession,
+                            onExpandSession = if (isWide) { id -> selectedSessionId = id } else onExpandSession,
                         )
                     }
                     composable(Destinations.Tabs.Autonomous) {
@@ -554,6 +558,7 @@ private fun HomeShell(
                         sessionId = sid,
                         isNew = false,
                         onBack = { selectedSessionId = null },
+                        onOpenSession = { other -> selectedSessionId = other },
                         onNavigateToSettings = { tab ->
                             context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                                 .edit().putString("settings_active_tab", tab).apply()

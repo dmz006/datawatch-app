@@ -29,6 +29,18 @@ public object SplashGate {
             nowMs - lastShownMs >= INTERVAL_MS
 
     /**
+     * PWA `isNewVersion`: only a *change* from a previously recorded version
+     * counts (first launch is not an update).
+     */
+    internal fun updatedTo(
+        lastVersion: String?,
+        currentVersion: String,
+    ): String? = currentVersion.takeIf { !lastVersion.isNullOrBlank() && lastVersion != currentVersion }
+
+    /** Result of [consumeDecision]: whether to show, and the "Updated to vX" badge text source. */
+    public data class Decision(val show: Boolean, val updatedTo: String?)
+
+    /**
      * Decides whether this cold launch shows the splash and, when it does,
      * records the time + version (PWA writes them at the same point).
      */
@@ -36,18 +48,26 @@ public object SplashGate {
         context: Context,
         currentVersion: String,
         nowMs: Long = System.currentTimeMillis(),
-    ): Boolean {
+    ): Boolean = consumeDecision(context, currentVersion, nowMs).show
+
+    /** Like [consume] but also reports a version change for the PWA "Updated to vX" splash badge. */
+    public fun consumeDecision(
+        context: Context,
+        currentVersion: String,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Decision {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val lastVersion = prefs.getString(KEY_VERSION, null)
         val show =
             shouldShow(
                 nowMs = nowMs,
                 lastShownMs = prefs.getLong(KEY_TIME, 0L),
-                lastVersion = prefs.getString(KEY_VERSION, null),
+                lastVersion = lastVersion,
                 currentVersion = currentVersion,
             )
         if (show) {
             prefs.edit().putLong(KEY_TIME, nowMs).putString(KEY_VERSION, currentVersion).apply()
         }
-        return show
+        return Decision(show = show, updatedTo = updatedTo(lastVersion, currentVersion))
     }
 }

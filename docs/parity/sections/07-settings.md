@@ -54,7 +54,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | interaction | Certificate pinning (TOFU: probe leaf fingerprint → confirm → `trustAnchorSha256`) | ✗ | ✓ Add/Edit `ServerTrustSection` + `probeServerCertificate` + `PinnedTrustManager` (REST, WS, Auto, docs WebView); hostname verification kept | ✓ ASV/ESV ServerTrustSection, CertProbe, IosTls | pwa-missing | decided D91a | D8 · Android done 2026-10-04 |
 | interaction | Trust-all certificates toggle (insecure) | n/a | ✓ selfSigned Switch | ✓ ASV/ESV | aligned | | |
 | interaction | Download server CA cert (`GET /api/cert`) + install guidance | ~ websrv `_tls_install` hint | ✓ ServersCard menu "Download CA cert" + CertInstallCard | ✓ ESV Download + ShareLink | aligned | | |
-| element | Profile-row security badges | n/a | ~ TRUST ALL only | ✓ NO AUTH + TRUST ALL TLS | android-missing | | neither shows a "PINNED" badge |
+| element | Profile-row security badges | n/a | ✓ no auth · trust-all TLS + 🔒 certificate pinned | ✓ NO AUTH + TRUST ALL TLS | aligned | | neither shows a "PINNED" badge · Android done 2026-10-04 (android-missing sweep) |
 | element | Web Server card: `server.enabled/host/port/tls/tls_port/tls_auto_generate/tls_cert/tls_key/channel_port` | ✓ websrv | ✓ CFS.WebServer | ✓ config card cc_websrv (interface picker) | aligned | | |
 | element | MCP Server card: `mcp.enabled/sse_enabled/sse_host/sse_port/tls_*` | ✓ mcpsrv | ✓ CFS.McpServer | ✓ config card cc_mcpsrv | aligned | | |
 | element | Communication Configuration: per-backend cards (Signal, Telegram, Discord, Slack, Matrix, Ntfy, Email, Twilio, GitHub webhook, Webhook, DNS) toggle + config popup | ✓ backends A:6766, A:14028 | ✓ ChannelsCard + Backend/ChannelConfigDialog (ChannelBackendSchemas) | ✓ SettingsCommBackendsCard: per-service toggle + configure (PWA BACKEND_FIELDS) | aligned | | |
@@ -84,8 +84,8 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Alert Rules card (CRUD + firings) | ✓ alert_rules | ✓ AlertRulesCard | ~ AlertRulesView re-homed to Compute; no edit, no firings | misaligned | | |
 | element | Saved Commands card | ✓ cmds | ✓ SavedCommandsCard | ✓ SavedCommandsView re-homed to Compute | aligned | | |
 | element | Output Filters card | ✓ filters | ✓ FiltersCard | ✓ FiltersView re-homed to Compute | aligned | | |
-| element | Exit Hooks card | ✓ exit_hooks | ✗ | ✗ | android-missing | | iOS also missing |
-| element | Work Queue card | ✓ work_queue | ✗ | ✗ | android-missing | | iOS also missing |
+| element | Exit Hooks card | ✓ exit_hooks | ✓ `ExitHooksCard` (Compute) | ✗ | ios-missing | | iOS also missing · Android done 2026-10-04 (android-missing sweep) |
+| element | Work Queue card | ✓ work_queue | ✓ `WorkQueueCard` (Compute) | ✗ | ios-missing | | iOS also missing · Android done 2026-10-04 (android-missing sweep) |
 | element | Tailscale: status + config cards, Generate Auth Key, ACL Generate / Generate & Push | ✓ A:24165, A:24186 | ✓ TailscaleSettingsCard + TailscaleMeshCard | ~ config card tailscale_config + list card Mesh Status (Generate ACL / Generate & Push); no auth-key generation | misaligned | | |
 | element | Secrets Store card (vault status, list, add/update: name, value, tags, description, scopes) | ✓ secrets_store A:24137 | ✓ SecretsCard | ✓ list card (vault status row, list, add, delete) | aligned | | |
 | element | Federated Observer quicklink (mode + peers, "Open Observer view →") | ✓ observer_quicklink | ✓ ObserverQuicklinkCard | ✗ | ios-missing | | |
@@ -129,7 +129,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Orphaned tmux sessions + Kill all (N) | ✓ aboutOrphanedTmux A:9950 | ✓ KillOrphansCard | ✓ SettingsAboutCard list + Kill all (N) with confirm | aligned | | |
 | element | Language override (auto + en/de/es/fr/ja) | ✓ settings_language / settings_lang_auto | ✓ LanguagePickerCard | ~ About row opens iOS per-app language (system Settings) — native control | misaligned | | iOS has no localization at all |
 | element | Theme Dark / Light / System (`cs_theme`) | ✓ themePickerAbout A:16200 | ✓ ThemePickerCard (ThemeMode) | ✗ About row shows Dark only — light palette + root wiring not built | ios-missing | | |
-| element | Branding / Splash (tagline + logo path → `session.splash_tagline` / `session.splash_logo_path`) | ✓ A:25502–25534 | ✗ (splash consumed, not edited) | ✗ | android-missing | | iOS also missing |
+| element | Branding / Splash (tagline + logo path → `session.splash_tagline` / `session.splash_logo_path`) | ✓ A:25502–25534 | — not added | ✗ | n/a | | iOS also missing · PWA removed the Branding/Splash card in v6.12.0 (`loadBrandingPanel` is dead code) |
 | element | Update: Check now → Update button + progress overlay | ✓ checkForUpdate / runUpdate A:13596 | ✓ UpdateDaemonCard | ✓ SettingsAboutCard Check now → Update (confirm) | aligned | | |
 | element | Restart daemon | ✓ restartDaemon A:14222 | ✓ RestartDaemonCard | ✓ SettingsAboutCard Restart (confirm) | aligned | | |
 | element | Subsystem reload card | ✗ | ✓ SubsystemReloadCard | ✓ SettingsSubsystemReloadCard (config / filters / memory) (D80a) | pwa-missing | decided D80a | D11 · iOS verified 2026-10-04 |
@@ -137,7 +137,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | MCP channel card + MCP tools card | ✗ | ✓ McpChannelCard, McpToolsCard | ✓ SettingsMcpChannelCard + SettingsMcpToolsCard (D80a) | pwa-missing | decided D80a | D11 · iOS verified 2026-10-04 |
 
 ## Coverage
-rows: 97 · aligned: 42 · ios-missing: 8 · android-missing: 5 · pwa-missing: 4 · misaligned: 38 · n/a: 0
+rows: 97 · aligned: 46 · ios-missing: 6 · android-missing: 0 · pwa-missing: 5 · misaligned: 39 · n/a: 1
 
 iOS Settings rebuilt 2026-10-04 (B26–B32): six PWA groups as a native grouped list; schema-driven config cards ported from PWA `GENERAL/COMMS/LLM_CONFIG_FIELDS`, generic list cards over `IosSettingsLists`, bespoke About/Push/Encryption/raw-config cards. Remaining iOS gaps are the `✗`/`~` rows above (council runs, LLM In-use / YAML views, Ollama model management, etc.). Added 2026-10-04: LLM + ComputeNode add/edit forms, Algorithm Mode, Autonomous Config + scan defaults, Signal device linking (QR), Dark/Light/System theme.
 

@@ -209,6 +209,14 @@ Where a chunk touches a decision, it is noted — build the decided variant.
 - **07**: certificate pinning (see D91) · profile-row security badges · exit hooks card · work queue card · branding/splash card.
 - **08**: directory browser · compute kind-migration modal · channel help · debug panel (see D92) · project profiles + YAML editors · secrets vault card.
 
+**Status 2026-10-04 (Android android-missing sweep):** every item above is implemented on
+Android, or resolved without code: already present — history auto-enable, running/planning pill
+pulse, schedules pagination, directory browser, kind-migration modal, secrets vault card,
+certificate pinning (D91a); n/a — stale-dot (the PWA hides it), branding/splash card (removed
+from the PWA in v6.12.0), debug panel (D92a); partial — project profiles are form editors, no
+raw-YAML editor. The section tables carry the per-row Android status. Still open on Android:
+06 per-card docs links (D26a) and collapsible Observer/Settings cards with a rotating chevron (D27a).
+
 ### Spec drift (fix `docs/plans/2026-05-12-pwa-full-spec.md`, no decision)
 
 - Removed from live PWA: §1.6 version-staleness reload; §4.15 generating indicator (alpha.29); `rate_limited` in §10.3 state-override options (live: running, waiting_input, complete, killed, failed). §6.6 Pause/Resume is defined but unreachable (D52).

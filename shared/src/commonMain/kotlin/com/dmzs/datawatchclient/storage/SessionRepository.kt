@@ -78,6 +78,10 @@ public class SessionRepository(
             agent_id = session.agentId,
             llm_ref = session.llmRef,
             compute_node_ref = session.computeNodeRef,
+            parent_id = session.parentId,
+            claude_alive = session.claudeAlive?.let { if (it) 1L else 0L },
+            server_name = session.server,
+            channel_ready = if (session.channelReady) 1L else 0L,
         )
     }
 
@@ -101,5 +105,9 @@ public class SessionRepository(
             agentId = agent_id,
             llmRef = llm_ref,
             computeNodeRef = compute_node_ref,
+            parentId = parent_id,
+            claudeAlive = claude_alive?.let { it != 0L },
+            server = server_name,
+            channelReady = channel_ready != 0L,
         )
 }

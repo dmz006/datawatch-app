@@ -10,7 +10,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 |---|---|---|---|---|---|---|---|
 | nav | Header title = `name`, else `task`; nav bar + FAB hidden; back shown | ✓ 2700 | ✓ SDS:295 TopAppBar | ✓ SDV:47 | aligned | | |
 | interaction | Tap title → inline rename (Enter/blur confirm, Esc cancel) | ✓ startHeaderRename 1929 → POST /api/sessions/rename 5243 | ~ SDS:1391 RenameDialog (AlertDialog) | ~ SDV:85 alert w/ TextField | misaligned | | Dialog is the platform idiom; copy "Rename session"/"Display name" matches |
-| string | Rename success/fail toast "Session renamed"/"Rename failed" | ✓ 5276 | ✗ | ✗ | android-missing | | iOS ignores errors silently SDV:437 |
+| string | Rename success/fail toast "Session renamed"/"Rename failed" | ✓ 5276 | ✓ alert dock "Session renamed" / "Rename failed" (D41a) | ✗ | ios-missing | | iOS ignores errors silently SDV:437 · Android done 2026-10-04 (android-missing sweep) |
 | element | Backend badge (lowercase backend) | ✓ 2934 backendText | ✓ SDS:1119 InfoBadge primary | ✓ SDV:152 primary | aligned | | |
 | element | LLM badge `⚡ llm_ref` green bordered | ✓ 2934 | ✓ SDS:1123 #10B981 | ✓ SDV:156 success | aligned | | |
 | element | Compute node badge `⚙ ref` purple | ✓ 2935 #a855f7 | ✓ SDS:1126 #8B5CF6 | ✓ SDV:159 secondary(#A855F7) | misaligned | | Android uses 8B5CF6 vs PWA/iOS A855F7 |
@@ -39,7 +39,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 |---|---|---|---|---|---|---|---|
 | element | Pending schedules strip (`/api/schedules?session_id&state=pending`), per-item time + ✕ cancel | ✓ loadSessionSchedules 3654 | ✓ SDS:1615 SessionSchedulesStrip + SessionSchedulesViewModel | ✗ | ios-missing | | |
 | element | Process stats bar (CPU/RAM/Threads/FDs/Net/GPU) above output, 5 s poll of /api/stats envelopes | ✓ 3576 setInterval 5000 | ✗ (Stats sub-tab instead) | ✗ | misaligned | needs-decision | PWA shows inline bar AND Stats sub-tab; Android only sub-tab (D7) |
-| element | Connection banner for channel/acp: "Waiting for {mode}… [— answer the input prompt below first] ✕" | ✓ 2783–2811 dismissConnBanner 894 | ✗ (not found) | ✗ (CSB unused) | android-missing | | iOS has CSB component but never mounts it |
+| element | Connection banner for channel/acp: "Waiting for {mode}… [— answer the input prompt below first] ✕" | ✓ 2783–2811 dismissConnBanner 894 | ✓ `ConnStatusBanner` until `channel_ready`, waiting note, ✕ dismiss | ✗ (CSB unused) | ios-missing | | iOS has CSB component but never mounts it · Android done 2026-10-04 (android-missing sweep) |
 | element | Server-unreachable banner "terminal stream paused, last frame shown" (OFFLINE_GRACE 3.5 s debounce) | ✗ (WS status dot global) | ✗ removed (header reachability dot only) | ~ iTV reconnect overlay (full-screen, blocks view) | misaligned | decided D46b | Android toast-style vs iOS blocking overlay (D8) · Android done 2026-10-04 |
 | element | Rate-limit inline notice (yellow #FEF3C7/#92400E, dismissible, retry-at) | ✗ (state badge only) | ✓ SDS:1330 InlineNotices | ✓ `RateLimitNotice` (state + live `rate_limited` events, retry-at) | pwa-missing | decided D67a | D6 · iOS done 2026-10-04 |
 | element | Needs-input: yellow `.input-bar.needs-input` border (banner removed v6.13.9) | ✓ 2965 | ✓ composer waiting tint | ~ SDV:246 2px blue top rule + tinted field | misaligned | | PWA yellow vs iOS `waiting` blue |
@@ -57,8 +57,8 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | element | Tmux-only tabs: Tmux · Status | ✓ 2900 | ✓ | ✓ SDV `detailTabs` (Tmux · Status for non-channel backends) | aligned | | |
 | element | Chat-only sessions: no tab bar, `#chatArea` | ✓ 2897 | ✓ SDS chatMode pref + CTP | ~ ChatTranscriptView for `outputMode == chat`, but tab bar still shown (Chat · Status) | misaligned | | |
 | string | Tab labels "Tmux"/"Chat"/"Channel"/"Status" | ✓ t() keys | ~ "tmux"/"channel"/"Status" (lowercase first two) | ✓ SDV `detailTabs` "Tmux"/"Chat"/"Channel"/"Status" | misaligned | | Case differs on Android |
-| element | Status tab badge dot (`tabStatusBadge`, from /api/sessions/{id}/status on mount) | ✓ 2870, 3109, updateSessionStatusBadge 4221 | ✗ (not found) | ✗ | android-missing | | |
-| element | `?` channel help popup ("Channel Commands") when Channel tab active | ✓ 2873 showChannelHelp 4525 | ✗ | ✗ | android-missing | | |
+| element | Status tab badge dot (`tabStatusBadge`, from /api/sessions/{id}/status on mount) | ✓ 2870, 3109, updateSessionStatusBadge 4221 | ✓ hook-health ● + state symbol on Status tab; board fetched on mount | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
+| element | `?` channel help popup ("Channel Commands") when Channel tab active | ✓ 2873 showChannelHelp 4525 | ✓ `?` → `ChannelHelpDialog` while Channel tab active | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 | element | Font control `Aa ▾` dropdown (A−, size, A+, Fit) in tab bar right | ✓ 2839–2855 | ✓ TT:125–156 inline DropdownMenu | ~ SDV `terminalFontBar` always-visible row A− px A+ Fit, no Aa▾ dropdown | misaligned | needs-decision | D10 |
 | element | Scroll-mode button `⤒` (U+2912 18px bold) / `⏹` exit | ✓ 2854 toggleScrollMode 3238 | ✓ TT:160 | ✓ SDV `terminalFontBar` ⤒ / ⏹ 18pt bold → `toggleScrollMode` | aligned | | |
 | nav | Mode preference persisted (Terminal default, Chat remembered) | ✗ (per render) | ✓ SDS:131 modePrefs chat_mode | ✓ output tab persisted (`dw.session.detail.tab`) | pwa-missing | decided D67a | Android convenience · iOS done 2026-10-04 — iOS has no Terminal/Chat toggle; the Tmux/Chat · Channel · Status tab is remembered |
@@ -77,8 +77,8 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | element | Tests card pass/fail(/skip) | ✓ 4317 | ✓ SStP:273 | ✓ SessionStatusView `testsBody` | aligned | | |
 | element | Git card branch + dirty (+ahead) | ✓ 4324 | ✓ SStP:293 | ✓ SessionStatusView `gitBody` | aligned | | |
 | element | Guardrail verdicts card (+ run guardrail POST /guardrail, "Approved") | ✓ 4281, 4431–4440 | ✓ SStP:413 GuardrailVerdictsCard (read-only) | ~ SessionStatusView `verdictsBody` read-only (no run guardrail action) | misaligned | | Android + iOS lack "run guardrail" action |
-| element | Parent session link (telemetry) | ✓ renderParentSessionLink 4328 | ✗ (not found) | ✗ | android-missing | | |
-| string | "Last 5 events before failure" | ✓ 4458 | ✗ | ✗ | android-missing | | |
+| element | Parent session link (telemetry) | ✓ renderParentSessionLink 4328 | ✓ Status panel "Parent session:" link → opens parent | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
+| string | "Last 5 events before failure" | ✓ 4458 | ✓ `FailedDrilldown` under failed tasks (`failed_task_buf`) | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 
 ## 3.5 Stats sub-tab (cards)
 
@@ -100,13 +100,13 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 |---|---|---|---|---|---|---|---|
 | element | Channel tab lines → / ← / ⚡ with classes send/reply/notify | ✓ 2760–2765; css 3031–3039 | ✓ SDS EventList/EventRow 1847 (verify glyphs) | ✓ ChannelTabView → / ← / ⚡ | aligned | | |
 | data | Seed from /api/channel/history?session_id (dedupe, 1000 cap) | ✓ 2718 | ✓ (SDVM history) | ✓ IosChannel.history + ChannelHub | aligned | | |
-| interaction | Send via channel `▶ ch` (POST /api/channel/send) vs tmux `▶` switching with active tab | ✓ 2920–2924, 4565 | ✗ (single send path) | ✗ | android-missing | | |
+| interaction | Send via channel `▶ ch` (POST /api/channel/send) vs tmux `▶` switching with active tab | ✓ 2920–2924, 4565 | ✓ composer `▶ ch` → `sendChannelMessage` on Channel tab (not waiting) | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 | element | Chat bubbles: avatar U/AI/S, role label, time, radius 12, 13px; user #3b82f6, assistant #10b981, system #64748b | ✓ 3015–3045; css 3055–3144 | ~ CTP: U/AI, primaryContainer / surfaceVariant | ~ ChatTranscriptView bubbles (user primary @25 %, assistant surface, radius 12); no avatar/role label/time | misaligned | | Apps use theme colours, not PWA chat palette |
-| element | Collapsed "N earlier messages" `<details>` when > 6 | ✓ 3023 | ✗ | ✗ | android-missing | | |
+| element | Collapsed "N earlier messages" `<details>` when > 6 | ✓ 3023 | ✓ ChatTranscriptPanel collapses all but last 4 when > 6 | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 | element | Chat empty state 💬 + "Send a message to begin…" + memory hint | ✓ 3057–3061 | ~ "No messages yet. Waiting for session output…" + Yes/No/Stop chips | ✓ ChatTranscriptView 💬 "Send a message to begin the conversation" + memory hint | misaligned | decided D68a | Quick-reply chips are Android-only (D11) · iOS done 2026-10-04 |
-| element | Chat quick-cmd bar: 📚 memories · 🔍 recall · 🔗 kg query · 🔬 research | ✓ 3050–3055 chatQuickCmd 25201 | ✗ | ✗ | android-missing | | |
+| element | Chat quick-cmd bar: 📚 memories · 🔍 recall · 🔗 kg query · 🔬 research | ✓ 3050–3055 chatQuickCmd 25201 | ✓ 📚/🔍/🔗/🔬 bar prefills composer | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 | element | Chat markdown (code blocks, inline code, thinking `<details>`, images, mermaid), streaming bubble | ✓ renderChatMarkdown 1245; css 3249–3331 | ~ CTP streaming bubble; markdown? (MarkdownView exists in autonomous) | ~ ChatTranscriptView inline-only AttributedString markdown + streaming bubble; no code blocks / thinking / images / mermaid | misaligned | | Verify CTP renders markdown |
-| element | Log mode lines with acp-status/processing/ready/error classes | ✓ 3072–3085 | ✗ (not found) | ✗ | android-missing | | |
+| element | Log mode lines with acp-status/processing/ready/error classes | ✓ 3072–3085 | ✓ `LogModeView` for output_mode=log, PWA class colours | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 
 ## 3.7 Terminal (xterm)
 
@@ -147,7 +147,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | data | POST /api/voice/transcribe (webm/ogg/mp4) | ✓ 4787 | ✓ transcribeAudio | ✓ transcribeAudioData (audio/mp4) | aligned | | |
 | element | Image attach 📷 (gallery / camera), upload chip "Uploading…/✓ name", `[image:path]` appended | ✓ 2927 sessionImageInput; "Wait for image upload" | ✓ ReplyComposer:2274–2370, 2608, 2795–2860 | ~ SDV PhotosPicker (gallery only, no camera) → upload banner "Uploading image…/✓ name", `[image:path]` appended, "Wait for image upload" guard | misaligned | | |
 | element | Keys strip: ␛ · ↑ ↓ ← → · ⏎ right-aligned | ✓ 2957–2964 | ✓ ReplyComposer:2527–2605 (icons) | ✓ SDV `keysStrip` ␛ · ↑ ↓ ← → · ⏎ right-aligned (sendKey) | aligned | | |
-| interaction | Hold-to-repeat arrows (250 ms delay, 80 ms interval) | ✓ startArrowRepeat 4440 | ✗ onClick only | ✗ | android-missing | | |
+| interaction | Hold-to-repeat arrows (250 ms delay, 80 ms interval) | ✓ startArrowRepeat 4440 | ✓ `RepeatArrowButton` 250 ms / 80 ms | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 | element | Saved commands: dropdown `<select>` with system set (approve/reject/enter/continue/skip/abort/ESC/Ctrl-b/quit) + user `/api/commands`, custom command input | ✓ loadSavedCmdsQuick 5259, sendCustomCmd 5361 | ✓ "Commands…" dropdown (System · Saved · Custom…) + inline custom row; Guardrails group omitted (no named-guardrail API) | ✗ | misaligned | decided D21b | Dropdown vs sheet (D14) · Android done 2026-10-04 |
 | interaction | Quick inputs Enter / C-c / Escape / C-b via `sendkey` | ✓ 4509–4520, 5376–5390 | ✓ sendCommand sendkey | ~ keys strip sends Escape / Enter via sendKey; no C-c / C-b | misaligned | | |
 | element | Quick-reply chips Yes / No / Stop | ✗ | ✓ SDS:1824 (chat empty state only) | ✓ D68a: PWA memory quick-cmd bar (`ChatMemoryCmdBar`) instead of chips | pwa-missing | decided D68a | D11 · iOS done 2026-10-04 |
@@ -166,14 +166,14 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
 | data | `subscribe {session_id}` on open; WS frames pane_capture / state / chat_message / channel / rate_limited | ✓ 2748 | ✓ SDVM:304 events() | ✓ IosServiceLocator.subscribeSessionEvents | aligned | | |
-| data | Replay pending needs-input popup 200 ms after open | ✓ 2753 | ✗ | ✗ | android-missing | | |
-| data | Status board fetched on mount for badge | ✓ 3109 | ✗ | ✗ | android-missing | | |
+| data | Replay pending needs-input popup 200 ms after open | ✓ 2753 | ✓ `SessionStateWatcher` stash → dock message ~200 ms after open (≤ 1 h) | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
+| data | Status board fetched on mount for badge | ✓ 3109 | ✓ `statusVm.refreshStatus()` on entry | ✗ | ios-missing | | Android done 2026-10-04 (android-missing sweep) |
 | data | Offline debounce before showing disconnected | ✗ | ✓ SDVM OFFLINE_GRACE_MS 3500 | ✗ (immediate) | misaligned | | iOS flips overlay on first Error frame |
 | nav | Leaving detail: destroyXterm / pause stream / cancel subscription | ✓ 3356 | ✓ SDS pauseStream | ✓ iTV stop() | aligned | | |
 | string | i18n: all detail copy via `t()` keys; Android 86 string resources | ✓ | ✓ | ✗ hard-coded English | ios-missing | | See §01 i18n row |
 
 ## Coverage
-rows: 118 · aligned: 45 · ios-missing: 2 · android-missing: 13 · pwa-missing: 13 · misaligned: 41 · n/a: 4 · needs-decision rows: 19 (14 decisions)
+rows: 118 · aligned: 45 · ios-missing: 17 · android-missing: 0 · pwa-missing: 12 · misaligned: 40 · n/a: 4 · needs-decision rows: 19 (14 decisions)
 
 ## Decisions needed
 1. **Mode badge condition** — PWA shows the mode badge only for `tmux`; Android only for non-tmux (channel/chat/acp); iOS shows the messaging backend. Options: (a) PWA rule (b) Android rule (c) drop badge, rely on tab strip — refs app.js:2940, SDS:1133, SDV:161.

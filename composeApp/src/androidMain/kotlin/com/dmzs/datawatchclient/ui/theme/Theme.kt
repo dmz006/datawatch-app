@@ -6,7 +6,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -17,7 +19,8 @@ import androidx.compose.ui.platform.LocalContext
  * "replicate, don't reinvent" — when the PWA has a design decision,
  * mirror it.
  *
- * Dark is the only supported scheme today (PWA is dark-only). Material
+ * Dark is the default; the PWA light palette (style.css `[data-theme="light"]`)
+ * is available via Settings → Theme (Dark / Light / System). Material
  * You dynamic colour is explicitly DISABLED by default because it pulls
  * the user's wallpaper palette and completely overrides the datawatch
  * purple, producing a generic Material-looking UI that doesn't feel
@@ -99,27 +102,60 @@ private val DatawatchDarkScheme =
         onErrorContainer = DwError,
     )
 
-internal val LightColorScheme =
-    lightColorScheme(
-        primary = Color(0xFF007A7A),
-        onPrimary = Color.White,
-        primaryContainer = Color(0xFF00B0B0),
-        onPrimaryContainer = Color(0xFF001F1F),
-        secondary = Color(0xFF4A6363),
-        onSecondary = Color.White,
-        background = Color(0xFFFAFAFA),
-        onBackground = Color(0xFF1A1A1A),
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF1A1A1A),
-        onSurfaceVariant = Color(0xFF555555),
-        error = Color(0xFFCC3300),
-        onError = Color.White,
-        surfaceVariant = Color(0xFFE8F4F4),
-        outline = Color(0xFF707070),
+// --- Parent PWA light palette (style.css `[data-theme="light"]`, WCAG AA tuned) ---
+internal val DwLightBg: Color = Color(0xFFFFFFFF) // --bg
+internal val DwLightBg2: Color = Color(0xFFF1F5F9) // --bg2 (slate-100)
+internal val DwLightBg3: Color = Color(0xFFE2E8F0) // --bg3 (slate-200)
+internal val DwLightSurface: Color = Color(0xFFF8FAFC) // --surface (slate-50)
+internal val DwLightAccent: Color = Color(0xFF2563EB) // --accent (blue-600)
+internal val DwLightAccent2: Color = Color(0xFF7C3AED) // --accent2 (violet-600)
+internal val DwLightText: Color = Color(0xFF0F172A) // --text (slate-900)
+internal val DwLightText2: Color = Color(0xFF475569) // --text2 (slate-600)
+internal val DwLightBorder: Color = Color(0xFFCBD5E1) // --border (slate-300)
+internal val DwLightSuccess: Color = Color(0xFF047857) // --success (emerald-700)
+internal val DwLightWarning: Color = Color(0xFFB45309) // --warning (amber-700)
+internal val DwLightError: Color = Color(0xFFB91C1C) // --error (red-700)
+internal val DwLightWaiting: Color = Color(0xFF1D4ED8) // --waiting (blue-700)
+
+private val LightDatawatchColors: DatawatchColors =
+    DatawatchColors(
+        bg = DwLightBg,
+        bg2 = DwLightBg2,
+        bg3 = DwLightBg3,
+        border = DwLightBorder,
+        waiting = DwLightWaiting,
+        warning = DwLightWarning,
+        success = DwLightSuccess,
+        accent2 = DwLightAccent2,
     )
 
-// Keep the old minimal scheme as a private alias for compatibility
-private val DatawatchLightScheme = LightColorScheme
+/** PWA light theme (BL278) mapped onto Material3 slots, mirroring [DatawatchDarkScheme]. */
+internal val LightColorScheme =
+    lightColorScheme(
+        primary = DwLightAccent,
+        onPrimary = Color.White,
+        primaryContainer = DwLightAccent2,
+        onPrimaryContainer = Color.White,
+        secondary = DwLightAccent2,
+        onSecondary = Color.White,
+        background = DwLightBg,
+        onBackground = DwLightText,
+        surface = DwLightBg2,
+        onSurface = DwLightText,
+        surfaceVariant = DwLightBg3,
+        onSurfaceVariant = DwLightText2,
+        surfaceContainer = DwLightSurface,
+        surfaceContainerHigh = DwLightBg3,
+        surfaceContainerHighest = DwLightBg3,
+        surfaceContainerLow = DwLightBg2,
+        surfaceContainerLowest = DwLightBg,
+        outline = DwLightBorder,
+        outlineVariant = DwLightBorder,
+        error = DwLightError,
+        onError = Color.White,
+        errorContainer = Color(0xFFFEE2E2),
+        onErrorContainer = DwLightError,
+    )
 
 @Composable
 public fun DatawatchTheme(
@@ -136,7 +172,7 @@ public fun DatawatchTheme(
     @Suppress("UNUSED_VARIABLE")
     val dyn = dynamicColor
     val context = LocalContext.current
-    val storedMode = remember { ThemePrefs.load(context) }
+    val storedMode by remember { ThemePrefs.modeFlow(context) }.collectAsState()
     val darkTheme =
         when (storedMode) {
             ThemeMode.Dark -> true
@@ -148,7 +184,8 @@ public fun DatawatchTheme(
             darkTheme -> DatawatchDarkScheme
             else -> LightColorScheme
         }
-    CompositionLocalProvider(LocalDatawatchColors provides DefaultDatawatchColors) {
+    val dwColors = if (darkTheme) DefaultDatawatchColors else LightDatawatchColors
+    CompositionLocalProvider(LocalDatawatchColors provides dwColors) {
         MaterialTheme(colorScheme = colorScheme, content = content)
     }
 }

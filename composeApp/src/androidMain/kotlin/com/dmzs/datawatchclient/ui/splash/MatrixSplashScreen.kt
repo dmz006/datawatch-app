@@ -61,6 +61,8 @@ public fun MatrixSplashScreen(
     autoAdvance: Boolean = !replay,
     autoAdvanceMs: Long = 3200L,
     statusText: String? = null,
+    /** PWA "Updated to vX" badge (top-right, accent bg) when the app version changed. */
+    updatedTo: String? = null,
     onFinished: () -> Unit,
 ) {
     if (autoAdvance) {
@@ -70,15 +72,13 @@ public fun MatrixSplashScreen(
         }
     }
 
-    val infinite = rememberInfiniteTransition(label = "status-pulse")
-    val statusAlpha by infinite.animateFloat(
-        initialValue = 0.45f,
-        targetValue = 1.00f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "status-alpha",
+    val statusAlpha by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 0.45f,
+        target = 1.00f,
+        durationMs = 900,
+        staticValue = 0.85f,
+        easing = FastOutSlowInEasing,
+        label = "status-pulse",
     )
 
     Box(
@@ -89,6 +89,24 @@ public fun MatrixSplashScreen(
         contentAlignment = Alignment.Center,
     ) {
         MatrixSplashArtwork()
+
+        if (updatedTo != null) {
+            // PWA: position:absolute;top:8px;right:8px;background:var(--accent);
+            // color:#fff;font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600
+            Text(
+                text = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.splash_updated_to, updatedTo),
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .systemBarsPadding()
+                        .padding(8.dp)
+                        .background(Color(0xFF7C3AED), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
 
         Column(
             modifier =

@@ -474,6 +474,11 @@ public class AutonomousViewModel(
         }
     }
 
+    /** PWA `prdAction(id,'archive','POST')` — terminal automata only. */
+    public fun archivePrd(prdId: String) {
+        prdOp("Archive") { it.prdAction(prdId, "archive") }
+    }
+
     public fun approve(prdId: String, note: String? = null) {
         if (note.isNullOrBlank()) {
             prdOp("Approve") { it.prdAction(prdId, "approve") }
