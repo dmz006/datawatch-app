@@ -1220,4 +1220,8 @@
 • Notificaciones de finalización</string>
     <string name="channel_help_footer">Las respuestas del canal aparecen como líneas ámbar. La pestaña tmux muestra la salida sin procesar del terminal. Usa Canal para comunicación estructurada y tmux para acceso directo al terminal.</string>
     <string name="chat_earlier_messages">%1$d mensajes anteriores</string>
+    <string name="automata_wizard_use_template">Examinar</string>
+    <string name="automata_wizard_skills_hint_link">Configura skills en Ajustes → Agentes → Perfiles de proyecto → Skills</string>
+    <string name="prd_action_archive">Archivar</string>
+    <string name="action_clear">Borrar</string>
 </resources>
