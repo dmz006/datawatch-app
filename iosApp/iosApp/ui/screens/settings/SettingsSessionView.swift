@@ -136,7 +136,7 @@ struct SettingsSessionView: View {
             IosServiceLocator.shared.fetchSummarizerConfig(
                 profile: profile,
                 onSuccess: { isEnabled, ref in
-                    enabled = isEnabled
+                    enabled = isEnabled.boolValue
                     llmRef = ref
                     continuation.resume()
                 },

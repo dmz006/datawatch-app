@@ -17,17 +17,17 @@ struct ReachabilityDotView: View {
 
     private var dotColor: Color {
         switch reachable {
-        case true:  DatawatchColors.success
-        case false: DatawatchColors.error
-        case nil:   DatawatchColors.warning
+        case .some(true):  DatawatchColors.success
+        case .some(false): DatawatchColors.error
+        case .none:   DatawatchColors.warning
         }
     }
 
     private var statusDescription: String {
         switch reachable {
-        case true:  "Server online"
-        case false: "Server unreachable"
-        case nil:   "Probing…"
+        case .some(true):  "Server online"
+        case .some(false): "Server unreachable"
+        case .none:   "Probing…"
         }
     }
 

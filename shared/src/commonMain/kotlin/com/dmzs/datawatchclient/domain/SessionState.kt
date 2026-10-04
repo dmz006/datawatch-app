@@ -1,5 +1,8 @@
 package com.dmzs.datawatchclient.domain
 
+import kotlin.experimental.ExperimentalObjCName
+import kotlin.native.ObjCName
+
 /**
  * Lifecycle state of a single datawatch session. Mirrors the parent daemon's state
  * enumeration; mapping is enforced via [fromWire] so upstream string changes cannot
@@ -14,11 +17,13 @@ package com.dmzs.datawatchclient.domain
  * a raw string — so there is no opportunity for ad-hoc pattern matching elsewhere.
  * Issue #70 is closed: the mobile classifier is already server-authoritative.
  */
+@OptIn(ExperimentalObjCName::class)
 public enum class SessionState {
     New,
     Running,
     Waiting,
-    RateLimited,
+    // Pinned so Swift reliably sees `.rateLimited`.
+    @ObjCName("rateLimited") RateLimited,
     Completed,
     Killed,
     Error,
