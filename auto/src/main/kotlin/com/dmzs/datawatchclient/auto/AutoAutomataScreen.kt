@@ -80,6 +80,25 @@ public class AutoAutomataScreen(
     private var prdDetailLoading: Boolean = false
     private var prdDetailError: String? = null
 
+    /**
+     * Back (header Action.BACK or the car's back key) steps out in place:
+     * task → PRD view → PRD list. At the list it defers to the default (pop).
+     */
+    private val backCallback =
+        object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                when {
+                    selectedTask != null -> { selectedTask = null; invalidate() }
+                    selectedPrd != null -> { selectedPrd = null; selectedStory = null; invalidate() }
+                    else -> {
+                        isEnabled = false
+                        carContext.onBackPressedDispatcher.onBackPressed()
+                        isEnabled = true
+                    }
+                }
+            }
+        }
+
     init {
         // Only fetch on init when no seed data was provided.
         // With seed data the first onGetTemplate() already shows the PRD list,
@@ -87,6 +106,7 @@ public class AutoAutomataScreen(
         if (seedPrds == null) {
             scope.launch { refresh(); invalidate() }
         }
+        carContext.onBackPressedDispatcher.addCallback(this, backCallback)
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
@@ -450,17 +470,13 @@ public class AutoAutomataScreen(
             }
         }
 
-        // Samsung Gearhead requires a header action on every non-root template.
-        // Action.BACK would pop AutoAutomataScreen entirely; use a custom back
-        // arrow that navigates in-place back to the PRD list instead.
-        val backIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_back)).build()
-        val inPlaceBack = Action.Builder()
-            .setIcon(backIcon)
-            .setOnClickListener { selectedPrd = null; selectedStory = null; invalidate() }
-            .build()
+        // Samsung Gearhead requires a header action on every non-root template, and
+        // the host only accepts standard header actions (a custom action with a click
+        // listener is rejected). Action.BACK is routed through backCallback, which
+        // navigates in place back to the PRD list instead of popping the screen.
         return ListTemplate.Builder()
             .setTitle(prdTitle)
-            .setHeaderAction(inPlaceBack)
+            .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
             .setActionStrip(buildActionStrip())
             .build()
@@ -537,14 +553,9 @@ public class AutoAutomataScreen(
             rowCount++
         }
 
-        val backIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_back)).build()
-        val inPlaceBack = Action.Builder()
-            .setIcon(backIcon)
-            .setOnClickListener { selectedTask = null; invalidate() }
-            .build()
         return ListTemplate.Builder()
             .setTitle(taskTitle)
-            .setHeaderAction(inPlaceBack)
+            .setHeaderAction(Action.BACK) // in-place back via backCallback
             .setSingleList(items.build())
             .setActionStrip(buildActionStrip())
             .build()
