@@ -276,6 +276,21 @@ jobs:
         working-directory: iosApp
         run: xcodegen generate --spec project.yml
 
+      # xcodegen regenerates Info.plist from project.yml `info.properties`; keys added
+      # only to the file are silently dropped. Fail fast if any required key is missing.
+      - name: Verify generated Info.plist keys
+        working-directory: iosApp
+        run: |
+          set -euo pipefail
+          missing=0
+          for k in CFBundleShortVersionString CFBundleVersion ITSAppUsesNonExemptEncryption \
+                   NSMicrophoneUsageDescription NSFaceIDUsageDescription NSLocalNetworkUsageDescription \
+                   UIBackgroundModes UISupportedInterfaceOrientations "UISupportedInterfaceOrientations~ipad"; do
+            /usr/libexec/PlistBuddy -c "Print :$k" iosApp/Info.plist >/dev/null 2>&1 || { echo "::error::Info.plist missing $k — add it to project.yml info.properties"; missing=1; }
+          done
+          [ "$missing" -eq 0 ] && echo "Info.plist: all required keys present"
+          exit $missing
+
       # Same credential handling as ios-match-init.yml: prefer raw MATCH_GIT_PAT,
       # fall back to a pre-encoded MATCH_GIT_BASIC_AUTHORIZATION (whitespace-stripped).
       - name: Resolve certs repo credentials
