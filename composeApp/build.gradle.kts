@@ -39,6 +39,7 @@ kotlin {
                 implementation(project(":shared"))
                 implementation(project(":auto"))
                 implementation(libs.androidx.activity.compose)
+                implementation(libs.zxing.core)
                 implementation(libs.androidx.lifecycle.viewmodel.compose)
                 implementation(libs.androidx.lifecycle.process)
                 implementation(libs.androidx.navigation.compose)
