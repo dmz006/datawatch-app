@@ -40,6 +40,8 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.CouncilRefineStepRequest
 import kotlinx.coroutines.flow.first
 import com.dmzs.datawatchclient.ui.common.MicAttachableTextField
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,7 +203,10 @@ fun CouncilPersonaWizardSheet(
                                                     refineInput = ""
                                                 }
                                                 .onFailure { err ->
-                                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Refine failed: ${err.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                                    AlertDockChannel.post(
+                                                        "Refine failed: ${err.message}",
+                                                        DockLevel.Error,
+                                                    )
                                                 }
                                         }
                                         refining = false

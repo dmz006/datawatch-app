@@ -87,6 +87,8 @@ import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
 import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
 import com.dmzs.datawatchclient.ui.config.ConfigViewerCard
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
@@ -606,17 +608,26 @@ private suspend fun downloadAndInstallCert(
             val filename = "datawatch-${profile.displayName.sanitizeForFilename()}-ca.pem"
             val saved = savePemToDownloads(context, filename, bytes)
             if (saved) {
-                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Saved to Downloads as $filename. Opening system trust-anchor screen…", com.dmzs.datawatchclient.ui.shell.DockLevel.Success)
+                AlertDockChannel.post(
+                    "Saved to Downloads as $filename. Opening system trust-anchor screen…",
+                    DockLevel.Success,
+                )
                 // Hand off to the OS flow. User picks the PEM from Downloads.
                 val intent =
                     Intent(Settings.ACTION_SECURITY_SETTINGS)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
                     .onFailure {
-                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Couldn't open security settings — install manually from Downloads.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                        AlertDockChannel.post(
+                            "Couldn't open security settings — install manually from Downloads.",
+                            DockLevel.Error,
+                        )
                     }
             } else {
-                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Downloaded cert but couldn't save to Downloads.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                AlertDockChannel.post(
+                    "Downloaded cert but couldn't save to Downloads.",
+                    DockLevel.Error,
+                )
             }
         },
         onFailure = { err ->
@@ -626,7 +637,10 @@ private suspend fun downloadAndInstallCert(
                         "Server doesn't expose /api/cert (parent-repo support pending)."
                     else -> "Cert download failed — ${err.message ?: err::class.simpleName}"
                 }
-            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(msg, com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+            AlertDockChannel.post(
+                msg,
+                DockLevel.Error,
+            )
         },
     )
 }

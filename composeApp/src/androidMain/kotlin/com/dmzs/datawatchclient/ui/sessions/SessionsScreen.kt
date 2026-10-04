@@ -112,6 +112,8 @@ import com.dmzs.datawatchclient.transport.dto.CurrentStatusDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaStatePill
@@ -262,10 +264,9 @@ public fun SessionsScreen(
         },
         bottomBar = {
             if (selectionMode) {
+                val doneStates = setOf(SessionState.Completed, SessionState.Killed, SessionState.Error)
                 val doneIds =
-                    state.visibleSessions.filter {
-                        it.state == SessionState.Completed || it.state == SessionState.Killed || it.state == SessionState.Error
-                    }.map { it.id }.toSet()
+                    state.visibleSessions.filter { it.state in doneStates }.map { it.id }.toSet()
                 SessionsSelectBar(
                     selectedCount = selectedIds.size,
                     selectableCount = doneIds.size,
@@ -527,7 +528,12 @@ private fun SessionsSelectBar(
                 Text(
                     "🗑 ${stringResource(R.string.action_delete)} ($selectedCount)",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (deleteEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color =
+                        if (deleteEnabled) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
             TextButton(onClick = onCancel) {
@@ -2002,10 +2008,16 @@ internal fun QuickCommandsSheet(
                         runCatching { r.start() }
                             .onSuccess { recorder = r }
                             .onFailure { e ->
-                                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                AlertDockChannel.post(
+                                    "Recording failed: ${e.message ?: e::class.simpleName}",
+                                    DockLevel.Error,
+                                )
                             }
                     } else {
-                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Microphone permission denied — enable it in Settings.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                        AlertDockChannel.post(
+                            "Microphone permission denied — enable it in Settings.",
+                            DockLevel.Error,
+                        )
                     }
                 }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2060,8 +2072,11 @@ internal fun QuickCommandsSheet(
                                                             .trim()
                                                 },
                                                 onFailure = { err ->
-                                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed on ${profile.displayName}: " +
-                                                            "${err.message ?: err::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                                    AlertDockChannel.post(
+                                                        "Transcribe failed on ${profile.displayName}: " +
+                                                            "${err.message ?: err::class.simpleName}",
+                                                        DockLevel.Error,
+                                                    )
                                                 },
                                             )
                                     }
@@ -2078,7 +2093,10 @@ internal fun QuickCommandsSheet(
                                     runCatching { r.start() }
                                         .onSuccess { recorder = r }
                                         .onFailure { e ->
-                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                            AlertDockChannel.post(
+                                                "Recording failed: ${e.message ?: e::class.simpleName}",
+                                                DockLevel.Error,
+                                            )
                                         }
                                 } else {
                                     micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)

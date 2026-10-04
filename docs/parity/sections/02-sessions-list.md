@@ -13,16 +13,16 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Filter text input + clear × | ✓ P:2077 | ✓ A:583 | ✓ I:317 | aligned | | |
 | data | Filter text match fields | ✓ P:1999 name·task·id·backend_family·llm_ref·compute_node_ref | ~ AV:167 (name/task/id/backend per toolbar doc A:521) | ✓ I:373 + hostnamePrefix | misaligned | | align Android field set; iOS adds hostname |
 | element | LLM/backend filter: `LLM (N)` collapsible → short-label badges w/ counts, only when >1 backend | ✓ P:2050–2088 short map claude/oc/acp/oc-p/owui/olla/… | ~ A:611 `LLM (N) ▸` button → chips "backend · n" (full names) + Council chip; shown regardless of count | ✗ | misaligned | | short-label map is PWA design; Council chip → D12 |
-| element | State filter: `State (N)` collapsible → 7 real-state chips w/ colour dot, count>0 only, persisted | ✓ P:2056–2075 `cs_session_state_chip` | ~ A:635 4 bucket chips (All/Active/Waiting/Done) always visible, counts | ~ I:276 same 4 buckets | misaligned | needs-decision | D2 |
-| interaction | Picking a historical state chip auto-enables History | ✓ P:2217 | ✗ | ✓ I:391 Done chip sets `showHistory` | android-missing | | |
+| element | State filter: `State (N)` collapsible → 7 real-state chips w/ colour dot, count>0 only, persisted | ✓ P:2056–2075 `cs_session_state_chip` | ✓ `State (N) ▸` → 7 real-state chips w/ colour dot, count>0 + All + selected, persisted `cs_session_state_chip` | ~ I:276 same 4 buckets | misaligned | decided D12a | D2 · Android done 2026-10-04 |
+| interaction | Picking a historical state chip auto-enables History | ✓ P:2217 | ✓ `setStateChip` (complete/failed/killed) | ✓ I:391 Done chip sets `showHistory` | aligned | | Android done 2026-10-04 (via D12a) |
 | element | `History (N)` toggle: default pool = active + recent (5 min); History = all | ✓ P:2102, P:1972 | ✓ A:690, AV:157 `RECENT_WINDOW_MINUTES=5` | ✓ I:419 `historyChip` + `visiblePool` 5-min window | aligned | | |
-| element | `☑` Select button (only when History on and history>0) | ✓ P:2105 | ~ A:706 `☑ All/None` in toolbar + long-press selects | ✗ | misaligned | needs-decision | D6 |
+| element | `☑` Select button (only when History on and history>0) | ✓ P:2105 | ✓ ☑ toggles select mode, shown only with History on | ✗ | misaligned | decided D15a | D6 · Android done 2026-10-04 |
 | element | Tree view toggle (BL348): parent/child grouping, 18px indent, `⚠ orphaned` badge | ✓ P:2098, P:2242 | ✗ | ✗ | android-missing | | iOS ✗ too |
 | element | Pending-schedules badge 🕒 N + dropdown with per-item cancel | ✓ P:2094, P:2160 | ✗ (schedules strip is in detail) | ✗ | android-missing | | iOS ✗ too |
-| element | Sort control (Recent / Started / Name / Custom) | ✗ (manual order only) | ✓ A:723 menu, AV:45 | ✓ I:283 (no Custom) | pwa-missing | needs-decision | D3 |
-| data | List ordering rule | ✓ P:2323 manual `cs_session_order` first, then `updated_at` desc; no state buckets | ~ AV:199 state bucket waiting→running→rate-limited→done, then sort | ~ I:386 same buckets | misaligned | needs-decision | D3 |
+| element | Sort control (Recent / Started / Name / Custom) | ✗ (manual order only) | ✗ removed | ✓ I:283 (no Custom) | pwa-missing | decided D42a | D3 · Android done 2026-10-04 |
+| data | List ordering rule | ✓ P:2323 manual `cs_session_order` first, then `updated_at` desc; no state buckets | ✓ manual drag order (persisted `cs_session_order`) then last activity desc; no buckets | ~ I:386 same buckets | misaligned | decided D42a | D3 · Android done 2026-10-04 |
 | motion | Toolbar / chip-row expand animation | ✗ (re-render) | ~ A:660 `AnimatedVisibility` (LLM chips only) | ~ I:68 `withAnimation` default | misaligned | | minor |
-| element | Empty state copy + icon | ✓ P:2114 💬 "No active sessions" / "Tap the + button to start a session, or send commands via Signal." | ~ A:862 🖥️ "No sessions yet. Use `new: <task>` from a messaging backend…" | ~ I:433 terminal icon "No sessions — start one in the web UI" | misaligned | needs-decision | D7 |
+| element | Empty state copy + icon | ✓ P:2114 💬 "No active sessions" / "Tap the + button to start a session, or send commands via Signal." | ✓ 💬 "No active sessions" + "Tap the + button…" hint | ~ I:433 terminal icon "No sessions — start one in the web UI" | misaligned | decided D35a | D7 · Android done 2026-10-04 |
 | element | Toolbar still shown in empty state when history>0 | ✓ P:2113 | ✓ (toolbar independent of list) | ✓ I:276 filter bar independent of list; empty pool shows "show N finished" | aligned | | |
 | motion | Skeleton list on first load: 5 shimmer rows, alpha .3↔.7, 900 ms reverse | ✗ | ✓ A:825 | ✗ I:228 spinner | pwa-missing | needs-decision | D8 |
 | element | No-server / no-profile state | n/a | ✓ A:1514 "No server", onboarding | ✓ I:445 `emptyNoProfile` | n/a | | PWA is served by the server |
@@ -36,13 +36,13 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | interaction | Drag-to-reorder; order persisted | ✓ P:2350 HTML5 DnD, `cs_session_order`; dragging .4, drag-over accent top border (C:2167) | ~ A:370 long-press drag (translationY, shadow 12) + reorderMode ↑↓ arrows; customOrder persisted | ✗ | ios-missing | | Android gesture differs (long-press) |
 | element | Drag handle ⋮⋮ (opacity .4) | ✓ P:2503, C:2176 | ~ A:1004 icon only in reorderMode | ✗ | ios-missing | | |
 | interaction | Select mode: checkbox on inactive cards; tap toggles | ✓ P:2486 | ✓ A:997 | ✗ | ios-missing | | |
-| element | Select bar | ✓ P:2141 fixed bottom bar above nav: `☑ All/None (N)` · `🗑 Delete (N)` (red when enabled) · Cancel; FAB hidden (C:2149) | ~ A:766 action row inside toolbar + A:489 `SelectionTopAppBar` "N selected"/Done | ✗ | misaligned | needs-decision | D6 |
+| element | Select bar | ✓ P:2141 fixed bottom bar above nav: `☑ All/None (N)` · `🗑 Delete (N)` (red when enabled) · Cancel; FAB hidden (C:2149) | ✓ `SessionsSelectBar` bottom bar ☑ All/None (N) · 🗑 Delete (N) · Cancel; FAB hidden | ✗ | misaligned | decided D15a | D6 · Android done 2026-10-04 |
 | interaction | Bulk delete: confirm → `POST /api/sessions/delete {id, delete_data:true}` per id → toast | ✓ P:2298 | ✓ A:454 dialog, `deleteMany` | ✗ | ios-missing | | |
 | interaction | FAB hidden while select bar shown | ✓ C:2149 | ✓ A:264 | n/a (FAB exists; no select mode yet) | aligned | | |
-| element | Line 1 text: `name`, else `task` (80 chars, "(no task)") | ✓ P:2391 | ~ A:1013 name (else id) titleSmall; task on line 2 bodyMedium 80 chars | ~ I:573 name, else task, else id; task line 2 (2 lines) if ≠ name | misaligned | needs-decision | D13 |
-| element | Short-id pill (mono, bg3, border, accent2) | ✓ P:2507, C:2316 | ~ A:1019 id as muted sub-line, only when named | ✗ | misaligned | needs-decision | D13 |
+| element | Line 1 text: `name`, else `task` (80 chars, "(no task)") | ✓ P:2391 | ✓ name, else task (80), else "(no task)"; no task line 2 | ~ I:573 name, else task, else id; task line 2 (2 lines) if ≠ name | misaligned | decided D16a | D13 · Android done 2026-10-04 |
+| element | Short-id pill (mono, bg3, border, accent2) | ✓ P:2507, C:2316 | ✓ `SessionIdPill` in meta row | ✗ | misaligned | decided D16a | D13 · Android done 2026-10-04 |
 | token | State badge style: uppercase text, 1px currentColor border, radius 10, 11px/600 | ✓ P:2502, C:2327 | ~ `PwaStatePill` filled .15 bg, no border (PwaComponents.kt:58) | ~ I:638 filled .15, labels RUNNING/WAITING INPUT/… | misaligned | | align to bordered PWA pill |
-| motion | Running badge pulse | ✓ C:2343 700 ms .55↔1.0 ease-in-out alternate; honours reduced-motion | ~ PwaComponents.kt:73 900 ms .5↔1.0 FastOutSlowIn reverse | ✗ | misaligned | | align timing to PWA; iOS add |
+| motion | Running badge pulse | ✓ C:2343 700 ms .55↔1.0 ease-in-out alternate; honours reduced-motion | ✓ `rememberRunningPulseAlpha` 700 ms .55↔1.0 ease-in-out; static under reduced motion | ✗ | ios-missing | | align timing to PWA; iOS add · Android done 2026-10-04 (D18 kept) |
 | element | `stale-dot` inside badge (no channel activity >2 s, `data-channel-evt`) | ✓ P:2502, P:1612 | ✗ | ✗ | android-missing | | iOS ✗ too |
 | element | Active-card action: `■ Stop` (red) | ✓ P:2410 button in header | ✓ A:1237 OutlinedButton → confirm | ~ I:609 trailing swipe "Stop" → alert | misaligned | needs-decision | D4 |
 | element | `▶` quick-commands button (waiting_input only) → popup | ✓ P:2412 | ✓ A:1325 "⌨ Commands" → `QuickCommandsSheet` | ✓ I:578 ▶ (waiting only) → QuickCommandsSheet.swift | aligned | | |
@@ -52,7 +52,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | `⛶` maximize → Dashboard expand mode (BL303) | ✓ P:2424 `openDashExpand` | ✗ (expand entered from Dashboard › only) | ✗ | android-missing | | iOS ✗ too |
 | element | LLM badge: `llm_ref`, else `backend_family`, accent2 tint + 1px border | ✓ P:2508 | ~ A:1031 backend only, uppercase, accent2 .12, no border | ~ I:494 backend only, uppercase, secondary .12 | misaligned | | prefer llm_ref; PWA style |
 | element | Server badge (`sess.server` ≠ local) | ✓ P:2509 | ✗ | ✗ | android-missing | | iOS ✗; apps show hostname instead (next row) |
-| element | Hostname label | ✗ (var unused P:2393) | ✓ A:1086 "host ·" in meta row | ✓ I:531 muted badge | pwa-missing | needs-decision | D13 |
+| element | Hostname label | ✗ (var unused P:2393) | ~ shown only in All-servers mode | ✓ I:531 muted badge | pwa-missing | decided D16a | D13 · Android done 2026-10-04 |
 | element | Worker badge | ✓ P:2510 "⬡ worker", accent2 border, purple .15 bg | ~ A:2212 "⬡ <agentId>" purple A855F7 .15 | ~ I:512 "⬡ <agentId>" secondary .12 | misaligned | | label + colour |
 | element | `↳ child of [xxxx]` parent badge | ✓ P:2511 | ✗ | ✗ | android-missing | | iOS ✗ too; needs `parent_id` in Session DTO |
 | element | `⚠ zombie` badge (`claude_alive === false`) | ✓ P:2512 | ✗ | ✗ | android-missing | | iOS ✗ too; needs `claude_alive` in DTO |

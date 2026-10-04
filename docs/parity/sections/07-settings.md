@@ -51,7 +51,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Remote servers + Federated Peers cards (list / add / test / enable / delete) | ✓ remote_servers A:14523, fedpeers | ✓ FederationPeersCard | ✗ | ios-missing | | |
 | interaction | Add server profile (name, https URL, bearer token / no-token, trust) with probe before save | n/a | ✓ AddServerScreen | ✓ ASV | aligned | | PWA n/a |
 | interaction | Edit / delete profile ("leave blank to keep" token, delete confirm) | n/a | ✓ EditServerScreen | ✓ ESV | aligned | | |
-| interaction | Certificate pinning (TOFU: probe leaf fingerprint → confirm → `trustAnchorSha256`) | ✗ | ✗ hex pin ignored, sentinel only | ✓ ASV/ESV ServerTrustSection, CertProbe, IosTls | android-missing | needs-decision | D8 |
+| interaction | Certificate pinning (TOFU: probe leaf fingerprint → confirm → `trustAnchorSha256`) | ✗ | ✓ Add/Edit `ServerTrustSection` + `probeServerCertificate` + `PinnedTrustManager` (REST, WS, Auto, docs WebView); hostname verification kept | ✓ ASV/ESV ServerTrustSection, CertProbe, IosTls | pwa-missing | decided D91a | D8 · Android done 2026-10-04 |
 | interaction | Trust-all certificates toggle (insecure) | n/a | ✓ selfSigned Switch | ✓ ASV/ESV | aligned | | |
 | interaction | Download server CA cert (`GET /api/cert`) + install guidance | ~ websrv `_tls_install` hint | ✓ ServersCard menu "Download CA cert" + CertInstallCard | ✓ ESV Download + ShareLink | aligned | | |
 | element | Profile-row security badges | n/a | ~ TRUST ALL only | ✓ NO AUTH + TRUST ALL TLS | android-missing | | neither shows a "PINNED" badge |

@@ -99,6 +99,8 @@ import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -815,12 +817,13 @@ public fun SessionDetailScreen(
                     !contentReady -> "waiting for terminal…"
                     else -> "connecting…"
                 }
+                // Parity D46b — no in-session disconnect banner after this
+                // overlay; the header reachability dot is the only disconnect
+                // signal (PWA minimal).
                 SessionLoadingOverlay(
                     visible = !hadContent && (state.reachable == null || !contentReady),
                     statusText = connectStatus,
                 )
-                // Parity D46b — no in-session disconnect banner; the header
-                // reachability dot is the only disconnect signal (PWA minimal).
                 } // close Box(weight(1f))
 
                 // Composer in its own layer responding to keyboard insets separately.
@@ -1969,7 +1972,10 @@ private fun ReplyComposer(
                 }.getOrNull()
             if (bytes == null) {
                 imageUploading = false
-                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Could not read image.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                AlertDockChannel.post(
+                    "Could not read image.",
+                    DockLevel.Error,
+                )
                 return@launch
             }
             val displayName =
@@ -2000,14 +2006,20 @@ private fun ReplyComposer(
                     ?: profiles.firstOrNull { it.enabled }
             if (profile == null) {
                 imageUploading = false
-                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("No server connected.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                AlertDockChannel.post(
+                    "No server connected.",
+                    DockLevel.Error,
+                )
                 return@launch
             }
             val transport = com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
             val root = transport.getFileServiceMeta().getOrNull()?.root?.trimEnd('/')
             if (root == null) {
                 imageUploading = false
-                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Could not resolve server file root.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                AlertDockChannel.post(
+                    "Could not resolve server file root.",
+                    DockLevel.Error,
+                )
                 return@launch
             }
             val fullPath = "$root/$destName"
@@ -2019,7 +2031,10 @@ private fun ReplyComposer(
                 }
                 .onFailure {
                     imageUploading = false
-                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Image upload failed: ${it.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                    AlertDockChannel.post(
+                        "Image upload failed: ${it.message}",
+                        DockLevel.Error,
+                    )
                 }
         }
     }
@@ -2069,10 +2084,16 @@ private fun ReplyComposer(
                         showRecordingDialog = true
                     }
                     .onFailure { e ->
-                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                        AlertDockChannel.post(
+                            "Recording failed: ${e.message ?: e::class.simpleName}",
+                            DockLevel.Error,
+                        )
                     }
             } else {
-                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Microphone permission denied — enable it in Settings.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                AlertDockChannel.post(
+                    "Microphone permission denied — enable it in Settings.",
+                    DockLevel.Error,
+                )
             }
         }
 
@@ -2133,7 +2154,10 @@ private fun ReplyComposer(
                                             .startSession(task = newPrefix)
                                             .fold(
                                                 onSuccess = {
-                                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Started new session: $newPrefix", com.dmzs.datawatchclient.ui.shell.DockLevel.Success)
+                                                    AlertDockChannel.post(
+                                                        "Started new session: $newPrefix",
+                                                        DockLevel.Success,
+                                                    )
                                                 },
                                                 onFailure = { onTranscribed(text) },
                                             )
@@ -2148,11 +2172,17 @@ private fun ReplyComposer(
                                             .joinToString(" ← ") {
                                                 "${it::class.simpleName}: ${it.message?.take(120)}"
                                             }
-                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed: $cause", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                    AlertDockChannel.post(
+                                        "Transcribe failed: $cause",
+                                        DockLevel.Error,
+                                    )
                                 },
                             )
                     } else {
-                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("No enabled server profile — voice reply aborted.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                        AlertDockChannel.post(
+                            "No enabled server profile — voice reply aborted.",
+                            DockLevel.Error,
+                        )
                     }
                     transcribing = false
                 }
@@ -2415,7 +2445,10 @@ private fun ReplyComposer(
                                 showRecordingDialog = true
                             }
                             .onFailure { e ->
-                                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                AlertDockChannel.post(
+                                    "Recording failed: ${e.message ?: e::class.simpleName}",
+                                    DockLevel.Error,
+                                )
                             }
                     } else {
                         micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
@@ -2655,7 +2688,12 @@ private fun SavedCommandsDropdown(
             }
             HorizontalDivider()
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text(stringResource(R.string.session_detail_commands_custom), style = MaterialTheme.typography.bodySmall) },
+                text = {
+                    Text(
+                        stringResource(R.string.session_detail_commands_custom),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                },
                 onClick = {
                     open = false
                     onCustom()

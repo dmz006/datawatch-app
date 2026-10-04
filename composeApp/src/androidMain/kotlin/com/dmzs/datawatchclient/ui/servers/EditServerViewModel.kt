@@ -162,7 +162,8 @@ public class EditServerViewModel(private val profileId: String) : ViewModel() {
                     displayName = snapshot.displayName.trim(),
                     baseUrl = snapshot.baseUrl.trim().trimEnd('/'),
                     bearerTokenRef = newAlias,
-                    trustAnchorSha256 = if (snapshot.selfSigned) ServiceLocator.TRUST_ALL_SENTINEL else snapshot.pinnedSha,
+                    trustAnchorSha256 =
+                        if (snapshot.selfSigned) ServiceLocator.TRUST_ALL_SENTINEL else snapshot.pinnedSha,
                 )
 
             val transport = ServiceLocator.transportFor(updated)
