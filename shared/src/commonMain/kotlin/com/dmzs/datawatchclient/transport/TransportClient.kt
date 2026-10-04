@@ -267,6 +267,13 @@ public interface TransportClient {
     ): Result<Unit>
 
     /**
+     * POST /api/alerts `{all:true, delete:true}` — delete every alert, as the
+     * PWA's dismiss-all does (parity D48a). Default falls back to ack-all for
+     * transports that don't implement it.
+     */
+    public suspend fun deleteAllAlerts(): Result<Unit> = markAlertRead(all = true)
+
+    /**
      * GET /api/info — hostname, daemon version, active backends, session
      * count, bound server host+port. Used by the About card and
      * connection-status affordances.

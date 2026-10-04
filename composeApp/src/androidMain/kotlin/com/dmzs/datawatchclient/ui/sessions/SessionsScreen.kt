@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -98,6 +99,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -110,6 +112,8 @@ import com.dmzs.datawatchclient.transport.dto.CurrentStatusDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaStatePill
@@ -144,9 +148,14 @@ public fun SessionsScreen(
     val alertsState by alertsVm.state.collectAsState()
     var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    val selectionMode = selectedIds.isNotEmpty()
-    LaunchedEffect(state.stateFilter, state.backendFilter, state.filterText, state.showHistory) {
+    // Parity D15a — PWA select mode: entered with the ☑ toolbar button (only
+    // while History is on), checkboxes on inactive cards, fixed bottom bar.
+    var selectionMode by remember { mutableStateOf(false) }
+    LaunchedEffect(state.stateChip, state.backendFilter, state.filterText, state.showHistory) {
         selectedIds = emptySet()
+    }
+    LaunchedEffect(state.showHistory) {
+        if (!state.showHistory) selectionMode = false
     }
     var bulkDeleteConfirmOpen by remember { mutableStateOf(false) }
     // Search / filter / sort toolbar is collapsed by default — user
@@ -178,14 +187,7 @@ public fun SessionsScreen(
 
     Scaffold(
         topBar = {
-            if (selectionMode) {
-                SelectionTopAppBar(
-                    count = selectedIds.size,
-                    canDelete = state.deleteSupported,
-                    onCancel = { selectedIds = emptySet() },
-                    onDelete = { bulkDeleteConfirmOpen = true },
-                )
-            } else {
+            run {
                 TopAppBar(
                     title = {
                         ServerPickerTitle(
@@ -260,6 +262,27 @@ public fun SessionsScreen(
                 )
             }
         },
+        bottomBar = {
+            if (selectionMode) {
+                val doneStates = setOf(SessionState.Completed, SessionState.Killed, SessionState.Error)
+                val doneIds =
+                    state.visibleSessions.filter { it.state in doneStates }.map { it.id }.toSet()
+                SessionsSelectBar(
+                    selectedCount = selectedIds.size,
+                    selectableCount = doneIds.size,
+                    allSelected = doneIds.isNotEmpty() && selectedIds.containsAll(doneIds),
+                    canDelete = state.deleteSupported,
+                    onToggleAll = {
+                        selectedIds = if (selectedIds.containsAll(doneIds)) emptySet() else doneIds
+                    },
+                    onDelete = { bulkDeleteConfirmOpen = true },
+                    onCancel = {
+                        selectedIds = emptySet()
+                        selectionMode = false
+                    },
+                )
+            }
+        },
         floatingActionButton = {
             if (!selectionMode && state.activeProfile != null) {
                 // User 2026-04-24 (round 2): "the + on sessions list
@@ -302,35 +325,17 @@ public fun SessionsScreen(
                 showHistory = state.showHistory,
                 historyCount = state.historyCount,
                 onToggleShowHistory = vm::toggleShowHistory,
-                sortOrder = state.sortOrder,
-                onSortOrderChange = vm::setSortOrder,
                 expanded = toolbarExpanded,
                 onCollapse = { toolbarExpanded = false },
-                stateFilter = state.stateFilter,
-                activeCount = state.activeCount,
-                waitingCount = state.waitingCount,
-                doneCount = state.doneCount,
-                visibleDoneCount = state.visibleDoneCount,
-                onStateFilterChange = vm::setStateFilter,
-                historyAllSelected =
-                    state.historySessionIds.isNotEmpty() &&
-                        selectedIds.containsAll(state.historySessionIds),
-                onSelectAllHistory = {
-                    val histIds = state.historySessionIds.toSet()
-                    selectedIds = if (selectedIds.containsAll(histIds)) emptySet() else histIds
-                },
-                // PWA parity: show action buttons in toolbar when in select mode
+                stateChip = state.stateChip,
+                stateCounts = state.stateCounts,
+                visibleStateChips = state.visibleStateChips,
+                onStateChipChange = vm::setStateChip,
                 selectMode = selectionMode,
-                selectedCount = selectedIds.size,
-                onSelectAllInactive = {
-                    val doneIds =
-                        state.visibleSessions.filter {
-                            it.state == SessionState.Completed || it.state == SessionState.Killed || it.state == SessionState.Error
-                        }.map { it.id }.toSet()
-                    selectedIds = if (selectedIds.containsAll(doneIds)) emptySet() else selectedIds + doneIds
+                onToggleSelectMode = {
+                    selectionMode = !selectionMode
+                    if (!selectionMode) selectedIds = emptySet()
                 },
-                onCancelSelection = { selectedIds = emptySet() },
-                onDeleteSelected = { bulkDeleteConfirmOpen = true },
             )
 
             val visible = state.visibleSessions
@@ -338,7 +343,7 @@ public fun SessionsScreen(
                 if (state.refreshing) {
                     SessionSkeletonList()
                 } else {
-                    EmptyState()
+                    EmptyState(showHint = state.activeProfile != null)
                 }
             } else {
                 // v0.33.15 (B9): datawatch eye watermark behind the
@@ -389,6 +394,7 @@ public fun SessionsScreen(
                                 session = session,
                                 backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
                                 reorderMode = state.reorderMode,
+                                showHostname = state.allServersMode,
                                 onMoveUp = { vm.moveUp(session.id) },
                                 onMoveDown = { vm.moveDown(session.id) },
                                 onQuickReply = { text -> vm.quickReply(session.id, text) },
@@ -421,18 +427,21 @@ public fun SessionsScreen(
                                     isDragging = false
                                 },
                                 onClick = {
-                                    if (selectionMode) {
+                                    val selectable =
+                                        session.state == SessionState.Completed ||
+                                            session.state == SessionState.Killed ||
+                                            session.state == SessionState.Error
+                                    if (selectionMode && selectable) {
                                         selectedIds = selectedIds.toggle(session.id)
                                     } else {
                                         onOpenSession(session.id)
                                     }
                                 },
                                 onLongPress = {
-                                    // In multi-select, long-press selects the
-                                    // row. Outside multi-select the gesture is
-                                    // reclaimed by the drag detector in
-                                    // SessionRow itself.
-                                    selectedIds = selectedIds + session.id
+                                    // Parity D15a: long-press no longer enters
+                                    // selection (PWA uses the ☑ button); outside
+                                    // select mode the gesture is the drag handle.
+                                    if (selectionMode) selectedIds = selectedIds.toggle(session.id)
                                 },
                                 onSwipeMute = {
                                     if (!selectionMode) vm.toggleMute(session.id, session.muted)
@@ -466,6 +475,7 @@ public fun SessionsScreen(
                     onClick = {
                         vm.deleteMany(ids)
                         selectedIds = emptySet()
+                        selectionMode = false
                         bulkDeleteConfirmOpen = false
                     },
                     colors =
@@ -484,36 +494,53 @@ public fun SessionsScreen(
 
 private fun <T> Set<T>.toggle(item: T): Set<T> = if (contains(item)) this - item else this + item
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Parity D15a — PWA `.select-bar`: fixed bar above the bottom nav with
+ * `☑ All/None (N)` · `🗑 Delete (N)` (red when enabled) · Cancel.
+ */
 @Composable
-private fun SelectionTopAppBar(
-    count: Int,
+private fun SessionsSelectBar(
+    selectedCount: Int,
+    selectableCount: Int,
+    allSelected: Boolean,
     canDelete: Boolean,
-    onCancel: () -> Unit,
+    onToggleAll: () -> Unit,
     onDelete: () -> Unit,
+    onCancel: () -> Unit,
 ) {
-    TopAppBar(
-        title = { Text(stringResource(R.string.sessions_selected_count, count)) },
-        navigationIcon = {
-            IconButton(onClick = onCancel) {
-                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.sessions_cancel_selection))
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 3.dp,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(onClick = onToggleAll, modifier = Modifier.weight(1f)) {
+                Text(
+                    "☑ ${if (allSelected) "None" else "All"} ($selectableCount)",
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
-        },
-        actions = {
-            IconButton(onClick = onDelete, enabled = canDelete) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.sessions_delete_selected),
-                    tint =
-                        if (canDelete) {
+            val deleteEnabled = canDelete && selectedCount > 0
+            OutlinedButton(onClick = onDelete, enabled = deleteEnabled, modifier = Modifier.weight(1f)) {
+                Text(
+                    "🗑 ${stringResource(R.string.action_delete)} ($selectedCount)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color =
+                        if (deleteEnabled) {
                             MaterialTheme.colorScheme.error
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
                 )
             }
-        },
-    )
+            TextButton(onClick = onCancel) {
+                Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
 }
 
 /**
@@ -541,28 +568,17 @@ private fun SessionsToolbar(
     showHistory: Boolean,
     historyCount: Int,
     onToggleShowHistory: () -> Unit,
-    sortOrder: SessionsViewModel.SortOrder,
-    onSortOrderChange: (SessionsViewModel.SortOrder) -> Unit,
     expanded: Boolean,
     onCollapse: () -> Unit,
-    // v0.83.0: state filter chips
-    stateFilter: SessionsViewModel.SessionStateFilter = SessionsViewModel.SessionStateFilter.ALL,
-    activeCount: Int = 0,
-    waitingCount: Int = 0,
-    doneCount: Int = 0,
-    visibleDoneCount: Int = doneCount,
-    onStateFilterChange: (SessionsViewModel.SessionStateFilter) -> Unit = {},
-    // BL-SL-2: select-all button for history sessions (PWA ☑ All / None)
-    historyAllSelected: Boolean = false,
-    onSelectAllHistory: (() -> Unit)? = null,
-    // PWA parity: action bar for select mode
+    // Parity D12a: PWA `State (N)` collapsible chips over the 7 real states.
+    stateChip: String = SessionsViewModel.UiState.STATE_CHIP_ALL,
+    stateCounts: Map<String, Int> = emptyMap(),
+    visibleStateChips: List<String> = listOf(SessionsViewModel.UiState.STATE_CHIP_ALL),
+    onStateChipChange: (String) -> Unit = {},
+    // Parity D15a: ☑ toggles select mode (shown only with History on).
     selectMode: Boolean = false,
-    selectedCount: Int = 0,
-    onSelectAllInactive: () -> Unit = {},
-    onCancelSelection: () -> Unit = {},
-    onDeleteSelected: () -> Unit = {},
+    onToggleSelectMode: () -> Unit = {},
 ) {
-    var sortMenuOpen by remember { mutableStateOf(false) }
     // Toolbar is rendered only when expanded (user toggled search) OR
     // something filter-related is active (stale state we don't want
     // to hide). Collapsed state = nothing renders here; the search
@@ -575,6 +591,7 @@ private fun SessionsToolbar(
         run {
             // BL-SL-3: PWA layout — text input + LLM button on same row; state chips always visible.
             var llmExpanded by remember { mutableStateOf(false) }
+            var stateExpanded by remember { mutableStateOf(false) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -627,34 +644,55 @@ private fun SessionsToolbar(
                     )
                 }
             }
-            // State filter chips always visible when toolbar is expanded
-            val stateFilterAllLabel = stringResource(R.string.session_filter_all)
-            val stateFilterActiveLabel = stringResource(R.string.session_filter_active)
-            val stateFilterWaitingLabel = stringResource(R.string.session_filter_waiting)
-            val stateFilterDoneLabel = stringResource(R.string.session_filter_done)
-            val stateChips =
-                listOf(
-                    Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
-                    Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
-                    Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
-                    Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
-                )
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            // Parity D12a — PWA `State (N) ▸` button; chips for every real
+            // state with a count > 0 (plus All and the selected one).
+            val stateActive = stateChip != SessionsViewModel.UiState.STATE_CHIP_ALL
+            OutlinedButton(
+                onClick = { stateExpanded = !stateExpanded },
+                modifier = Modifier.padding(top = 4.dp),
+                contentPadding =
+                    androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 8.dp,
+                        vertical = 4.dp,
+                    ),
             ) {
-                items(stateChips) { (filter, label, count) ->
-                    FilterChip(
-                        selected = stateFilter == filter,
-                        onClick = { onStateFilterChange(filter) },
-                        label = {
-                            Text(
-                                if (count >= 0) "$label ($count)" else label,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(),
-                    )
+                Text(
+                    if (stateActive) "State: $stateChip" else "State (${visibleStateChips.size - 1})",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (stateActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
+                Icon(
+                    if (stateExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                )
+            }
+            if (stateExpanded) {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                ) {
+                    items(visibleStateChips) { key ->
+                        val dotColor = stateChipColor(key)
+                        FilterChip(
+                            selected = stateChip == key,
+                            onClick = { onStateChipChange(key) },
+                            label = {
+                                Text(
+                                    "${stateChipLabel(key)} ${stateCounts[key] ?: 0}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
+                            leadingIcon = {
+                                Box(
+                                    Modifier
+                                        .size(8.dp)
+                                        .background(dotColor, androidx.compose.foundation.shape.CircleShape),
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(),
+                        )
+                    }
                 }
             }
             AnimatedVisibility(visible = llmExpanded) {
@@ -703,121 +741,48 @@ private fun SessionsToolbar(
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
-                    // BL-SL-2: select-all button matches PWA ☑ All / None toggle.
-                    if (showHistory && onSelectAllHistory != null) {
-                        OutlinedButton(
-                            onClick = onSelectAllHistory,
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
-                        ) {
+                    // Parity D15a — PWA ☑ toggles select mode (History on only).
+                    if (showHistory) {
+                        IconButton(onClick = onToggleSelectMode, modifier = Modifier.size(32.dp)) {
                             Text(
-                                if (historyAllSelected) "☑ None" else "☑ All",
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        }
-                    }
-                }
-                Box {
-                    OutlinedButton(
-                        onClick = { sortMenuOpen = true },
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 10.dp,
-                                vertical = 4.dp,
-                            ),
-                    ) {
-                        Text(
-                            stringResource(R.string.sessions_sort_prefix, sortOrder.label),
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = sortMenuOpen,
-                        onDismissRequest = { sortMenuOpen = false },
-                    ) {
-                        SessionsViewModel.SortOrder.entries.forEach { o ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(o.label, modifier = Modifier.weight(1f))
-                                        if (o == sortOrder) {
-                                            Icon(
-                                                Icons.Filled.Check,
-                                                "selected",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    onSortOrderChange(o)
-                                    sortMenuOpen = false
-                                },
+                                "☑",
+                                style = MaterialTheme.typography.titleMedium,
+                                color =
+                                    if (selectMode) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    },
                             )
                         }
                     }
                 }
             }
         }
-        // PWA parity: action bar when in select mode
-        if (selectMode) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                        .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-            ) {
-                OutlinedButton(
-                    onClick = onSelectAllInactive,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 4.dp,
-                        ),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        "☑ ${if (selectedCount == visibleDoneCount && visibleDoneCount > 0) "None" else "All"} ($visibleDoneCount)",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-                OutlinedButton(
-                    onClick = onDeleteSelected,
-                    enabled = selectedCount > 0,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 4.dp,
-                        ),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        "🗑 Delete ($selectedCount)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                OutlinedButton(
-                    onClick = onCancelSelection,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 4.dp,
-                        ),
-                ) {
-                    Text(
-                        "Done",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
-        }
+    }
+}
+
+@Composable
+private fun stateChipLabel(key: String): String =
+    when (key) {
+        "running" -> stringResource(R.string.session_chip_running)
+        "waiting_input" -> stringResource(R.string.session_filter_waiting)
+        "rate_limited" -> stringResource(R.string.session_chip_rate_limited)
+        "complete" -> stringResource(R.string.session_chip_complete)
+        "failed" -> stringResource(R.string.session_chip_failed)
+        "killed" -> stringResource(R.string.session_chip_killed)
+        else -> stringResource(R.string.session_filter_all)
+    }
+
+/** PWA `realStateChips` colours. */
+@Composable
+private fun stateChipColor(key: String): Color {
+    val dw = LocalDatawatchColors.current
+    return when (key) {
+        "running" -> dw.success
+        "waiting_input" -> dw.warning
+        "rate_limited", "failed" -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
 
@@ -858,21 +823,31 @@ private fun SessionSkeletonList() {
     }
 }
 
+/** Parity D35a — PWA empty state: 💬 "No active sessions" + hint. */
 @Composable
-private fun EmptyState() {
+private fun EmptyState(showHint: Boolean = true) {
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "🖥️",
+                "💬",
                 style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
             Text(
                 stringResource(R.string.sessions_empty_state),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 12.dp),
             )
+            if (showHint) {
+                Text(
+                    stringResource(R.string.sessions_empty_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
         }
     }
 }
@@ -901,6 +876,7 @@ private fun SessionRow(
     onResummarize: suspend () -> CurrentStatusDto? = { null },
     whisperConfigured: Boolean = false,
     reorderMode: Boolean = false,
+    showHostname: Boolean = false,
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {},
     // Drag-drop state — passed from SessionsScreen so the caller owns
@@ -1009,21 +985,17 @@ private fun SessionRow(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            // Parity D16a — PWA line 1: name, else task (80 chars), else "(no task)".
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                val displayName = session.name?.takeIf { it.isNotBlank() }
+                val line1 =
+                    (session.name?.takeIf { it.isNotBlank() } ?: session.taskSummary?.takeIf { it.isNotBlank() })
+                        ?.let { if (it.length > 80) it.take(80) + "…" else it }
+                        ?: "(no task)"
                 Text(
-                    displayName ?: session.id,
+                    line1,
                     style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
+                    maxLines = 2,
                 )
-                if (displayName != null) {
-                    Text(
-                        session.id,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        maxLines = 1,
-                    )
-                }
             }
             PwaStatePill(session.state)
             if (!backend.isNullOrBlank()) {
@@ -1066,25 +1038,16 @@ private fun SessionRow(
             }
         }
 
-        // Task / display text — only when non-blank (no empty row).
-        val displayText = session.taskSummary?.takeIf { it.isNotBlank() }
-        if (displayText != null) {
-            val taskText = if (displayText.length > 80) displayText.take(80) + "…" else displayText
-            Text(
-                taskText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 3.dp),
-            )
-        }
-
-        // Meta row: hostname on left; [📄 Response] + time on right (mirrors PWA).
+        // Meta row: short-id pill (+ hostname only with several servers);
+        // [📄 Response] + time on the right (parity D16a, PWA layout).
         Row(
-            modifier = Modifier.padding(top = if (displayText != null) 2.dp else 3.dp).fillMaxWidth(),
+            modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            SessionIdPill(session.id)
+            Spacer(modifier = Modifier.width(6.dp))
             val hostname = session.hostnamePrefix
-            if (!hostname.isNullOrBlank()) {
+            if (showHostname && !hostname.isNullOrBlank()) {
                 Text(
                     hostname,
                     style = MaterialTheme.typography.labelSmall,
@@ -1534,15 +1497,25 @@ private fun ServerPickerTitle(
             modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                if (allMode) {
-                    stringResource(
-                        R.string.sessions_all_servers,
-                    )
-                } else {
-                    (active?.displayName ?: stringResource(R.string.sessions_no_server))
-                },
-            )
+            // Parity D1a/D9a: the Sessions header title is the brand
+            // "datawatch" (PWA `nav_home`). The active server stays visible
+            // as a muted sub-line so the picker affordance isn't lost —
+            // picker placement itself is a separate decision (D2).
+            Column {
+                Text(stringResource(R.string.nav_home))
+                Text(
+                    if (allMode) {
+                        stringResource(
+                            R.string.sessions_all_servers,
+                        )
+                    } else {
+                        (active?.displayName ?: stringResource(R.string.sessions_no_server))
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
             Icon(
                 Icons.Filled.ArrowDropDown,
                 contentDescription = stringResource(R.string.sessions_switch_server),
@@ -2035,18 +2008,16 @@ internal fun QuickCommandsSheet(
                         runCatching { r.start() }
                             .onSuccess { recorder = r }
                             .onFailure { e ->
-                                android.widget.Toast.makeText(
-                                    context,
+                                AlertDockChannel.post(
                                     "Recording failed: ${e.message ?: e::class.simpleName}",
-                                    android.widget.Toast.LENGTH_SHORT,
-                                ).show()
+                                    DockLevel.Error,
+                                )
                             }
                     } else {
-                        android.widget.Toast.makeText(
-                            context,
+                        AlertDockChannel.post(
                             "Microphone permission denied — enable it in Settings.",
-                            android.widget.Toast.LENGTH_LONG,
-                        ).show()
+                            DockLevel.Error,
+                        )
                     }
                 }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2101,12 +2072,11 @@ internal fun QuickCommandsSheet(
                                                             .trim()
                                                 },
                                                 onFailure = { err ->
-                                                    android.widget.Toast.makeText(
-                                                        context,
+                                                    AlertDockChannel.post(
                                                         "Transcribe failed on ${profile.displayName}: " +
                                                             "${err.message ?: err::class.simpleName}",
-                                                        android.widget.Toast.LENGTH_LONG,
-                                                    ).show()
+                                                        DockLevel.Error,
+                                                    )
                                                 },
                                             )
                                     }
@@ -2123,11 +2093,10 @@ internal fun QuickCommandsSheet(
                                     runCatching { r.start() }
                                         .onSuccess { recorder = r }
                                         .onFailure { e ->
-                                            android.widget.Toast.makeText(
-                                                context,
+                                            AlertDockChannel.post(
                                                 "Recording failed: ${e.message ?: e::class.simpleName}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                                DockLevel.Error,
+                                            )
                                         }
                                 } else {
                                     micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
@@ -2251,3 +2220,26 @@ private fun SessionState.labelColor(): Color =
         SessionState.Error -> MaterialTheme.colorScheme.error
         SessionState.New -> MaterialTheme.colorScheme.onSurfaceVariant
     }
+
+/** PWA `.id` pill: mono, bg3, 1px border, 600 weight. */
+@Composable
+private fun SessionIdPill(id: String) {
+    val dw = LocalDatawatchColors.current
+    Box(
+        modifier =
+            Modifier
+                .background(dw.bg3, RoundedCornerShape(4.dp))
+                .border(1.dp, dw.border, RoundedCornerShape(4.dp))
+                .padding(horizontal = 7.dp, vertical = 2.dp),
+    ) {
+        Text(
+            id,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            fontSize = 11.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            letterSpacing = 0.3.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+    }
+}

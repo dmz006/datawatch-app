@@ -260,6 +260,7 @@ public class WebSocketTransport(
                                         "sessions" -> tryRouteSessionsFrame(dto.data, json, profile.id)
                                         "session_state" -> tryRouteSessionStateFrame(dto.data, json, profile.id)
                                         "channel_reply", "channel_notify" -> tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
+                                        "alert" -> tryRouteAlertFrame(dto.data, profile.id)
                                     }
                                 }
                                 is Frame.Close -> {
@@ -312,6 +313,30 @@ private fun tryRoutePrdUpdateFrame(
         val dto = json.decodeFromJsonElement(PrdDto.serializer(), data)
         PrdHub.emit(dto)
     }.onFailure { println("WsTransport: failed to parse prd_update frame: ${it.message}") }
+}
+
+/** Parse an `alert` WS frame and forward to [AlertsHub] (parity D51a). */
+private fun tryRouteAlertFrame(
+    data: kotlinx.serialization.json.JsonElement?,
+    profileId: String,
+) {
+    val obj = data as? kotlinx.serialization.json.JsonObject ?: return
+
+    fun str(key: String): String? =
+        (obj[key] as? kotlinx.serialization.json.JsonPrimitive)
+            ?.takeIf { it.isString }
+            ?.content
+            ?.takeIf { it.isNotBlank() }
+    val title = str("title") ?: str("message") ?: str("summary") ?: return
+    AlertsHub.emit(
+        AlertPush(
+            serverProfileId = profileId,
+            id = str("id"),
+            title = title,
+            level = str("level") ?: "info",
+            sessionId = str("session_id"),
+        ),
+    )
 }
 
 /** Parse a `sessions` WS frame and forward to [SessionsHub] (#204). */

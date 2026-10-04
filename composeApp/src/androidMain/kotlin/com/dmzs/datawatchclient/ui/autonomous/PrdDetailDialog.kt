@@ -1121,19 +1121,8 @@ internal fun PrdDetailDialog(
 
 @Composable
 private fun PrdStatusBadge(status: String) {
-    val color = prdStatusColor(status)
-    Box(
-        modifier =
-            Modifier
-                .background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-    ) {
-        Text(
-            status.lowercase().replace('_', ' '),
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-        )
-    }
+    // Parity D23a — same PWA state-badge tokens + pulse as the list pill.
+    PrdStatusPill(status)
 }
 
 // ── LLM override sub-dialog ───────────────────────────────────────────────

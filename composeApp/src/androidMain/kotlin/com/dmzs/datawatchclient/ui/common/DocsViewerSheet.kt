@@ -57,6 +57,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.voice.VoiceRecorder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -78,6 +80,11 @@ internal fun DocsViewerSheet(
      * `false` — trust-all must be opted in by the profile config.
      */
     allowSelfSigned: Boolean = false,
+    /**
+     * Parity D91a — when the profile pins its certificate, sub-resource
+     * fetches accept exactly that leaf (hostname verification unchanged).
+     */
+    pinSha256: String? = null,
 ) {
     // WebView ref + tracked back-stack state so the title bar back arrow
     // and the device back button both navigate within the docs first and
@@ -246,6 +253,9 @@ internal fun DocsViewerSheet(
                                                     if (allowSelfSigned) {
                                                         sslSocketFactory = trustAllSslContext.socketFactory
                                                         hostnameVerifier = TrustAllHostnameVerifier
+                                                    } else if (pinSha256 != null) {
+                                                        sslSocketFactory =
+                                                            com.dmzs.datawatchclient.transport.pinnedSocketFactory(pinSha256)
                                                     }
                                                     connectTimeout = 10_000
                                                     readTimeout = 10_000
@@ -401,18 +411,16 @@ private fun DocsSearchDialog(
                         showVoiceDialog = true
                     }
                     .onFailure { e ->
-                        android.widget.Toast.makeText(
-                            context,
+                        AlertDockChannel.post(
                             "Recording failed: ${e.message ?: e::class.simpleName}",
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
+                            DockLevel.Error,
+                        )
                     }
             } else {
-                android.widget.Toast.makeText(
-                    context,
+                AlertDockChannel.post(
                     "Microphone permission denied — enable it in Settings.",
-                    android.widget.Toast.LENGTH_LONG,
-                ).show()
+                    DockLevel.Error,
+                )
             }
         }
 
@@ -453,11 +461,10 @@ private fun DocsSearchDialog(
                                     if (t.isNotEmpty()) query = TextFieldValue(t)
                                 }
                                 .onFailure { err ->
-                                    android.widget.Toast.makeText(
-                                        context,
+                                    AlertDockChannel.post(
                                         "Transcribe failed: ${err.message}",
-                                        android.widget.Toast.LENGTH_LONG,
-                                    ).show()
+                                        DockLevel.Error,
+                                    )
                                 }
                         }
                     } finally {
@@ -501,11 +508,10 @@ private fun DocsSearchDialog(
                                             showVoiceDialog = true
                                         }
                                         .onFailure { e ->
-                                            android.widget.Toast.makeText(
-                                                context,
+                                            AlertDockChannel.post(
                                                 "Recording failed: ${e.message ?: e::class.simpleName}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                                DockLevel.Error,
+                                            )
                                         }
                                 } else {
                                     micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
