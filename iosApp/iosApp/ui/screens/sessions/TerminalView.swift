@@ -19,6 +19,27 @@ final class TerminalController: ObservableObject {
     func setScrollMode(_ on: Bool) { eval("window.dwSetScrollMode && window.dwSetScrollMode(\(on));") }
     /// Accept the next pane_capture while scrolled (PWA 700 ms window).
     func scrollPendingRefresh(ms: Int = 700) { eval("window.dwScrollPendingRefresh && window.dwScrollPendingRefresh(\(ms));") }
+
+    /// Per-backend minimum columns (PWA configCols; Android setMinSize):
+    /// claude-code needs 120 cols for its TUI layout, others 80. Rows are not
+    /// enforced on mobile (the keyboard would clip the live tail). Re-applied
+    /// when the page reports ready.
+    private(set) var minCols = 0
+    func setMinCols(_ cols: Int) {
+        minCols = cols
+        applyMinCols()
+    }
+    func applyMinCols() {
+        guard minCols > 0 else { return }
+        eval("window.dwSetMinCols && window.dwSetMinCols(\(minCols), 0);")
+    }
+
+    static func defaultMinCols(backend: String?) -> Int {
+        switch backend?.lowercased() {
+        case "claude-code", "claude": return 120
+        default: return 80
+        }
+    }
 }
 
 // MARK: - TerminalView (public SwiftUI entry point)
@@ -351,6 +372,7 @@ extension TerminalWebView {
                 ready = true
                 appliedFontSize = requestedFontSize
                 evaluate("window.dwSetFontSize && window.dwSetFontSize(\(requestedFontSize));")
+                controller?.applyMinCols()
                 if let capture = pendingCapture {
                     pendingCapture = nil
                     write(capture: capture)
