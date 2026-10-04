@@ -23,6 +23,17 @@ struct RootView: View {
             }
         }
         .modifier(ServerPickerDialogModifier())
+        #if DEBUG
+        .onAppear {
+            DebugLaunchHooks.applyTheme()
+            if let tab = DebugLaunchHooks.initialTab { selectedTab = tab }
+        }
+        .task {
+            // Wait for the profile store's first load, then seed (sandbox only).
+            for _ in 0..<50 where profileStore.isLoading { try? await Task.sleep(nanoseconds: 100_000_000) }
+            DebugLaunchHooks.seedServer(store: profileStore)
+        }
+        #endif
     }
 
     // ── iPhone: TabView ───────────────────────────────────────────────────
