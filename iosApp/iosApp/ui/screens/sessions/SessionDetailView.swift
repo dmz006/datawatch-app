@@ -11,7 +11,10 @@ struct SessionDetailView: View {
     @State private var killError: String? = nil
     @State private var showKillConfirm = false
     @State private var isRestarting = false
-    @State private var showDeleteConfirm = false
+    @State private var showDeleteSheet = false
+    @State private var showTimeline = false
+    @State private var stateOverrideLabel: String? = nil
+    @State private var overridingState = false
     @State private var isDeleting = false
     @State private var showRenameDialog = false
     @State private var renameText: String = ""
@@ -58,6 +61,11 @@ struct SessionDetailView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
+                    Button { showTimeline = true } label: {
+                        Image(systemName: "clock")
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
+                    .accessibilityLabel("Timeline")
                     DocsLinkButton(profile: profile, anchor: "sessions")
                     if let resp = session.lastResponse, !resp.isEmpty {
                         Button { showLastResponse = true } label: {
@@ -76,11 +84,11 @@ struct SessionDetailView: View {
         } message: {
             Text("This stops the tmux session on the server. The session cannot be resumed (a new session would need to be started).")
         }
-        .alert("Delete this session?", isPresented: $showDeleteConfirm) {
-            Button("Delete", role: .destructive) { performDelete() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Permanently delete \"\(sessionTitle)\"?")
+        .sheet(isPresented: $showDeleteSheet) {
+            SessionDeleteSheet(profile: profile, session: session) { dismiss() }
+        }
+        .sheet(isPresented: $showTimeline) {
+            SessionTimelineSheet(profile: profile, session: session)
         }
         .alert("Rename session", isPresented: $showRenameDialog) {
             TextField("Display name", text: $renameText)
@@ -192,10 +200,76 @@ struct SessionDetailView: View {
         session.state == .completed || session.state == .killed || session.state == .error
     }
 
+    // ── State badge → state override (PWA showStateOverride) ─────────────
+
+    private static let overrideStates: [(wire: String, label: String)] = [
+        ("running", "Running"), ("waiting_input", "Waiting input"), ("complete", "Complete"),
+        ("killed", "Killed"), ("failed", "Failed"),
+    ]
+
+    private var currentStateLabel: String {
+        if let o = stateOverrideLabel { return o }
+        switch session.state {
+        case .running: return "Running"
+        case .waiting: return "Waiting input"
+        case .rateLimited: return "Rate limited"
+        case .completed: return "Complete"
+        case .killed: return "Killed"
+        case .error: return "Failed"
+        default: return "New"
+        }
+    }
+
+    private var stateMenu: some View {
+        Menu {
+            Section("Set state") {
+                ForEach(Self.overrideStates, id: \.wire) { st in
+                    Button(st.label) { overrideState(st.wire, label: st.label) }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if overridingState { ProgressView().controlSize(.mini) }
+                Text(currentStateLabel.uppercased())
+                    .font(DatawatchFonts.badge)
+                Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
+            }
+            .foregroundStyle(DatawatchColors.primary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(DatawatchColors.primary.opacity(0.12), in: Capsule())
+        }
+        .disabled(overridingState)
+        .accessibilityLabel("Session state \(currentStateLabel). Change state")
+    }
+
+    private func overrideState(_ wire: String, label: String) {
+        overridingState = true
+        IosSessionOps.shared.overrideState(
+            profile: profile,
+            session: session,
+            wireState: wire,
+            onSuccess: {
+                DispatchQueue.main.async {
+                    overridingState = false
+                    stateOverrideLabel = label
+                }
+            },
+            onError: { msg in
+                DispatchQueue.main.async {
+                    overridingState = false
+                    killError = msg
+                }
+            }
+        )
+    }
+
     // ── Terminal font-size toolbar (PWA Aa▾ parity) ───────────────────────
 
     private var terminalFontBar: some View {
         HStack(spacing: 0) {
+            stateMenu
+                .padding(.leading, 12)
             Spacer()
             Button {
                 if termFontSize > 5 {
@@ -314,7 +388,7 @@ struct SessionDetailView: View {
                 Spacer()
 
                 Button {
-                    showDeleteConfirm = true
+                    showDeleteSheet = true
                 } label: {
                     HStack(spacing: 4) {
                         if isDeleting {
@@ -405,23 +479,6 @@ struct SessionDetailView: View {
             },
             onError: { _ in
                 DispatchQueue.main.async { self.isRestarting = false }
-            }
-        )
-    }
-
-    private func performDelete() {
-        isDeleting = true
-        IosServiceLocator.shared.deleteSession(
-            profile: profile,
-            sessionId: session.id,
-            onSuccess: {
-                DispatchQueue.main.async {
-                    self.isDeleting = false
-                    dismiss()
-                }
-            },
-            onError: { _ in
-                DispatchQueue.main.async { self.isDeleting = false }
             }
         )
     }
