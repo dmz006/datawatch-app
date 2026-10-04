@@ -13,6 +13,10 @@ struct EditServerView: View {
     @State private var newToken = ""
     @State private var noToken: Bool
     @State private var selfSigned: Bool
+    @State private var pinnedSha: String?
+    @State private var pinning = false
+    @State private var pinCandidate: CertProbe.Fingerprint? = nil
+    @State private var pinError: String? = nil
     @State private var probing = false
     @State private var deleting = false
     @State private var confirmDelete = false
@@ -26,7 +30,10 @@ struct EditServerView: View {
         _displayName = State(initialValue: profile.displayName)
         _baseUrl = State(initialValue: profile.baseUrl)
         _noToken = State(initialValue: profile.bearerTokenRef.isEmpty)
-        _selfSigned = State(initialValue: profile.trustAnchorSha256 == IosServiceLocator.shared.TRUST_ALL_SENTINEL)
+        let sentinel = IosServiceLocator.shared.TRUST_ALL_SENTINEL
+        let anchor = profile.trustAnchorSha256
+        _selfSigned = State(initialValue: anchor == sentinel)
+        _pinnedSha = State(initialValue: (anchor != nil && anchor != sentinel && !(anchor ?? "").isEmpty) ? anchor : nil)
     }
 
     private var canSubmit: Bool {
@@ -68,15 +75,17 @@ struct EditServerView: View {
                 }
             }
 
-            Section {
-                Toggle("Trust all certificates", isOn: $selfSigned)
-                    .tint(DatawatchColors.error)
-                if selfSigned {
-                    Text("Disables certificate validation for this server. Prefer installing the server CA certificate below.")
-                        .font(DatawatchFonts.labelSmall)
-                        .foregroundStyle(DatawatchColors.error)
-                }
+            ServerTrustSection(
+                baseUrl: baseUrl,
+                selfSigned: $selfSigned,
+                pinnedSha: $pinnedSha,
+                pinning: $pinning,
+                pinCandidate: $pinCandidate,
+                pinError: $pinError,
+                disabled: probing || deleting
+            )
 
+            Section {
                 Button {
                     downloadCert()
                 } label: {
@@ -101,9 +110,9 @@ struct EditServerView: View {
                         .foregroundStyle(DatawatchColors.error)
                 }
             } header: {
-                Text("Security")
+                Text("Server CA certificate")
             } footer: {
-                Text("For self-signed servers: download, then open the file (Save to Files → tap it) to install the profile. Enable it under Settings → General → About → Certificate Trust Settings. If the download fails, enable Trust all certificates, download, install, then turn Trust all off.")
+                Text("Alternative to pinning: install the server's CA on this device. Download, open the file (Save to Files → tap it) to install the profile, then enable it under Settings → General → About → Certificate Trust Settings.")
             }
 
             if let msg = errorMessage {
@@ -195,7 +204,7 @@ struct EditServerView: View {
             displayName: displayName.trimmingCharacters(in: .whitespaces),
             baseUrl: baseUrl.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "/")),
             bearerTokenRef: noToken ? "" : profile.bearerTokenRef,
-            trustAnchorSha256: selfSigned ? IosServiceLocator.shared.TRUST_ALL_SENTINEL : nil,
+            trustAnchorSha256: selfSigned ? IosServiceLocator.shared.TRUST_ALL_SENTINEL : pinnedSha,
             reachabilityProfileId: profile.reachabilityProfileId,
             enabled: profile.enabled,
             createdTs: profile.createdTs,
