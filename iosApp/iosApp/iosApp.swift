@@ -40,6 +40,8 @@ struct DatawatchClientApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var profileStore = ServerProfileStore()
     @StateObject private var notificationService = NotificationService.shared
+    /// D37a / D59a launch splash: first launch, app version change, or > 24 h.
+    @State private var showSplash: Bool = SplashGate.consume()
 
     init() {
         IosServiceLocator.shared.doInit()
@@ -47,18 +49,32 @@ struct DatawatchClientApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .environmentObject(profileStore)
-                .task {
-                    await NotificationService.shared.requestAuthorization()
+            ZStack {
+                rootContent
+                if showSplash {
+                    LaunchSplashView {
+                        // PWA .fade-out: opacity → 0 over 0.6 s ease.
+                        withAnimation(.easeOut(duration: 0.6)) { showSplash = false }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
-                .onReceive(
-                    NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
-                ) { _ in
-                    // Re-register all profiles on foreground in case a new profile was
-                    // added on another device or the APNs token rotated.
-                    IosServiceLocator.shared.reregisterAllProfiles(onComplete: nil)
-                }
+            }
         }
+    }
+
+    private var rootContent: some View {
+        RootView()
+            .environmentObject(profileStore)
+            .task {
+                await NotificationService.shared.requestAuthorization()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+            ) { _ in
+                // Re-register all profiles on foreground in case a new profile was
+                // added on another device or the APNs token rotated.
+                IosServiceLocator.shared.reregisterAllProfiles(onComplete: nil)
+            }
     }
 }
