@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.24.0] — 2026-10-04
+
+Three-way parity release (PWA ↔ Android ↔ iOS) following the 2026-10-04 parity audit and decisions (`docs/parity/`).
+
+### Added (iOS)
+- **Settings** rebuilt as the PWA's six groups (General · Plugins · Comms · Compute · Automata · About) with collapsible sections, per-card docs links and most PWA cards (config, LLM/compute lists, push/APNs, encryption status, config viewer + raw editor, subsystem reload, MCP cards); Automata type registry moved here.
+- **Observer** rebuilt in PWA card order: per-system grid, stats panel, peers (filters, group-by-node, snapshot, remove), comms/diagnostics, web-search usage, memory browser (maintenance dry-run only), schedules, cooldown, analytics, audit log, knowledge graph, daemon log.
+- **Dashboard** rebuilt as the PWA/Android card grid (stat bar, automata tree, network graph, live events, sparklines, timeline, heatmap, guardrails, Multi-EKG, smoke runs) with edit mode and the expand panel.
+- **Sessions list**: PWA toolbar (search, State/LLM chip filters, History, select mode with bottom bar), inline card actions, inline "What's it doing?", manual order, ☷ Open in Dashboard, running-pill pulse.
+- **Automata**: lifecycle strip, scan card, decisions timeline, active-session card, settings panel, story/task edit + file viewer, orchestrator graphs, pipeline manager, approve-with-note, inline review on cards, parent link, repair dependencies, memory section.
+- **Session detail**: Channel tab, transcribing banner, PWA placeholders, min terminal cols, terminal search/copy, rate-limit notice, last-activity dot, eye + bolt connect animation.
+- Android extras brought to iOS: watch sessions, swipe-to-mute, voice reply in quick commands, Council badge/filter, saved-command library and "resume previous" in New Session, recent alert-rule firings, skeleton loading, launch splash with Replay.
+- **App-wide active server** with the PWA "Server:" picker bar; three-finger swipe up switches server.
+- **Localization**: de / es / fr / ja (1,211 strings).
+
+### Fixed (shared)
+- Schedules were created without a command; orchestrator graphs dropped the project directory; pipeline Cancel did nothing on Android.
+
 ### Changed (Android — PWA parity decisions, 2026-10-04)
 - **Accent colour** is the PWA `--accent` #7C3AED again (was #8B5CF6).
 - **Brand** is lowercase "datawatch" everywhere it is shown, including the Sessions header title (the active server is shown under it) and Android Auto voice strings.
