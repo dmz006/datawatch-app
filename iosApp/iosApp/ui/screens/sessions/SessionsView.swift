@@ -25,6 +25,11 @@ struct SessionsView: View {
     @State private var currentStatusLoadingId: String? = nil
 
     @State private var showNewSession = false
+    @State private var quickCmdSession: DwSession? = nil
+    /// PWA `state.showHistory`: off = active sessions + those finished in the last few minutes.
+    @State private var showHistory = false
+    /// PWA `recent_session_minutes` default.
+    private static let recentWindowMs: Int64 = 5 * 60 * 1000
 
     enum SessionStateFilter: String, CaseIterable {
         case all     = "All"
@@ -49,6 +54,14 @@ struct SessionsView: View {
                 newSessionFab
                     .padding(.trailing, 20)
                     .padding(.bottom, 20)
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { quickCmdSession != nil },
+            set: { if !$0 { quickCmdSession = nil } }
+        )) {
+            if let s = quickCmdSession, let profile = viewModel.activeProfile {
+                QuickCommandsSheet(profile: profile, session: s)
             }
         }
         .sheet(isPresented: $showNewSession) {
@@ -257,7 +270,17 @@ struct SessionsView: View {
                 filterBar
             }
             List {
-                if filteredSessions.isEmpty && (!filterText.isEmpty || stateFilter != .all) {
+                if filteredSessions.isEmpty && !viewModel.sessions.isEmpty && filterText.isEmpty && stateFilter == .all && !showHistory {
+                    Button {
+                        showHistory = true
+                    } label: {
+                        Text("No active sessions — show \(historyCount) finished")
+                            .font(DatawatchFonts.bodyMedium)
+                            .foregroundStyle(DatawatchColors.primary)
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                } else if filteredSessions.isEmpty && (!filterText.isEmpty || stateFilter != .all) {
                     Text(filterText.isEmpty ? "No \(stateFilter.rawValue.lowercased()) sessions" : "No sessions match \"\(filterText)\"")
                         .font(DatawatchFonts.bodyMedium)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -289,6 +312,7 @@ struct SessionsView: View {
                         ForEach(SessionStateFilter.allCases, id: \.self) { filter in
                             stateChip(filter)
                         }
+                        historyChip
                     }
                     .padding(.horizontal, 12)
                 }
@@ -359,7 +383,10 @@ struct SessionsView: View {
             }
         }()
         let count = chipCount(for: filter)
-        Button { stateFilter = filter } label: {
+        Button {
+            stateFilter = filter
+            if filter == .done { showHistory = true }
+        } label: {
             Text(count > 0 ? "\(filter.rawValue) (\(count))" : filter.rawValue)
                 .font(DatawatchFonts.badge)
                 .foregroundStyle(selected ? DatawatchColors.background : color)
@@ -371,8 +398,39 @@ struct SessionsView: View {
         }
     }
 
+    // ── History (PWA: default pool = active + recently finished) ─────────
+
+    private func isDone(_ s: DwSession) -> Bool {
+        s.state == .completed || s.state == .killed || s.state == .error
+    }
+
+    private var historyCount: Int { viewModel.sessions.filter { isDone($0) }.count }
+
+    private var visiblePool: [DwSession] {
+        let cutoff = Int64(Date().timeIntervalSince1970 * 1000) - Self.recentWindowMs
+        return viewModel.sessions.filter { s in
+            !isDone(s) || s.lastActivityAt.toEpochMilliseconds() >= cutoff
+        }
+    }
+
+    private var historyChip: some View {
+        Button {
+            showHistory.toggle()
+        } label: {
+            Text("History (\(historyCount))")
+                .font(DatawatchFonts.badge)
+                .foregroundStyle(showHistory ? DatawatchColors.background : DatawatchColors.onSurfaceMuted)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(showHistory ? DatawatchColors.onSurfaceMuted : DatawatchColors.onSurfaceMuted.opacity(0.15))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(DatawatchColors.onSurfaceMuted.opacity(0.4), lineWidth: 1))
+        }
+        .accessibilityLabel(showHistory ? "Hide finished sessions" : "Show \(historyCount) finished sessions")
+    }
+
     private var filteredSessions: [DwSession] {
-        var result = viewModel.sessions
+        var result = showHistory ? viewModel.sessions : visiblePool
 
         switch stateFilter {
         case .all:     break
@@ -506,6 +564,19 @@ struct SessionsView: View {
                         .foregroundStyle(DatawatchColors.onSurface)
                         .lineLimit(1)
                     Spacer()
+                    if session.state == .waiting {
+                        Button {
+                            quickCmdSession = session
+                        } label: {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(DatawatchColors.waiting)
+                                .frame(width: 30, height: 26)
+                                .background(DatawatchColors.waiting.opacity(0.15), in: Capsule())
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("Quick commands")
+                    }
                     statePill(for: session.state)
                 }
 
