@@ -153,7 +153,7 @@ struct NewPrdView: View {
                 if !models(for: b).contains(planningModel) { planningModel = "" }
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private var memorySection: some View {
@@ -295,7 +295,7 @@ struct EditPrdView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func save() {
@@ -410,7 +410,7 @@ struct SetPrdLlmView: View {
             .onChange(of: backend) { _ in model = "" }
             .onChange(of: planningBackend) { _ in planningModel = "" }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func save() {
@@ -501,7 +501,7 @@ struct PrdSettingsView: View {
                 writeDirs = prd.writeDirs.joined(separator: ", ")
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func save() {

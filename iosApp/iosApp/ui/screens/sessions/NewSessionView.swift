@@ -202,7 +202,7 @@ struct NewSessionView: View {
                 if p.isEmpty { clusterProfile = "" }
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     /// D81a "From library ▾" (Android SavedCommandLibraryDropdown): hidden while the

@@ -95,7 +95,7 @@ struct SettingsAboutCard: View {
         Button { openSystemSettings() } label: {
             valueRow("Language", L("System setting"), icon: "globe")
         }
-        valueRow("Theme", L("Dark"), icon: "circle.lefthalf.filled")
+        ThemePickerRow()
     }
 
     @ViewBuilder
@@ -287,6 +287,25 @@ struct SettingsAboutCard: View {
 }
 
 // MARK: - API links (PWA 'api' card)
+
+/// PWA About › Theme select (dark / light / system; default dark, BL278).
+/// Persisted in UserDefaults and applied app-wide by `.dwThemed()`.
+struct ThemePickerRow: View {
+    @AppStorage(AppTheme.storageKey) private var themeRaw: String = AppTheme.dark.rawValue
+
+    var body: some View {
+        Picker(selection: $themeRaw) {
+            ForEach(AppTheme.allCases) { theme in
+                Text(L(theme.label)).tag(theme.rawValue)
+            }
+        } label: {
+            Label("Theme", systemImage: "circle.lefthalf.filled")
+                .foregroundStyle(DatawatchColors.onSurface)
+        }
+        .pickerStyle(.menu)
+        .tint(DatawatchColors.primary)
+    }
+}
 
 struct SettingsApiLinksCard: View {
     let profile: ServerProfile

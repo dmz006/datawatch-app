@@ -238,7 +238,7 @@ private struct DashEventRow: View {
         .padding(.vertical, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Color.white.opacity(0.03)).frame(height: 1)
+            Rectangle().fill(DatawatchColors.onSurface.opacity(0.05)).frame(height: 1)
         }
         .accessibilityElement(children: .combine)
     }

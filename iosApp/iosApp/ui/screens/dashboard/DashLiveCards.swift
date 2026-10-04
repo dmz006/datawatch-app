@@ -294,7 +294,7 @@ private struct DashEkgCanvas: View {
         let top: Double = Double(index) * chH
         let color = dashTone(ch.tone)
         if index % 2 == 1 {
-            gc.fill(Path(CGRect(x: 0, y: top, width: width, height: chH)), with: .color(Color.white.opacity(0.015)))
+            gc.fill(Path(CGRect(x: 0, y: top, width: width, height: chH)), with: .color(DatawatchColors.onSurface.opacity(0.03)))
         }
         let name = gc.resolve(Text(ch.name).font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundColor(color))
         gc.draw(name, at: CGPoint(x: 3, y: top + chH * 0.5), anchor: .leading)
