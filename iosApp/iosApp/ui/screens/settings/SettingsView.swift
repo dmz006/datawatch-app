@@ -77,6 +77,36 @@ struct SettingsView: View {
                             }
                         }
                         .listRowBackground(DatawatchColors.surface)
+                        NavigationLink {
+                            SavedCommandsView(profile: profile)
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Saved Commands").foregroundStyle(DatawatchColors.onSurface)
+                                    Text("Named snippets for quick replies")
+                                        .font(DatawatchFonts.labelSmall)
+                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                }
+                            } icon: {
+                                Image(systemName: "text.badge.star").foregroundStyle(DatawatchColors.primary)
+                            }
+                        }
+                        .listRowBackground(DatawatchColors.surface)
+                        NavigationLink {
+                            FiltersView(profile: profile)
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Filters").foregroundStyle(DatawatchColors.onSurface)
+                                    Text("Output patterns that alert, reply or schedule")
+                                        .font(DatawatchFonts.labelSmall)
+                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                }
+                            } icon: {
+                                Image(systemName: "line.3.horizontal.decrease.circle").foregroundStyle(DatawatchColors.primary)
+                            }
+                        }
+                        .listRowBackground(DatawatchColors.surface)
                     }
 
                     // ── Automata (PWA Settings → Automata; final grouping per D31) ──
