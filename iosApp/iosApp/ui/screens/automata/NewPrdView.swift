@@ -254,3 +254,114 @@ struct EditPrdView: View {
         )
     }
 }
+
+/// Set LLM on an existing PRD (parity B16; PWA prdSetModel* / Android LlmOverrideDialog):
+/// execution backend / model / effort + planning backend / decomposition model → set_llm.
+struct SetPrdLlmView: View {
+    let profile: ServerProfile
+    let prd: PrdDto
+    var onSaved: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var options: IosPrdWizardOptions? = nil
+    @State private var backend = ""
+    @State private var model = ""
+    @State private var effort = ""
+    @State private var planningBackend = ""
+    @State private var planningModel = ""
+    @State private var saving = false
+    @State private var errorMessage: String? = nil
+
+    private func models(for b: String) -> [String] {
+        guard let o = options else { return [] }
+        return IosAutomata.shared.modelsFor(options: o, backend: b)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let o = options {
+                    Section("Execution") {
+                        Picker("Backend", selection: $backend) {
+                            Text("Unchanged").tag("")
+                            ForEach(o.backends, id: \.self) { Text($0).tag($0) }
+                        }
+                        if !models(for: backend.isEmpty ? (prd.backend ?? "") : backend).isEmpty {
+                            Picker("Model", selection: $model) {
+                                Text("Unchanged").tag("")
+                                ForEach(models(for: backend.isEmpty ? (prd.backend ?? "") : backend), id: \.self) { Text($0).tag($0) }
+                            }
+                        }
+                        if !o.efforts.isEmpty {
+                            Picker("Effort", selection: $effort) {
+                                Text("Unchanged").tag("")
+                                ForEach(o.efforts, id: \.self) { Text($0).tag($0) }
+                            }
+                        }
+                    }
+                    Section("Planning") {
+                        Picker("Planning backend", selection: $planningBackend) {
+                            Text("Unchanged").tag("")
+                            ForEach(o.backends, id: \.self) { Text($0).tag($0) }
+                        }
+                        if !models(for: planningBackend).isEmpty {
+                            Picker("Decomposition model", selection: $planningModel) {
+                                Text("Unchanged").tag("")
+                                ForEach(models(for: planningBackend), id: \.self) { Text($0).tag($0) }
+                            }
+                        }
+                    }
+                    Section {
+                        Text("Current: \(prd.backend ?? "daemon default")\(prd.model.map { "/\($0)" } ?? "")\(prd.effort.map { " · effort \($0)" } ?? "")")
+                            .font(DatawatchFonts.labelSmall)
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
+                }
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(DatawatchColors.error).font(DatawatchFonts.bodyMedium) }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(DatawatchColors.background)
+            .overlay { if options == nil { ProgressView().tint(DatawatchColors.primary) } }
+            .navigationTitle("Set LLM")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    if saving { ProgressView() } else {
+                        Button("Save") { save() }
+                            .fontWeight(.semibold)
+                            .disabled([backend, model, effort, planningBackend, planningModel].allSatisfy { $0.isEmpty })
+                    }
+                }
+            }
+            .onAppear {
+                guard options == nil else { return }
+                IosAutomata.shared.loadWizardOptions(profile: profile) { o in DispatchQueue.main.async { options = o } }
+            }
+            .onChange(of: backend) { _ in model = "" }
+            .onChange(of: planningBackend) { _ in planningModel = "" }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func save() {
+        var body: [String: String] = ["actor": "operator"]
+        if !backend.isEmpty { body["backend"] = backend }
+        if !effort.isEmpty { body["effort"] = effort }
+        if !model.isEmpty { body["model"] = model }
+        if !planningBackend.isEmpty { body["decomposition_profile"] = planningBackend }
+        if !planningModel.isEmpty { body["decomposition_model"] = planningModel }
+        saving = true
+        errorMessage = nil
+        Task {
+            do {
+                try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prd.id, action: "set_llm", body: body)
+                await MainActor.run { saving = false; onSaved(); dismiss() }
+            } catch {
+                await MainActor.run { saving = false; errorMessage = error.localizedDescription }
+            }
+        }
+    }
+}
