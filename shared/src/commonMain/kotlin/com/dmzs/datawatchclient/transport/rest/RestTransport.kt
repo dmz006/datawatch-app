@@ -1923,6 +1923,26 @@ public class RestTransport(
             }
         }
 
+    override suspend fun updateCommand(
+        oldName: String,
+        name: String,
+        command: String,
+    ): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/commands") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("old_name", kotlinx.serialization.json.JsonPrimitive(oldName))
+                        put("name", kotlinx.serialization.json.JsonPrimitive(name))
+                        put("command", kotlinx.serialization.json.JsonPrimitive(command))
+                    },
+                )
+            }
+            Unit
+        }
+
     override suspend fun deleteCommand(name: String): Result<Unit> =
         request {
             client.delete("${profile.baseUrl}/api/commands") {

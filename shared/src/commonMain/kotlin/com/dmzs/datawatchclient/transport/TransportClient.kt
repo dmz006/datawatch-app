@@ -980,6 +980,13 @@ public interface TransportClient {
         command: String,
     ): Result<Unit>
 
+    /** PUT /api/commands {old_name,name,command} — edit/rename a saved command (PWA saveCmdEdit). */
+    public suspend fun updateCommand(
+        oldName: String,
+        name: String,
+        command: String,
+    ): Result<Unit>
+
     /** DELETE /api/commands?name=<name> — remove a saved command snippet. */
     public suspend fun deleteCommand(name: String): Result<Unit>
 
