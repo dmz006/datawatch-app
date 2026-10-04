@@ -157,7 +157,7 @@ struct SessionTimelineSheet: View {
     }
 
     private func message(_ text: String) -> some View {
-        Text(text)
+        Text(L(text))
             .font(DatawatchFonts.bodyMedium)
             .foregroundStyle(DatawatchColors.onSurfaceMuted)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

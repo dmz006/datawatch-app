@@ -340,7 +340,7 @@ struct PrdListView: View {
         let disabled = (count == 0) || vm.batchRunning
         return Button(action: action) {
             HStack(spacing: 3) {
-                Text(title)
+                Text(L(title))
                 if let count { Text("(\(count))").opacity(0.6) }
             }
             .font(DatawatchFonts.labelSmall.weight(.semibold))
@@ -391,7 +391,7 @@ struct PrdListView: View {
 
     private func chip(_ title: String, on: Bool, tint: Color = DatawatchColors.primary, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
+            Text(L(title))
                 .font(DatawatchFonts.badge)
                 .foregroundStyle(on ? Color.white : DatawatchColors.onSurfaceMuted)
                 .padding(.horizontal, 10)

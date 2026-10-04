@@ -31,7 +31,7 @@ struct RootView: View {
                     tab.rootView
                 }
                 .tabItem {
-                    Label(tab.title, systemImage: tab.iconName)
+                    Label(L(tab.title), systemImage: tab.iconName)
                 }
                 .tag(tab)
                 .badge(tab == .alerts ? alertBadgeCount : 0)
@@ -56,7 +56,7 @@ struct RootView: View {
         NavigationSplitView {
             List(AppTab.allCases, selection: Binding<AppTab?>(get: { selectedTab }, set: { if let t = $0 { selectedTab = t } })) { tab in
                 NavigationLink(value: tab) {
-                    Label(tab.title, systemImage: tab.iconName)
+                    Label(L(tab.title), systemImage: tab.iconName)
                         .foregroundStyle(DatawatchColors.onSurface)
                 }
             }

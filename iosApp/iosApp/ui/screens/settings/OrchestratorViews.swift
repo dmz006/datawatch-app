@@ -128,7 +128,7 @@ struct OrchestratorGraphsView: View {
                     Text(status).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
                 if count > 0 {
-                    Text("\(count) automat\(count == 1 ? "on" : "a")")
+                    (count == 1 ? Text("\(count) automaton") : Text("\(count) automata"))
                         .font(DatawatchFonts.labelSmall)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
@@ -187,7 +187,7 @@ struct PipelinesView: View {
             } header: {
                 HStack(spacing: 8) {
                     let n = pipelines?.count ?? 0
-                    Text("\(n) pipeline\(n == 1 ? "" : "s")")
+                    (n == 1 ? Text("\(n) pipeline") : Text("\(n) pipelines"))
                     LiveDot()
                 }
             }

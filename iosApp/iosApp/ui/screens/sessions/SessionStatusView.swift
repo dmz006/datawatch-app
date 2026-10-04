@@ -68,7 +68,7 @@ struct SessionStatusView: View {
     }
 
     private func muted(_ text: String) -> some View {
-        Text(text)
+        Text(L(text))
             .font(DatawatchFonts.labelSmall.italic())
             .foregroundStyle(DatawatchColors.onSurfaceMuted)
     }

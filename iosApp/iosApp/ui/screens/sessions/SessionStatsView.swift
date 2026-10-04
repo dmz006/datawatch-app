@@ -145,7 +145,7 @@ struct SessionStatsView: View {
 
     private func metricRow(_ label: String, _ value: String, _ series: [Double], _ color: Color) -> some View {
         HStack(spacing: 8) {
-            Text(label)
+            Text(L(label))
                 .font(DatawatchFonts.labelSmall)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .frame(width: 40, alignment: .leading)

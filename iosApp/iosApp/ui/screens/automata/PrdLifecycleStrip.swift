@@ -26,7 +26,7 @@ struct PrdLifecycleStrip: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(hint.uppercased())
+            Text(L(hint).uppercased())
                 .font(.system(size: 11, weight: .semibold))
                 .kerning(0.4)
                 .foregroundStyle(DatawatchColors.primary)
@@ -104,7 +104,7 @@ struct PrdLifecycleStrip: View {
     @ViewBuilder
     private func step(_ label: String, _ look: Look, action: String? = nil) -> some View {
         let enabled = action != nil && onAction != nil
-        let text = Text(label)
+        let text = Text(L(label))
             .font(.system(size: compact ? 10 : 11, weight: .medium))
             .lineLimit(1)
             .padding(.horizontal, compact ? 6 : 9)

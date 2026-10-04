@@ -107,7 +107,7 @@ struct TemplatesView: View {
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
                 if !vars.isEmpty {
-                    Text("\(vars.count) var\(vars.count == 1 ? "" : "s")")
+                    (vars.count == 1 ? Text("\(vars.count) var") : Text("\(vars.count) vars"))
                         .font(DatawatchFonts.badge)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
