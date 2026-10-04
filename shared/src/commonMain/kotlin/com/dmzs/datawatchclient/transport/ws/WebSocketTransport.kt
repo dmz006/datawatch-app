@@ -159,6 +159,12 @@ public class WebSocketTransport(
                                         tryRouteSessionStateFrame(dto.data, json, profile.id)
                                         continue
                                     }
+                                    // Channel tab: channel_reply / channel_notify are
+                                    // broadcast — route to ChannelHub.
+                                    if (dto.type == "channel_reply" || dto.type == "channel_notify") {
+                                        tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
+                                        continue
+                                    }
                                     // v0.33.19: trace every inbound frame
                                     // type + count mapped → events, so we
                                     // can see when pane_captures arrive but
@@ -253,6 +259,7 @@ public class WebSocketTransport(
                                         "prd_update" -> tryRoutePrdUpdateFrame(dto.data, json)
                                         "sessions" -> tryRouteSessionsFrame(dto.data, json, profile.id)
                                         "session_state" -> tryRouteSessionStateFrame(dto.data, json, profile.id)
+                                        "channel_reply", "channel_notify" -> tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
                                     }
                                 }
                                 is Frame.Close -> {

@@ -568,6 +568,29 @@ class RestTransportTest {
         }
 
     @Test
+    fun getChannelHistoryParsesMessages() =
+        runTest {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {"session_id":"h-1","messages":[
+                      {"text":"hi","session_id":"h-1","direction":"outgoing","timestamp":"2026-10-04T12:00:00Z"},
+                      {"text":"reply","session_id":"h-1","timestamp":"2026-10-04T12:00:01Z"}
+                    ]}
+                    """.trimIndent(),
+                ),
+            )
+            val res = transport.getChannelHistory("h-1")
+            assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+            val msgs = res.getOrThrow()
+            assertEquals(2, msgs.size)
+            assertEquals("outgoing", msgs[0].direction)
+            assertEquals("incoming", msgs[1].direction)
+            assertEquals("2026-10-04T12:00:01Z", msgs[1].ts)
+            assertEquals("/api/channel/history?session_id=h-1", server.takeRequest().path)
+        }
+
+    @Test
     fun cancelPipelinePostsIdAndActionAsQuery() =
         runTest {
             server.enqueue(jsonResponse("""{"status":"ok"}"""))

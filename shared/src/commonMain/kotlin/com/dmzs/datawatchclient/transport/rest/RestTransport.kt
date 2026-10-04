@@ -2686,6 +2686,26 @@ public class RestTransport(
             Unit
         }
 
+    override suspend fun getChannelHistory(sessionId: String): Result<List<com.dmzs.datawatchclient.transport.ws.ChannelMessage>> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/channel/history") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("session_id", sessionId)
+                }.body()
+            val msgs = obj["messages"] as? kotlinx.serialization.json.JsonArray ?: kotlinx.serialization.json.JsonArray(emptyList())
+            msgs.mapNotNull { el ->
+                val m = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                fun str(k: String) = (m[k] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                com.dmzs.datawatchclient.transport.ws.ChannelMessage(
+                    sessionId = str("session_id") ?: sessionId,
+                    text = str("text").orEmpty(),
+                    direction = str("direction")?.takeIf { it.isNotBlank() } ?: "incoming",
+                    ts = str("timestamp").orEmpty(),
+                )
+            }
+        }
+
     override suspend fun getOrchestratorGraphsList(): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto> =
         request {
             client.get("${profile.baseUrl}/api/orchestrator/graphs") {

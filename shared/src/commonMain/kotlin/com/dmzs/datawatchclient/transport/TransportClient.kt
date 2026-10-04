@@ -1300,6 +1300,9 @@ public interface TransportClient {
     /** POST /api/pipeline?id={id}&action=cancel — cancel a running/pending pipeline (PWA pipelineCancel). */
     public suspend fun cancelPipeline(id: String): Result<Unit>
 
+    /** GET /api/channel/history?session_id= — per-session MCP channel ring buffer (PWA Channel tab seed). */
+    public suspend fun getChannelHistory(sessionId: String): Result<List<com.dmzs.datawatchclient.transport.ws.ChannelMessage>>
+
     /** GET /api/orchestrator/graphs — list orchestrator graphs. */
     public suspend fun getOrchestratorGraphsList(): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto>
 

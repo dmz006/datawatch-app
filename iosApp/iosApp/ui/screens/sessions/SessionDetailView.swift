@@ -63,6 +63,9 @@ struct SessionDetailView: View {
                         .opacity(detailTab == "tmux" ? 1 : 0)
                         .allowsHitTesting(detailTab == "tmux")
                     }
+                    if detailTab == "channel" {
+                        ChannelTabView(profile: profile, session: session)
+                    }
                     if detailTab == "status" {
                         VStack(spacing: 0) {
                             statusSubtabStrip
@@ -251,11 +254,25 @@ struct SessionDetailView: View {
     /// PWA: chat-transcript sessions (OpenWebUI / Ollama) render bubbles, not a terminal.
     private var isChatMode: Bool { session.outputMode == "chat" }
 
+    /// PWA getSessionMode: claude / claude-code sessions run in channel mode.
+    private var isChannelMode: Bool {
+        let b = (session.backend ?? "").lowercased()
+        return b == "claude" || b == "claude-code"
+    }
+
+    /// PWA output tabs: Tmux|Chat · Channel (channel mode only) · Status.
+    private var detailTabs: [(String, String)] {
+        var tabs = [("tmux", isChatMode ? "Chat" : "Tmux")]
+        if isChannelMode { tabs.append(("channel", "Channel")) }
+        tabs.append(("status", "Status"))
+        return tabs
+    }
+
     // ── Output tab bar (PWA: Tmux · Status) ──────────────────────────────
 
     private var detailTabBar: some View {
         HStack(spacing: 0) {
-            ForEach([("tmux", isChatMode ? "Chat" : "Tmux"), ("status", "Status")], id: \.0) { tab in
+            ForEach(detailTabs, id: \.0) { tab in
                 Button {
                     detailTab = tab.0
                 } label: {
