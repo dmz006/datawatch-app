@@ -9,16 +9,16 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | data | List source GET /api/alerts (single server) | ✓ js:19169 on view render | ✓ A:AlertsViewModel.kt:234 5 s poll while mounted | ✓ I:AlertsView.swift:98 5 s sequential poll while visible | aligned | | PWA fetches once per render + ↻; apps poll |
 | data | Multi-server aggregate GET /api/alerts/aggregated | ✓ js:19169 when activeServer=='all' | ~ A:AlertsViewModel.kt:200–226 client-side merge of per-profile listAlerts | ✗ profiles.first only | misaligned | | Android merges client-side instead of aggregated endpoint; iOS no multi-server |
 | data | Server picker bar on Alerts view | ✓ js:19168 `_injectServerPickerBar` | ✓ A:AlertsScreen.kt:380 AlertsTopBar dropdown incl. All servers | ✗ | ios-missing | | |
-| data | Saved commands GET /api/commands for quick reply | ✓ js:19171 | ✓ A:AlertsScreen.kt:744 onQuickReply | ✗ | ios-missing | | |
-| data | Sessions GET /api/sessions for liveness (Active vs Historical) | ✓ js:19172 refreshes state.sessions | ✓ A:AlertsViewModel.kt grouping by session state | ✗ uses `read` flag instead (I:AlertsView.swift:35–37) | misaligned | | iOS Active = unread, Historical = read — different model from PWA (session done/alive); mechanical fix to PWA rule |
+| data | Saved commands GET /api/commands for quick reply | ✓ js:19171 | ✓ A:AlertsScreen.kt:744 onQuickReply | ✓ I:AlertsView `IosQuickCommands.loadSaved` on appear | aligned | |  |
+| data | Sessions GET /api/sessions for liveness (Active vs Historical) | ✓ js:19172 refreshes state.sessions | ✓ A:AlertsViewModel.kt grouping by session state | ✓ I:AlertsView.swift `AlertsViewModel.isActive` — listSessions each poll, Active = live & not done | aligned | | iOS Active = unread, Historical = read — different model from PWA (session done/alive); mechanical fix to PWA rule |
 | data | Auto-ack all on opening Alerts page POST /api/alerts {all:true} | ✓ js:19191 | ✗ | ✗ | misaligned | needs-decision | D3 |
 | data | Dismiss all = POST {all:true, delete:true} | ✓ js:19535 | ~ A:AlertsViewModel.kt:583 markAlertRead(all=true) (ack, no delete) | ~ I:IosServiceLocator.kt:336 markAlertRead(all=true) | misaligned | needs-decision | D2 |
 | data | Per-alert mark-read POST /api/alerts {id} | ✗ (auto-ack makes it moot) | ✓ A:AlertsViewModel.kt:561 | ✓ I:AlertsView.swift:32 dismiss(alert) | pwa-missing | needs-decision | D4 |
 | data | WS `alert` frame → unread++ + toast | ✓ js:879 handleAlert, showToast 4 s | ✗ no SessionEvent.Alert consumer; REST poll only | ✗ | misaligned | needs-decision | D11 — shared EventMapper maps `alert` (EventMapper.kt:69) but neither app consumes it |
 | data | Unread count source | state.alertUnread (WS increments, reset on page open) | AlertsView.unreadCount from REST | AlertsView.unreadCount from REST → @AppStorage dw.alert.badge | misaligned | | Falls out of D3/D11 |
-| data | Alert rules GET/POST/DELETE /api/alert-rules, POST …/enable|disable | ✓ js:21179–21260 (Settings) | ✓ A:AlertRulesCard.kt:73–125 | ✗ | ios-missing | | Lives in Settings on PWA+Android; listed here per README §04 |
+| data | Alert rules GET/POST/DELETE /api/alert-rules, POST …/enable/disable | ✓ js:21179–21260 (Settings) | ✓ A:AlertRulesCard.kt:73–125 | ✓ I:IosAlertRules.kt list/create/delete/setEnabled | aligned | | Lives in Settings on PWA+Android; listed here per README §04 |
 | data | Alert rule firings GET (listAlertRuleFirings) | ✗ | ✓ A:AlertRulesCard.kt:76,132 "Recent Firings (N)" ×20 | ✗ | pwa-missing | needs-decision | D8 |
-| data | Detection filters (/api/filters, detection.*_patterns, settle/repeat timing) | ✓ Settings → Detection section | ✓ A:DetectionFiltersCard.kt | ✗ | ios-missing | | |
+| data | Detection filters (/api/filters, detection.*_patterns, settle/repeat timing) | ✓ Settings → Detection section | ✓ A:DetectionFiltersCard.kt | ~ I:RulesEditorsViews.swift `FiltersView` (/api/filters CRUD + toggle); detection.*_patterns + settle/repeat timing missing | misaligned | |  |
 | data | Push delivery: UnifiedPush SSE self-registration (Tier 1) | n/a (browser) | ✓ A:push/UnifiedPushSseService.kt | ✗ | n/a | | Android-specific tier; iOS path is APNs |
 | data | Push delivery: ntfy fallback service | n/a | ✓ A:push/NtfyFallbackService.kt | ✗ | n/a | | FCM removed v0.33.17 |
 | data | Push delivery: Web Push distributor endpoints (user-entered) | ✓ (browser push) | ✓ A:PushNotificationsCard (Settings) | ✗ | ios-missing | | iOS could register a UnifiedPush-style endpoint? platform question — see D12 |
@@ -29,28 +29,28 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | nav | Alerts in bottom nav with unread badge (99+ cap) | ✓ js:16304 `#alertBadge` | ~ not verified in shell/BottomNavBar | ✓ I:RootView.swift:37 `.badge(alertBadgeCount)` (no 99+ cap) | misaligned | | Verify Android nav badge; iOS cap missing |
 | nav | Header alert pill 🔔 N always visible | ✓ js:936 states muted/0/N, `--accent2` border when N≥1 | ✓ A:HeaderComponents.kt:102–134 | ~ I:AlertsBellButton.swift bell + red unread badge | misaligned | needs-decision | D9 — count semantics (dock total vs unread) and click target differ |
 | nav | Pill click → toggle dock | ✓ js toggleAlertDock | ✓ A:HeaderComponents.kt:134 AlertDockChannel.toggle() | ✗ navigates to Alerts tab | misaligned | needs-decision | D9 |
-| nav | Alert → open session (session-detail) | ✓ js:19253 sessNavBtn / group header link | ✓ A:AlertsScreen.kt onOpenSession (group header name) | ✗ | ios-missing | | |
-| element | Tab bar Active / Historical / System with counts | ✓ js:19480 `output-tab` buttons | ✓ A:AlertsScreen.kt:131–153 Tab() | ~ I:AlertsView.swift:151 custom underline buttons; counts via tabCount | misaligned | | Verify iOS shows counts in label |
-| data | Tab + per-tab filter state persisted | ✓ localStorage cs_alerts_active_tab + _alertsPersistTabState | ✓ A:AlertsViewModel.kt:255–275 prefs alerts_<tab>_chip/sort/search | ✗ | ios-missing | | |
-| element | Default tab = first with entries (Active→Historical→System) | ✓ spec §5.1 | ~ A restores last tab | ✗ always Active | misaligned | | Minor |
-| element | Filter bar row 1: "🔔 N alerts" + ⏷/🕒 sort + ✕ + 🔕 + ↻ | ✓ js:19500–19525 | ✓ A:AlertsScreen.kt:160–215 | ~ I:AlertsView.swift:176–190 (no sort toggle) | misaligned | | iOS lacks sort |
-| interaction | Sort toggle by session ↔ chronological (persisted per tab) | ✓ js setAlertsSort | ✓ A:AlertsViewModel.kt SortMode | ✗ | ios-missing | | |
+| nav | Alert → open session (session-detail) | ✓ js:19253 sessNavBtn / group header link | ✓ A:AlertsScreen.kt onOpenSession (group header name) | ✓ I:AlertsView `sessionLabel` NavigationLink → SessionDetailView (group header + chrono rows) | aligned | |  |
+| element | Tab bar Active / Historical / System with counts | ✓ js:19480 `output-tab` buttons | ✓ A:AlertsScreen.kt:131–153 Tab() | ✓ I:AlertsView `tabRow` underline buttons "Tab (N)" via tabCount | aligned | | Verify iOS shows counts in label |
+| data | Tab + per-tab filter state persisted | ✓ localStorage cs_alerts_active_tab + _alertsPersistTabState | ✓ A:AlertsViewModel.kt:255–275 prefs alerts_<tab>_chip/sort/search | ✓ I:AlertsView UserDefaults dw.alerts.activeTab + dw.alerts.tab.<tab> search/chip/sort | aligned | |  |
+| element | Default tab = first with entries (Active→Historical→System) | ✓ spec §5.1 | ~ A restores last tab | ~ I restores last persisted tab (like Android) | misaligned | | Minor |
+| element | Filter bar row 1: "🔔 N alerts" + ⏷/🕒 sort + ✕ + 🔕 + ↻ | ✓ js:19500–19525 | ✓ A:AlertsScreen.kt:160–215 | ✓ I:AlertsView `filterBar` 🔔 N + ⏷/🕒 sort + ✕ + 🔕 + ↻ | aligned | | iOS lacks sort |
+| interaction | Sort toggle by session ↔ chronological (persisted per tab) | ✓ js setAlertsSort | ✓ A:AlertsViewModel.kt SortMode | ✓ I:AlertsViewModel `SortMode` session/chrono, persisted per tab | aligned | |  |
 | interaction | ✕ dismiss all | ✓ js dismissAlertsAll (delete) | ✓ A ControlBtn("✕") dismissAll | ✓ I controlBtn("✕") dismissAll | misaligned | needs-decision | D2 semantics |
 | interaction | 🔕 button | ✓ muteAlertDock — session-scoped dock mute, no server call | ~ A:AlertsScreen.kt ControlBtn("🔕") { dismissAll() } | ~ I:AlertsView.swift controlBtn("🔕") { dismissAll() } | misaligned | needs-decision | D1 — both apps repurpose mute as dismiss |
 | interaction | ↻ refresh | ✓ | ✓ | ✓ | aligned | | |
-| element | Chips all / 🟡 prompts / 🔴 errors / 🟠 warn / ⚪ info with counts | ✓ js:19505–19509 | ✓ A:AlertsScreen.kt chip row, counts search-filtered | ~ I:AlertsView.swift:247 labels "All/Prompt/Error/Warn/Info ×N" | misaligned | | iOS casing/wording differs ("prompts"→"Prompt"); align to PWA |
+| element | Chips all / 🟡 prompts / 🔴 errors / 🟠 warn / ⚪ info with counts | ✓ js:19505–19509 | ✓ A:AlertsScreen.kt chip row, counts search-filtered | ~ I:AlertsView `severityChip` emoji + "All/Prompt/Error/Warn/Info ×N" (casing/wording differs) | misaligned | | iOS casing/wording differs ("prompts"→"Prompt"); align to PWA |
 | token | Chip colors: text2 / warning / error / warning / text2; selected = filled | ✓ js chipBtn | ✓ A chipBorderColor + chipBg | ✓ I severityChip | aligned | | |
-| element | Prompt category rule: session waiting_input OR title matches /needs input|prompt|waiting/i | ✓ js catOf | ✓ A:AlertsScreen.kt:633–636 + AlertsViewModel.isPromptAlert | ~ I: type contains "input"/"prompt" (no session-state input) | misaligned | | iOS lacks session state so waiting_input sessions aren't "prompt" |
+| element | Prompt category rule: session waiting_input OR title matches needs input / prompt / waiting (regex, case-insensitive) | ✓ js catOf | ✓ A:AlertsScreen.kt:633–636 + AlertsViewModel.isPromptAlert | ~ I: type contains "input"/"prompt" (no session-state input) | misaligned | | iOS lacks session state so waiting_input sessions aren't "prompt" |
 | interaction | Live text search (title+body) | ✓ js alertsSearchInput | ✓ A OutlinedTextField alert_search_ph | ✓ I filterText + clear button | aligned | | |
-| element | By-session group card: header bg2, name link, state text (🟠 waiting input / 🟢 running / ✅ state), "N alerts · 🟡 P", "last HH:MM:SS" mono | ✓ js:19470–19485 | ✓ A:AlertGroupCard 499–624 | ✗ flat list only | ios-missing | | |
-| interaction | Group header tap collapses/expands | ✓ js toggles display | ✓ A onToggleExpand ▼/▶ | ✗ | ios-missing | | |
-| element | Group ordering waiting → running → others; System card last | ✓ js stateRank | ✓ A sorted by last alert ts (not stateRank) | ✗ | misaligned | | Android orders by recency, PWA by state rank |
-| element | Chronological mode: flat newest-first with tiny session link | ✓ js:19430–19445 | ✓ A flatChrono A:AlertsScreen.kt:303 | ~ I always flat, newest-first, no session link | misaligned | | |
+| element | By-session group card: header bg2, name link, state text (🟠 waiting input / 🟢 running / ✅ state), "N alerts · 🟡 P", "last HH:MM:SS" mono | ✓ js:19470–19485 | ✓ A:AlertGroupCard 499–624 | ✓ I:AlertsView `groupHeader` (name link, state text, "N alerts · 🟡 P", "last HH:MM:SS" mono) | aligned | |  |
+| interaction | Group header tap collapses/expands | ✓ js toggles display | ✓ A onToggleExpand ▼/▶ | ✓ I:AlertsView `collapsed` set, ▼/▶ chevron | aligned | |  |
+| element | Group ordering waiting → running → others; System card last | ✓ js stateRank | ✓ A sorted by last alert ts (not stateRank) | ✓ I:AlertsViewModel `groups` stateRank waiting → running → others, System last | misaligned | | Android orders by recency, PWA by state rank |
+| element | Chronological mode: flat newest-first with tiny session link | ✓ js:19430–19445 | ✓ A flatChrono A:AlertsScreen.kt:303 | ✓ I:AlertsView chrono list with per-row session link | aligned | |  |
 | element | Alert row: 3px left border + bg tint by category (prompt amber .08 / error red .06 / else border+transparent) | ✓ js renderRow | ✓ A:AlertCard 625–700 | ✓ I:AlertRow border/bg | aligned | | |
 | element | Kind badge 🟡 PROMPT (amber bg, dark fg) / 🔴 ERROR (red bg, white) / ⚪ level (bg2) | ✓ js kindBadge | ✓ A badgeText/Bg/Fg | ~ I adds 🟠 WARNING badge (PWA shows warn as ⚪ warn) | misaligned | | iOS invents a WARNING badge variant |
 | element | Time: HH:MM:SS mono, opacity .55 | ✓ js | ✓ A formatAlertTime | ✓ I alertTime monospaced | aligned | | |
 | element | Title 13px/600, body 12px text2 | ✓ | ✓ | ✓ (bodyMedium/labelSmall) | aligned | | iOS clamps title 2 lines, body 3 lines; PWA unclamped |
-| element | Quick reply `<select>` of saved commands on prompt alerts → alertSendCmd | ✓ js:19417–19422 | ✓ A:AlertCard onQuickReply (alerts_quick_reply_ph) | ✗ | ios-missing | | |
+| element | Quick reply `<select>` of saved commands on prompt alerts → alertSendCmd | ✓ js:19417–19422 | ✓ A:AlertCard onQuickReply (alerts_quick_reply_ph) | ~ I:AlertsView `quickReply` Menu (approve/reject/continue/skip/ESC + saved commands) on latest alert of a waiting session group only; not in chronological mode | misaligned | |  |
 | element | Per-alert ✓ mark-read control | ✗ | ✓ A:AlertCard "✓" (comment: "not in PWA but needed for Android UX") | ~ I unread dot + dimmed read rows | pwa-missing | needs-decision | D4 |
 | interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✓ A:AlertGroupCard 510–527 | ✗ | pwa-missing | needs-decision | D6 |
 | interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ✓ I:AlertsView.swift:302 swipeActions | pwa-missing | needs-decision | D6 |
@@ -73,7 +73,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Car head-unit notification actions (CarAppExtender Play/Reply) | n/a | ✓ A:NotificationPoster.kt:235 | n/a | n/a | | |
 
 ## Coverage
-rows: 63 · aligned: 10 · ios-missing: 17 · android-missing: 0 · pwa-missing: 7 · misaligned: 22 · n/a: 7
+rows: 65 · aligned: 20 · ios-missing: 6 · android-missing: 0 · pwa-missing: 7 · misaligned: 24 · n/a: 8
 
 ## Decisions needed
 1. **🔕 button semantics** — PWA: mute the alert dock for this browser session (no server call, js:15204). Android (A:AlertsScreen.kt ControlBtn("🔕") { dismissAll() }) and iOS (I:AlertsView.swift controlBtn("🔕") { dismissAll() }) both call dismiss-all instead. Options: (a) apps implement a real dock mute like PWA; (b) PWA changes 🔕 to dismiss; (c) remove 🔕 from the apps (they have no dock on iOS).

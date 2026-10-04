@@ -8,24 +8,22 @@ Section files: [`sections/`](sections/).
 
 | # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a | decisions |
 |---|---|---|---|---|---|---|---|---|---|
-| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 17 | 15 | 3 | 5 | 35 | 5 | 19 |
-| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 9 | 15 | 11 | 12 | 33 | 3 | 15 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 17 | 37 | 13 | 13 | 33 | 4 | 14 |
-| 04 | [Alerts](sections/04-alerts.md) ¹ | 65 | 10 | 15 | 0 | 7 | 25 | 8 | 12 |
-| 05 | [Automata](sections/05-automata.md) ¹ | 99 | 9 | 41 | 5 | 7 | 36 | 1 | 14 |
-| 06 | [Observer](sections/06-observer.md) ¹ | 93 | 4 | 48 | 5 | 11 | 24 | 1 | 10 |
-| 07 | [Settings](sections/07-settings.md) | 97 | 8 | 58 | 5 | 4 | 22 | 0 | 11 |
-| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 72 | 5 | 50 | 6 | 5 | 3 | 3 | 7 |
-| | **Total** | **707** | **79** | **279** | **48** | **64** | **211** | **25** | **102 → 92** |
+| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 21 | 10 | 3 | 5 | 36 | 5 | 19 |
+| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 18 | 6 | 11 | 12 | 33 | 3 | 15 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 45 | 2 | 13 | 13 | 41 | 4 | 14 |
+| 04 | [Alerts](sections/04-alerts.md) | 65 | 20 | 6 | 0 | 7 | 24 | 8 | 12 |
+| 05 | [Automata](sections/05-automata.md) | 99 | 42 | 5 | 4 | 7 | 40 | 1 | 14 |
+| 06 | [Observer](sections/06-observer.md) | 93 | 4 | 47 | 6 | 11 | 24 | 1 | 10 |
+| 07 | [Settings](sections/07-settings.md) | 97 | 12 | 53 | 5 | 4 | 23 | 0 | 11 |
+| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 22 | 29 | 6 | 5 | 6 | 3 | 7 |
+| | **Total** | **706** | **184** | **158** | **48** | **64** | **227** | **25** | **102 → 92** |
 
-¹ Coverage line in the section file disagrees with its table; numbers above are recounted from
-the rows (04 stated 63 rows / 22 misaligned / 17 ios-missing; 05 stated 96 / 31 / 44; 06 stated
-5 aligned / 52 ios-missing / 10 pwa-missing / 20 misaligned). Minor: in 01, 02, 07, 08 one or two
-rows have a pipe inside a cell so a status cell shifts — the stated counts were kept. 03's
-status counts sum to 117 of 118 rows.
+Recounted 2026-10-04 after reconciling iOS rows with shipped backlog B1–B18/B33–B34; every
+section's Coverage line now matches its table (06 excludes its 11 sub-heading rows; 08 lost one
+row to a malformed-row repair). Earlier coverage-line discrepancies in 04/05/06 are resolved.
 
-Only **11 %** of feature rows are aligned across all three clients; **39 %** are missing on iOS;
-**30 %** exist everywhere but differ.
+**26 %** of feature rows are aligned across all three clients; **22 %** are missing on iOS;
+**32 %** exist everywhere but differ.
 
 ## 2. Decisions needed (92)
 
@@ -225,4 +223,4 @@ Where a chunk touches a decision, it is noted — build the decided variant.
 - **"App had a better idea" backlog.** 64 `pwa-missing` rows + 25 scope decisions: Android has accumulated features (watch, memory UI, file viewer, skeletons, config viewer) the PWA never got; each needs a keep/port/drop call.
 - **Motion and splash** are inconsistent on all three (D10, D18, D23, D36, D37); decide once, then implement per platform.
 - **Alert semantics** (D47–D51) differ in meaning, not just look — the highest-risk area for user confusion.
-- **Settings is the largest iOS gap** (58 rows, ~120 config keys); a generic config-field renderer (as Android's `configfields`) is cheaper than 20 bespoke cards.
+- **Settings is the largest iOS gap** (53 rows, ~120 config keys); a generic config-field renderer (as Android's `configfields`) is cheaper than 20 bespoke cards.

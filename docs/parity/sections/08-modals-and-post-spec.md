@@ -8,20 +8,20 @@ Verification was code-level (grep/read), not visual. `~ unverified` = present in
 
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
-| nav | Entry point (`+` FAB / header) → new-session surface | ✓ FAB (`fab` ×16) → panel-modal | ✓ `Destinations.NewSession` full screen | ✓ Sessions FAB → NewSessionView | aligned | | iOS has no way to start a session at all |
+| nav | Entry point (`+` FAB / header) → new-session surface | ✓ FAB (`fab` ×16) → panel-modal | ✓ `Destinations.NewSession` full screen | ✓ Sessions FAB → NewSessionView | aligned | | |
 | element | Session name input | ✓ :5569 `new_session_name` | ✓ NewSessionScreen.kt:337–345 | ✓ NewSessionView | aligned | | |
 | element | Task description (expandable textarea) | ✓ `<details>` textarea | ✓ :368–431 + mic (`MicAttachableTextField`) | ✓ NewSessionView | aligned | | |
-| element | Saved-command library picker inside task field | ✗ (0 hits `savedCmd|saved_command` in modal) | ✓ `SavedCommandLibraryDropdown` :379 | ✗ | pwa-missing | needs-decision | Android-only convenience — D1 |
+| element | Saved-command library picker inside task field | ✗ (0 hits `savedCmd\|saved_command` in modal) | ✓ `SavedCommandLibraryDropdown` :379 | ✗ | pwa-missing | needs-decision | Android-only convenience — D1 |
 | element | Project directory input | ✓ `#sessDirRow` :5560 | ✓ `new_session_working_dir` :714–726 | ✓ NewSessionView | aligned | | |
 | interaction | Directory browser (breadcrumb, mkdir, click-to-navigate) | ✓ `#dirBrowser` :5558 | ✗ (`FilePickerDialog` not used here) | ✗ | android-missing | | iOS also missing |
 | element | Profile select (project profiles, "— project directory —" first) | ✓ `#sessProfile` :5615 | ✓ `new_session_profile_label` :590 | ✓ NewSessionView | aligned | | |
 | element | Cluster select (hidden until profile picked) | ✓ `#sessClusterRow` :5620 | ✓ `new_session_cluster_label` :608–629 | ✓ NewSessionView | aligned | | |
 | element | LLM picker (v7 registry) + compute-node sub-select + hint | ✓ `#sessLLMSelect` :5648, `#sessComputeSelect` :5655, `#sessV7Hint` :5659 | ✓ `llmEntries`/`pickedComputeNode` :136–154 | ✓ NewSessionView | aligned | | |
 | element | Permission mode / model / effort (Claude) | ✓ :5671 / :5674 / :5677 | ✓ :662–692 (`new_session_advanced_claude`) | ✓ NewSessionView | aligned | | |
-| element | Model / effort for non-Claude + OpenCode grouped models | ~ (model select only) | ✓ :546–568, `openCodeModelGroups` :170 | ✗ | misaligned | needs-decision | Android groups OpenCode models by provider — D2 |
+| element | Model / effort for non-Claude + OpenCode grouped models | ~ (model select only) | ✓ :546–568, `openCodeModelGroups` :170 | ~ NewSessionView flat non-Claude model picker (as PWA; no OpenCode grouping) | misaligned | needs-decision | Android groups OpenCode models by provider — D2 |
 | element | Chrome integration checkbox | ✓ `#newSessionChrome` :5681 (not in May spec) | ✓ `chromeIntegration` Switch :701 | ✓ NewSessionView | aligned | | spec drift: §9 omits it |
-| element | Git auto-init / auto-commit toggles | ✓ (`auto_git|git_init| ✓ NewSessionView | aligned | ✗ | ios-missing | | |
-| element | Resume previous session field | ✗ (0 hits `resume_session|sessResume`) | ✓ `new_session_resume_label` :743 | ✗ | pwa-missing | needs-decision | D3 |
+| element | Git auto-init / auto-commit toggles | ✓ (`auto_git`/`git_init`/`auto_commit` ×18) | ✓ :756–779 | ✓ NewSessionView git toggles | aligned | | |
+| element | Resume previous session field | ✗ (0 hits `resume_session\|sessResume`) | ✓ `new_session_resume_label` :743 | ✗ | pwa-missing | needs-decision | D3 |
 | element | Session backlog / recent done sessions (restart) | ✓ `renderSessionBacklog` :5765 | ✓ :785–820 (20 most recent, restart) | ✓ "Recently finished" + Restart | aligned | | |
 | element | Backend setup hint when backend not configured | ~ spec §9 item 9 (live ref not located) | ✗ not found | ✗ | misaligned | | verify in PWA before acting |
 | element | Server picker (which datawatch server) | n/a (single server) | ✓ `new_session_server_label` :476 | ✗ | n/a | | mobile multi-server concept |
@@ -34,8 +34,8 @@ Verification was code-level (grep/read), not visual. `~ unverified` = present in
 |---|---|---|---|---|---|---|---|
 | interaction | Confirm modal — stop / kill / restart / delete session | ✓ `showConfirmModal` :14870 (`dialog_stop_session_title`, `dialog_delete_sessions_title`) | ✓ SessionsScreen.kt:925–927 AlertDialogs | ✓ SessionsView.swift:91–107, SessionDetailView.swift:73–79 | aligned | | copy/button styling to verify visually |
 | interaction | Confirm modal — bulk delete sessions | ✓ `dialog_delete_sessions_title` | ✓ SessionsScreen.kt:454–479 | ✗ | ios-missing | | iOS has no multi-select |
-| interaction | Confirm modal — other sites (delete template/LLM/compute node/scheduled events, cancel graph, kill orphaned tmux) | ✓ 13 call sites | ✓ per card (autonomous/, compute/, schedules/) ~ unverified each | ✗ | ios-missing | | |
-| interaction | Generic modal (`showModal`) — template create/edit, batch guards | ✓ :16849 | ✓ `CreateEditTemplateSheet.kt`, `InstantiateTemplateDialog.kt` | ✗ | ios-missing | | |
+| interaction | Confirm modal — other sites (delete template/LLM/compute node/scheduled events, cancel graph, kill orphaned tmux) | ✓ 13 call sites | ✓ per card (autonomous/, compute/, schedules/) ~ unverified each | ~ delete template (TemplatesView), cancel graph (OrchestratorViews), batch delete (PrdListView); LLM/compute node/schedules/orphaned tmux ✗ | misaligned | | |
+| interaction | Generic modal (`showModal`) — template create/edit, batch guards | ✓ :16849 | ✓ `CreateEditTemplateSheet.kt`, `InstantiateTemplateDialog.kt` | ✓ TemplateEditView / InstantiateTemplateView sheets; batch confirm (PrdListView) | aligned | | |
 | interaction | State override dropdown on state badge → `PUT /api/sessions/state` | ✓ `showStateOverride` :14843; live states `running, waiting_input, complete, killed, failed` | ✓ `StateOverrideDialog` SessionDetailScreen.kt:2578 | ✓ SessionDetailView state menu (B6) | aligned | | spec §10.3 lists `rate_limited` — removed in live PWA |
 | interaction | Backend config popup (Comms → Configure) | ✓ `showBackendConfigPopup` :14028 | ✓ `channels/BackendConfigDialog.kt` | ✗ | ios-missing | | |
 | interaction | Compute Kind migration modal (deprecated kinds) | ✓ `deprecatedKinds` :7920 | ✗ not found | ✗ | android-missing | | iOS also missing; spec §10.5 |
@@ -60,7 +60,7 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | nav | Dashboard view (bottom-nav tab) | ✓ `renderDashboardView` :22898 | ✓ `dashboard/DashboardScreen.kt` | ~ `DashboardView.swift` — per-server stats+sessions cards, different design | misaligned | needs-decision | D5 |
 | element | Dashboard stat tiles — sessions / tasks / guardrails / burn rate | ✓ `#dashStatSessions/Tasks/Guardrails/BurnRate` | ~ unverified | ✗ | ios-missing | | confirm Android tiles in 07/08 pass 2 |
 | element | Dashboard card: Constellation | ✓ (`constellation` ×8) | ✓ `ConstellationCard` :222 | ✗ | ios-missing | | |
-| element | Dashboard card: Pulse / EKG | ✓ (`ekg|pulse` ×12) | ✓ `PulseCard` :384 | ✗ | ios-missing | | |
+| element | Dashboard card: Pulse / EKG | ✓ (`ekg\|pulse` ×12) | ✓ `PulseCard` :384 | ✗ | ios-missing | | |
 | element | Dashboard card: Sparklines (SVG, ~5 fps) | ✓ `_sparkline` :3919, :22097 | ✓ `SparklineCard` :593 | ✗ | ios-missing | | motion: 5 fps redraw cadence |
 | element | Dashboard card: Recent events | ~ unverified | ✓ `RecentEventsCard` :469 | ✗ | ios-missing | | |
 | element | Dashboard card: Gantt / pipeline | ✓ (`gantt` ×22) | ✓ `PipelineCard` :529 | ✗ | ios-missing | | |
@@ -69,10 +69,10 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | element | Dashboard card: Smoke progress | ✓ (`smoke` ×74) | ✓ `SmokeProgressCard` :796 ("Clear run") | ✗ | ios-missing | | |
 | interaction | Dashboard add/edit cards + expand panel (tree + verdicts) | ✓ `#dashAddCardBtn`, `#dashEditBtn`, `#dashExpand*` | ✓ `settings/DashboardCardsCard` + BL303 expand mode | ✗ | ios-missing | | |
 | nav | Orchestrator graphs view | ✓ `renderOrchestratorView` :25115 (`orchestrator/graph`) | ✓ `automata/OrchestratorGraphsCard.kt`, `OrchestratorGraphDialog.kt` | ✓ OrchestratorGraphsView | aligned | | app#184 |
-| element | Guardrail verdicts inline in session detail (+ Approve on blocked) | ✓ `renderSessionGuardrailVerdicts` :4281 | ~ unverified in sessions/ | ✗ | ios-missing | | |
+| element | Guardrail verdicts inline in session detail (+ Approve on blocked) | ✓ `renderSessionGuardrailVerdicts` :4281 | ~ unverified in sessions/ | ~ SessionStatusView "Guardrail verdicts" card (Status tab); no Approve on blocked | misaligned | | |
 | element | Guardrail library (Settings) | ✓ (`guardrail` ×67) | ✓ `settings/GuardrailLibraryCard.kt` | ✗ | ios-missing | | |
 | element | Council live run (WS `run_started/round_*/persona_*`), decisions, verdicts | ✓ `renderDetailDecisions` :17649, `renderVerdicts` | ✓ `settings/CouncilCard.kt`, `CouncilPersonaWizardSheet.kt` | ✗ | ios-missing | | spec §8.8 covers config only, not live runs |
-| element | Status board: lifecycle strip, sprint breadcrumb, failed drill-down | ✓ :11212 / :4199 / :4312 | ~ unverified | ✗ | ios-missing | | |
+| element | Status board: lifecycle strip, sprint breadcrumb, failed drill-down | ✓ :11212 / :4199 / :4312 | ~ unverified | ~ SessionStatusView sprint breadcrumb + task tree; no failed drill-down | misaligned | | |
 | element | Sessions rendered as tree + parent-session link + page controls | ✓ `renderSessionsAsTree` :2124, `renderParentSessionLink`, `renderPageControls` :6544 | ~ unverified | ✗ | ios-missing | | |
 | element | Discussion Scopes card (Settings → General, BL332) | ✓ :7246 | ~ `memory/` (#191 scope dirs) unverified | ✗ | ios-missing | | |
 | element | Algorithm Mode settings section | ✓ :6902 | ✓ `settings/AlgorithmModeCard.kt` | ✗ | ios-missing | | |
@@ -85,15 +85,15 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | element | Secrets vault card (Settings → General) | ✓ (`secret` ×58) | ✗ not found | ✗ | android-missing | | iOS also missing |
 | element | Compute node telemetry / declared capacity | ✓ :7911, :8120 | ✓ `compute/` (#192 capacity-aware) | ✗ | ios-missing | | |
 | nav | Docs / diagrams help links (`/diagrams.html#…`) | ✓ ×17 | ✓ `common/DocsViewerSheet.kt`, `settings/DocsSearchCard.kt` | ✓ `DocsLinkButton` (SFSafariViewController) | aligned | | Android in-app viewer vs iOS Safari — verify intent |
-| element | Memory recall / scope inventory / lifecycle UI (BL385–387) | ✗ (0 hits `memory/recall|memory_scope`; only Observer "Memory Browser" card) | ✓ `memory/` (#174–176) | ✗ | pwa-missing | needs-decision | D6 |
-| element | Inline file viewer for story/task file chips | ✗ (0 hits `api/files|browseFiles`) | ✓ `autonomous/FileViewerSheet.kt` (#181) | ✗ | pwa-missing | needs-decision | D7 |
+| element | Memory recall / scope inventory / lifecycle UI (BL385–387) | ✗ (0 hits `memory/recall\|memory_scope`; only Observer "Memory Browser" card) | ✓ `memory/` (#174–176) | ✗ | pwa-missing | needs-decision | D6 |
+| element | Inline file viewer for story/task file chips | ✗ (0 hits `api/files\|browseFiles`) | ✓ `autonomous/FileViewerSheet.kt` (#181) | ✓ PrdFileViewerSheet (PrdItemEditSheets.swift) | pwa-missing | needs-decision | D7 |
 | element | Knowledge Graph card | ✓ ("Knowledge Graph" ×4) | ✓ `observer/KnowledgeGraphCard.kt` | ✗ | ios-missing | | |
 | nav | Onboarding flow, deep links, multi-server profile picker, biometric lock | n/a | ✓ `onboarding/`, `DeepLinks.kt`, `servers/ServerPickerSheet.kt`, biometric | ~ `BiometricGate.swift` ✓; onboarding/deep links ✗ | n/a | | mobile-only; iOS lacks onboarding + deep links (track in 01) |
-| nav | Version staleness reload (spec §1.6) | ✗ (0 hits `staleVersion|serverVersion|checkVersion`) | ~ unverified | ✗ | pwa-missing | | spec item not found in live PWA — likely removed/renamed; verify |
-| interaction | Batch select mode, FAB, Channel tab, Kind migration (spec items spot-checked) | ✓ (`selectMode|bulkDelete` ×28, `fab` ×16, channel ×17, :7920) | — | — | aligned | | spec items confirmed still live; no removals found besides §1.6 and `rate_limited` |
+| nav | Version staleness reload (spec §1.6) | ✗ (0 hits `staleVersion\|serverVersion\|checkVersion`) | ~ unverified | ✗ | pwa-missing | | spec item not found in live PWA — likely removed/renamed; verify |
+| interaction | Batch select mode, FAB, Channel tab, Kind migration (spec items spot-checked) | ✓ (`selectMode\|bulkDelete` ×28, `fab` ×16, channel ×17, :7920) | — | — | aligned | | spec items confirmed still live; no removals found besides §1.6 and `rate_limited` |
 
 ## Coverage
-rows: 72 · aligned: 5 · ios-missing: 50 · android-missing: 6 · pwa-missing: 5 · misaligned: 3 · n/a: 3
+rows: 71 · aligned: 22 · ios-missing: 29 · android-missing: 6 · pwa-missing: 5 · misaligned: 6 · n/a: 3
 
 ## Decisions needed
 1. **D1 Saved-command library in New Session task field** — Android-only (`SavedCommandLibraryDropdown` NewSessionScreen.kt:379). Options: (a) adopt in PWA + iOS, (b) drop from Android, (c) keep as mobile-only.

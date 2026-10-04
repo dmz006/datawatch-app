@@ -9,12 +9,12 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
 | nav | Settings view (bottom-nav tab, header "Settings") | ✓ A:6666 | ✓ S:SettingsScreen | ✓ SV | aligned | | |
-| element | Six-tab bar General · Plugins · Comms · Compute · Automata · About (horizontal scroll) | ✓ A:6697–6703 | ~ S:119 SettingsTab, order General·Comms·Compute·Automata·Plugins·About | ✗ SV flat list: Servers / Session / Security / About | misaligned | needs-decision | D1 |
+| element | Six-tab bar General · Plugins · Comms · Compute · Automata · About (horizontal scroll) | ✓ A:6697–6703 | ~ S:119 SettingsTab, order General·Comms·Compute·Automata·Plugins·About | ✗ SV flat list: Servers / Session / Alert Rules · Saved Commands · Filters / Automata (Orchestrator, Pipelines) / Security / About | misaligned | needs-decision | D1 |
 | nav | Active tab persisted (`cs_settings_tab`) with legacy-id migration (llm/agents→compute, monitor→general…) | ✓ A:6571–6577 | ✓ S:160–171 | ✗ | ios-missing | | |
 | interaction | Collapsible section cards (chevron, per-section state in localStorage) | ✓ A:6495 toggleSettingsSection | ✗ cards always expanded (`pwaCard`) | ✗ | misaligned | needs-decision | D2 |
 | element | Per-card docs link (`settingsSectionHeader(id,title,docs)`) | ✓ A | ~ `Section(docsAnchor)` on some cards only | ~ one header-level DocsLinkButton | misaligned | | mechanical: wire per-card anchors |
 | element | "Restart needed" after config save | ~ A:13939 inline "Restart now" link | ✓ RestartNeededBanner (persistent banner) | ✗ | misaligned | needs-decision | D3 |
-| nav | Deep link into a settings tab (`navigate('plugins'|'comms'|'automata')`) | ✓ A:1880–1897 | ✓ DeepLinks.kt → activeTab | ✗ | ios-missing | | |
+| nav | Deep link into a settings tab (`navigate('plugins' / 'comms' / 'automata')`) | ✓ A:1880–1897 | ✓ DeepLinks.kt → activeTab | ✗ | ios-missing | | |
 | token | Compact settings density (11–13 px labels; Android wraps tab in "settings-scale MaterialTheme") | ✓ A | ~ S custom smaller type scale | ~ SV system `.insetGrouped` sizes | misaligned | needs-decision | D4 |
 | element | Per-card loading / error states ("Loading…", red error line) | ✓ A | ✓ common_loading | ✓ SV/SSV ProgressView + error row | aligned | | |
 | interaction | Destructive confirmations (delete server / LLM / node / secret, kill orphans) | ✓ showConfirmModal | ✓ AlertDialog | ~ ESV delete-server only | aligned | | iOS has only the one destructive surface today |
@@ -81,9 +81,9 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Goose / OpenCode / Vision LLM config cards (`goose.*`, `opencode.default_model`, `vision.*`) | ✓ LLM goose/opencode/vision | ~ goose via LlmBackendSchemas; no `vision.*` | ✗ | misaligned | | |
 | element | Container Workers card (`agents.*` 7 keys) | ✓ gc_agents A:7766 | ✓ CFS.Agents | ✗ | ios-missing | | |
 | element | Detection Filters card | ✓ detection A:20770 | ✓ DetectionFiltersCard | ✗ | ios-missing | | |
-| element | Alert Rules card (CRUD + firings) | ✓ alert_rules | ✓ AlertRulesCard | ✗ | ios-missing | | |
-| element | Saved Commands card | ✓ cmds | ✓ SavedCommandsCard | ✗ | ios-missing | | |
-| element | Output Filters card | ✓ filters | ✓ FiltersCard | ✗ | ios-missing | | |
+| element | Alert Rules card (CRUD + firings) | ✓ alert_rules | ✓ AlertRulesCard | ~ AlertRulesView: list, add, enable/disable, swipe delete; no edit, no firings | misaligned | | |
+| element | Saved Commands card | ✓ cmds | ✓ SavedCommandsCard | ✓ SavedCommandsView (add / edit+rename / delete) | aligned | | |
+| element | Output Filters card | ✓ filters | ✓ FiltersCard | ✓ FiltersView (add / edit / toggle / delete) | aligned | | |
 | element | Exit Hooks card | ✓ exit_hooks | ✗ | ✗ | android-missing | | iOS also missing |
 | element | Work Queue card | ✓ work_queue | ✗ | ✗ | android-missing | | iOS also missing |
 | element | Tailscale: status + config cards, Generate Auth Key, ACL Generate / Generate & Push | ✓ A:24165, A:24186 | ✓ TailscaleSettingsCard + TailscaleMeshCard | ✗ | ios-missing | | |
@@ -137,7 +137,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | MCP channel card + MCP tools card | ✗ | ✓ McpChannelCard, McpToolsCard | ✗ | pwa-missing | needs-decision | D11 |
 
 ## Coverage
-rows: 97 · aligned: 8 · ios-missing: 58 · android-missing: 5 · pwa-missing: 4 · misaligned: 22 · n/a: 0
+rows: 97 · aligned: 12 · ios-missing: 53 · android-missing: 5 · pwa-missing: 4 · misaligned: 23 · n/a: 0
 
 iOS reaches ~10 % of the Settings surface: server profiles, summarizer, a (non-functional) biometric toggle and an About stub. Everything config-driven (≈120 config keys across 20 cards) is absent.
 
