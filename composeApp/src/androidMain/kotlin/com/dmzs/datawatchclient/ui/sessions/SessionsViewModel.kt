@@ -17,7 +17,6 @@ import com.dmzs.datawatchclient.transport.ws.SessionsHub
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
@@ -42,22 +41,14 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 public class SessionsViewModel : ViewModel() {
-    public enum class SortOrder(public val label: String) {
-        RecentActivity("Recent activity"),
-        StartedAt("Started"),
-        Name("Name"),
-        Custom("Custom"),
-    }
-
-    // v0.83.0: state filter (All / Active / Waiting / Done)
-    public enum class SessionStateFilter { ALL, ACTIVE, WAITING, DONE }
+    // Parity D42a: the Sort menu (Recent / Started / Name / Custom) was
+    // dropped — ordering is the PWA rule (manual order, then updated_at).
 
     public data class UiState(
         val activeProfile: ServerProfile? = null,
         val allProfiles: List<ServerProfile> = emptyList(),
         val allServersMode: Boolean = false,
         val sessions: List<Session> = emptyList(),
-        val sortOrder: SortOrder = SortOrder.RecentActivity,
         /**
          * Backend chip text keyed by server-profile id. Per-session
          * backend now comes from [Session.backend] directly; this map
@@ -84,10 +75,9 @@ public class SessionsViewModel : ViewModel() {
          */
         val showHistory: Boolean = false,
         /**
-         * In-memory user-arranged ordering for sessions on the
-         * current profile. Only consulted when [sortOrder] is
-         * [SortOrder.Custom]. Session ids not in the list fall to
-         * the tail (sorted by lastActivityAt among themselves).
+         * User-arranged (drag) ordering — PWA `cs_session_order`. Ids in
+         * this list come first in this order; the rest follow by
+         * last activity (PWA `updated_at`) descending.
          */
         val customOrder: List<String> = emptyList(),
         /**
@@ -117,12 +107,30 @@ public class SessionsViewModel : ViewModel() {
         val deleteSupported: Boolean = true,
         /** True when the active server has `whisper.backend` configured; hides mic button when false. */
         val whisperConfigured: Boolean = false,
-        // v0.83.0: state filter chip selection + counts for labels
-        val stateFilter: SessionStateFilter = SessionStateFilter.ALL,
-        val activeCount: Int = 0,
-        val waitingCount: Int = 0,
-        val doneCount: Int = 0,
+        /**
+         * Parity D12a — PWA state chip key (`cs_session_state_chip`):
+         * "all" or a wire state ([STATE_CHIP_KEYS]).
+         */
+        val stateChip: String = STATE_CHIP_ALL,
     ) {
+        /** Per-state counts over the whole session list (PWA `stateCounts`). */
+        public val stateCounts: Map<String, Int>
+            get() {
+                val byKey = sessions.groupingBy { stateChipKey(it.state) }.eachCount()
+                return STATE_CHIP_KEYS.associateWith { k ->
+                    if (k == STATE_CHIP_ALL) sessions.size else byKey[k] ?: 0
+                }
+            }
+
+        /** Chips shown when the State row is open: All + count>0 + the selected one. */
+        public val visibleStateChips: List<String>
+            get() {
+                val counts = stateCounts
+                return STATE_CHIP_KEYS.filter { k ->
+                    k == STATE_CHIP_ALL || (counts[k] ?: 0) > 0 || k == stateChip
+                }
+            }
+
         /**
          * Unique backend names across the current session pool, with
          * their counts, used to render the PWA-style backend filter
@@ -182,51 +190,12 @@ public class SessionsViewModel : ViewModel() {
                                 // v0.74.0 S5-7 — council-virtual filter also matches by fullId prefix
                                 (backendFilter == "council-virtual" && s.fullId.startsWith("council-"))
                         }
-                        // v0.83.0: state bucket filter chip
-                        .filter { s ->
-                            when (stateFilter) {
-                                SessionStateFilter.ALL -> true
-                                SessionStateFilter.ACTIVE ->
-                                    s.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
-                                        s.state == com.dmzs.datawatchclient.domain.SessionState.RateLimited
-                                SessionStateFilter.WAITING ->
-                                    s.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
-                                SessionStateFilter.DONE ->
-                                    s.state in doneStates
-                            }
-                        }
+                        // Parity D12a: real-state chip filter (PWA setSessionStateChip)
+                        .filter { s -> stateChip == STATE_CHIP_ALL || stateChipKey(s.state) == stateChip }
                         .toList()
-                // State-bucket sort always wins (waiting → running → …)
-                // then within-bucket applies the user-selected sort order.
-                val stateBucket =
-                    compareBy<Session> { s ->
-                        when (s.state) {
-                            com.dmzs.datawatchclient.domain.SessionState.Waiting -> 0
-                            com.dmzs.datawatchclient.domain.SessionState.Running -> 1
-                            com.dmzs.datawatchclient.domain.SessionState.RateLimited -> 2
-                            com.dmzs.datawatchclient.domain.SessionState.New -> 3
-                            com.dmzs.datawatchclient.domain.SessionState.Completed,
-                            com.dmzs.datawatchclient.domain.SessionState.Killed,
-                            com.dmzs.datawatchclient.domain.SessionState.Error,
-                            -> 4
-                        }
-                    }
-                val withinBucket: Comparator<Session> =
-                    when (sortOrder) {
-                        SortOrder.RecentActivity -> compareByDescending { it.lastActivityAt }
-                        SortOrder.StartedAt -> compareByDescending { it.createdAt }
-                        SortOrder.Name ->
-                            compareBy {
-                                (it.name?.takeIf { n -> n.isNotBlank() } ?: it.taskSummary ?: it.id)
-                                    .lowercase()
-                            }
-                        SortOrder.Custom -> {
-                            val orderIx = customOrder.withIndex().associate { (i, id) -> id to i }
-                            compareBy<Session> { orderIx[it.id] ?: Int.MAX_VALUE }
-                                .thenByDescending { it.lastActivityAt }
-                        }
-                    }
-                return filtered.sortedWith(stateBucket.then(withinBucket))
+                // Parity D42a — PWA sortSessionsByOrder: manual order first,
+                // then updated_at (last activity) descending. No state buckets.
+                return sortByManualOrder(filtered, customOrder)
             }
 
         public val historyCount: Int
@@ -254,8 +223,40 @@ public class SessionsViewModel : ViewModel() {
                 return visibleSessions.count { s -> s.state in doneStates }
             }
 
-        private companion object {
-            const val RECENT_WINDOW_MINUTES: Long = 5
+        public companion object {
+            private const val RECENT_WINDOW_MINUTES: Long = 5
+            public const val STATE_CHIP_ALL: String = "all"
+
+            /** PWA `realStateChips` order. */
+            public val STATE_CHIP_KEYS: List<String> =
+                listOf(STATE_CHIP_ALL, "running", "waiting_input", "rate_limited", "complete", "failed", "killed")
+
+            /** Chips that select done sessions — picking one turns History on (PWA). */
+            public val HISTORICAL_STATE_CHIPS: Set<String> = setOf("complete", "failed", "killed")
+
+            /** Domain state → PWA wire key used by the chips. */
+            public fun stateChipKey(state: com.dmzs.datawatchclient.domain.SessionState): String =
+                when (state) {
+                    com.dmzs.datawatchclient.domain.SessionState.Running -> "running"
+                    com.dmzs.datawatchclient.domain.SessionState.Waiting -> "waiting_input"
+                    com.dmzs.datawatchclient.domain.SessionState.RateLimited -> "rate_limited"
+                    com.dmzs.datawatchclient.domain.SessionState.Completed -> "complete"
+                    com.dmzs.datawatchclient.domain.SessionState.Error -> "failed"
+                    com.dmzs.datawatchclient.domain.SessionState.Killed -> "killed"
+                    com.dmzs.datawatchclient.domain.SessionState.New -> "new"
+                }
+
+            /** PWA `sortSessionsByOrder`. */
+            public fun sortByManualOrder(
+                sessions: List<Session>,
+                order: List<String>,
+            ): List<Session> {
+                val byId = sessions.associateBy { it.id }
+                val inOrder = order.mapNotNull { byId[it] }.distinctBy { it.id }
+                val seen = inOrder.mapTo(HashSet()) { it.id }
+                val rest = sessions.filterNot { it.id in seen }.sortedByDescending { it.lastActivityAt }
+                return inOrder + rest
+            }
         }
     }
 
@@ -291,31 +292,26 @@ public class SessionsViewModel : ViewModel() {
     private val _filterText = MutableStateFlow("")
     private val _backendFilter = MutableStateFlow<String?>(null)
     private val _showHistory = MutableStateFlow(false)
-    private val _sortOrder = MutableStateFlow(SortOrder.RecentActivity)
+    private fun prefs() = android.preference.PreferenceManager.getDefaultSharedPreferences(ServiceLocator.context())
 
-    // v0.83.0: state filter; persisted via SharedPreferences
-    private val _stateFilter =
+    // Parity D12a: PWA state chip, persisted like `cs_session_state_chip`.
+    private val _stateChip =
         MutableStateFlow(
-            run {
-                val prefs =
-                    android.preference.PreferenceManager.getDefaultSharedPreferences(
-                        ServiceLocator.context(),
-                    )
-                val saved = prefs.getString("cs_session_state_filter", SessionStateFilter.ALL.name)
-                runCatching { SessionStateFilter.valueOf(saved ?: "") }.getOrDefault(SessionStateFilter.ALL)
-            },
+            prefs().getString(PREF_STATE_CHIP, UiState.STATE_CHIP_ALL)
+                ?.takeIf { it in UiState.STATE_CHIP_KEYS } ?: UiState.STATE_CHIP_ALL,
         )
-    val stateFilter: StateFlow<SessionStateFilter> = _stateFilter.asStateFlow()
 
     /**
-     * Per-profile custom ordering: list of session ids in the order
-     * the user arranged them. In-memory only for now (Compose doesn't
-     * ship a drag-reorder LazyColumn; we add up/down arrow mode
-     * activated from the toolbar). Persistence across app restarts
-     * TBD.
+     * Manual (drag) ordering — persisted like the PWA's `cs_session_order`
+     * (parity D42a).
      */
     private val _customOrder: MutableStateFlow<List<String>> =
-        MutableStateFlow(emptyList())
+        MutableStateFlow(
+            prefs().getString(PREF_SESSION_ORDER, null)
+                ?.split(',')
+                ?.filter { it.isNotBlank() }
+                .orEmpty(),
+        )
     private val _reorderMode = MutableStateFlow(false)
     private val _allServersSessions = MutableStateFlow<List<Session>>(emptyList())
     private val _lastProbeEpochMs = MutableStateFlow<Long?>(null)
@@ -374,7 +370,7 @@ public class SessionsViewModel : ViewModel() {
                 _filterText,
                 _backendFilter,
                 _showHistory,
-                _sortOrder,
+                _stateChip,
                 allServersMode,
                 activeReachable,
                 _lastProbeEpochMs,
@@ -393,7 +389,7 @@ public class SessionsViewModel : ViewModel() {
                     filterText = args[5] as String,
                     backendFilter = args[6] as String?,
                     showHistory = args[7] as Boolean,
-                    sortOrder = args[8] as SortOrder,
+                    stateChip = args[8] as String,
                     allServersMode = args[9] as Boolean,
                     activeReachable = args[10] as Boolean?,
                     lastProbeEpochMs = args[11] as Long?,
@@ -403,28 +399,8 @@ public class SessionsViewModel : ViewModel() {
                     reorderMode = args[15] as Boolean,
                 )
             }
-        // v0.83.0: layer in state filter + counts; whisperConfigured added alongside
-        return combine(baseFlow, _stateFilter, _whisperConfigured) { base, sf, wc ->
-            val doneStates =
-                setOf(
-                    com.dmzs.datawatchclient.domain.SessionState.Completed,
-                    com.dmzs.datawatchclient.domain.SessionState.Killed,
-                    com.dmzs.datawatchclient.domain.SessionState.Error,
-                )
-            base.copy(
-                stateFilter = sf,
-                whisperConfigured = wc,
-                activeCount =
-                    base.sessions.count { s ->
-                        s.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
-                            s.state == com.dmzs.datawatchclient.domain.SessionState.RateLimited
-                    },
-                waitingCount =
-                    base.sessions.count { s ->
-                        s.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
-                    },
-                doneCount = base.sessions.count { s -> s.state in doneStates },
-            )
+        return combine(baseFlow, _whisperConfigured) { base, wc ->
+            base.copy(whisperConfigured = wc)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
 
@@ -503,6 +479,8 @@ public class SessionsViewModel : ViewModel() {
 
     private companion object {
         const val AUTO_REFRESH_MS: Long = 30_000L
+        const val PREF_STATE_CHIP = "cs_session_state_chip"
+        const val PREF_SESSION_ORDER = "cs_session_order"
     }
 
     public fun selectProfile(profileId: String) {
@@ -525,33 +503,39 @@ public class SessionsViewModel : ViewModel() {
         _backendFilter.value = if (_backendFilter.value == backend) null else backend
     }
 
-    /** v0.83.0: set the state bucket filter and persist to SharedPreferences. */
-    public fun setStateFilter(filter: SessionStateFilter) {
-        _stateFilter.value = filter
-        android.preference.PreferenceManager.getDefaultSharedPreferences(ServiceLocator.context())
-            .edit()
-            .putString("cs_session_state_filter", filter.name)
-            .apply()
+    /**
+     * Parity D12a — PWA `setSessionStateChip`: persist the chip; picking a
+     * historical state (complete / failed / killed) turns History on so
+     * those sessions are actually visible.
+     */
+    public fun setStateChip(chip: String) {
+        val key = chip.takeIf { it in UiState.STATE_CHIP_KEYS } ?: UiState.STATE_CHIP_ALL
+        _stateChip.value = key
+        prefs().edit().putString(PREF_STATE_CHIP, key).apply()
+        if (key in UiState.HISTORICAL_STATE_CHIPS) _showHistory.value = true
+    }
+
+    private fun setCustomOrder(order: List<String>) {
+        _customOrder.value = order
+        prefs().edit().putString(PREF_SESSION_ORDER, order.joinToString(",")).apply()
     }
 
     public fun toggleShowHistory() {
         _showHistory.value = !_showHistory.value
     }
 
-    public fun setSortOrder(order: SortOrder) {
-        _sortOrder.value = order
-    }
-
     public fun toggleReorderMode() {
         _reorderMode.value = !_reorderMode.value
-        // Entering reorder snaps sort to Custom so the ordering the
-        // user produces is what shows next. Seed customOrder with
-        // the current visible order so the first moves work.
-        if (_reorderMode.value && _sortOrder.value != SortOrder.Custom) {
-            val snap = state.value.visibleSessions.map { it.id }
-            _customOrder.value = snap
-            _sortOrder.value = SortOrder.Custom
-        }
+        // Seed the manual order with the current visible order so the
+        // first moves work.
+        if (_reorderMode.value) seedCustomOrder()
+    }
+
+    /** Manual order = current visible order (PWA `sortSessionsByOrder(...).map(id)`). */
+    private fun seedCustomOrder() {
+        val visible = state.value.visibleSessions.map { it.id }
+        val rest = _customOrder.value.filterNot { it in visible }
+        setCustomOrder(visible + rest)
     }
 
     /** Move the session [sessionId] one slot toward the top of the custom ordering. */
@@ -561,7 +545,7 @@ public class SessionsViewModel : ViewModel() {
         if (idx <= 0) return
         list.removeAt(idx)
         list.add(idx - 1, sessionId)
-        _customOrder.value = list
+        setCustomOrder(list)
     }
 
     /**
@@ -577,14 +561,9 @@ public class SessionsViewModel : ViewModel() {
         rowOffset: Int,
     ) {
         if (rowOffset == 0) return
-        // Seed customOrder from the current visible snapshot if the
-        // user drags before toggling reorder mode — matches PWA
-        // drag-drop which Just Works without a mode switch.
-        if (_customOrder.value.isEmpty()) {
-            val snap = state.value.visibleSessions.map { it.id }
-            _customOrder.value = snap
-            _sortOrder.value = SortOrder.Custom
-        }
+        // Seed from the current visible order so ids not yet in the
+        // manual list can be moved — PWA moveSession does the same.
+        seedCustomOrder()
         val list = _customOrder.value.toMutableList()
         val idx = list.indexOf(sessionId)
         if (idx < 0) return
@@ -592,7 +571,7 @@ public class SessionsViewModel : ViewModel() {
         if (newIdx == idx) return
         list.removeAt(idx)
         list.add(newIdx, sessionId)
-        _customOrder.value = list
+        setCustomOrder(list)
     }
 
     /** Move the session [sessionId] one slot toward the bottom. */
@@ -602,7 +581,7 @@ public class SessionsViewModel : ViewModel() {
         if (idx < 0 || idx >= list.size - 1) return
         list.removeAt(idx)
         list.add(idx + 1, sessionId)
-        _customOrder.value = list
+        setCustomOrder(list)
     }
 
     public fun toggleMute(

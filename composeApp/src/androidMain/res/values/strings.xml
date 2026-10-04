@@ -68,13 +68,10 @@
     <string name="sessions_fab_new">New session</string>
     <string name="sessions_clear_filter">Clear filter</string>
     <string name="sessions_collapse_toolbar">Collapse toolbar</string>
-    <string name="sessions_sort_prefix">Sort: %1$s</string>
     <string name="sessions_history_count">History (%1$d)</string>
-    <string name="sessions_empty_state">No sessions yet. Use `new: &lt;task&gt;` from a messaging backend to start one, or wait for the daemon to push one here.</string>
+    <string name="sessions_empty_state">No active sessions</string>
+    <string name="sessions_empty_hint">Tap the + button to start a session, or send commands via Signal.</string>
     <string name="sessions_no_task">(no task)</string>
-    <string name="sessions_selected_count">%1$d selected</string>
-    <string name="sessions_cancel_selection">Cancel selection</string>
-    <string name="sessions_delete_selected">Delete selected</string>
     <string name="sessions_move_up">Move up</string>
     <string name="sessions_move_down">Move down</string>
     <string name="sessions_more_menu">More</string>
@@ -227,8 +224,7 @@
     <string name="alerts_title">Alerts</string>
     <string name="alerts_active_tab">Active (%1$d)</string>
     <string name="alerts_inactive_tab">Inactive (%1$d)</string>
-    <string name="alerts_empty_active">No sessions need input. You\'re caught up.</string>
-    <string name="alerts_empty_inactive">No historical alerts.</string>
+    <string name="alerts_empty">No alerts.</string>
     <string name="alerts_action_reply">Reply…</string>
     <string name="alerts_action_schedule">Schedule…</string>
 
@@ -1114,9 +1110,12 @@
     <string name="session_llm_any_node">Any node OK</string>
     <string name="session_llm_legacy_notice">Legacy backend (v6 compat)</string>
     <string name="session_filter_all">All</string>
-    <string name="session_filter_active">Active</string>
     <string name="session_filter_waiting">Waiting</string>
-    <string name="session_filter_done">Done</string>
+    <string name="session_chip_running">Running</string>
+    <string name="session_chip_rate_limited">Rate-limited</string>
+    <string name="session_chip_complete">Complete</string>
+    <string name="session_chip_failed">Failed</string>
+    <string name="session_chip_killed">Killed</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">Compute Node</string>
     <!-- Sprint 15 #106 — Compute CRUD overhaul -->
