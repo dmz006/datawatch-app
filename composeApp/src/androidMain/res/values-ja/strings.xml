@@ -117,7 +117,9 @@
     <string name="session_detail_override_state">状態を強制変更</string>
     <string name="session_detail_reply_waiting">返答（入力が必要）…</string>
     <string name="session_detail_reply_hint">返答…</string>
-    <string name="session_detail_saved_commands">保存済みコマンド</string>
+    <string name="session_detail_commands_select">コマンド…</string>
+    <string name="session_detail_commands_custom">カスタム…</string>
+    <string name="session_detail_commands_custom_ph">コマンドを入力…</string>
     <string name="session_detail_schedule_action">返答をスケジュール</string>
     <string name="session_detail_on_input">入力時</string>
     <string name="session_detail_cancel_schedule">スケジュールをキャンセル</string>

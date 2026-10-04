@@ -117,7 +117,9 @@
     <string name="session_detail_override_state">Forcer l\'état</string>
     <string name="session_detail_reply_waiting">Répondre (saisie requise)…</string>
     <string name="session_detail_reply_hint">Répondre…</string>
-    <string name="session_detail_saved_commands">Commandes enregistrées</string>
+    <string name="session_detail_commands_select">Commandes…</string>
+    <string name="session_detail_commands_custom">Personnalisée…</string>
+    <string name="session_detail_commands_custom_ph">Saisir une commande…</string>
     <string name="session_detail_schedule_action">Planifier une réponse</string>
     <string name="session_detail_on_input">à la saisie</string>
     <string name="session_detail_cancel_schedule">Annuler la planification</string>
