@@ -57,18 +57,31 @@ enum SplashArt {
 
     static func makeColumns(_ n: Int, seed: UInt32, xStart: Double, xSpan: Double, range: ClosedRange<Int>) -> [Column] {
         var rng = Mulberry32(seed)
-        return (0..<n).map { i in
-            let delay = rng.next()
-            let count = range.lowerBound + Int(floor(rng.next() * Double(range.upperBound - range.lowerBound + 1)))
-            return Column(xFrac: xStart + Double(i) * (xSpan / Double(max(1, n - 1))), delayFrac: delay, charCount: count)
+        let step: Double = xSpan / Double(max(1, n - 1))
+        let width: Double = Double(range.upperBound - range.lowerBound + 1)
+        var cols: [Column] = []
+        for i in 0..<n {
+            let delay: Double = rng.next()
+            let extra: Int = Int(floor(rng.next() * width))
+            let x: Double = xStart + Double(i) * step
+            cols.append(Column(xFrac: x, delayFrac: delay, charCount: range.lowerBound + extra))
         }
+        return cols
     }
 
     static func assignChars(_ cols: [Column], seed: UInt32) -> [[String]] {
         var rng = Mulberry32(seed)
-        return cols.map { c in
-            (0..<c.charCount).map { _ in matrixChars[Int(floor(rng.next() * Double(matrixChars.count)))] }
+        let count: Double = Double(matrixChars.count)
+        var out: [[String]] = []
+        for c in cols {
+            var chars: [String] = []
+            for _ in 0..<c.charCount {
+                let idx: Int = Int(floor(rng.next() * count))
+                chars.append(matrixChars[idx])
+            }
+            out.append(chars)
         }
+        return out
     }
 
     static func makeFlickers(_ n: Int) -> [(dur: Double, delay: Double)] {
