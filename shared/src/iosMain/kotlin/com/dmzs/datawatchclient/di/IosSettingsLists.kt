@@ -160,7 +160,7 @@ public object IosSettingsLists {
                     "web_search_providers" ->
                         tr.testWebSearchProvider(id).map { if (it.ok) "OK · ${it.resultCount} results" else "Failed: ${it.error.orEmpty()}" }
                     "project_profiles" -> tr.smokeKindProfile("project", id).map { "Smoke test started" }
-                    else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
+                    else -> Result.failure<String>(UnsupportedOperationException("Not supported"))
                 }
             r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Action failed.") })
         }
@@ -182,7 +182,7 @@ public object IosSettingsLists {
                         if (index == 0) tr.generateTailscaleAcl().map { "ACL generated" }
                         else tr.pushTailscaleAcl().map { "ACL generated and pushed" }
                     "plugins" -> tr.reloadPlugins().map { "Reloaded: $it plugin(s)" }
-                    else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
+                    else -> Result.failure<String>(UnsupportedOperationException("Not supported"))
                 }
             r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Action failed.") })
         }
