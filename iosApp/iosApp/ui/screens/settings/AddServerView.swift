@@ -93,7 +93,7 @@ struct AddServerView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func submit() {

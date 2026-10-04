@@ -247,7 +247,7 @@ struct AddAutomataTypeSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func save() {
