@@ -48,6 +48,9 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToSessions)) { _ in
             selectedTab = .sessions
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToDashboard)) { _ in
+            selectedTab = .dashboard
+        }
     }
 
     // ── iPad: NavigationSplitView ─────────────────────────────────────────
@@ -79,6 +82,9 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToSessions)) { _ in
             selectedTab = .sessions
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToDashboard)) { _ in
+            selectedTab = .dashboard
         }
     }
 }

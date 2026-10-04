@@ -239,6 +239,9 @@ public class IosDashEngine {
 
     public fun allSessions(): List<Session> = sessions
 
+    /** Full ids of running / waiting / new sessions (board seeding). */
+    public fun activeSessionIds(): List<String> = sessions.filter { isActive(it.state) }.map { it.fullId }
+
     /** Keep running/blocked/planning automata (PWA `_dash._prds` filter). */
     public fun setPrds(all: List<PrdDto>) {
         prds = all.filter { it.status == "running" || it.status == "blocked" || it.status == "planning" }
