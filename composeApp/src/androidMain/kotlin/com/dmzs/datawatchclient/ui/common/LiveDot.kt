@@ -1,11 +1,6 @@
 package com.dmzs.datawatchclient.ui.common
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -18,16 +13,12 @@ import androidx.compose.ui.unit.dp
 /** Pulsing green live-indicator dot used in auto-polled card headers (#95). */
 @Composable
 public fun LiveDot(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "live-dot")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1.0f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(800, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "live-dot-alpha",
+    val alpha by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 0.4f,
+        target = 1.0f,
+        durationMs = 800,
+        easing = FastOutSlowInEasing,
+        label = "live-dot",
     )
     Box(
         modifier =

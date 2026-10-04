@@ -788,12 +788,12 @@ private fun stateChipColor(key: String): Color {
 
 @Composable
 private fun SessionSkeletonList() {
-    val transition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
-        label = "skeletonAlpha",
+    val alpha by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 0.3f,
+        target = 0.7f,
+        durationMs = 900,
+        staticValue = 0.5f,
+        label = "skeleton",
     )
     val shimmer = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -1622,16 +1622,13 @@ private fun ReachabilityDot(
     // so the user sees that work is happening rather than a static
     // amber. Steady green / red doesn't pulse — those are settled
     // states.
-    val infinite = androidx.compose.animation.core.rememberInfiniteTransition(label = "probe-pulse")
-    val scale by infinite.animateFloat(
-        initialValue = 1f,
-        targetValue = if (reachable == null) 1.4f else 1f,
-        animationSpec =
-            androidx.compose.animation.core.infiniteRepeatable(
-                animation = androidx.compose.animation.core.tween(900),
-                repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
-            ),
-        label = "probe-pulse-scale",
+    val scale by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 1f,
+        target = 1.4f,
+        durationMs = 900,
+        staticValue = 1f,
+        active = reachable == null,
+        label = "probe-pulse",
     )
     Box(
         modifier =

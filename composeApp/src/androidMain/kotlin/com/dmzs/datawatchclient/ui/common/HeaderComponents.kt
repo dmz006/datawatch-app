@@ -187,16 +187,13 @@ internal fun ReachabilityDot(
             false -> stringResource(R.string.sessions_server_unreachable)
             null -> stringResource(R.string.sessions_probing)
         }
-    val infinite = rememberInfiniteTransition(label = "probe-pulse")
-    val scale by infinite.animateFloat(
-        initialValue = 1f,
-        targetValue = if (reachable == null) 1.4f else 1f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(900),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "probe-pulse-scale",
+    val scale by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
+        initial = 1f,
+        target = 1.4f,
+        durationMs = 900,
+        staticValue = 1f,
+        active = reachable == null,
+        label = "probe-pulse",
     )
     Box(
         modifier =
