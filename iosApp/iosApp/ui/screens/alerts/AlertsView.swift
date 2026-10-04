@@ -77,8 +77,9 @@ final class AlertsViewModel: ObservableObject {
     }
 
     private var profile: ServerProfile?
-    private var pollingTimer: Timer?
-    private static let pollInterval: TimeInterval = 5
+    private var pollTask: Task<Void, Never>? = nil
+    private var inFlight = false
+    private static let pollInterval: Duration = .seconds(5)
 
     func load(from profiles: [ServerProfile]) {
         let newActive = profiles.first
@@ -95,16 +96,38 @@ final class AlertsViewModel: ObservableObject {
         }
     }
 
+    /// Sequential loop: the next fetch is scheduled only after the previous one
+    /// completes, so a slow server can't stack requests (the Android v1.23.112
+    /// pile-up). Visibility-gated by the view's onAppear / onDisappear.
     func startPolling() {
         stopPolling()
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.refresh() }
+        pollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.pollInterval)
+                guard let self, !Task.isCancelled else { return }
+                await self.refreshAsync()
+            }
         }
     }
 
     func stopPolling() {
-        pollingTimer?.invalidate()
-        pollingTimer = nil
+        pollTask?.cancel()
+        pollTask = nil
+    }
+
+    private func refreshAsync() async {
+        guard let profile, !inFlight else { return }
+        inFlight = true
+        defer { inFlight = false }
+        do {
+            let result = try await ServiceLocatorAsync.listAlerts(profile: profile)
+            alerts = result.alerts
+            unreadCount = result.unreadCount
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isLoading = false
     }
 
     func refresh() {

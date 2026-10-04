@@ -3,6 +3,10 @@ import DatawatchShared
 
 // ── ViewModel ─────────────────────────────────────────────────────────────
 
+/// WS-first like Android's StatsViewModel (v1.23.113/114): live `stats` frames
+/// arrive over a global `/ws` stream at the server's cadence; REST `/api/stats`
+/// runs once on start and every 30 s as a fallback, sequentially, only while the
+/// screen is visible (the view calls `startPolling` / `stopPolling`).
 @MainActor
 final class ObserverViewModel: ObservableObject {
     @Published private(set) var stats: StatsDto? = nil
@@ -11,8 +15,10 @@ final class ObserverViewModel: ObservableObject {
     @Published private(set) var lastUpdated: Date? = nil
 
     private var profile: ServerProfile?
-    private var pollingTimer: Timer?
-    private static let pollInterval: TimeInterval = 5
+    private var pollTask: Task<Void, Never>? = nil
+    private var wsSubscription: IosServiceLocatorEventSubscription? = nil
+    private var inFlight = false
+    private static let restFallbackInterval: Duration = .seconds(30)
 
     func update(profiles: [ServerProfile]) {
         let newActive = profiles.first
@@ -36,44 +42,51 @@ final class ObserverViewModel: ObservableObject {
     }
 
     func startPolling() {
-        guard profile != nil else { return }
+        guard let profile else { return }
         stopPolling()
-        fetchOnce()
-        pollingTimer = Timer.scheduledTimer(
-            withTimeInterval: Self.pollInterval,
-            repeats: true
-        ) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.fetchOnce()
+
+        wsSubscription = IosServiceLocator.shared.subscribeGlobalStream(
+            profile: profile,
+            onStats: { [weak self] dto in
+                Task { @MainActor [weak self] in self?.apply(stats: dto) }
+            },
+            onSessions: { _ in }
+        )
+
+        pollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                await self.fetchOnce()
+                try? await Task.sleep(for: Self.restFallbackInterval)
             }
         }
     }
 
     func stopPolling() {
-        pollingTimer?.invalidate()
-        pollingTimer = nil
+        pollTask?.cancel()
+        pollTask = nil
+        wsSubscription?.cancel()
+        wsSubscription = nil
     }
 
-    private func fetchOnce() {
-        guard let profile else { return }
+    private func fetchOnce() async {
+        guard let profile, !inFlight else { return }
+        inFlight = true
+        defer { inFlight = false }
         if stats == nil { isLoading = true }
+        do {
+            apply(stats: try await ServiceLocatorAsync.getStats(profile: profile))
+        } catch {
+            self.error = error.localizedDescription
+            isLoading = false
+        }
+    }
+
+    private func apply(stats dto: StatsDto) {
+        stats = dto
         error = nil
-        IosServiceLocator.shared.getStats(
-            profile: profile,
-            onSuccess: { [weak self] dto in
-                DispatchQueue.main.async {
-                    self?.stats = dto
-                    self?.isLoading = false
-                    self?.lastUpdated = Date()
-                }
-            },
-            onError: { [weak self] msg in
-                DispatchQueue.main.async {
-                    self?.error = msg
-                    self?.isLoading = false
-                }
-            }
-        )
+        isLoading = false
+        lastUpdated = Date()
     }
 }
 

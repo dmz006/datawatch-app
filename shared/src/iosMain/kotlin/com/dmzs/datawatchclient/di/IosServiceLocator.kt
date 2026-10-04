@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -430,6 +431,31 @@ public object IosServiceLocator {
         val job =
             ioScope.launch {
                 wsTransportFor(profile).events(subscriptionId, storageId).collect { onEvent(it) }
+            }
+        return EventSubscription(job)
+    }
+
+    /**
+     * Keep one global `/ws` connection open for [profile] (no session subscription)
+     * so the server's broadcast `stats` and `sessions` frames reach their hubs, and
+     * forward them to Swift. This is the WS-first path Android's Stats/Sessions
+     * ViewModels use; REST becomes a slow fallback. Callbacks run on a background
+     * thread. Cancel the handle when the screen disappears.
+     */
+    public fun subscribeGlobalStream(
+        profile: ServerProfile,
+        onStats: (com.dmzs.datawatchclient.transport.dto.StatsDto) -> Unit,
+        onSessions: (List<com.dmzs.datawatchclient.domain.Session>) -> Unit,
+    ): EventSubscription {
+        val job =
+            ioScope.launch {
+                launch { wsTransportFor(profile).globalStream().collect { } }
+                launch { com.dmzs.datawatchclient.transport.ws.StatsHub.flow.collect { onStats(it) } }
+                launch {
+                    com.dmzs.datawatchclient.transport.ws.SessionsHub.fullListFlow
+                        .filter { it.serverProfileId == profile.id }
+                        .collect { onSessions(it.sessions) }
+                }
             }
         return EventSubscription(job)
     }
