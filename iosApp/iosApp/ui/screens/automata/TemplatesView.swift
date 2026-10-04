@@ -236,7 +236,7 @@ struct TemplateEditView: View {
                 spec = t.spec
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func save() {
@@ -306,7 +306,7 @@ struct InstantiateTemplateView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func create() {

@@ -87,7 +87,7 @@ struct QuickCommandsSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func commandRow(label: String, value: String) -> some View {

@@ -1014,7 +1014,7 @@ private struct LastResponseSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 }
 

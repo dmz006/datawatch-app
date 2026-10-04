@@ -27,7 +27,7 @@ struct ServerProfileListView: View {
                 EditServerView(profile: profile)
                     .environmentObject(store)
             }
-            .preferredColorScheme(.dark)
+            .dwThemed()
         }
     }
 

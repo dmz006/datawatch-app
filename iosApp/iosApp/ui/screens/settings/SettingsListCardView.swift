@@ -19,6 +19,10 @@ struct SettingsListCardView: View {
     @State private var detail: SettingsDetailItem?
     @State private var showAdd = false
     @State private var busy = false
+    @State private var formEdit: SettingsFormEditItem?
+
+    /// LLMs + Compute Nodes use the full PWA add/edit forms instead of the generic add sheet.
+    private var hasForm: Bool { kind == "llms" || kind == "compute_nodes" }
 
     var body: some View {
         List {
@@ -49,7 +53,7 @@ struct SettingsListCardView: View {
         .refreshable { load() }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if !addFields.isEmpty {
+                if !addFields.isEmpty || hasForm {
                     Button { showAdd = true } label: {
                         Image(systemName: "plus").foregroundStyle(DatawatchColors.primary)
                     }
@@ -58,9 +62,10 @@ struct SettingsListCardView: View {
             }
         }
         .sheet(isPresented: $showAdd) {
-            SettingsAddEntrySheet(fields: addFields) { values, done in
-                create(values, done: done)
-            }
+            addSheet
+        }
+        .sheet(item: $formEdit) { item in
+            editSheet(item.id)
         }
         .sheet(item: $detail) { item in
             SettingsTextSheet(title: item.title, text: item.text)
@@ -74,6 +79,28 @@ struct SettingsListCardView: View {
                 if let row = pendingDelete { delete(row) }
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
+        }
+    }
+
+    @ViewBuilder
+    private var addSheet: some View {
+        if kind == "llms" {
+            LlmFormSheet(profile: profile, editName: nil) { load() }
+        } else if kind == "compute_nodes" {
+            ComputeNodeFormSheet(profile: profile, editName: nil) { load() }
+        } else {
+            SettingsAddEntrySheet(fields: addFields) { values, done in
+                create(values, done: done)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func editSheet(_ name: String) -> some View {
+        if kind == "llms" {
+            LlmFormSheet(profile: profile, editName: name) { load() }
+        } else {
+            ComputeNodeFormSheet(profile: profile, editName: name) { load() }
         }
     }
 
@@ -104,6 +131,18 @@ struct SettingsListCardView: View {
                         onOpen: { open(row) }
                     )
                     .listRowBackground(DatawatchColors.surface)
+                    .contextMenu {
+                        if hasForm {
+                            Button { formEdit = SettingsFormEditItem(id: row.id) } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            if !row.detail.isEmpty {
+                                Button { detail = SettingsDetailItem(title: row.title, text: row.detail) } label: {
+                                    Label("Details", systemImage: "doc.text")
+                                }
+                            }
+                        }
+                    }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         if row.canDelete {
                             Button(role: .destructive) { pendingDelete = row } label: {
@@ -201,6 +240,10 @@ struct SettingsListCardView: View {
     }
 
     private func open(_ row: IosSettingsRow) {
+        if hasForm {
+            formEdit = SettingsFormEditItem(id: row.id)
+            return
+        }
         guard !row.detail.isEmpty else { return }
         detail = SettingsDetailItem(title: row.title, text: row.detail)
     }

@@ -41,7 +41,7 @@ struct RootView: View {
             }
         }
         .tint(DatawatchColors.primary)
-        .preferredColorScheme(.dark)
+        .dwThemed()
         .onOpenURL { url in
             AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
         }
@@ -76,7 +76,7 @@ struct RootView: View {
             }
         }
         .tint(DatawatchColors.primary)
-        .preferredColorScheme(.dark)
+        .dwThemed()
         .onOpenURL { url in
             AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
         }

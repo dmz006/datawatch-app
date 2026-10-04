@@ -70,7 +70,7 @@ struct MemoryStrategyDeleteSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func delete() {
@@ -153,7 +153,7 @@ struct SessionTimelineSheet: View {
             .onAppear(perform: load)
         }
         .presentationDetents([.medium, .large])
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func message(_ text: String) -> some View {
@@ -260,7 +260,7 @@ struct ScheduleInputSheet: View {
             .onAppear { if command.isEmpty { command = prefill } }
         }
         .presentationDetents([.medium, .large])
-        .preferredColorScheme(.dark)
+        .dwThemed()
     }
 
     private func save() {
