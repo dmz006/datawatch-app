@@ -1607,6 +1607,41 @@ public interface TransportClient {
     /** DELETE /api/federation/peers/{name}. */
     public suspend fun deleteFederationPeer(name: String): Result<Unit> =
         Result.failure(UnsupportedOperationException("deleteFederationPeer"))
+
+    // ---- iOS Observer parity ----
+
+    /**
+     * GET /api/stats (or `/api/stats?v=2` when [v2]) as raw JSON — the PWA's
+     * per-system grid / eBPF blocks read fields [StatsDto] doesn't model
+     * (`hostname`, `cpu_load_avg_5/15`, `host.ebpf`, `net.per_process`).
+     */
+    public suspend fun fetchStatsJson(v2: Boolean = false): Result<kotlinx.serialization.json.JsonObject>
+
+    /** GET /api/observer/peers/{name}/stats as raw JSON (PWA snapshot modal: host + envelopes). */
+    public suspend fun fetchObserverPeerSnapshot(name: String): Result<kotlinx.serialization.json.JsonObject>
+
+    /** DELETE /api/observer/peers/{name} — remove peer (token rotates; peer re-registers). */
+    public suspend fun removeObserverPeer(name: String): Result<Unit>
+
+    /** GET /api/observer/stats as raw JSON (Federated Peers card stats pills). */
+    public suspend fun fetchObserverStatsJson(): Result<kotlinx.serialization.json.JsonObject>
+
+    /** GET /api/observer/config as raw JSON (Federated Peers card config table). */
+    public suspend fun fetchObserverConfig(): Result<kotlinx.serialization.json.JsonObject>
+
+    /** GET /api/channel/diagnostics — per-session bridge ports + probes + hints (BL362). */
+    public suspend fun fetchChannelDiagnostics(): Result<kotlinx.serialization.json.JsonObject>
+
+    /** POST /api/matrix/test — send a Matrix test message. */
+    public suspend fun sendMatrixTest(): Result<Unit>
+
+    /** PUT /api/schedules — edit a pending schedule's command and/or run_at (PWA editSchedulePrompt). */
+    public suspend fun updateSchedule(
+        id: String,
+        command: String,
+        runAt: String? = null,
+    ): Result<Unit>
+
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
