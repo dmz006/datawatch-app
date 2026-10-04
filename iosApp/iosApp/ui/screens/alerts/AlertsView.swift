@@ -455,7 +455,7 @@ struct AlertsView: View {
 
     private func controlBtn(_ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label)
+            Text(L(label))
                 .font(DatawatchFonts.badge)
                 .foregroundStyle(DatawatchColors.onSurface)
                 .padding(.horizontal, 8)

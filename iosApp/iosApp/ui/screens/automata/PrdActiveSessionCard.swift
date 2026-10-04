@@ -176,7 +176,7 @@ struct PrdActiveSessionCard: View {
     private func bar(_ label: String, _ fraction: Double, _ value: String, _ color: Color) -> some View {
         VStack(spacing: 1) {
             HStack {
-                Text(label).foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Text(L(label)).foregroundStyle(DatawatchColors.onSurfaceMuted)
                 Spacer()
                 Text(value).monospacedDigit().foregroundStyle(DatawatchColors.onSurface)
             }

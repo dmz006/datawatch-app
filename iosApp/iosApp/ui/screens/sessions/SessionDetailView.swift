@@ -277,7 +277,7 @@ struct SessionDetailView: View {
                     detailTab = tab.0
                 } label: {
                     VStack(spacing: 4) {
-                        Text(tab.1)
+                        Text(L(tab.1))
                             .font(DatawatchFonts.badge)
                             .foregroundStyle(detailTab == tab.0 ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
                         Rectangle()
@@ -301,7 +301,7 @@ struct SessionDetailView: View {
                     statusSubtab = tab.0
                 } label: {
                     VStack(spacing: 3) {
-                        Text(tab.1)
+                        Text(L(tab.1))
                             .font(DatawatchFonts.labelSmall)
                             .foregroundStyle(statusSubtab == tab.0 ? DatawatchColors.waiting : DatawatchColors.onSurfaceMuted)
                         Rectangle()
@@ -412,7 +412,7 @@ struct SessionDetailView: View {
 
     private func scrollButton(_ title: String, tint: Color = DatawatchColors.onSurface, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
+            Text(L(title))
                 .font(DatawatchFonts.labelSmall.weight(.semibold))
                 .foregroundStyle(tint)
                 .frame(maxWidth: .infinity, minHeight: 36)
@@ -624,7 +624,7 @@ struct SessionDetailView: View {
                 }
                 .disabled(imageBanner == "uploading")
                 .accessibilityLabel("Attach image")
-                TextField(composerPlaceholder, text: $replyText)
+                TextField(L(composerPlaceholder), text: $replyText)
                     .disabled(isTranscribing)
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurface)

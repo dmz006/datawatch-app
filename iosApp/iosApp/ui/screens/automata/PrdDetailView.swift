@@ -349,7 +349,7 @@ struct PrdDetailView: View {
         if let b = prd.backend, !b.isEmpty {
             parts.append((prd.model?.isEmpty == false) ? "\(b)/\(prd.model!)" : b)
         }
-        if let e = prd.effort, !e.isEmpty { parts.append("effort \(e)") }
+        if let e = prd.effort, !e.isEmpty { parts.append(L("effort") + " \(e)") }
         if prd.guidedMode { parts.append("guided") }
         return Text(parts.joined(separator: "  ·  "))
             .font(DatawatchFonts.labelSmall)
@@ -389,7 +389,7 @@ struct PrdDetailView: View {
 
     private func actionButton(_ title: String, systemImage: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: systemImage)
+            Label(L(title), systemImage: systemImage)
                 .font(DatawatchFonts.bodyMedium)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -534,7 +534,7 @@ struct PrdDetailView: View {
 
     private func graphRow(_ label: String, value: String, fraction: Double) -> some View {
         HStack(spacing: 10) {
-            Text(label)
+            Text(L(label))
                 .font(DatawatchFonts.labelSmall)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .frame(width: 84, alignment: .leading)
@@ -623,7 +623,7 @@ struct PrdDetailView: View {
 
     private func smallAction(_ title: String, _ tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
+            Text(L(title))
                 .font(DatawatchFonts.labelSmall.weight(.semibold))
                 .foregroundStyle(tint)
                 .padding(.horizontal, 10)

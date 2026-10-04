@@ -312,7 +312,7 @@ struct SetPrdLlmView: View {
                         }
                     }
                     Section {
-                        Text("Current: \(prd.backend ?? "daemon default")\(prd.model.map { "/\($0)" } ?? "")\(prd.effort.map { " · effort \($0)" } ?? "")")
+                        Text("Current: \(prd.backend ?? "daemon default")\(prd.model.map { "/\($0)" } ?? "")\(prd.effort.map { " · " + L("effort") + " \($0)" } ?? "")")
                             .font(DatawatchFonts.labelSmall)
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     }

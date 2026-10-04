@@ -1,6 +1,7 @@
 name: DatawatchClient
 options:
   bundleIdPrefix: com.dmzs
+  developmentLanguage: en
   deploymentTarget:
     iOS: 16.0
 
@@ -20,6 +21,14 @@ targets:
       path: iosApp/Info.plist
       properties:
         CFBundleDisplayName: datawatch
+        CFBundleDevelopmentRegion: en
+        # Parity B39: same locales as PWA + Android (Resources/<lang>.lproj).
+        CFBundleLocalizations:
+          - en
+          - de
+          - es
+          - fr
+          - ja
         UILaunchScreen:
           UIColorName: ""
         # Everything the built Info.plist needs MUST live here — xcodegen regenerates

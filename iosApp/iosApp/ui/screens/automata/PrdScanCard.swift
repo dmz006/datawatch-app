@@ -36,7 +36,7 @@ struct PrdScanCard: View {
                 Button { expanded.toggle() } label: {
                     HStack(spacing: 8) {
                         verdictBadge(r.verdict)
-                        Text("\(r.findings.count) finding\(r.findings.count == 1 ? "" : "s")")
+                        (r.findings.count == 1 ? Text("\(r.findings.count) finding") : Text("\(r.findings.count) findings"))
                             .font(DatawatchFonts.labelSmall)
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                         if !r.findings.isEmpty {

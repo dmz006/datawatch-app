@@ -138,7 +138,7 @@ private struct ProfileRow: View {
     }
 
     private func securityBadge(_ text: String) -> some View {
-        Text(text)
+        Text(L(text))
             .font(DatawatchFonts.badge)
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
