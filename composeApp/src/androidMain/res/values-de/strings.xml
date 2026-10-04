@@ -1220,4 +1220,8 @@
 • Abschlussbenachrichtigungen</string>
     <string name="channel_help_footer">Kanal-Antworten erscheinen als bernsteinfarbene Zeilen. Der tmux-Tab zeigt die rohe Terminalausgabe. Nutze den Kanal für strukturierte Kommunikation, tmux für direkten Terminalzugriff.</string>
     <string name="chat_earlier_messages">%1$d frühere Nachrichten</string>
+    <string name="automata_wizard_use_template">Durchsuchen</string>
+    <string name="automata_wizard_skills_hint_link">Skills konfigurieren in Einstellungen → Agenten → Projektprofile → Skills</string>
+    <string name="prd_action_archive">Archivieren</string>
+    <string name="action_clear">Löschen</string>
 </resources>

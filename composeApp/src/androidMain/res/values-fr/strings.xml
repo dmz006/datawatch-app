@@ -1220,4 +1220,8 @@
 • Notifications de fin</string>
     <string name="channel_help_footer">Les réponses du canal apparaissent en lignes ambre. L\'onglet tmux affiche la sortie brute du terminal. Utilisez Canal pour une communication structurée, tmux pour un accès direct au terminal.</string>
     <string name="chat_earlier_messages">%1$d messages précédents</string>
+    <string name="automata_wizard_use_template">Parcourir</string>
+    <string name="automata_wizard_skills_hint_link">Configurer les skills dans Paramètres → Agents → Profils de projet → Skills</string>
+    <string name="prd_action_archive">Archiver</string>
+    <string name="action_clear">Effacer</string>
 </resources>

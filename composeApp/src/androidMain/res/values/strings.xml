@@ -1537,4 +1537,8 @@
 • Completion notifications</string>
     <string name="channel_help_footer">Channel replies appear as amber lines. Tmux tab shows raw terminal output. Use Channel for structured communication, Tmux for direct terminal access.</string>
     <string name="chat_earlier_messages">%1$d earlier messages</string>
+    <string name="automata_wizard_use_template">Browse</string>
+    <string name="automata_wizard_skills_hint_link">Configure skills in Settings → Agents → Project Profiles → Skills</string>
+    <string name="prd_action_archive">Archive</string>
+    <string name="action_clear">Clear</string>
 </resources>

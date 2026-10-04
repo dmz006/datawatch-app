@@ -232,7 +232,13 @@ internal fun NewPrdDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Launch Automaton") },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Launch Automaton", modifier = Modifier.weight(1f))
+                // PWA wizard header "?" → howto/automata-wizard.md (automata_wizard_help_tip).
+                com.dmzs.datawatchclient.ui.common.DocsLinkAction("howto/automata-wizard.md")
+            }
+        },
         text = {
             Column(
                 modifier =
@@ -251,7 +257,7 @@ internal fun NewPrdDialog(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            "Start from template",
+                            "📦 " + stringResource(R.string.automata_wizard_template_link),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.weight(1f),
                         )
@@ -259,7 +265,7 @@ internal fun NewPrdDialog(
                             onBrowseTemplates()
                             onDismiss()
                         }) {
-                            Text("Browse")
+                            Text(stringResource(R.string.automata_wizard_use_template))
                         }
                     }
                 }
@@ -712,7 +718,7 @@ internal fun NewPrdDialog(
                         modifier = Modifier.padding(top = 4.dp),
                     ) {
                         Text(
-                            "Configure skills in Settings →",
+                            "💡 " + stringResource(R.string.automata_wizard_skills_hint_link) + " ↗",
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
