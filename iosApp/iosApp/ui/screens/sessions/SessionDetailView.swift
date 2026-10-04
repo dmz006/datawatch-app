@@ -28,6 +28,8 @@ struct SessionDetailView: View {
     @State private var isTranscribing = false
     @State private var recordingPulse = false
     @Environment(\.dismiss) private var dismiss
+    /// PWA output tab bar: "tmux" (terminal) or "status".
+    @State private var detailTab = "tmux"
 
     var body: some View {
         ZStack {
@@ -35,9 +37,18 @@ struct SessionDetailView: View {
 
             VStack(spacing: 0) {
                 metadataBar
-                terminalFontBar
-                TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput)
-                    .ignoresSafeArea(edges: .bottom)
+                detailTabBar
+                if detailTab == "tmux" { terminalFontBar }
+                ZStack {
+                    // Kept mounted while Status is shown so the session socket stays open.
+                    TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput)
+                        .ignoresSafeArea(edges: .bottom)
+                        .opacity(detailTab == "tmux" ? 1 : 0)
+                        .allowsHitTesting(detailTab == "tmux")
+                    if detailTab == "status" {
+                        SessionStatusView(profile: profile, session: session)
+                    }
+                }
                 if isTerminalState {
                     terminalActionBar
                 } else {
@@ -198,6 +209,32 @@ struct SessionDetailView: View {
 
     private var isTerminalState: Bool {
         session.state == .completed || session.state == .killed || session.state == .error
+    }
+
+    // ── Output tab bar (PWA: Tmux · Status) ──────────────────────────────
+
+    private var detailTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach([("tmux", "Tmux"), ("status", "Status")], id: \.0) { tab in
+                Button {
+                    detailTab = tab.0
+                } label: {
+                    VStack(spacing: 4) {
+                        Text(tab.1)
+                            .font(DatawatchFonts.badge)
+                            .foregroundStyle(detailTab == tab.0 ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                        Rectangle()
+                            .fill(detailTab == tab.0 ? DatawatchColors.primary : Color.clear)
+                            .frame(height: 2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 6)
+                }
+                .accessibilityAddTraits(detailTab == tab.0 ? .isSelected : [])
+            }
+        }
+        .background(DatawatchColors.surface)
+        .overlay(Divider().background(DatawatchColors.border), alignment: .bottom)
     }
 
     // ── State badge → state override (PWA showStateOverride) ─────────────
