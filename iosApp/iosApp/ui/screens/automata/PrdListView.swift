@@ -186,6 +186,23 @@ final class PrdListViewModel: ObservableObject {
         await refreshAsync()
     }
 
+    /// D72a inline card actions (Android PrdRow onApprove / onReject / onRevise / onPlan / onRun / onCancel).
+    func act(prdId: String, action: String, body: [String: String]?) async {
+        guard let profile else { return }
+        do {
+            if action == "cancel" {
+                try await ServiceLocatorAsync.cancelPrd(profile: profile, prdId: prdId, hard: false)
+            } else {
+                try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prdId, action: action, body: body)
+            }
+        } catch {
+            batchError = error.localizedDescription
+        }
+        await refreshAsync()
+    }
+
+    var profileId: String? { profile?.id }
+
     func toggleStatus(_ v: String) {
         if statusFilter.contains(v) { statusFilter.remove(v) } else { statusFilter.insert(v) }
     }
@@ -258,6 +275,12 @@ struct PrdListView: View {
     @StateObject private var vm = PrdListViewModel()
     @State private var showWizard = false
     @State private var confirmBatchDelete = false
+    /// D72a / D74a review dialogs raised from a card's lifecycle strip.
+    @State private var review: PrdReviewRequest? = nil
+    /// D71a parent ↗ link target.
+    @State private var openParent: PrdDto? = nil
+    /// D61a watched automata.
+    @ObservedObject private var localPrefs = LocalSessionPrefs.shared
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -293,6 +316,57 @@ struct PrdListView: View {
         .sheet(isPresented: $showWizard) {
             NewPrdView(profile: profile) { _ in Task { await vm.refreshAsync() } }
         }
+        .prdReviewDialogs($review) { prdId, action, body in
+            Task { await vm.act(prdId: prdId, action: action, body: body) }
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { openParent != nil },
+            set: { if !$0 { openParent = nil } }
+        )) {
+            if let parent = openParent {
+                PrdDetailView(profile: profile, initial: parent)
+            }
+        }
+    }
+
+    /// Lifecycle strip taps on a card: Plan / Run go straight through; Approve,
+    /// Reject, Revise and Cancel open their dialog first.
+    private func cardAction(_ prd: PrdDto, _ action: String) {
+        switch action {
+        case "approve", "reject", "request_revision", "cancel":
+            review = PrdReviewRequest(prdId: prd.id, title: prd.displayTitle, action: action)
+        default:
+            Task { await vm.act(prdId: prd.id, action: action, body: nil) }
+        }
+    }
+
+    private func isWatched(_ prd: PrdDto) -> Bool {
+        _ = localPrefs.revision
+        guard let pid = vm.profileId else { return false }
+        return localPrefs.contains(.watchedAutomata, profileId: pid, id: prd.id)
+    }
+
+    private func toggleWatch(_ prd: PrdDto) {
+        guard let pid = vm.profileId else { return }
+        localPrefs.toggle(.watchedAutomata, profileId: pid, id: prd.id)
+    }
+
+    private func parentTap(_ prd: PrdDto) -> (() -> Void)? {
+        guard let pid = prd.parentPrdId, !pid.isEmpty else { return nil }
+        return {
+            if let parent = vm.prds.first(where: { $0.id == pid }) { openParent = parent } else { vm.search = pid }
+        }
+    }
+
+    private func row(_ prd: PrdDto) -> PrdRow {
+        PrdRow(
+            prd: prd,
+            pinned: vm.pinned.contains(prd.id),
+            watched: isWatched(prd),
+            onWatchToggle: vm.selectMode ? nil : { toggleWatch(prd) },
+            onParent: vm.selectMode ? nil : parentTap(prd),
+            onAction: vm.selectMode ? nil : { cardAction(prd, $0) }
+        )
     }
 
     private var listContent: some View {
@@ -418,7 +492,7 @@ struct PrdListView: View {
                             HStack(spacing: 10) {
                                 Image(systemName: vm.selected.contains(prd.id) ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(vm.selected.contains(prd.id) ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
-                                PrdRow(prd: prd, pinned: vm.pinned.contains(prd.id))
+                                row(prd)
                             }
                         }
                         .buttonStyle(.plain)
@@ -426,7 +500,7 @@ struct PrdListView: View {
                         NavigationLink {
                             PrdDetailView(profile: profile, initial: prd)
                         } label: {
-                            PrdRow(prd: prd, pinned: vm.pinned.contains(prd.id))
+                            row(prd)
                         }
                     }
                 }
@@ -468,6 +542,13 @@ struct PrdListView: View {
 struct PrdRow: View {
     let prd: PrdDto
     var pinned: Bool = false
+    /// D61a 🔔 watch toggle (nil hides it).
+    var watched: Bool = false
+    var onWatchToggle: (() -> Void)? = nil
+    /// D71a parent ↗ chip tap (nil = not tappable).
+    var onParent: (() -> Void)? = nil
+    /// D72a: lifecycle strip steps act inline when set (Android PrdRow).
+    var onAction: ((String) -> Void)? = nil
 
     var body: some View {
         let total = prd.allTasks.count
@@ -480,21 +561,52 @@ struct PrdRow: View {
                     .foregroundStyle(DatawatchColors.onSurface)
                     .lineLimit(2)
                 Spacer(minLength: 8)
+                if let onWatchToggle { watchButton(onWatchToggle) }
                 PrdStatusChip(status: prd.status)
             }
-            Text(metaLine)
-                .font(DatawatchFonts.labelSmall)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                .lineLimit(1)
+            HStack(spacing: 6) {
+                if let pid = prd.parentPrdId, !pid.isEmpty { parentChip(pid) }
+                Text(metaLine)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    .lineLimit(1)
+            }
             if total > 0 {
                 ProgressView(value: Double(done), total: Double(total))
                     .tint(PrdStatusStyle.color(prd.status))
                     .accessibilityLabel("\(done) of \(total) tasks complete")
             }
-            // PWA card lifecycle strip (display-only here; actions live in the detail).
-            PrdLifecycleStrip(prd: prd)
+            PrdLifecycleStrip(prd: prd, onAction: onAction)
         }
         .padding(.vertical, 6)
+    }
+
+    private func watchButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: watched ? "bell.fill" : "bell.slash")
+                .font(.system(size: 12))
+                .foregroundStyle(watched ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted.opacity(0.5))
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(watched ? "Watching" : "Not watching")
+    }
+
+    /// Android `↗ <parent id prefix>` chip (accent2 @16 %), tappable here.
+    @ViewBuilder
+    private func parentChip(_ pid: String) -> some View {
+        let chip = Text("↗ " + String(pid.prefix(8)))
+            .font(DatawatchFonts.labelSmall)
+            .foregroundStyle(DatawatchColors.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(DatawatchColors.secondary.opacity(0.16), in: RoundedRectangle(cornerRadius: 6))
+        if let onParent {
+            Button(action: onParent) { chip }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Open parent automaton \(pid)")
+        } else {
+            chip.accessibilityLabel("Parent automaton \(pid)")
+        }
     }
 
     private var metaLine: String {

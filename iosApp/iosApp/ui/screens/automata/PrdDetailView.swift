@@ -111,6 +111,8 @@ struct PrdDetailView: View {
     @State private var itemEdit: PrdItemEdit? = nil
     @State private var openFile: PrdOpenFile? = nil
     @State private var capacity: CapacityResponseDto? = nil
+    /// D74a approve-with-note dialog.
+    @State private var review: PrdReviewRequest? = nil
     @Environment(\.dismiss) private var dismissDetail
 
     init(profile: ServerProfile, initial: PrdDto) {
@@ -131,7 +133,7 @@ struct PrdDetailView: View {
                     case "reject": showReject = true
                     case "request_revision": showRevision = true
                     case "cancel": showCancel = true
-                    case "approve": Task { await vm.perform("approve", body: ["actor": "operator"]) }
+                    case "approve": askApprove()
                     default: Task { await vm.perform(action) }
                     }
                 }
@@ -148,6 +150,7 @@ struct PrdDetailView: View {
                 if let spec = prd.spec, !spec.isEmpty {
                     specSection(spec)
                 }
+                PrdMemorySection(profile: vm.profile, prd: prd)
                 storiesSection
                 PrdDecisionsSection(decisions: prd.decisions ?? [])
                 PrdScanCard(profile: vm.profile, prdId: prd.id) { _ in Task { await vm.refresh() } }
@@ -169,7 +172,7 @@ struct PrdDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    Button { showEdit = true } label: { Label("Edit title / spec", systemImage: "pencil") }
+                    Button { showEdit = true } label: { Label("Edit", systemImage: "pencil") }
                     Button { showSetLlm = true } label: { Label("Set LLM", systemImage: "cpu") }
                     Button { showSettings = true } label: { Label("Settings", systemImage: "slider.horizontal.3") }
                     Button {
@@ -184,6 +187,10 @@ struct PrdDetailView: View {
                             Task { await vm.perform("reset_to_draft", body: ["actor": "operator"]) }
                         } label: { Label("Reset to Draft", systemImage: "arrow.uturn.backward") }
                     }
+                    // D76a (Android #202): re-resolve stuck depends_on refs; no-op when resolved.
+                    Button {
+                        Task { await vm.perform("repair_depends_on") }
+                    } label: { Label("Repair Dependencies", systemImage: "wrench.and.screwdriver") }
                     Divider()
                     Button(role: .destructive) { showDelete = true } label: { Label("Delete", systemImage: "trash") }
                 } label: {
@@ -215,7 +222,8 @@ struct PrdDetailView: View {
             SetPrdLlmView(profile: vm.profile, prd: prd) { Task { await vm.refresh() } }
         }
         .sheet(isPresented: $showEdit) {
-            EditPrdView(profile: vm.profile, prdId: prd.id, title: prd.displayTitle, spec: prd.spec ?? "") {
+            EditPrdView(profile: vm.profile, prdId: prd.id, title: prd.displayTitle, spec: prd.spec ?? "",
+                        currentPermissionMode: prd.permissionMode ?? "") {
                 Task { await vm.refresh() }
             }
         }
@@ -249,6 +257,9 @@ struct PrdDetailView: View {
 
     private var withAlerts: some View {
         withSheets
+        .prdReviewDialogs($review) { _, action, body in
+            Task { await vm.perform(action, body: body) }
+        }
         .alert("Reject PRD", isPresented: $showReject) {
             TextField("Reason", text: $rejectReason)
             Button("Reject", role: .destructive) {
@@ -366,7 +377,7 @@ struct PrdDetailView: View {
             case "needs_review", "revisions_asked":
                 HStack(spacing: 10) {
                     actionButton("Approve", systemImage: "checkmark.circle", tint: DatawatchColors.success) {
-                        Task { await vm.perform("approve") }
+                        askApprove()
                     }
                     actionButton("Revise", systemImage: "pencil.and.outline", tint: DatawatchColors.warning) { showRevision = true }
                     actionButton("Reject", systemImage: "xmark.circle", tint: DatawatchColors.error) { showReject = true }
@@ -385,6 +396,11 @@ struct PrdDetailView: View {
                 EmptyView()
             }
         }
+    }
+
+    /// D74a: Approve opens an optional-note dialog (Android approve dialog).
+    private func askApprove() {
+        review = PrdReviewRequest(prdId: prd.id, title: prd.displayTitle, action: "approve")
     }
 
     private func actionButton(_ title: String, systemImage: String, tint: Color, action: @escaping () -> Void) -> some View {
