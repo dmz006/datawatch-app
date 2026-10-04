@@ -476,7 +476,7 @@ private fun addDetailRows(
             gpuRows += buildComputeNodeGpuRows(nodeDto, detail)
         }
         // Budget: MAX_DETAIL_ROWS - rows already added (CPU+Mem+Disk = 3 max) - 1 for Sessions
-        val used = 3 + (if (diskUsed != null && diskTotal != null && diskTotal > 0) 0 else -1)
+        val used = FIXED_DETAIL_ROWS + (if (diskUsed != null && diskTotal != null && diskTotal > 0) 0 else -1)
         val budget = MAX_DETAIL_ROWS - used - 1
         gpuRows.take(budget.coerceAtLeast(1)).forEach { items.addItem(it) }
     } else {
@@ -582,7 +582,7 @@ private fun buildComputeNodeRows(nodeDto: ComputeNodeDto, detail: ComputeNodeDet
         val rawVendor = g.vendor.takeIf { it.isNotBlank() }
         val gpuTitle = buildString {
             val label = rawName ?: rawVendor ?: "GPU"
-            append(label.take(24))
+            append(label.take(MAX_GPU_TITLE))
             if (detail.gpu.size > 1) append(" [${idx + 1}]")
         }
         gpuBuilder.setTitle(gpuTitle)
@@ -631,7 +631,7 @@ private fun buildComputeNodeGpuRows(nodeDto: ComputeNodeDto, detail: ComputeNode
         val rawVendor = g.vendor.takeIf { it.isNotBlank() }
         val gpuTitle = buildString {
             val label = rawName ?: rawVendor ?: "GPU"
-            append(label.take(24))
+            append(label.take(MAX_GPU_TITLE))
             if (detail.gpu.size > 1) append(" [${idx + 1}]")
         }
         gpuBuilder.setTitle(gpuTitle)
@@ -677,7 +677,10 @@ private fun buildDiskRow(s: StatsDto): Row? {
 }
 
 private const val MAX_DETAIL_ROWS: Int = 6
+// CPU + Mem + Disk rows always reserved before GPU rows are budgeted.
+private const val FIXED_DETAIL_ROWS: Int = 3
 private const val MAX_NODE_TITLE: Int = 20
+private const val MAX_GPU_TITLE: Int = 24
 
 /** Compact one-liner summary for multi-server mode: "CPU 45% · Mem 8.2/16 GB · 3 sessions". */
 private fun buildServerSummary(
