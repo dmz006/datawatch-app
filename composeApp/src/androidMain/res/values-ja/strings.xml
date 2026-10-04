@@ -1234,4 +1234,24 @@
     <string name="observer_remove_peer_title">ピア「%1$s」を削除しますか?</string>
     <string name="observer_remove_peer_body">次回のプッシュで自動的に再登録されます (トークンはローテーションされます)。</string>
     <string name="action_remove">削除</string>
+    <string name="loading_ellipsis">読み込み中…</string>
+    <string name="action_refresh">更新</string>
+    <string name="settings_profile_pinned_badge">証明書をピン留め済み</string>
+    <string name="exit_hooks_title">終了フック</string>
+    <string name="exit_hooks_help">終了フックは、名前付きセッションがゾンビ化 (Claude プロセス終了) するか failed/killed 状態になると起動します。restart は同じタスクでセッションを再起動し、notify は別の名前付きセッションにメッセージを送ります。</string>
+    <string name="exit_hooks_empty">終了フックは設定されていません。</string>
+    <string name="exit_hooks_add">終了フックを追加</string>
+    <string name="exit_hooks_name_hint">監視するセッション名 (完全一致)</string>
+    <string name="exit_hooks_action_restart">restart — 同じタスクで再起動</string>
+    <string name="exit_hooks_action_notify">notify — 別のセッションにメッセージを送信</string>
+    <string name="exit_hooks_notify_session_hint">通知先セッション名 (notify 用)</string>
+    <string name="exit_hooks_notify_message_hint">メッセージ (任意)</string>
+    <string name="exit_hooks_cooldown_hint">クールダウン秒数 (既定 300)</string>
+    <string name="work_queue_title">ワークキュー</string>
+    <string name="work_queue_help">WAL ベースの永続キュー。ロールを持つセッションがアイテムをアトミックに取得します。リースが切れた未完了アイテムは自動的に pending に戻ります。</string>
+    <string name="work_queue_role_hint">ロールで絞り込み (例: worker)</string>
+    <string name="work_queue_empty">キューのアイテムはありません。</string>
+    <string name="work_queue_push">作業アイテムを追加</string>
+    <string name="work_queue_new_role_hint">ロール (例: worker)</string>
+    <string name="work_queue_delete_title">キューアイテム %1$s を削除しますか?</string>
 </resources>

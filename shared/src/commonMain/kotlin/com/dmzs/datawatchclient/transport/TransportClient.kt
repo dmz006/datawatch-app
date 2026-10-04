@@ -1765,6 +1765,40 @@ public interface TransportClient {
      */
     public suspend fun fetchCrossHostEnvelopesJson(): Result<kotlinx.serialization.json.JsonObject> =
         Result.failure(UnsupportedOperationException("fetchCrossHostEnvelopesJson"))
+
+    /** GET /api/exit-hooks — BL356 exit hooks (`ExitHookEntry[]`). */
+    public suspend fun listExitHooksJson(): Result<kotlinx.serialization.json.JsonArray> =
+        Result.failure(UnsupportedOperationException("listExitHooksJson"))
+
+    /** POST /api/exit-hooks `{name, action, cooldown_seconds, notify_session?, notify_message?}`. */
+    public suspend fun createExitHook(body: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        Result.failure(UnsupportedOperationException("createExitHook"))
+
+    /** PUT /api/exit-hooks/{id} with a partial body (PWA toggles `{enabled}`). */
+    public suspend fun updateExitHook(
+        id: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("updateExitHook"))
+
+    /** DELETE /api/exit-hooks/{id}. */
+    public suspend fun deleteExitHook(id: String): Result<Unit> =
+        Result.failure(UnsupportedOperationException("deleteExitHook"))
+
+    /** GET /api/queue?role=&state= — BL357 work-queue items. */
+    public suspend fun listQueueJson(
+        role: String? = null,
+        state: String? = null,
+    ): Result<kotlinx.serialization.json.JsonArray> = Result.failure(UnsupportedOperationException("listQueueJson"))
+
+    /** POST /api/queue/push `{role, payload}`. */
+    public suspend fun pushQueueItem(
+        role: String,
+        payload: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("pushQueueItem"))
+
+    /** DELETE /api/queue/{id}. */
+    public suspend fun deleteQueueItem(id: String): Result<Unit> =
+        Result.failure(UnsupportedOperationException("deleteQueueItem"))
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

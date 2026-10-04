@@ -1550,4 +1550,24 @@
     <string name="observer_cross_host_empty">No envelopes anywhere — local observer empty and no peers pushed yet.</string>
     <string name="observer_remove_peer_title">Remove peer \"%1$s\"?</string>
     <string name="observer_remove_peer_body">It will auto-re-register on next push (token rotates).</string>
+    <string name="loading_ellipsis">Loading…</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="settings_profile_pinned_badge">certificate pinned</string>
+    <string name="exit_hooks_title">Exit Hooks</string>
+    <string name="exit_hooks_help">Exit hooks fire when a named session goes zombie (Claude process exits) or enters failed/killed state. Action restart relaunches the session with the same task. Action notify sends a message to another named session.</string>
+    <string name="exit_hooks_empty">No exit hooks configured.</string>
+    <string name="exit_hooks_add">Add Exit Hook</string>
+    <string name="exit_hooks_name_hint">Session name to watch (exact)</string>
+    <string name="exit_hooks_action_restart">restart — relaunch with same task</string>
+    <string name="exit_hooks_action_notify">notify — send message to another session</string>
+    <string name="exit_hooks_notify_session_hint">Target session name (for notify)</string>
+    <string name="exit_hooks_notify_message_hint">Message (optional)</string>
+    <string name="exit_hooks_cooldown_hint">Cooldown seconds (default 300)</string>
+    <string name="work_queue_title">Work Queue</string>
+    <string name="work_queue_help">WAL-backed durable queue. Sessions holding a role claim items atomically. Uncompleted items whose lease expires automatically return to pending.</string>
+    <string name="work_queue_role_hint">Filter role (e.g. worker)</string>
+    <string name="work_queue_empty">No queue items found.</string>
+    <string name="work_queue_push">Push Work Item</string>
+    <string name="work_queue_new_role_hint">Role (e.g. worker)</string>
+    <string name="work_queue_delete_title">Delete queue item %1$s?</string>
 </resources>

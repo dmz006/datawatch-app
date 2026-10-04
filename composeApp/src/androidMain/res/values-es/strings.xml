@@ -1234,4 +1234,24 @@
     <string name="observer_remove_peer_title">¿Eliminar el par \"%1$s\"?</string>
     <string name="observer_remove_peer_body">Se volverá a registrar automáticamente en el próximo envío (el token rota).</string>
     <string name="action_remove">Eliminar</string>
+    <string name="loading_ellipsis">Cargando…</string>
+    <string name="action_refresh">Actualizar</string>
+    <string name="settings_profile_pinned_badge">certificado fijado</string>
+    <string name="exit_hooks_title">Hooks de salida</string>
+    <string name="exit_hooks_help">Los hooks de salida se activan cuando una sesión con nombre queda zombi (el proceso de Claude termina) o pasa a failed/killed. La acción restart relanza la sesión con la misma tarea. La acción notify envía un mensaje a otra sesión con nombre.</string>
+    <string name="exit_hooks_empty">No hay hooks de salida configurados.</string>
+    <string name="exit_hooks_add">Añadir hook de salida</string>
+    <string name="exit_hooks_name_hint">Nombre de sesión a vigilar (exacto)</string>
+    <string name="exit_hooks_action_restart">restart — relanzar con la misma tarea</string>
+    <string name="exit_hooks_action_notify">notify — enviar mensaje a otra sesión</string>
+    <string name="exit_hooks_notify_session_hint">Nombre de la sesión destino (para notify)</string>
+    <string name="exit_hooks_notify_message_hint">Mensaje (opcional)</string>
+    <string name="exit_hooks_cooldown_hint">Segundos de enfriamiento (predeterminado 300)</string>
+    <string name="work_queue_title">Cola de trabajo</string>
+    <string name="work_queue_help">Cola duradera respaldada por WAL. Las sesiones con un rol reclaman elementos de forma atómica. Los elementos no completados cuyo arrendamiento expira vuelven automáticamente a pending.</string>
+    <string name="work_queue_role_hint">Filtrar rol (p. ej. worker)</string>
+    <string name="work_queue_empty">No se encontraron elementos en la cola.</string>
+    <string name="work_queue_push">Añadir elemento de trabajo</string>
+    <string name="work_queue_new_role_hint">Rol (p. ej. worker)</string>
+    <string name="work_queue_delete_title">¿Eliminar el elemento de la cola %1$s?</string>
 </resources>

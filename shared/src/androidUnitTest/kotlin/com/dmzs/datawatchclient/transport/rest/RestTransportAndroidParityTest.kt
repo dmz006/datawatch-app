@@ -112,4 +112,52 @@ class RestTransportAndroidParityTest {
             assertTrue(obj.containsKey("by_peer"))
             assertEquals("/api/observer/envelopes/all-peers", server.takeRequest().path)
         }
+
+    @Test
+    fun exitHooksCrud() =
+        runTest {
+            server.enqueue(json("""[{"id":"h1","name":"build","action":"restart","cooldown_seconds":300,"enabled":true}]"""))
+            assertEquals(1, transport.listExitHooksJson().getOrThrow().size)
+            assertEquals("/api/exit-hooks", server.takeRequest().path)
+
+            server.enqueue(json("""{"id":"h2"}"""))
+            val body = kotlinx.serialization.json.buildJsonObject { put("name", kotlinx.serialization.json.JsonPrimitive("x")) }
+            assertTrue(transport.createExitHook(body).isSuccess)
+            val post = server.takeRequest()
+            assertEquals("POST", post.method)
+            assertTrue(post.body.readUtf8().contains("\"name\":\"x\""))
+
+            server.enqueue(json("""{"id":"h1"}"""))
+            val upd = kotlinx.serialization.json.buildJsonObject { put("enabled", kotlinx.serialization.json.JsonPrimitive(false)) }
+            assertTrue(transport.updateExitHook("h1", upd).isSuccess)
+            val put = server.takeRequest()
+            assertEquals("PUT", put.method)
+            assertEquals("/api/exit-hooks/h1", put.path)
+
+            server.enqueue(json("""{"ok":true}"""))
+            assertTrue(transport.deleteExitHook("h1").isSuccess)
+            assertEquals("DELETE", server.takeRequest().method)
+        }
+
+    @Test
+    fun workQueueListPushDelete() =
+        runTest {
+            server.enqueue(json("null"))
+            assertEquals(0, transport.listQueueJson("worker", "pending").getOrThrow().size)
+            assertEquals("/api/queue?role=worker&state=pending", server.takeRequest().path)
+
+            server.enqueue(json("""{"id":"q1","role":"worker","state":"pending"}"""))
+            val payload = kotlinx.serialization.json.buildJsonObject { put("task", kotlinx.serialization.json.JsonPrimitive("t")) }
+            assertTrue(transport.pushQueueItem("worker", payload).isSuccess)
+            val push = server.takeRequest()
+            assertEquals("/api/queue/push", push.path)
+            val b = push.body.readUtf8()
+            assertTrue(b.contains("\"role\":\"worker\"") && b.contains("\"task\":\"t\""), b)
+
+            server.enqueue(json("""{"ok":true}"""))
+            assertTrue(transport.deleteQueueItem("q1").isSuccess)
+            val del = server.takeRequest()
+            assertEquals("DELETE", del.method)
+            assertEquals("/api/queue/q1", del.path)
+        }
 }

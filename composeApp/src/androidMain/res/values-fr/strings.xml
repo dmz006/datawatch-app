@@ -1234,4 +1234,24 @@
     <string name="observer_remove_peer_title">Supprimer le pair « %1$s » ?</string>
     <string name="observer_remove_peer_body">Il se réenregistrera automatiquement au prochain envoi (le jeton est renouvelé).</string>
     <string name="action_remove">Supprimer</string>
+    <string name="loading_ellipsis">Chargement…</string>
+    <string name="action_refresh">Actualiser</string>
+    <string name="settings_profile_pinned_badge">certificat épinglé</string>
+    <string name="exit_hooks_title">Hooks de sortie</string>
+    <string name="exit_hooks_help">Les hooks de sortie se déclenchent lorsqu\'une session nommée devient zombie (le processus Claude se termine) ou passe en failed/killed. L\'action restart relance la session avec la même tâche. L\'action notify envoie un message à une autre session nommée.</string>
+    <string name="exit_hooks_empty">Aucun hook de sortie configuré.</string>
+    <string name="exit_hooks_add">Ajouter un hook de sortie</string>
+    <string name="exit_hooks_name_hint">Nom de session à surveiller (exact)</string>
+    <string name="exit_hooks_action_restart">restart — relancer avec la même tâche</string>
+    <string name="exit_hooks_action_notify">notify — envoyer un message à une autre session</string>
+    <string name="exit_hooks_notify_session_hint">Nom de la session cible (pour notify)</string>
+    <string name="exit_hooks_notify_message_hint">Message (facultatif)</string>
+    <string name="exit_hooks_cooldown_hint">Délai de récupération en secondes (300 par défaut)</string>
+    <string name="work_queue_title">File de travail</string>
+    <string name="work_queue_help">File durable adossée à un WAL. Les sessions détenant un rôle réclament les éléments de façon atomique. Les éléments non terminés dont le bail expire reviennent automatiquement à pending.</string>
+    <string name="work_queue_role_hint">Filtrer le rôle (ex. worker)</string>
+    <string name="work_queue_empty">Aucun élément dans la file.</string>
+    <string name="work_queue_push">Ajouter un élément de travail</string>
+    <string name="work_queue_new_role_hint">Rôle (ex. worker)</string>
+    <string name="work_queue_delete_title">Supprimer l\'élément de file %1$s ?</string>
 </resources>
