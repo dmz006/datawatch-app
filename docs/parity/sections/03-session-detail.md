@@ -119,7 +119,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | token | Default font 9px, persisted (`cs_term_font_size` / prefs / UserDefaults) | ✓ 3480 | ✓ TT:91 | ✓ SDV:20 | aligned | | |
 | interaction | A−/A+ clamp 5..20 | ✓ changeTermFontSize 3180 (clamp?) | ✓ TT MIN/MAX | ✓ SDV:201/221 | aligned | | Verify PWA clamp |
 | interaction | Fit to width (shrink font until no horizontal overflow) | ✓ termFitToWidth 3196 | ✓ HH dwAutoFitToWidth, TT "Fit" | ✗ | ios-missing | | host.html has it; iOS needs the button |
-| interaction | Configured min cols/rows (claude 120) honoured; Settings "Terminal dimensions" card | ✓ 3496–3498 configCols | ✓ TV setMinSize + TerminalDimensionsCard | ✗ | ios-missing | | |
+| interaction | Configured min cols/rows (claude 120) honoured; Settings "Terminal dimensions" card | ✓ 3496–3498 configCols | ✓ TV setMinSize + TerminalDimensionsCard | ~ backend default min cols (claude 120 / 80); no dimensions card yet (Settings, D31) | misaligned | | |
 | motion | Keyboard-open refit: explicit height + rAF, second pass 350 ms | ✓ 3542–3579 | ✓ HH:357 350 ms; onSizeChanged → dwExplicitSize; safeFit 50/200/600/1200/2500 ms | ✓ iTV onLayout → dwExplicitSize | aligned | | |
 | interaction | Scroll mode: tmux-copy-mode, 700 ms pending-refresh window, Esc exits, button swaps to exit | ✓ 3238–3345 | ✓ TT:160–175 + HH dwSetScrollMode/dwScrollPendingRefresh | ✗ | ios-missing | | |
 | element | Scroll-mode strip: Page Up/Down, Line Up/Down, ESC | ✓ `.scroll-bar-active` 3261; css 3146–3212 | ✓ TT:190 TerminalScrollModeStrip | ✗ | ios-missing | | |
@@ -128,7 +128,7 @@ iOS: `screens/sessions/SessionDetailView.swift` (SDV), `TerminalView.swift` (iTV
 | interaction | Pinch-zoom WebView as escape hatch for 80-col TUIs | n/a | ✓ TV:558 | ✗ | n/a | | iOS scrollView zoom disabled |
 | interaction | Terminal search (next/prev/clear) via search addon | ✗ | ✓ TV:325–342 dwSearch* (UI removed v0.42 — controller only) | ✗ | pwa-missing | needs-decision | Dormant on Android; keep/revive? (D13) |
 | interaction | Copy selection to clipboard | ✗ (browser native) | ✓ TV:349 dwCopySelection (controller only) | ✗ | n/a | | Native selection on web/iOS |
-| interaction | Prepend backlog on open (`dwPrependBacklog`) | ~ 3523 bufferedLines | ✓ TV:373 | ✗ | ios-missing | | iOS gets live frames only |
+| interaction | Prepend backlog on open (`dwPrependBacklog`) | ~ 3523 bufferedLines | ~ TV:373 `prepend()` defined but never called | ✗ | misaligned | | Not live on Android either (verified 2026-10-04); iOS gets live frames only |
 | element | DATAWATCH_COMPLETE marker lines filtered from captures | ✓ app.js ~609 | ✓ HH:519 | ✓ (HH) | aligned | | |
 | element | Terminal exit: black-screen-safe WebView teardown | n/a | ✓ TV:694–705 | ✓ iTV dismantleUIView | n/a | | |
 

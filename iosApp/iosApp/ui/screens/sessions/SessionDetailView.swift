@@ -160,6 +160,7 @@ struct SessionDetailView: View {
         .animation(.easeInOut, value: killError)
         .onAppear {
             terminal.onAutoFontSize = { px in termFontSize = px }
+            terminal.setMinCols(TerminalController.defaultMinCols(backend: session.backend))
             fetchMessagingBackend()
             IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
                 DispatchQueue.main.async { self.whisperEnabled = enabled.boolValue }
