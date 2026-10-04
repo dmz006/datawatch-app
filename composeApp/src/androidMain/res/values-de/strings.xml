@@ -28,7 +28,6 @@
     <string name="action_edit">Bearbeiten</string>
     <string name="action_browse">Durchsuchen…</string>
     <string name="action_back">Zurück</string>
-    <string name="action_kill">Beenden</string>
     <string name="action_yes">Ja</string>
     <string name="action_no">Nein</string>
 
@@ -114,8 +113,7 @@
     <string name="session_detail_generating">generiert</string>
     <string name="session_detail_no_messages">Noch keine Nachrichten. Warte auf Sitzungsausgabe…</string>
     <string name="session_detail_no_events">Noch keine Ereignisse — öffne eine Sitzung mit Ausgabe, um Zustandsübergänge, Eingabeaufforderungen und Abschlüsse zu sehen.</string>
-    <string name="session_detail_unreachable_banner">Server nicht erreichbar — Terminal-Stream pausiert, letzter Frame angezeigt.</string>
-    <string name="session_detail_kill_title">Sitzung beenden?</string>
+    <string name="session_detail_kill_title">Sitzung stoppen?</string>
     <string name="session_detail_kill_body">Dies beendet die tmux-Sitzung auf dem Server. Die Sitzung kann nicht fortgesetzt werden.</string>
     <string name="session_detail_delete_title">Sitzung löschen?</string>
     <string name="session_detail_delete_body">Der Sitzungsdatensatz wird vom Server entfernt. Daten auf der Festplatte bleiben erhalten. Das kann nicht rückgängig gemacht werden.</string>
@@ -414,7 +412,7 @@
     <string name="mermaid_render_hint">Mermaid-Diagramm (in Docs rendern)</string>
     <string name="mermaid_title">Mermaid-Diagramm</string>
     <string name="nav_automata">Automaten</string>
-    <string name="nav_home">Datawatch</string>
+    <string name="nav_home">datawatch</string>
     <string name="nav_new_session">Neue Sitzung</string>
     <string name="nav_observer">Observer</string>
     <string name="header_alerts_pill_cd">%1$d Warnungen</string>

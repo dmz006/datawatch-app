@@ -1534,15 +1534,25 @@ private fun ServerPickerTitle(
             modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                if (allMode) {
-                    stringResource(
-                        R.string.sessions_all_servers,
-                    )
-                } else {
-                    (active?.displayName ?: stringResource(R.string.sessions_no_server))
-                },
-            )
+            // Parity D1a/D9a: the Sessions header title is the brand
+            // "datawatch" (PWA `nav_home`). The active server stays visible
+            // as a muted sub-line so the picker affordance isn't lost —
+            // picker placement itself is a separate decision (D2).
+            Column {
+                Text(stringResource(R.string.nav_home))
+                Text(
+                    if (allMode) {
+                        stringResource(
+                            R.string.sessions_all_servers,
+                        )
+                    } else {
+                        (active?.displayName ?: stringResource(R.string.sessions_no_server))
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
             Icon(
                 Icons.Filled.ArrowDropDown,
                 contentDescription = stringResource(R.string.sessions_switch_server),
@@ -2035,18 +2045,10 @@ internal fun QuickCommandsSheet(
                         runCatching { r.start() }
                             .onSuccess { recorder = r }
                             .onFailure { e ->
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Recording failed: ${e.message ?: e::class.simpleName}",
-                                    android.widget.Toast.LENGTH_SHORT,
-                                ).show()
+                                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                             }
                     } else {
-                        android.widget.Toast.makeText(
-                            context,
-                            "Microphone permission denied — enable it in Settings.",
-                            android.widget.Toast.LENGTH_LONG,
-                        ).show()
+                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Microphone permission denied — enable it in Settings.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                     }
                 }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2101,12 +2103,8 @@ internal fun QuickCommandsSheet(
                                                             .trim()
                                                 },
                                                 onFailure = { err ->
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        "Transcribe failed on ${profile.displayName}: " +
-                                                            "${err.message ?: err::class.simpleName}",
-                                                        android.widget.Toast.LENGTH_LONG,
-                                                    ).show()
+                                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed on ${profile.displayName}: " +
+                                                            "${err.message ?: err::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                                 },
                                             )
                                     }
@@ -2123,11 +2121,7 @@ internal fun QuickCommandsSheet(
                                     runCatching { r.start() }
                                         .onSuccess { recorder = r }
                                         .onFailure { e ->
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "Recording failed: ${e.message ?: e::class.simpleName}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                         }
                                 } else {
                                     micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)

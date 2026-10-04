@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -839,7 +840,7 @@ private fun PrdRow(
                         maxLines = 2,
                         modifier = Modifier.weight(1f),
                     )
-                    StatusPill(prd.status)
+                    PrdStatusPill(prd.status)
                 }
                 // Row 2: ID + server/date (right-justified, monospace) — mirrors PWA
                 Row(
@@ -1139,20 +1140,42 @@ private fun PrdRow(
     }
 }
 
+/**
+ * PRD status pill — parity D23a: PWA `statusPill()` (app.js) uses the session
+ * state-badge tokens, not a per-status hex map:
+ *  - running / planning / decomposing → `.state-badge-running` (success tint +
+ *    success text) with the `dw-running-pulse` (0.55-1.0, 700 ms);
+ *  - failed → `.state-badge-failed` (error tint + error text);
+ *  - complete → `.state-badge-complete` (text2 tint + text2);
+ *  - every other status → no tint, default text colour.
+ * Border is 1px currentColor; 1×7 px padding, 10 px radius, 11 px / 600.
+ */
 @Composable
-private fun StatusPill(status: String) {
-    val color = prdStatusColor(status)
+internal fun PrdStatusPill(status: String) {
+    val s = status.lowercase()
+    val active = s == "running" || s == "planning" || s == "decomposing"
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+    val (bg, fg) =
+        when {
+            active -> dw.success.copy(alpha = 0.15f) to dw.success
+            s == "failed" -> MaterialTheme.colorScheme.error.copy(alpha = 0.15f) to MaterialTheme.colorScheme.error
+            s == "complete" ->
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f) to MaterialTheme.colorScheme.onSurfaceVariant
+            else -> Color.Transparent to MaterialTheme.colorScheme.onSurface
+        }
+    val alpha by com.dmzs.datawatchclient.ui.theme.rememberRunningPulseAlpha(active)
     Box(
         modifier =
             Modifier
-                .background(color.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
-                .border(1.dp, color, RoundedCornerShape(10.dp))
-                .padding(horizontal = 7.dp, vertical = 2.dp),
+                .graphicsLayer { this.alpha = alpha }
+                .background(bg, RoundedCornerShape(10.dp))
+                .border(1.dp, fg, RoundedCornerShape(10.dp))
+                .padding(horizontal = 7.dp, vertical = 1.dp),
     ) {
         Text(
-            status.lowercase().replace('_', ' '),
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
+            s.replace('_', ' '),
+            fontSize = 11.sp,
+            color = fg,
             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
         )
     }
@@ -1396,7 +1419,7 @@ internal fun prdStateRank(status: String): Int =
 internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {
         "running" -> Color(0xFF10B981)
-        "approved" -> Color(0xFF8B5CF6)
+        "approved" -> com.dmzs.datawatchclient.ui.theme.DwAccent // PWA .prd-card-status-approved = var(--accent)
         "needs_review", "revisions_asked", "awaiting_approval" -> Color(0xFFF59E0B)
         "blocked", "rejected" -> Color(0xFFEF4444)
         "decomposing", "planning" -> Color(0xFFA855F7)

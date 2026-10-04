@@ -20,7 +20,7 @@ public object ConfigFieldSchemas {
     public val Datawatch: ConfigSection =
         ConfigSection(
             id = "gc_dw",
-            title = "Datawatch",
+            title = "datawatch",
             fields =
                 listOf(
                     Select(

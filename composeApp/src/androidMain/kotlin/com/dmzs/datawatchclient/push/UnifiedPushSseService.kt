@@ -134,7 +134,7 @@ public class UnifiedPushSseService : Service() {
 
     private fun foregroundNotification(): Notification =
         NotificationCompat.Builder(this, NotificationChannels.FOREGROUND)
-            .setContentTitle("Datawatch — alerts stream active")
+            .setContentTitle("datawatch — alerts stream active")
             .setSmallIcon(R.drawable.ic_stat_dw)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)

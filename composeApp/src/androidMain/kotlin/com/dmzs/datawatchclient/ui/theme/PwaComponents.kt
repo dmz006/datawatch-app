@@ -1,11 +1,5 @@
 package com.dmzs.datawatchclient.ui.theme
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -70,18 +64,8 @@ public fun PwaStatePill(state: SessionState) {
                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f) to
                     MaterialTheme.colorScheme.onSurfaceVariant
         }
-    val runPulse = rememberInfiniteTransition(label = "pill-pulse")
-    val pillAlpha by runPulse.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1.0f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(900, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "pill-alpha",
-    )
-    val alpha = if (state == SessionState.Running) pillAlpha else 1f
+    // PWA dw-running-pulse (parity D18): 0.55-1.0, 700 ms ease-in-out, off under reduced motion.
+    val alpha by rememberRunningPulseAlpha(state == SessionState.Running)
     Box(
         modifier =
             Modifier

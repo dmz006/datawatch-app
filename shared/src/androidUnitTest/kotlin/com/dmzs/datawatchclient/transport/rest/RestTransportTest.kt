@@ -452,6 +452,19 @@ class RestTransportTest {
         }
 
     @Test
+    fun deleteAllAlertsEmitsAllAndDelete() =
+        runTest {
+            server.enqueue(jsonResponse("""{"status":"ok"}"""))
+            val res = transport.deleteAllAlerts()
+            assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+            val req = server.takeRequest()
+            assertEquals("/api/alerts", req.path)
+            val body = req.body.readUtf8()
+            assertTrue(body.contains("\"all\":true"), body)
+            assertTrue(body.contains("\"delete\":true"), body)
+        }
+
+    @Test
     fun markAlertReadRequiresIdOrAll() =
         runTest {
             // Callers must pass one or the other — guard is an IllegalArgumentException

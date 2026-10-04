@@ -401,18 +401,10 @@ private fun DocsSearchDialog(
                         showVoiceDialog = true
                     }
                     .onFailure { e ->
-                        android.widget.Toast.makeText(
-                            context,
-                            "Recording failed: ${e.message ?: e::class.simpleName}",
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
+                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                     }
             } else {
-                android.widget.Toast.makeText(
-                    context,
-                    "Microphone permission denied — enable it in Settings.",
-                    android.widget.Toast.LENGTH_LONG,
-                ).show()
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Microphone permission denied — enable it in Settings.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
             }
         }
 
@@ -453,11 +445,7 @@ private fun DocsSearchDialog(
                                     if (t.isNotEmpty()) query = TextFieldValue(t)
                                 }
                                 .onFailure { err ->
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Transcribe failed: ${err.message}",
-                                        android.widget.Toast.LENGTH_LONG,
-                                    ).show()
+                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed: ${err.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                 }
                         }
                     } finally {
@@ -501,11 +489,7 @@ private fun DocsSearchDialog(
                                             showVoiceDialog = true
                                         }
                                         .onFailure { e ->
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "Recording failed: ${e.message ?: e::class.simpleName}",
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
+                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                                         }
                                 } else {
                                     micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)

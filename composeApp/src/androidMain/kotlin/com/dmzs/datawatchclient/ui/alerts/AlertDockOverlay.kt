@@ -1,7 +1,5 @@
 package com.dmzs.datawatchclient.ui.alerts
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -42,6 +40,9 @@ import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockEntry
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 
 /**
  * Floating alert dock — appears top-right when 2+ active alerts exist,
@@ -49,10 +50,11 @@ import com.dmzs.datawatchclient.domain.AlertSeverity
  *
  * - Collapsed: count pill + per-category badges + expand/dismiss/mute buttons.
  * - Expanded: scrolling list of last 100 alerts (timestamp + type + message).
- * - ✕ dismisses the header (dock re-appears on next alert batch above threshold).
- * - 🔕 mutes; caller's [onMute] callback suppresses future dock renders for the session.
- *
- * Single alert: caller should NOT render this; pass through a slim toast instead.
+ * - ✕ clears the dock's client-side entries and closes it (PWA `dismissAlertDock`).
+ * - 🔕 mutes for the app session (PWA `muteAlertDock`, parity D47a).
+ * - [entries] are the client-side messages that replaced Android toasts
+ *   (parity D41a) plus live WS alert frames (D51a); [alerts] are server alerts.
+ * - No expand/collapse animation — the PWA dock is static (parity D36b).
  */
 @Composable
 public fun AlertDockOverlay(
@@ -60,13 +62,15 @@ public fun AlertDockOverlay(
     onDismiss: () -> Unit,
     onMute: () -> Unit,
     modifier: Modifier = Modifier,
+    entries: List<DockEntry> = emptyList(),
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val chevronAngle by animateFloatAsState(if (expanded) 180f else 0f, label = "chevron")
+    var expanded by remember { mutableStateOf(entries.isNotEmpty()) }
 
-    val errorCount = alerts.count { it.severity == AlertSeverity.Error }
+    val errorCount =
+        alerts.count { it.severity == AlertSeverity.Error } +
+            entries.filter { it.level == DockLevel.Error }.sumOf { it.count }
     val waitingCount = alerts.count { it.type == "waiting_input" || it.type == "needs_input" }
-    val total = alerts.size
+    val total = alerts.size + AlertDockChannel.localCount(entries)
 
     Box(
         modifier =
@@ -119,9 +123,9 @@ public fun AlertDockOverlay(
                     modifier = Modifier.size(28.dp),
                 ) {
                     Icon(
-                        Icons.Filled.KeyboardArrowDown,
+                        if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                         contentDescription = null,
-                        modifier = Modifier.rotate(chevronAngle).size(18.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -146,7 +150,7 @@ public fun AlertDockOverlay(
             }
 
             // Expanded: scrolling alert list (last 100)
-            AnimatedVisibility(visible = expanded) {
+            if (expanded) {
                 LazyColumn(
                     modifier =
                         Modifier.fillMaxWidth().heightIn(
@@ -154,7 +158,10 @@ public fun AlertDockOverlay(
                         ).padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    items(alerts.take(100)) { alert ->
+                    items(entries, key = { "e${it.id}" }) { entry ->
+                        DockEntryRow(entry, onRemove = { AlertDockChannel.remove(entry.id) })
+                    }
+                    items(alerts.take(100), key = { "a${it.id}" }) { alert ->
                         DockAlertRow(alert)
                     }
                 }
@@ -175,6 +182,58 @@ private fun CategoryPill(
                 .padding(horizontal = 5.dp, vertical = 1.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = color)
+    }
+}
+
+@Composable
+private fun DockEntryRow(
+    entry: DockEntry,
+    onRemove: () -> Unit,
+) {
+    val railColor =
+        when (entry.level) {
+            DockLevel.Error -> Color(0xFFEF4444)
+            DockLevel.Warning -> Color(0xFFF59E0B)
+            DockLevel.Success -> Color(0xFF10B981)
+            DockLevel.Info -> MaterialTheme.colorScheme.secondary
+        }
+    val time =
+        java.time.LocalTime
+            .ofInstant(java.time.Instant.ofEpochMilli(entry.tsMs), java.time.ZoneId.systemDefault())
+            .let { "%02d:%02d:%02d".format(it.hour, it.minute, it.second) }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(3.dp)
+                    .fillMaxHeight()
+                    .background(railColor, RoundedCornerShape(2.dp)),
+        )
+        Spacer(Modifier.width(6.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                if (entry.count > 1) "$time  ×${entry.count}" else time,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                entry.message,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 4,
+            )
+        }
+        IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
+            Icon(
+                Icons.Filled.Close,
+                contentDescription = stringResource(R.string.alert_dock_dismiss),
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

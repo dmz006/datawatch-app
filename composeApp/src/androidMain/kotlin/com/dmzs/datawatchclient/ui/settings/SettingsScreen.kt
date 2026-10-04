@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
-import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -607,29 +606,17 @@ private suspend fun downloadAndInstallCert(
             val filename = "datawatch-${profile.displayName.sanitizeForFilename()}-ca.pem"
             val saved = savePemToDownloads(context, filename, bytes)
             if (saved) {
-                Toast.makeText(
-                    context,
-                    "Saved to Downloads as $filename. Opening system trust-anchor screen…",
-                    Toast.LENGTH_LONG,
-                ).show()
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Saved to Downloads as $filename. Opening system trust-anchor screen…", com.dmzs.datawatchclient.ui.shell.DockLevel.Success)
                 // Hand off to the OS flow. User picks the PEM from Downloads.
                 val intent =
                     Intent(Settings.ACTION_SECURITY_SETTINGS)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
                     .onFailure {
-                        Toast.makeText(
-                            context,
-                            "Couldn't open security settings — install manually from Downloads.",
-                            Toast.LENGTH_LONG,
-                        ).show()
+                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Couldn't open security settings — install manually from Downloads.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
                     }
             } else {
-                Toast.makeText(
-                    context,
-                    "Downloaded cert but couldn't save to Downloads.",
-                    Toast.LENGTH_LONG,
-                ).show()
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Downloaded cert but couldn't save to Downloads.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
             }
         },
         onFailure = { err ->
@@ -639,7 +626,7 @@ private suspend fun downloadAndInstallCert(
                         "Server doesn't expose /api/cert (parent-repo support pending)."
                     else -> "Cert download failed — ${err.message ?: err::class.simpleName}"
                 }
-            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(msg, com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
         },
     )
 }
