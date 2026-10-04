@@ -129,6 +129,63 @@ final class PrdListViewModel: ObservableObject {
         UserDefaults.standard.set(Array(pinned), forKey: "dw.automata.pinned")
     }
 
+    // ── Batch mode (PWA _automataRenderBatchBar / batchAutomataAction) ──
+
+    @Published var selectMode = false { didSet { if !selectMode { selected.removeAll() } } }
+    @Published var selected: Set<String> = []
+    @Published private(set) var batchRunning = false
+    @Published var batchError: String? = nil
+
+    static let historyStatuses: Set<String> = ["completed", "rejected", "cancelled", "archived"]
+    static let batchActions = ["run", "approve", "cancel", "archive", "delete"]
+
+    func eligible(_ action: String, _ p: PrdDto) -> Bool {
+        let st = p.status.isEmpty ? "draft" : p.status
+        switch action {
+        case "run": return st == "approved"
+        case "approve": return st == "needs_review"
+        case "cancel": return !Self.historyStatuses.contains(st)
+        case "archive", "delete": return Self.historyStatuses.contains(st)
+        default: return false
+        }
+    }
+
+    func eligibleIds(_ action: String) -> [String] {
+        prds.filter { selected.contains($0.id) && eligible(action, $0) }.map { $0.id }
+    }
+
+    func toggleSelected(_ id: String) {
+        if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
+    }
+
+    func selectAllVisible(_ on: Bool) {
+        selected = on ? Set(visible.map { $0.id }) : []
+    }
+
+    /// Acts on the eligible subset only, one request at a time; non-eligible stay selected.
+    func runBatch(_ action: String) async {
+        guard let profile else { return }
+        let ids = eligibleIds(action)
+        guard !ids.isEmpty else { return }
+        batchRunning = true
+        var failures = 0
+        for id in ids {
+            do {
+                if action == "delete" {
+                    try await ServiceLocatorAsync.cancelPrd(profile: profile, prdId: id, hard: true)
+                } else {
+                    try await ServiceLocatorAsync.prdAction(profile: profile, prdId: id, action: action)
+                }
+                selected.remove(id)
+            } catch {
+                failures += 1
+            }
+        }
+        batchRunning = false
+        if failures > 0 { batchError = "\(failures) of \(ids.count) \(action) request(s) failed." }
+        await refreshAsync()
+    }
+
     func toggleStatus(_ v: String) {
         if statusFilter.contains(v) { statusFilter.remove(v) } else { statusFilter.insert(v) }
     }
@@ -184,10 +241,14 @@ struct PrdListView: View {
     let profile: ServerProfile
     @StateObject private var vm = PrdListViewModel()
     @State private var showWizard = false
+    @State private var confirmBatchDelete = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             listContent
+            if vm.selectMode {
+                batchBar
+            } else {
             Button {
                 showWizard = true
             } label: {
@@ -200,6 +261,18 @@ struct PrdListView: View {
             .padding(.trailing, 20)
             .padding(.bottom, 20)
             .accessibilityLabel("Launch automaton")
+            }
+        }
+        .alert("Delete \(vm.eligibleIds("delete").count) automaton(s)?", isPresented: $confirmBatchDelete) {
+            Button("Delete", role: .destructive) { Task { await vm.runBatch("delete") } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This cannot be undone.")
+        }
+        .alert("Batch action", isPresented: Binding(get: { vm.batchError != nil }, set: { if !$0 { vm.batchError = nil } })) {
+            Button("OK", role: .cancel) { vm.batchError = nil }
+        } message: {
+            Text(vm.batchError ?? "")
         }
         .sheet(isPresented: $showWizard) {
             NewPrdView(profile: profile) { _ in Task { await vm.refreshAsync() } }
@@ -226,11 +299,49 @@ struct PrdListView: View {
         .onChange(of: profile.id) { _ in vm.start(profile: profile) }
     }
 
+    private var batchBar: some View {
+        let allSelected = !vm.visible.isEmpty && vm.visible.allSatisfy { vm.selected.contains($0.id) }
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                batchButton(allSelected ? "None" : "All", count: nil) { vm.selectAllVisible(!allSelected) }
+                batchButton("Run", count: vm.eligibleIds("run").count) { Task { await vm.runBatch("run") } }
+                batchButton("Approve", count: vm.eligibleIds("approve").count) { Task { await vm.runBatch("approve") } }
+                batchButton("Cancel run", count: vm.eligibleIds("cancel").count) { Task { await vm.runBatch("cancel") } }
+                batchButton("Archive", count: vm.eligibleIds("archive").count) { Task { await vm.runBatch("archive") } }
+                batchButton("🗑 Delete", count: vm.eligibleIds("delete").count, tint: DatawatchColors.error) { confirmBatchDelete = true }
+                batchButton("Done", count: nil) { vm.selectMode = false }
+                if vm.batchRunning { ProgressView().controlSize(.small) }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .background(DatawatchColors.surface)
+        .overlay(Divider().background(DatawatchColors.border), alignment: .top)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func batchButton(_ title: String, count: Int?, tint: Color = DatawatchColors.onSurface, action: @escaping () -> Void) -> some View {
+        let disabled = (count == 0) || vm.batchRunning
+        return Button(action: action) {
+            HStack(spacing: 3) {
+                Text(title)
+                if let count { Text("(\(count))").opacity(0.6) }
+            }
+            .font(DatawatchFonts.labelSmall.weight(.semibold))
+            .foregroundStyle(disabled ? DatawatchColors.onSurfaceMuted : tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(DatawatchColors.surface2, in: Capsule())
+        }
+        .disabled(disabled)
+    }
+
     private var listToolbar: some View {
         VStack(spacing: 6) {
             HStack(spacing: 8) {
                 chip("⊞ Filter", on: vm.filterOpen) { vm.filterOpen.toggle() }
                 chip("History", on: vm.historyOn) { vm.historyOn.toggle() }
+                chip("☑ Select", on: vm.selectMode) { vm.selectMode.toggle() }
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass").foregroundStyle(DatawatchColors.onSurfaceMuted)
                     TextField("Search automata…", text: $vm.search)
@@ -283,10 +394,25 @@ struct PrdListView: View {
                     .listRowBackground(Color.clear)
             }
             ForEach(vm.visible, id: \.id) { prd in
-                NavigationLink {
-                    PrdDetailView(profile: profile, initial: prd)
-                } label: {
-                    PrdRow(prd: prd, pinned: vm.pinned.contains(prd.id))
+                Group {
+                    if vm.selectMode {
+                        Button {
+                            vm.toggleSelected(prd.id)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: vm.selected.contains(prd.id) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(vm.selected.contains(prd.id) ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                                PrdRow(prd: prd, pinned: vm.pinned.contains(prd.id))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        NavigationLink {
+                            PrdDetailView(profile: profile, initial: prd)
+                        } label: {
+                            PrdRow(prd: prd, pinned: vm.pinned.contains(prd.id))
+                        }
+                    }
                 }
                 .contextMenu {
                     Button(vm.pinned.contains(prd.id) ? "Unpin" : "Pin") { vm.togglePin(prd.id) }
