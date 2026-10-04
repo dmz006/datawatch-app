@@ -31,6 +31,10 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.SessionEvent
 import kotlinx.datetime.Instant
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 /**
  * Chat-mode transcript renderer. Used by sessions whose
@@ -64,6 +68,8 @@ private data class ChatEntry(
 public fun ChatTranscriptPanel(
     sessionId: String,
     modifier: Modifier = Modifier,
+    /** PWA `chatQuickCmd(prefix)`: prefill the composer with a memory command. */
+    onQuickCmd: (String) -> Unit = {},
 ) {
     val messages = remember(sessionId) { mutableStateListOf<ChatEntry>() }
     val streamingIndex = remember(sessionId) { mutableStateListOf<Int>() }
@@ -145,30 +151,88 @@ public fun ChatTranscriptPanel(
     }
 
     if (messages.isEmpty() && transientSystem.isEmpty()) {
-        Box(
+        androidx.compose.foundation.layout.Column(
             modifier = modifier.fillMaxSize().padding(24.dp),
-            contentAlignment = Alignment.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 "Waiting for the first chat message…",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(
+                androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.chat_memory_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+            )
+            ChatQuickCmdBar(onQuickCmd)
         }
         return
     }
+
+    // BL82 — collapse all but the last 4 messages once there are more than 6.
+    var earlierExpanded by remember(sessionId) { mutableStateOf(false) }
+    val collapsible = messages.size > CHAT_COLLAPSE_THRESHOLD
+    val olderCount = if (collapsible) messages.size - CHAT_RECENT_KEPT else 0
+    val shown = if (collapsible && !earlierExpanded) messages.takeLast(CHAT_RECENT_KEPT) else messages.toList()
 
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize().padding(horizontal = 8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        items(messages, key = { "${it.ts.toEpochMilliseconds()}-${it.hashCode()}" }) { entry ->
+        if (collapsible) {
+            item(key = "earlier-header") {
+                androidx.compose.material3.TextButton(onClick = { earlierExpanded = !earlierExpanded }) {
+                    Text(
+                        (if (earlierExpanded) "▾ " else "▸ ") + "💬 " +
+                            androidx.compose.ui.res.stringResource(
+                                com.dmzs.datawatchclient.R.string.chat_earlier_messages,
+                                olderCount,
+                            ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        items(shown, key = { "${it.ts.toEpochMilliseconds()}-${it.hashCode()}" }) { entry ->
             ChatBubble(entry)
         }
         if (transientSystem.isNotEmpty()) {
             item(key = "transient-${transientSystem.lastOrNull() ?: ""}") {
                 TransientSystemRow(transientSystem.lastOrNull() ?: "")
+            }
+        }
+        item(key = "chat-cmd-bar") { ChatQuickCmdBar(onQuickCmd) }
+    }
+}
+
+internal const val CHAT_COLLAPSE_THRESHOLD: Int = 6
+internal const val CHAT_RECENT_KEPT: Int = 4
+
+/** PWA `.chat-cmd-bar`: 📚 memories · 🔍 recall · 🔗 kg query · 🔬 research. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChatQuickCmdBar(onQuickCmd: (String) -> Unit) {
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.padding(vertical = 4.dp),
+    ) {
+        listOf(
+            "📚 memories" to "memories",
+            "🔍 recall" to "recall: ",
+            "🔗 kg query" to "kg query ",
+            "🔬 research" to "research: ",
+        ).forEach { (label, prefix) ->
+            androidx.compose.material3.OutlinedButton(
+                onClick = { onQuickCmd(prefix) },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                modifier = Modifier.height(28.dp),
+            ) {
+                Text(label, style = MaterialTheme.typography.labelSmall)
             }
         }
     }

@@ -1194,4 +1194,30 @@
     <string name="session_tree_orphaned">verwaist — übergeordnete Sitzung existiert nicht mehr</string>
     <string name="session_child_of">Kind von</string>
     <string name="sessions_pending_schedules">Ausstehende Zeitpläne</string>
+    <string name="session_renamed">Sitzung umbenannt</string>
+    <string name="session_rename_failed">Umbenennen fehlgeschlagen</string>
+    <string name="status_parent_session">Übergeordnete Sitzung:</string>
+    <string name="status_last_events">Letzte 5 Ereignisse vor dem Fehler</string>
+    <string name="session_conn_waiting_for">Warte auf %1$s…</string>
+    <string name="session_conn_mcp_channel">MCP-Kanal</string>
+    <string name="session_conn_acp_server">ACP-Server</string>
+    <string name="session_conn_answer_first">— beantworte zuerst die Eingabeaufforderung unten</string>
+    <string name="session_conn_dismiss">Schließen — nur tmux verwenden</string>
+    <string name="channel_help_intro">Der Kanal-Tab kommuniziert über MCP-Tool-Aufrufe und umgeht tmux. Nachrichten erscheinen direkt im Kontext des LLM.</string>
+    <string name="channel_help_you_can_send">Du kannst senden:</string>
+    <string name="channel_help_send_items">• Freitext-Anweisungen oder Rückfragen
+• Code-Review-Feedback oder Korrekturen
+• Neupriorisierung oder Änderungen des Umfangs</string>
+    <string name="channel_help_slash_title">Claude-Slash-Befehle (tmux-Tab):</string>
+    <string name="channel_help_slash_mcp">MCP-Server neu starten</string>
+    <string name="channel_help_slash_effort">Aufwandsstufe umschalten</string>
+    <string name="channel_help_slash_help">Claude-Hilfe</string>
+    <string name="channel_help_slash_compact">Unterhaltung komprimieren</string>
+    <string name="channel_help_slash_clear">Bildschirm leeren</string>
+    <string name="channel_help_llm_title">Das LLM kann zurücksenden:</string>
+    <string name="channel_help_llm_items">• Fortschritts- und Statusmeldungen
+• Fragen, die deine Eingabe erfordern
+• Abschlussbenachrichtigungen</string>
+    <string name="channel_help_footer">Kanal-Antworten erscheinen als bernsteinfarbene Zeilen. Der tmux-Tab zeigt die rohe Terminalausgabe. Nutze den Kanal für strukturierte Kommunikation, tmux für direkten Terminalzugriff.</string>
+    <string name="chat_earlier_messages">%1$d frühere Nachrichten</string>
 </resources>

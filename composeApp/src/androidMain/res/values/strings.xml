@@ -1511,4 +1511,30 @@
     <string name="session_tree_orphaned">orphaned — parent no longer exists</string>
     <string name="session_child_of">child of</string>
     <string name="sessions_pending_schedules">Pending schedules</string>
+    <string name="session_renamed">Session renamed</string>
+    <string name="session_rename_failed">Rename failed</string>
+    <string name="status_parent_session">Parent session:</string>
+    <string name="status_last_events">Last 5 events before failure</string>
+    <string name="session_conn_waiting_for">Waiting for %1$s…</string>
+    <string name="session_conn_mcp_channel">MCP channel</string>
+    <string name="session_conn_acp_server">ACP server</string>
+    <string name="session_conn_answer_first">— answer the input prompt below first</string>
+    <string name="session_conn_dismiss">Dismiss — use tmux only</string>
+    <string name="channel_help_intro">The Channel tab communicates via MCP tool calls, bypassing tmux. Messages appear directly in the LLM\'s context.</string>
+    <string name="channel_help_you_can_send">You can send:</string>
+    <string name="channel_help_send_items">• Free-text instructions or follow-up questions
+• Code review feedback or corrections
+• Task reprioritization or scope changes</string>
+    <string name="channel_help_slash_title">Claude slash commands (tmux tab):</string>
+    <string name="channel_help_slash_mcp">restart MCP servers</string>
+    <string name="channel_help_slash_effort">toggle effort level</string>
+    <string name="channel_help_slash_help">claude help</string>
+    <string name="channel_help_slash_compact">compact conversation</string>
+    <string name="channel_help_slash_clear">clear screen</string>
+    <string name="channel_help_llm_title">LLM can send back:</string>
+    <string name="channel_help_llm_items">• Progress updates and status messages
+• Questions requiring your input
+• Completion notifications</string>
+    <string name="channel_help_footer">Channel replies appear as amber lines. Tmux tab shows raw terminal output. Use Channel for structured communication, Tmux for direct terminal access.</string>
+    <string name="chat_earlier_messages">%1$d earlier messages</string>
 </resources>

@@ -40,6 +40,28 @@ public object SessionStateWatcher {
     )
 
     private val knownStates = ConcurrentHashMap<String, SessionState>()
+
+    /**
+     * PWA `pendingNeedsInputPopup`: a session that entered waiting_input while
+     * the user was not viewing it, stashed (prompt + time) for a one-shot
+     * replay when its detail view next opens.
+     */
+    internal data class PendingNeedsInput(val prompt: String, val atMs: Long)
+
+    private val pendingNeedsInput = ConcurrentHashMap<String, PendingNeedsInput>()
+    internal const val PENDING_TTL_MS: Long = 60L * 60 * 1000
+
+    /** One-shot: returns (and clears) the stashed prompt if it is < 1 h old. */
+    public fun consumePendingNeedsInput(
+        sessionId: String,
+        nowMs: Long = System.currentTimeMillis(),
+    ): String? {
+        val p = pendingNeedsInput.remove(sessionId) ?: return null
+        return p.prompt.takeIf { nowMs - p.atMs <= PENDING_TTL_MS }
+    }
+
+    /** Test/foreground seam — overridden in unit tests. */
+    internal var isForeground: (String) -> Boolean = { id -> runCatching { ForegroundSessionTracker.isForeground(id) }.getOrDefault(false) }
     private val waitingEpisodes = ConcurrentHashMap<String, WaitingEpisode>()
     private var seeded = false
 
@@ -69,6 +91,7 @@ public object SessionStateWatcher {
     public fun reset() {
         knownStates.clear()
         waitingEpisodes.clear()
+        pendingNeedsInput.clear()
         seeded = false
     }
 
@@ -116,6 +139,9 @@ public object SessionStateWatcher {
                     WaitingEpisode(firstSeenMs = nowMs, notifiedPrompt = null)
                 }
                 val prompt = promptFor(session)
+                if (prev != SessionState.Waiting && !isForeground(session.id)) {
+                    pendingNeedsInput[session.id] = PendingNeedsInput(prompt, nowMs)
+                }
                 if (nowMs - episode.firstSeenMs >= SETTLE_MS && episode.notifiedPrompt != prompt) {
                     val name = session.name ?: session.taskSummary ?: session.id
                     toPost += NotificationPoster.Event(
@@ -130,6 +156,7 @@ public object SessionStateWatcher {
                 // Definitively left Waiting — cancel and clear episode.
                 toCancel += session.id
                 waitingEpisodes.remove(session.id)
+                pendingNeedsInput.remove(session.id)
             }
         }
 

@@ -1678,6 +1678,17 @@ public interface TransportClient {
     /** GET /api/sessions/{id}/status as raw JSON — the hook board incl. `telemetry` + `current_focus` map. */
     public suspend fun fetchSessionStatusJson(sessionId: String): Result<kotlinx.serialization.json.JsonObject> =
         Result.failure(UnsupportedOperationException("fetchSessionStatusJson"))
+
+    // ---- Android-missing parity ----
+
+    /**
+     * POST /api/channel/send `{text, session_id}` — deliver [text] to the
+     * session's MCP channel instead of tmux (PWA `sendChannelMessage`, `▶ ch`).
+     */
+    public suspend fun sendChannelMessage(
+        sessionId: String,
+        text: String,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("sendChannelMessage"))
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

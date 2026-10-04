@@ -121,6 +121,11 @@ public data class Session(
      * badge when present and not `"local"`.
      */
     val server: String? = null,
+    /**
+     * `channel_ready` — the MCP channel (claude) / ACP server (opencode-acp)
+     * is connected. Drives the PWA "Waiting for MCP channel…" banner.
+     */
+    val channelReady: Boolean = false,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =

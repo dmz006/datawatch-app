@@ -107,6 +107,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.input.pointer.pointerInput
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,6 +123,8 @@ public fun SessionDetailScreen(
     isNew: Boolean = false,
     openInStatusMode: Boolean = false,
     onNavigateToSettings: ((tab: String) -> Unit)? = null,
+    /** Opens another session's detail (parent-session link on the Status tab). */
+    onOpenSession: ((String) -> Unit)? = null,
     vm: SessionDetailViewModel =
         viewModel(
             key = sessionId,
@@ -268,6 +277,18 @@ public fun SessionDetailScreen(
             key = "session-status-$sessionId",
         )
     val statusState by statusVm.state.collectAsState()
+    // PWA fetches /api/sessions/{id}/status on mount so the Status tab badge is
+    // populated before the tab is opened; and replays a pending needs-input
+    // popup (D41a: toast → alert dock) ~200 ms after entry.
+    LaunchedEffect(sessionId) {
+        statusVm.refreshStatus()
+        delay(200)
+        com.dmzs.datawatchclient.push.SessionStateWatcher.consumePendingNeedsInput(sessionId)?.let { prompt ->
+            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("[$sessionId] needs input — ${prompt.take(80)}")
+        }
+    }
+    var connBannerDismissed by remember(sessionId) { mutableStateOf(false) }
+    var channelHelpOpen by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val hookInstallToastStr = stringResource(R.string.status_hooks_installed_toast)
@@ -550,10 +571,25 @@ public fun SessionDetailScreen(
                                     },
                                 )
                             }
+                            // PWA tabStatusBadge: hook-health dot (alive green / stale amber) + state symbol.
+                            val hookDot =
+                                when (statusState.board?.hookHealth) {
+                                    "alive" -> LocalDatawatchColors.current.success
+                                    "stale" -> LocalDatawatchColors.current.warning
+                                    else -> null
+                                }
                             SessionModeTab(
-                                label = "${statusTabBadge(
-                                    statusState.board,
-                                )} ${stringResource(R.string.session_detail_tab_status)}",
+                                label = stringResource(R.string.session_detail_tab_status),
+                                trailing =
+                                    androidx.compose.ui.text.buildAnnotatedString {
+                                        if (hookDot != null) {
+                                            append(" ")
+                                            pushStyle(androidx.compose.ui.text.SpanStyle(color = hookDot, fontSize = 10.sp))
+                                            append("●")
+                                            pop()
+                                        }
+                                        if (statusState.board != null) append(" " + statusTabBadge(statusState.board))
+                                    },
                                 selected = statusMode,
                                 onClick = {
                                     statusMode = true
@@ -561,6 +597,20 @@ public fun SessionDetailScreen(
                                 },
                             )
                             Spacer(Modifier.weight(1f))
+                            // PWA `channelHelpBtn` — "?" only while the Channel tab is active.
+                            if (showChannelTab && chatMode && !statusMode) {
+                                TextButton(
+                                    onClick = { channelHelpOpen = true },
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                    modifier = Modifier.height(28.dp),
+                                ) {
+                                    Text(
+                                        "?",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    )
+                                }
+                            }
                             val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
                             if (showToolbar) {
                                 TerminalToolbarControls(toolbarState)
@@ -583,6 +633,30 @@ public fun SessionDetailScreen(
                         LastResponseSheet(
                             response = state.session?.lastResponse.orEmpty(),
                             onDismiss = { responseOpen = false },
+                        )
+                    }
+                    // PWA conn-status-banner: channel/ACP sessions that are active
+                    // but whose MCP channel / ACP server isn't connected yet.
+                    val sess = state.session
+                    val connMode =
+                        when (sess?.backend) {
+                            "opencode-acp" -> "acp"
+                            "claude", "claude-code" -> "channel"
+                            else -> null
+                        }
+                    val sessActive =
+                        sess?.state == SessionState.Running || sess?.state == SessionState.Waiting ||
+                            sess?.state == SessionState.RateLimited
+                    if (connMode != null && sessActive && sess?.channelReady != true && !connBannerDismissed) {
+                        ConnStatusBanner(
+                            modeLabel =
+                                if (connMode == "channel") {
+                                    stringResource(R.string.session_conn_mcp_channel)
+                                } else {
+                                    stringResource(R.string.session_conn_acp_server)
+                                },
+                            waitingInput = sess.state == SessionState.Waiting,
+                            onDismiss = { connBannerDismissed = true },
                         )
                     }
                     state.infoBanner?.let { info ->
@@ -703,6 +777,7 @@ public fun SessionDetailScreen(
                                     sessionId = sessionId,
                                     modifier = Modifier.weight(1f).fillMaxWidth(),
                                     vm = statusVm,
+                                    onOpenSession = { pid -> onOpenSession?.invoke(pid.substringAfterLast('-')) },
                                 )
                             }
                         }
@@ -710,6 +785,7 @@ public fun SessionDetailScreen(
                         ChatTranscriptPanel(
                             sessionId = sessionId,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
+                            onQuickCmd = vm::onReplyTextChange,
                         )
                     } else if (chatMode) {
                         // User's view-mode toggle (Terminal vs Chat-style bubbles
@@ -725,6 +801,12 @@ public fun SessionDetailScreen(
                                     it !is SessionEvent.PaneCapture && it !is SessionEvent.ChatMessage
                                 },
                             onQuickReply = vm::sendQuickReply,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                        )
+                    } else if (state.session?.outputMode == "log") {
+                        // PWA log viewer (output_mode=log, ACP/headless sessions).
+                        LogModeView(
+                            events = state.events,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
                     } else {
@@ -852,6 +934,11 @@ public fun SessionDetailScreen(
                                 hasResponse = false,
                                 fetchSavedCommands = { vm.fetchSavedCommands() },
                                 whisperConfigured = state.whisperConfigured,
+                                // PWA `▶ ch`: Channel tab active + not waiting → send via MCP channel.
+                                channelSend =
+                                    chatMode && !statusMode && state.session?.state != SessionState.Waiting &&
+                                        state.session?.backend.let { it == "claude" || it == "claude-code" || it == "opencode-acp" },
+                                onSendChannel = vm::sendViaChannel,
                             )
                         }
                     }
@@ -963,6 +1050,10 @@ public fun SessionDetailScreen(
             events = state.events,
             onDismiss = { timelineOpen = false },
         )
+    }
+
+    if (channelHelpOpen) {
+        ChannelHelpDialog(onDismiss = { channelHelpOpen = false })
     }
 
     if (renameOpen) {
@@ -1939,6 +2030,8 @@ private fun ReplyComposer(
     hasResponse: Boolean = false,
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     whisperConfigured: Boolean = false,
+    channelSend: Boolean = false,
+    onSendChannel: () -> Unit = {},
 ) {
     HorizontalDivider()
     // Parity D21b — PWA keys strip: "Commands…" dropdown + inline custom input.
@@ -2219,50 +2312,26 @@ private fun ReplyComposer(
             Text("␛", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         // PWA arrow order: ↑ ↓ ← →
-        IconButton(
-            onClick = { onQuickReply("\u001B[A") },
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                Icons.Filled.KeyboardArrowUp,
-                contentDescription = stringResource(R.string.session_detail_up_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        IconButton(
-            onClick = { onQuickReply("\u001B[B") },
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                Icons.Filled.KeyboardArrowDown,
-                contentDescription = stringResource(R.string.session_detail_down_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        IconButton(
-            onClick = { onQuickReply("\u001B[D") },
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = stringResource(R.string.session_detail_left_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        IconButton(
-            onClick = { onQuickReply("\u001B[C") },
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.session_detail_right_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
+        RepeatArrowButton(
+            onFire = { onQuickReply("\u001B[A") },
+            icon = Icons.Filled.KeyboardArrowUp,
+            contentDescription = stringResource(R.string.session_detail_up_arrow),
+        )
+        RepeatArrowButton(
+            onFire = { onQuickReply("\u001B[B") },
+            icon = Icons.Filled.KeyboardArrowDown,
+            contentDescription = stringResource(R.string.session_detail_down_arrow),
+        )
+        RepeatArrowButton(
+            onFire = { onQuickReply("\u001B[D") },
+            icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+            contentDescription = stringResource(R.string.session_detail_left_arrow),
+        )
+        RepeatArrowButton(
+            onFire = { onQuickReply("\u001B[C") },
+            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = stringResource(R.string.session_detail_right_arrow),
+        )
         // Enter — matches PWA savedCmdsQuick ⏎ button
         TextButton(
             onClick = { onQuickReply("\r") },
@@ -2399,13 +2468,25 @@ private fun ReplyComposer(
                     pendingImagePath = null
                     pendingImageName = null
                 }
-                onSend()
+                if (channelSend) onSendChannel() else onSend()
             },
             enabled = !sending && (text.isNotBlank() || pendingImagePath != null),
             modifier = Modifier.size(36.dp),
         ) {
             if (sending) {
                 CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(6.dp))
+            } else if (channelSend) {
+                Text(
+                    "▶ ch",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color =
+                        if (text.isNotBlank() || pendingImagePath != null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.Gray
+                        },
+                )
             } else {
                 Icon(
                     Icons.Filled.Send,
@@ -2575,6 +2656,7 @@ private fun SessionModeTab(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    trailing: androidx.compose.ui.text.AnnotatedString? = null,
 ) {
     val dw = LocalDatawatchColors.current
     val surfaceBg = MaterialTheme.colorScheme.surface
@@ -2606,7 +2688,11 @@ private fun SessionModeTab(
                 .padding(horizontal = 12.dp, vertical = 2.dp),
     ) {
         Text(
-            label,
+            if (trailing == null) {
+                androidx.compose.ui.text.AnnotatedString(label)
+            } else {
+                androidx.compose.ui.text.AnnotatedString(label) + trailing
+            },
             fontSize = 12.sp,
             color = textColor,
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
@@ -2745,6 +2831,178 @@ private fun CustomCommandRow(
         }
         IconButton(onClick = onCancel) {
             Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_cancel))
+        }
+    }
+}
+
+/**
+ * PWA `startArrowRepeat`: fire once on press, then after 250 ms repeat every
+ * 80 ms until release.
+ */
+@Composable
+private fun RepeatArrowButton(
+    onFire: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+) {
+    val latest by androidx.compose.runtime.rememberUpdatedState(onFire)
+    val scope = rememberCoroutineScope()
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier =
+            Modifier
+                .size(32.dp)
+                .semantics {
+                    this.contentDescription = contentDescription
+                    this.role = androidx.compose.ui.semantics.Role.Button
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            latest()
+                            val job =
+                                scope.launch {
+                                    delay(ARROW_REPEAT_DELAY_MS)
+                                    while (true) {
+                                        latest()
+                                        delay(ARROW_REPEAT_INTERVAL_MS)
+                                    }
+                                }
+                            tryAwaitRelease()
+                            job.cancel()
+                        },
+                    )
+                },
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+internal const val ARROW_REPEAT_DELAY_MS: Long = 250L
+internal const val ARROW_REPEAT_INTERVAL_MS: Long = 80L
+
+/** PWA `.conn-status-banner`: "Waiting for {mode}… [— answer the input prompt below first] ✕". */
+@Composable
+private fun ConnStatusBanner(
+    modeLabel: String,
+    waitingInput: Boolean,
+    onDismiss: () -> Unit,
+) {
+    Surface(color = LocalDatawatchColors.current.waiting.copy(alpha = 0.12f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(strokeWidth = 1.5.dp, modifier = Modifier.size(12.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                stringResource(R.string.session_conn_waiting_for, modeLabel) +
+                    if (waitingInput) " " + stringResource(R.string.session_conn_answer_first) else "",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.session_conn_dismiss),
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** PWA `showChannelHelp` popup ("Channel Commands"). */
+@Composable
+private fun ChannelHelpDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.channel_help_heading)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(stringResource(R.string.channel_help_intro), fontSize = 13.sp)
+                Text(stringResource(R.string.channel_help_you_can_send), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.channel_help_send_items), fontSize = 13.sp)
+                Text(stringResource(R.string.channel_help_slash_title), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "/mcp — " + stringResource(R.string.channel_help_slash_mcp) + "\n" +
+                        "/effort — " + stringResource(R.string.channel_help_slash_effort) + "\n" +
+                        "/help — " + stringResource(R.string.channel_help_slash_help) + "\n" +
+                        "/compact — " + stringResource(R.string.channel_help_slash_compact) + "\n" +
+                        "/clear — " + stringResource(R.string.channel_help_slash_clear),
+                    fontSize = 13.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                )
+                Text(stringResource(R.string.channel_help_llm_title), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.channel_help_llm_items), fontSize = 13.sp)
+                Text(
+                    stringResource(R.string.channel_help_footer),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+    )
+}
+
+/** PWA log-line classes (`output_mode=log`); later CSS rules win, so error > ready > processing > acp-status. */
+internal enum class LogLineKind { Plain, AcpStatus, Processing, Ready, Error }
+
+internal fun classifyLogLine(line: String): LogLineKind =
+    when {
+        line.contains("error") || line.contains("failed") -> LogLineKind.Error
+        line.contains("ready") || line.contains("awaiting input") -> LogLineKind.Ready
+        line.contains("thinking") || line.contains("processing") -> LogLineKind.Processing
+        line.contains("[opencode-acp]") -> LogLineKind.AcpStatus
+        else -> LogLineKind.Plain
+    }
+
+private val AnsiRegex = Regex("\u001B\\[[0-9;?]*[ -/]*[@-~]")
+
+/** PWA log viewer: output lines, ANSI-stripped, blank lines dropped, colour-classed, monospace. */
+@Composable
+private fun LogModeView(
+    events: List<SessionEvent>,
+    modifier: Modifier = Modifier,
+) {
+    val dw = LocalDatawatchColors.current
+    val lines =
+        remember(events) {
+            events.filterIsInstance<SessionEvent.Output>()
+                .flatMap { it.body.split('\n') }
+                .map { it.replace(AnsiRegex, "").trimEnd('\r') }
+                .filter { it.isNotBlank() }
+        }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(lines.size) { if (lines.isNotEmpty()) listState.scrollToItem(lines.lastIndex) }
+    androidx.compose.foundation.lazy.LazyColumn(
+        state = listState,
+        modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        items(lines.size) { i ->
+            val line = lines[i]
+            val kind = classifyLogLine(line)
+            Text(
+                line,
+                fontSize = 12.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontWeight = if (line.contains("[opencode-acp]")) FontWeight.SemiBold else FontWeight.Normal,
+                color =
+                    when (kind) {
+                        LogLineKind.Error -> MaterialTheme.colorScheme.error
+                        LogLineKind.Ready -> dw.success
+                        LogLineKind.Processing -> dw.warning
+                        LogLineKind.AcpStatus -> MaterialTheme.colorScheme.primary
+                        LogLineKind.Plain -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                modifier = Modifier.padding(vertical = 1.dp),
+            )
         }
     }
 }

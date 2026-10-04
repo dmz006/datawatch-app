@@ -1194,4 +1194,30 @@
     <string name="session_tree_orphaned">huérfano — el padre ya no existe</string>
     <string name="session_child_of">hijo de</string>
     <string name="sessions_pending_schedules">Programaciones pendientes</string>
+    <string name="session_renamed">Sesión renombrada</string>
+    <string name="session_rename_failed">Error al renombrar</string>
+    <string name="status_parent_session">Sesión padre:</string>
+    <string name="status_last_events">Últimos 5 eventos antes del fallo</string>
+    <string name="session_conn_waiting_for">Esperando %1$s…</string>
+    <string name="session_conn_mcp_channel">canal MCP</string>
+    <string name="session_conn_acp_server">servidor ACP</string>
+    <string name="session_conn_answer_first">— responde primero a la solicitud de entrada de abajo</string>
+    <string name="session_conn_dismiss">Descartar — usar solo tmux</string>
+    <string name="channel_help_intro">La pestaña Canal se comunica mediante llamadas a herramientas MCP, sin pasar por tmux. Los mensajes aparecen directamente en el contexto del LLM.</string>
+    <string name="channel_help_you_can_send">Puedes enviar:</string>
+    <string name="channel_help_send_items">• Instrucciones de texto libre o preguntas de seguimiento
+• Comentarios de revisión de código o correcciones
+• Repriorización de tareas o cambios de alcance</string>
+    <string name="channel_help_slash_title">Comandos slash de Claude (pestaña tmux):</string>
+    <string name="channel_help_slash_mcp">reiniciar servidores MCP</string>
+    <string name="channel_help_slash_effort">alternar nivel de esfuerzo</string>
+    <string name="channel_help_slash_help">ayuda de claude</string>
+    <string name="channel_help_slash_compact">compactar conversación</string>
+    <string name="channel_help_slash_clear">limpiar pantalla</string>
+    <string name="channel_help_llm_title">El LLM puede devolver:</string>
+    <string name="channel_help_llm_items">• Actualizaciones de progreso y mensajes de estado
+• Preguntas que requieren tu respuesta
+• Notificaciones de finalización</string>
+    <string name="channel_help_footer">Las respuestas del canal aparecen como líneas ámbar. La pestaña tmux muestra la salida sin procesar del terminal. Usa Canal para comunicación estructurada y tmux para acceso directo al terminal.</string>
+    <string name="chat_earlier_messages">%1$d mensajes anteriores</string>
 </resources>
