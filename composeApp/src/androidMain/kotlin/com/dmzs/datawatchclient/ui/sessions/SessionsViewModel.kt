@@ -112,7 +112,15 @@ public class SessionsViewModel : ViewModel() {
          * "all" or a wire state ([STATE_CHIP_KEYS]).
          */
         val stateChip: String = STATE_CHIP_ALL,
+        /** BL348 — PWA tree view (`cs_session_tree_view`): parent/child lineage grouping. */
+        val treeView: Boolean = false,
+        /** PWA `🕒 N` badge: `GET /api/schedules?state=pending` on the active server. */
+        val pendingSchedules: List<com.dmzs.datawatchclient.domain.Schedule> = emptyList(),
     ) {
+        /** [visibleSessions] flattened into the BL348 tree (depth + orphan flag per row). */
+        public val treeRows: List<TreeRow>
+            get() = flattenTree(visibleSessions)
+
         /** Per-state counts over the whole session list (PWA `stateCounts`). */
         public val stateCounts: Map<String, Int>
             get() {
@@ -223,8 +231,47 @@ public class SessionsViewModel : ViewModel() {
                 return visibleSessions.count { s -> s.state in doneStates }
             }
 
+        /** One row of the BL348 tree: [depth] 0 = root; [orphaned] = parent_id set but parent not in list. */
+        public data class TreeRow(val session: Session, val depth: Int, val orphaned: Boolean)
+
         public companion object {
             private const val RECENT_WINDOW_MINUTES: Long = 5
+
+            /**
+             * PWA `renderSessionsAsTree`: a session whose `parent_id` matches
+             * another visible session's full id nests under it (pre-order,
+             * siblings keep list order); everything else is a root, flagged
+             * orphaned when it names a parent that is not in the list.
+             */
+            public fun flattenTree(sessions: List<Session>): List<TreeRow> {
+                val byFullId = sessions.associateBy { it.fullId }
+                val children = mutableMapOf<String, MutableList<Session>>()
+                val roots = mutableListOf<Session>()
+                sessions.forEach { s ->
+                    val parent = s.parentId
+                    if (parent != null && parent != s.fullId && byFullId.containsKey(parent)) {
+                        children.getOrPut(parent) { mutableListOf() }.add(s)
+                    } else {
+                        roots.add(s)
+                    }
+                }
+                val out = mutableListOf<TreeRow>()
+                val seen = HashSet<String>()
+
+                fun visit(
+                    s: Session,
+                    depth: Int,
+                ) {
+                    if (!seen.add(s.fullId)) return // cycle guard
+                    val orphaned = s.parentId != null && !byFullId.containsKey(s.parentId)
+                    out.add(TreeRow(s, depth, orphaned))
+                    children[s.fullId].orEmpty().forEach { visit(it, depth + 1) }
+                }
+                roots.forEach { visit(it, 0) }
+                // Pure cycles (a↔b) have no root — append them flat so nothing disappears.
+                sessions.filter { it.fullId !in seen }.forEach { out.add(TreeRow(it, 0, false)) }
+                return out
+            }
             public const val STATE_CHIP_ALL: String = "all"
 
             /** PWA `realStateChips` order. */
@@ -319,6 +366,8 @@ public class SessionsViewModel : ViewModel() {
     private val _deleteSupported = MutableStateFlow(true)
     private val _backendByProfileId = MutableStateFlow<Map<String, String>>(emptyMap())
     private val _whisperConfigured = MutableStateFlow(false)
+    private val _treeView = MutableStateFlow(prefs().getString(PREF_TREE_VIEW, "0") == "1")
+    private val _pendingSchedules = MutableStateFlow<List<com.dmzs.datawatchclient.domain.Schedule>>(emptyList())
 
     /**
      * Per-active-profile reachability. Flattens into `null` when the active
@@ -400,8 +449,8 @@ public class SessionsViewModel : ViewModel() {
                     reorderMode = args[15] as Boolean,
                 )
             }
-        return combine(baseFlow, _whisperConfigured) { base, wc ->
-            base.copy(whisperConfigured = wc)
+        return combine(baseFlow, _whisperConfigured, _treeView, _pendingSchedules) { base, wc, tree, sched ->
+            base.copy(whisperConfigured = wc, treeView = tree, pendingSchedules = sched)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
 
@@ -482,6 +531,35 @@ public class SessionsViewModel : ViewModel() {
         const val AUTO_REFRESH_MS: Long = 30_000L
         const val PREF_STATE_CHIP = "cs_session_state_chip"
         const val PREF_SESSION_ORDER = "cs_session_order"
+        const val PREF_TREE_VIEW = "cs_session_tree_view"
+    }
+
+    /** BL348 — PWA `toggleSessionTreeView`, persisted as `cs_session_tree_view`. */
+    public fun toggleTreeView() {
+        val next = !_treeView.value
+        _treeView.value = next
+        prefs().edit().putString(PREF_TREE_VIEW, if (next) "1" else "0").apply()
+    }
+
+    /** PWA pending-schedules dropdown ✕ — cancel, then reload the badge. */
+    public fun cancelSchedule(scheduleId: String) {
+        val profile = activeProfile.value ?: return
+        viewModelScope.launch {
+            val transport = ServiceLocator.transportFor(profile)
+            transport.deleteSchedule(scheduleId).onFailure { e ->
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                    "Cancel failed: ${e.message ?: e::class.simpleName}",
+                    com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                )
+            }
+            loadPendingSchedules(profile)
+        }
+    }
+
+    private suspend fun loadPendingSchedules(profile: ServerProfile) {
+        ServiceLocator.transportFor(profile).listSchedules(state = "pending")
+            .onSuccess { list -> _pendingSchedules.value = list.filter { it.state == null || it.state == "pending" } }
+            .onFailure { _pendingSchedules.value = emptyList() }
     }
 
     public fun selectProfile(profileId: String) {
@@ -840,6 +918,8 @@ public class SessionsViewModel : ViewModel() {
                         "(${err.message ?: err::class.simpleName})"
                 },
             )
+            // PWA loadGlobalScheduleBadge — best-effort, hidden on failure.
+            loadPendingSchedules(profile)
             // Refresh the backend badge alongside — best-effort, silent on
             // failure (a stale chip is better than a blocking banner).
             transport.fetchInfo().onSuccess { info ->

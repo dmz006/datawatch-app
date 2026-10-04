@@ -507,6 +507,7 @@ private fun HomeShell(
                             onEditServer = onEditServer,
                             onAddServer = onAddServer,
                             onNewSession = onNewSession,
+                            onExpandSession = if (isWide) { id -> selectedSessionId = id } else onExpandSession,
                         )
                     }
                     composable(Destinations.Tabs.Autonomous) {

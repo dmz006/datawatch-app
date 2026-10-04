@@ -195,4 +195,37 @@ class SessionsViewModelTest {
         val sorted = SessionsViewModel.UiState.sortByManualOrder(sessions, listOf("gone", "b"))
         assertEquals(listOf("b", "a"), sorted.map { it.id })
     }
+
+    // ── BL348 tree view ────────────────────────────────────────────────────
+
+    private fun hs(
+        id: String,
+        parent: String? = null,
+    ) = session(id).copy(hostnamePrefix = "host", parentId = parent)
+
+    @Test
+    fun `tree nests children pre-order and flags orphans`() {
+        val rows =
+            SessionsViewModel.UiState.flattenTree(
+                listOf(hs("c1", "host-p1"), hs("p1"), hs("g1", "host-c1"), hs("o1", "host-gone"), hs("c2", "host-p1")),
+            )
+        assertEquals(listOf("p1", "c1", "g1", "c2", "o1"), rows.map { it.session.id })
+        assertEquals(listOf(0, 1, 2, 1, 0), rows.map { it.depth })
+        assertEquals(listOf(false, false, false, false, true), rows.map { it.orphaned })
+    }
+
+    @Test
+    fun `tree survives a parent cycle without dropping rows`() {
+        val rows = SessionsViewModel.UiState.flattenTree(listOf(hs("a", "host-b"), hs("b", "host-a")))
+        assertEquals(setOf("a", "b"), rows.map { it.session.id }.toSet())
+    }
+
+    // ── BL383 elapsed clock ────────────────────────────────────────────────
+
+    @Test
+    fun `formatElapsed mirrors the PWA`() {
+        assertEquals("7s", formatElapsed(7_000))
+        assertEquals("2m 05s", formatElapsed(125_000))
+        assertEquals("1h 1m", formatElapsed(3_661_000))
+    }
 }

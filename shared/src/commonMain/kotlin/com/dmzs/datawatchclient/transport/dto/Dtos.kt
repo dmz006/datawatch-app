@@ -90,6 +90,10 @@ public data class SessionDto(
     @SerialName("summary_generated_at") val summaryGeneratedAt: String? = null,
     /** Automaton that spawned this session (PRD executor / decomposer). */
     @SerialName("prd_id") val prdId: String? = null,
+    /** BL347 — full id of the parent session (spawned-by lineage). */
+    @SerialName("parent_id") val parentId: String? = null,
+    /** BL361 — LLM process liveness; `false` = zombie. Omitted when unknown. */
+    @SerialName("claude_alive") val claudeAlive: Boolean? = null,
 )
 
 @Serializable

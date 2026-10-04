@@ -120,4 +120,22 @@ class SessionMapperTest {
         val dto = SessionDto(id = "na1", state = "running", agentId = null)
         assertNull(dto.toDomain("srv-1").agentId)
     }
+
+    @Test
+    fun `lineage liveness and server are propagated`() {
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val dto =
+            json.decodeFromString(
+                SessionDto.serializer(),
+                """{"id":"cc01","state":"running","parent_id":"host-pp01","claude_alive":false,"server":"peer-a"}""",
+            )
+        val session = dto.toDomain("srv-1")
+        assertEquals("host-pp01", session.parentId)
+        assertEquals(false, session.claudeAlive)
+        assertEquals("peer-a", session.server)
+        val bare = SessionDto(id = "b1", state = "running", server = "").toDomain("srv-1")
+        assertNull(bare.parentId)
+        assertNull(bare.claudeAlive)
+        assertNull(bare.server)
+    }
 }
