@@ -1194,4 +1194,30 @@
     <string name="session_tree_orphaned">orphelin — le parent n\'existe plus</string>
     <string name="session_child_of">enfant de</string>
     <string name="sessions_pending_schedules">Planifications en attente</string>
+    <string name="session_renamed">Session renommée</string>
+    <string name="session_rename_failed">Échec du renommage</string>
+    <string name="status_parent_session">Session parente :</string>
+    <string name="status_last_events">5 derniers événements avant l\'échec</string>
+    <string name="session_conn_waiting_for">En attente de %1$s…</string>
+    <string name="session_conn_mcp_channel">canal MCP</string>
+    <string name="session_conn_acp_server">serveur ACP</string>
+    <string name="session_conn_answer_first">— répondez d\'abord à l\'invite ci-dessous</string>
+    <string name="session_conn_dismiss">Ignorer — utiliser tmux uniquement</string>
+    <string name="channel_help_intro">L\'onglet Canal communique via des appels d\'outils MCP, en contournant tmux. Les messages apparaissent directement dans le contexte du LLM.</string>
+    <string name="channel_help_you_can_send">Vous pouvez envoyer :</string>
+    <string name="channel_help_send_items">• Instructions en texte libre ou questions de suivi
+• Retours de revue de code ou corrections
+• Repriorisation des tâches ou changements de périmètre</string>
+    <string name="channel_help_slash_title">Commandes slash Claude (onglet tmux) :</string>
+    <string name="channel_help_slash_mcp">redémarrer les serveurs MCP</string>
+    <string name="channel_help_slash_effort">basculer le niveau d\'effort</string>
+    <string name="channel_help_slash_help">aide de claude</string>
+    <string name="channel_help_slash_compact">compacter la conversation</string>
+    <string name="channel_help_slash_clear">effacer l\'écran</string>
+    <string name="channel_help_llm_title">Le LLM peut renvoyer :</string>
+    <string name="channel_help_llm_items">• Mises à jour de progression et messages d\'état
+• Questions nécessitant votre réponse
+• Notifications de fin</string>
+    <string name="channel_help_footer">Les réponses du canal apparaissent en lignes ambre. L\'onglet tmux affiche la sortie brute du terminal. Utilisez Canal pour une communication structurée, tmux pour un accès direct au terminal.</string>
+    <string name="chat_earlier_messages">%1$d messages précédents</string>
 </resources>

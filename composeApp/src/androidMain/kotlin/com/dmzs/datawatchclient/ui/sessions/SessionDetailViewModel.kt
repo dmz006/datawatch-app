@@ -435,6 +435,30 @@ public class SessionDetailViewModel(
      * Whitespace-only strings like "\r" are intentional terminal input and
      * are NOT trimmed — only truly empty strings are rejected.
      */
+    /**
+     * PWA `sendChannelMessage` (`▶ ch`): POST the composer text to the MCP
+     * channel instead of tmux. Failures surface on the banner like sendReply.
+     */
+    public fun sendViaChannel() {
+        val profile = profileCache ?: return
+        val text = _replyText.value.trim()
+        if (text.isEmpty() || _replying.value) return
+        _replying.value = true
+        _banner.value = null
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).sendChannelMessage(fullIdOrShort(), text).fold(
+                onSuccess = {
+                    _replyText.value = ""
+                    _replying.value = false
+                },
+                onFailure = { err ->
+                    _replying.value = false
+                    _banner.value = "Channel send failed: ${err.describe()}"
+                },
+            )
+        }
+    }
+
     public fun sendQuickReply(text: String) {
         val profile = profileCache ?: return
         if (text.isEmpty() || _replying.value) return
@@ -551,11 +575,23 @@ public class SessionDetailViewModel(
         _renaming.value = true
         _banner.value = null
         viewModelScope.launch {
+            // PWA toasts "Session renamed" / "Rename failed" — parity D41a routes
+            // toasts to the alert dock.
             ServiceLocator.transportFor(profile).renameSession(fullIdOrShort(), trimmed).fold(
-                onSuccess = { _renaming.value = false },
+                onSuccess = {
+                    _renaming.value = false
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        ServiceLocator.context().getString(com.dmzs.datawatchclient.R.string.session_renamed),
+                        com.dmzs.datawatchclient.ui.shell.DockLevel.Success,
+                    )
+                },
                 onFailure = { err ->
                     _renaming.value = false
-                    _banner.value = "Rename failed: ${err.describe()}"
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        ServiceLocator.context().getString(com.dmzs.datawatchclient.R.string.session_rename_failed) +
+                            ": ${err.describe()}",
+                        com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                    )
                 },
             )
         }

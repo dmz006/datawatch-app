@@ -41,7 +41,8 @@ CREATE TABLE session (
     compute_node_ref    TEXT,
     parent_id           TEXT,
     claude_alive        INTEGER,
-    server_name         TEXT
+    server_name         TEXT,
+    channel_ready       INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX session_by_activity ON session(server_profile_id, last_activity_ts DESC);
 

@@ -702,9 +702,19 @@ public class SessionsViewModel : ViewModel() {
         val profile = profileForSession(sessionId) ?: return
         viewModelScope.launch {
             ServiceLocator.transportFor(profile).renameSession(fullIdFor(sessionId), newName).fold(
-                onSuccess = { refresh() },
+                onSuccess = {
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        ServiceLocator.context().getString(com.dmzs.datawatchclient.R.string.session_renamed),
+                        com.dmzs.datawatchclient.ui.shell.DockLevel.Success,
+                    )
+                    refresh()
+                },
                 onFailure = { err ->
-                    _banner.value = "Rename failed — ${err.message ?: err::class.simpleName}"
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        ServiceLocator.context().getString(com.dmzs.datawatchclient.R.string.session_rename_failed) +
+                            ": ${err.message ?: err::class.simpleName}",
+                        com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                    )
                 },
             )
         }

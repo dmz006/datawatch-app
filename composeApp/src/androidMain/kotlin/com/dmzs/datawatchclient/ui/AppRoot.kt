@@ -354,6 +354,7 @@ private fun Nav(
                 isNew = isNew,
                 openInStatusMode = openInStatusMode,
                 onBack = { navController.popBackStack() },
+                onOpenSession = { other -> navController.navigate(Destinations.sessionDetail(other)) },
                 onNavigateToSettings = { tab ->
                     context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                         .edit().putString("settings_active_tab", tab).apply()
@@ -557,6 +558,7 @@ private fun HomeShell(
                         sessionId = sid,
                         isNew = false,
                         onBack = { selectedSessionId = null },
+                        onOpenSession = { other -> selectedSessionId = other },
                         onNavigateToSettings = { tab ->
                             context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                                 .edit().putString("settings_active_tab", tab).apply()

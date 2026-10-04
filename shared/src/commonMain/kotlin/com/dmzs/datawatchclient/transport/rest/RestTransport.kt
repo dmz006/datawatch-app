@@ -3760,6 +3760,26 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- Android-missing parity ----
+
+    override suspend fun sendChannelMessage(
+        sessionId: String,
+        text: String,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/channel/send") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("text", kotlinx.serialization.json.JsonPrimitive(text))
+                        put("session_id", kotlinx.serialization.json.JsonPrimitive(sessionId))
+                    },
+                )
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
