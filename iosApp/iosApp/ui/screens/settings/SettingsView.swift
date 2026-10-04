@@ -1,226 +1,24 @@
 import SwiftUI
 import DatawatchShared
 
-/// Settings tab: server profiles + app preferences.
+/// Settings tab (parity D31b): a native grouped list whose sections are the
+/// PWA's six settings tabs — General · Plugins · Comms · Compute · Automata ·
+/// About — in PWA order. Each PWA card is a row that pushes its detail screen
+/// (`SettingsCardScreen`). Sections collapse like PWA cards (D27a); collapsed
+/// state persists across launches (PWA `cs_settings_collapsed`).
 struct SettingsView: View {
     @EnvironmentObject private var store: ServerProfileStore
-    @AppStorage("biometricLockEnabled") private var biometricLockEnabled = false
-    @State private var biometricAvailable = BiometricGate.isAvailable
+    @AppStorage("settingsCollapsedGroups") private var collapsedRaw: String = ""
+
+    private var profile: ServerProfile? {
+        store.profiles.first { $0.enabled } ?? store.profiles.first
+    }
 
     var body: some View {
         NavigationStack {
             List {
-                // ── Servers ──────────────────────────────────────────────
-                Section {
-                    NavigationLink {
-                        ServerProfileListView()
-                            .environmentObject(store)
-                            .navigationTitle("Servers")
-                            .navigationBarTitleDisplayMode(.inline)
-                            .background(DatawatchColors.background)
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Servers")
-                                    .foregroundStyle(DatawatchColors.onSurface)
-                                Text("\(store.profiles.count) configured")
-                                    .font(DatawatchFonts.labelSmall)
-                                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                            }
-                        } icon: {
-                            Image(systemName: "server.rack")
-                                .foregroundStyle(DatawatchColors.primary)
-                        }
-                    }
-                    .listRowBackground(DatawatchColors.surface)
-                }
-
-                // ── Session ──────────────────────────────────────────────
-                Section {
-                    NavigationLink {
-                        SettingsSessionView()
-                            .environmentObject(store)
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Session")
-                                    .foregroundStyle(DatawatchColors.onSurface)
-                                Text("Summarizer, LLM selector")
-                                    .font(DatawatchFonts.labelSmall)
-                                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                            }
-                        } icon: {
-                            Image(systemName: "brain")
-                                .foregroundStyle(DatawatchColors.primary)
-                        }
-                    }
-                    .listRowBackground(DatawatchColors.surface)
-                }
-
-                // ── Alert rules (PWA Settings → Alert Rules) ─────────────
-                if let profile = store.profiles.first {
-                    Section {
-                        NavigationLink {
-                            AlertRulesView(profile: profile)
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Alert Rules")
-                                        .foregroundStyle(DatawatchColors.onSurface)
-                                    Text("Metric thresholds that raise alerts or scale")
-                                        .font(DatawatchFonts.labelSmall)
-                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                }
-                            } icon: {
-                                Image(systemName: "bell.badge")
-                                    .foregroundStyle(DatawatchColors.primary)
-                            }
-                        }
-                        .listRowBackground(DatawatchColors.surface)
-                        NavigationLink {
-                            SavedCommandsView(profile: profile)
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Saved Commands").foregroundStyle(DatawatchColors.onSurface)
-                                    Text("Named snippets for quick replies")
-                                        .font(DatawatchFonts.labelSmall)
-                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                }
-                            } icon: {
-                                Image(systemName: "text.badge.star").foregroundStyle(DatawatchColors.primary)
-                            }
-                        }
-                        .listRowBackground(DatawatchColors.surface)
-                        NavigationLink {
-                            FiltersView(profile: profile)
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Filters").foregroundStyle(DatawatchColors.onSurface)
-                                    Text("Output patterns that alert, reply or schedule")
-                                        .font(DatawatchFonts.labelSmall)
-                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                }
-                            } icon: {
-                                Image(systemName: "line.3.horizontal.decrease.circle").foregroundStyle(DatawatchColors.primary)
-                            }
-                        }
-                        .listRowBackground(DatawatchColors.surface)
-                    }
-
-                    // ── Automata (PWA Settings → Automata; final grouping per D31) ──
-                    Section {
-                        NavigationLink {
-                            OrchestratorGraphsView(profile: profile)
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Automata Orchestrator").foregroundStyle(DatawatchColors.onSurface)
-                                    Text("Graphs that run several automata together")
-                                        .font(DatawatchFonts.labelSmall)
-                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                }
-                            } icon: {
-                                Image(systemName: "point.3.connected.trianglepath.dotted")
-                                    .foregroundStyle(DatawatchColors.primary)
-                            }
-                        }
-                        .listRowBackground(DatawatchColors.surface)
-                        NavigationLink {
-                            PipelinesView(profile: profile)
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Pipeline Manager").foregroundStyle(DatawatchColors.onSurface)
-                                    Text("Live pipelines and their task progress")
-                                        .font(DatawatchFonts.labelSmall)
-                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                }
-                            } icon: {
-                                Image(systemName: "arrow.triangle.branch")
-                                    .foregroundStyle(DatawatchColors.primary)
-                            }
-                        }
-                        .listRowBackground(DatawatchColors.surface)
-                    }
-                }
-
-                // ── Security ─────────────────────────────────────────────
-                if biometricAvailable {
-                    Section("Security") {
-                        Toggle(isOn: $biometricLockEnabled) {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(biometricLabel)
-                                        .foregroundStyle(DatawatchColors.onSurface)
-                                    Text("Require authentication on launch")
-                                        .font(DatawatchFonts.labelSmall)
-                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                }
-                            } icon: {
-                                Image(systemName: biometricIcon)
-                                    .foregroundStyle(DatawatchColors.primary)
-                            }
-                        }
-                        .tint(DatawatchColors.primary)
-                        .listRowBackground(DatawatchColors.surface)
-                    }
-                }
-
-                // ── About ────────────────────────────────────────────────
-                Section("About") {
-                    // Compact Earthrise scene (PWA About: startScene compact; Android MatrixLogoAnimated).
-                    VStack(spacing: 10) {
-                        SplashSceneView(compact: true)
-                            .frame(height: 220)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                        SplashTextBlock(version: appVersion)
-                    }
-                    .padding(.vertical, 6)
-                    .listRowBackground(DatawatchColors.surface)
-
-                    HStack {
-                        Label("Version", systemImage: "info.circle")
-                            .foregroundStyle(DatawatchColors.onSurface)
-                        Spacer()
-                        Text(appVersion)
-                            .font(DatawatchFonts.labelSmall)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    }
-                    .listRowBackground(DatawatchColors.surface)
-
-                    Button {
-                        if let url = URL(string: "https://github.com/dmz006/datawatch") {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        HStack {
-                            Label("Project (server)", systemImage: "link")
-                                .foregroundStyle(DatawatchColors.onSurface)
-                            Spacer()
-                            Text("github.com/dmz006/datawatch")
-                                .font(DatawatchFonts.labelSmall)
-                                .foregroundStyle(DatawatchColors.primary)
-                        }
-                    }
-                    .listRowBackground(DatawatchColors.surface)
-
-                    Button {
-                        if let url = URL(string: "https://github.com/dmz006/datawatch-app") {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        HStack {
-                            Label("Mobile app", systemImage: "link")
-                                .foregroundStyle(DatawatchColors.onSurface)
-                            Spacer()
-                            Text("github.com/dmz006/datawatch-app")
-                                .font(DatawatchFonts.labelSmall)
-                                .foregroundStyle(DatawatchColors.primary)
-                        }
-                    }
-                    .listRowBackground(DatawatchColors.surface)
+                ForEach(SettingsCatalog.groups) { group in
+                    groupSection(group)
                 }
             }
             .listStyle(.insetGrouped)
@@ -233,38 +31,76 @@ struct SettingsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 4) {
-                        DocsLinkButton(
-                            profile: store.profiles.first,
-                            anchor: "settings"
-                        )
+                        DocsLinkButton(profile: profile, anchor: "settings")
                         AlertsBellButton()
-                        ReachabilityDotView(profile: store.profiles.first)
+                        ReachabilityDotView(profile: profile)
                     }
                 }
             }
         }
     }
 
-    private var biometricLabel: String {
-        switch BiometricGate.biometricType {
-        case .faceID: return "Face ID Lock"
-        case .touchID: return "Touch ID Lock"
-        default: return "Biometric Lock"
-        }
+    // MARK: Sections
+
+    private var collapsed: Set<String> {
+        Set(collapsedRaw.split(separator: ",").map(String.init))
     }
 
-    private var biometricIcon: String {
-        switch BiometricGate.biometricType {
-        case .faceID: return "faceid"
-        case .touchID: return "touchid"
-        default: return "lock.fill"
-        }
+    private func toggleCollapsed(_ id: String) {
+        var s = collapsed
+        if s.contains(id) { s.remove(id) } else { s.insert(id) }
+        collapsedRaw = s.sorted().joined(separator: ",")
     }
 
-    private var appVersion: String {
-        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
-        return "\(v) (\(b))"
+    @ViewBuilder
+    private func groupSection(_ group: SettingsGroup) -> some View {
+        let isCollapsed: Bool = collapsed.contains(group.id)
+        Section {
+            if !isCollapsed {
+                ForEach(group.cards) { card in
+                    NavigationLink {
+                        SettingsCardScreen(card: card)
+                            .environmentObject(store)
+                    } label: {
+                        SettingsCardRowLabel(card: card)
+                    }
+                    .listRowBackground(DatawatchColors.surface)
+                }
+            }
+        } header: {
+            Button {
+                withAnimation { toggleCollapsed(group.id) }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                        .font(.caption.weight(.semibold))
+                    Text(L(group.title))
+                    Spacer()
+                    if isCollapsed {
+                        Text("\(group.cards.count)")
+                            .font(DatawatchFonts.labelSmall)
+                    }
+                }
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(isCollapsed ? Text("Expand") : Text("Collapse"))
+        }
+    }
+}
+
+/// Row label for one settings card: SF Symbol + localized PWA card title.
+struct SettingsCardRowLabel: View {
+    let card: SettingsCard
+
+    var body: some View {
+        Label {
+            Text(L(card.title))
+                .foregroundStyle(DatawatchColors.onSurface)
+        } icon: {
+            Image(systemName: card.icon)
+                .foregroundStyle(DatawatchColors.primary)
+        }
     }
 }
 
