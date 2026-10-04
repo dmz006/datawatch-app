@@ -226,6 +226,9 @@ struct SessionDetailView: View {
                     if session.chrome {
                         metaBadge("Chrome", color: DatawatchColors.primary)
                     }
+                    if !isTerminalState {
+                        LastActivityIndicator(since: session.lastActivityAt.toEpochMilliseconds())
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -937,3 +940,24 @@ private struct LastResponseSheet: View {
     }
 }
 
+
+
+/// PWA session-last-activity (D19a): dot green < 30 s, amber < 5 min, red beyond,
+/// plus grey age text; ticks every second.
+struct LastActivityIndicator: View {
+    let since: Int64
+    var body: some View {
+        TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+            let nowMs: Int64 = Int64(ctx.date.timeIntervalSince1970 * 1000)
+            let secs: Int64 = max(0, (nowMs - since) / 1000)
+            let color: Color = secs < 30 ? DatawatchColors.success : (secs < 300 ? DatawatchColors.warning : DatawatchColors.error)
+            HStack(spacing: 3) {
+                Circle().fill(color).frame(width: 6, height: 6)
+                Text(SessionCardView.ago(since))
+                    .font(.system(size: 11))
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+        }
+        .accessibilityLabel("Last activity")
+    }
+}
