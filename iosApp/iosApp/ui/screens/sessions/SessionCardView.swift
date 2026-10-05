@@ -189,6 +189,7 @@ struct SessionCardView: View {
             if SessionCardView.isCouncil(session) { accentBadge("🎭").accessibilityLabel("Council session") }
             if let server = serverName, !server.isEmpty { accentBadge(server) }
             if showHost, let host = session.hostnamePrefix, !host.isEmpty { accentBadge(host) }
+            lineageBadges
             if muted || session.muted {
                 Image(systemName: "speaker.slash.fill").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .accessibilityLabel("Muted")
@@ -233,6 +234,41 @@ struct SessionCardView: View {
             .background(DatawatchColors.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(DatawatchColors.secondary, lineWidth: 1))
             .lineLimit(1)
+    }
+
+    /// Parent (BL347) + zombie (`claude_alive == false`) badges.
+    @ViewBuilder
+    private var lineageBadges: some View {
+        if let parent = session.parentId, !parent.isEmpty { parentBadge(parent) }
+        if session.claudeAlive?.boolValue == false { zombieBadge }
+    }
+
+    /// PWA `↳ child of [host]` lineage badge (BL347), muted at 0.7 opacity.
+    private func parentBadge(_ parentId: String) -> some View {
+        let host: String = parentId.split(separator: "-").first.map(String.init) ?? parentId
+        return Text("↳ " + L("child of") + " [" + host + "]")
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(DatawatchColors.onSurfaceMuted.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(DatawatchColors.onSurfaceMuted, lineWidth: 1))
+            .lineLimit(1)
+            .opacity(0.7)
+    }
+
+    /// PWA `⚠ zombie` (claude_alive === false): amber outline badge.
+    private var zombieBadge: some View {
+        let amber = Color(red: 0.961, green: 0.620, blue: 0.043)
+        return Text("⚠ zombie")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(amber)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(amber.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(amber, lineWidth: 1))
+            .lineLimit(1)
+            .accessibilityLabel("Claude process not running — session may be a zombie")
     }
 
     /// PWA: prompt_context last 4 non-empty lines (≤100 chars each), then short summary.
@@ -320,6 +356,73 @@ struct SessionCardView: View {
         if seconds < 3600 { return String(format: L("%lldm ago"), seconds / 60) }
         if seconds < 86400 { return String(format: L("%lldh ago"), seconds / 3600) }
         return String(format: L("%lldd ago"), seconds / 86400)
+    }
+}
+
+/// PWA `.session-card` 4 px left state border + `pulse-border` (waiting_input 2 s,
+/// rate_limited 3 s); static under Reduce Motion (Android `pwaStateEdge`).
+struct SessionStateEdge: View {
+    let state: SessionState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var lit = false
+
+    private var pulsing: Bool { (state == .waiting || state == .rateLimited) && !reduceMotion }
+    private var peak: Color {
+        // #FCD34D (amber-300) for rate_limited, #93C5FD for waiting_input.
+        state == .rateLimited
+            ? Color(red: 0.988, green: 0.827, blue: 0.302)
+            : Color(red: 0.576, green: 0.773, blue: 0.992)
+    }
+    private var halfPeriod: Double { state == .rateLimited ? 1.5 : 1.0 }
+
+    var body: some View {
+        ZStack {
+            Rectangle().fill(SessionStateStyle.color(state))
+            Rectangle().fill(peak).opacity(pulsing && lit ? 1.0 : 0.0)
+        }
+        .frame(width: 4)
+        .onAppear { restart() }
+        .onChange(of: pulsing) { _ in restart() }
+        .accessibilityHidden(true)
+    }
+
+    private func restart() {
+        if pulsing {
+            lit = false
+            withAnimation(.easeInOut(duration: halfPeriod).repeatForever(autoreverses: true)) { lit = true }
+        } else {
+            withAnimation(.none) { lit = false }
+        }
+    }
+}
+
+/// List-row background for a session card: PWA bg2 card (radius 12, 8 pt gap) with
+/// the state edge; `indent` reproduces the tree view's 18 pt/level + 2 pt guide line.
+struct SessionRowBackground: View {
+    let state: SessionState
+    var indent: CGFloat = 0
+
+    var body: some View {
+        HStack(spacing: 0) {
+            if indent > 0 {
+                Spacer().frame(width: indent - 8)
+                Rectangle().fill(DatawatchColors.border).frame(width: 2)
+                Spacer().frame(width: 6)
+            }
+            HStack(spacing: 0) {
+                SessionStateEdge(state: state)
+                DatawatchColors.surface
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(DatawatchColors.background)
+    }
+
+    /// Row insets matching the background (card padding 10 + edge 4 + outer 8).
+    static func insets(indent: CGFloat) -> EdgeInsets {
+        EdgeInsets(top: 4, leading: 22 + indent, bottom: 4, trailing: 18)
     }
 }
 
