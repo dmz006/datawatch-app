@@ -52,17 +52,53 @@ enum PrdStatusStyle {
     }
 }
 
+/// D23a: PWA `statusPill` — session state-badge tokens (11/600, 1 px currentColor
+/// border, radius 10) with the `dw-running-pulse` (0.55↔1, 700 ms alternate) on
+/// running / planning / decomposing; static under Reduce Motion.
 struct PrdStatusChip: View {
     let status: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var dim = false
+
+    private var key: String { status.isEmpty ? "unknown" : status.lowercased() }
+    private var active: Bool { ["running", "planning", "decomposing"].contains(key) }
+    private var pulsing: Bool { active && !reduceMotion }
+
+    private var fg: Color {
+        if active { return DatawatchColors.success }
+        if key == "failed" { return DatawatchColors.error }
+        if key == "complete" || key == "completed" { return DatawatchColors.onSurfaceMuted }
+        return DatawatchColors.onSurface
+    }
+
+    private var bg: Color {
+        if active { return DatawatchColors.success.opacity(0.15) }
+        if key == "failed" { return DatawatchColors.error.opacity(0.15) }
+        if key == "complete" || key == "completed" { return DatawatchColors.onSurfaceMuted.opacity(0.10) }
+        return Color.clear
+    }
+
     var body: some View {
-        let color = PrdStatusStyle.color(status)
-        Text(PrdStatusStyle.label(status).uppercased())
-            .font(DatawatchFonts.badge)
-            .foregroundStyle(color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(color.opacity(0.18), in: Capsule())
+        Text(key)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(fg)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 1)
+            .background(bg, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(fg, lineWidth: 1))
+            .opacity(pulsing && dim ? 0.55 : 1.0)
+            .onAppear { restartPulse() }
+            .onChange(of: pulsing) { _ in restartPulse() }
             .accessibilityLabel("Status: \(PrdStatusStyle.label(status))")
+    }
+
+    private func restartPulse() {
+        if pulsing {
+            dim = false
+            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { dim = true }
+        } else {
+            withAnimation(.none) { dim = false }
+        }
     }
 }
 

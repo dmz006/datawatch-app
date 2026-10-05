@@ -55,10 +55,10 @@ struct AutomataView: View {
     @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
     @State private var section: AutomataSection = .prds
 
-    // D22a/D25a: PRDs | Templates. The type registry moved to
+    // D22a/D25a: Automata | Templates. The type registry moved to
     // Settings › Automata › Type Registry (SettingsAutomataTypesView).
     private enum AutomataSection: String, CaseIterable {
-        case prds = "PRDs"
+        case prds = "Automata"
         case templates = "Templates"
     }
 
@@ -120,7 +120,7 @@ struct AutomataView: View {
 
             Picker("Section", selection: $section) {
                 ForEach(AutomataSection.allCases, id: \.self) { s in
-                    Text(s.rawValue).tag(s)
+                    Text(L(s.rawValue)).tag(s)
                 }
             }
             .pickerStyle(.segmented)

@@ -113,6 +113,8 @@ struct PrdDetailView: View {
     @State private var capacity: CapacityResponseDto? = nil
     /// D74a approve-with-note dialog.
     @State private var review: PrdReviewRequest? = nil
+    /// D24a: PWA detail sub-tab (`_automataDetailTab`).
+    @State private var tab: PrdDetailTab = .overview
     @Environment(\.dismiss) private var dismissDetail
 
     init(profile: ServerProfile, initial: PrdDto) {
@@ -127,7 +129,6 @@ struct PrdDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 header
-                if prd.scopeWarnings { scopeWarningsBanner }
                 PrdLifecycleStrip(prd: prd, compact: false) { action in
                     switch action {
                     case "reject": showReject = true
@@ -144,20 +145,8 @@ struct PrdDetailView: View {
                         .font(DatawatchFonts.labelSmall)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
-                PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
-                statusGraphs
-                capacityCard
-                if let spec = prd.spec, !spec.isEmpty {
-                    specSection(spec)
-                }
-                PrdMemorySection(profile: vm.profile, prd: prd)
-                storiesSection
-                PrdDecisionsSection(decisions: prd.decisions ?? [])
-                PrdScanCard(profile: vm.profile, prdId: prd.id) { _ in Task { await vm.refresh() } }
-                Button { SessionsNav.shared.jumpTo(prd.name) } label: {
-                    Text("→ View sessions").font(DatawatchFonts.bodyMedium)
-                }
-                .buttonStyle(.borderless)
+                PrdDetailTabStrip(selection: $tab)
+                tabBody
                 if let err = vm.error {
                     Text(err)
                         .font(DatawatchFonts.labelSmall)
@@ -322,6 +311,47 @@ struct PrdDetailView: View {
         }
     }
 
+    // MARK: Tabs (D24a — Overview · Stories · Decisions · Rules · Scan)
+
+    @ViewBuilder
+    private var tabBody: some View {
+        switch tab {
+        case .overview: overviewTab
+        case .stories: storiesSection
+        case .decisions: PrdDecisionsSection(decisions: prd.decisions ?? [])
+        case .rules: PrdRulesCard(profile: vm.profile, prdId: prd.id)
+        case .scan: scanTab
+        }
+    }
+
+    /// PWA _renderDetailOverview: scope warnings, progress + graph cards, capacity,
+    /// active session, spec, memory, then the sessions link.
+    private var overviewTab: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if prd.scopeWarnings { scopeWarningsBanner }
+            PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
+            statusGraphs
+            capacityCard
+            if let spec = prd.spec, !spec.isEmpty {
+                specSection(spec)
+            }
+            PrdMemorySection(profile: vm.profile, prd: prd)
+            Button { SessionsNav.shared.jumpTo(prd.name) } label: {
+                Text("→ View sessions").font(DatawatchFonts.bodyMedium)
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    private var scanTab: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Static analysis (SAST · secrets · dependencies · LLM grader) over the Automaton spec and any associated files. Runs the configured scanners and reports a verdict + findings.")
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            PrdScanCard(profile: vm.profile, prdId: prd.id) { _ in Task { await vm.refresh() } }
+        }
+    }
+
     // MARK: Sections
 
     private var header: some View {
@@ -390,8 +420,28 @@ struct PrdDetailView: View {
                 actionButton("Decompose", systemImage: "wand.and.stars", tint: DatawatchColors.primary) {
                     Task { await vm.perform("decompose") }
                 }
-            case "running", "decomposing", "planning", "blocked":
+            case "running":
+                // D52b: Pause / Resume wired to POST /prds/{id}/pause|resume.
+                HStack(spacing: 10) {
+                    actionButton("Pause", systemImage: "pause.fill", tint: DatawatchColors.warning) {
+                        Task { await vm.perform("pause") }
+                    }
+                    actionButton("Cancel PRD", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
+                }
+            case "paused":
+                HStack(spacing: 10) {
+                    actionButton("Resume", systemImage: "play.fill", tint: DatawatchColors.primary) {
+                        Task { await vm.perform("resume") }
+                    }
+                    actionButton("Cancel PRD", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
+                }
+            case "decomposing", "planning", "blocked":
                 actionButton("Cancel PRD", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
+            case "completed", "rejected", "cancelled":
+                // PWA lifecycle 📦 Archive (terminal, not yet archived).
+                actionButton("Archive", systemImage: "archivebox", tint: DatawatchColors.onSurface) {
+                    Task { await vm.perform("archive") }
+                }
             default:
                 EmptyView()
             }

@@ -2,8 +2,8 @@ import SwiftUI
 import DatawatchShared
 
 /// Security scan card for a PRD (parity B16; PWA prd_btn_run_scan /
-/// prd_btn_run_rules + Scan tab, Android ScanResultCard). Shown as a card in
-/// the single-scroll detail until the detail-tabs decision (D24) lands.
+/// prd_btn_run_rules + Scan tab, Android ScanResultCard). Body of the detail
+/// view's Scan tab (D24a).
 struct PrdScanCard: View {
     let profile: ServerProfile
     let prdId: String
