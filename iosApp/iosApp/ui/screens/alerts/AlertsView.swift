@@ -195,6 +195,22 @@ final class AlertsViewModel: ObservableObject {
         return out
     }
 
+    /// Alert deep link: select the sub-tab holding `alertId` and clear chip +
+    /// search. False while the alert hasn't loaded yet.
+    func focus(alertId: String) -> Bool {
+        guard let a = alerts.first(where: { $0.id == alertId }) else { return false }
+        let tab: AlertTab = AlertTab.allCases.first(where: { belongs(a, to: $0) }) ?? .active
+        if selectedTab != tab { selectedTab = tab }
+        filterText = ""
+        severityFilter = .all
+        return true
+    }
+
+    /// Id of the by-session card that contains `alertId` (current tab/filters).
+    func groupId(containing alertId: String) -> String? {
+        groups.first(where: { g in g.alerts.contains(where: { $0.id == alertId }) })?.id
+    }
+
     func tabCount(for tab: AlertTab) -> Int { alerts.filter { belongs($0, to: tab) }.count }
 
     func chipCount(for filter: AlertSeverityFilter) -> Int {
@@ -371,6 +387,7 @@ struct AlertsView: View {
     @State private var collapsed: Set<String> = []
     @State private var replying: String? = nil
     @State private var savedCommands: [IosSavedCommand] = []
+    @ObservedObject private var focus = AlertDeepLinkFocus.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -614,6 +631,29 @@ struct AlertsView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
             }
+            ScrollViewReader { proxy in
+                alertList
+                    .onAppear { applyFocus(proxy) }
+                    .onChange(of: focus.pendingId) { _ in applyFocus(proxy) }
+                    .onChange(of: vm.alerts.count) { _ in applyFocus(proxy) }
+            }
+        }
+    }
+
+    /// Alert deep link (Android AlertsViewModel.focusAlert parity): once the
+    /// alert is loaded, pick its sub-tab, clear chip + search, expand its card
+    /// and scroll to it.
+    private func applyFocus(_ proxy: ScrollViewProxy) {
+        guard let id = focus.pendingId else { return }
+        guard vm.focus(alertId: id) else { return }
+        focus.pendingId = nil
+        if let gid = vm.groupId(containing: id) { collapsed.remove(gid) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation { proxy.scrollTo(id, anchor: .top) }
+        }
+    }
+
+    private var alertList: some View {
             List {
                 if vm.filteredAlerts.isEmpty {
                     HStack {
@@ -649,6 +689,7 @@ struct AlertsView: View {
                         .listRowBackground(DatawatchColors.surface)
                         .listRowSeparatorTint(DatawatchColors.border)
                         .listRowInsets(EdgeInsets())
+                        .id(alert.id)
                     }
                 } else {
                     ForEach(vm.groups) { group in
@@ -666,6 +707,7 @@ struct AlertsView: View {
                                     .listRowBackground(DatawatchColors.surface)
                                     .listRowSeparatorTint(DatawatchColors.border)
                                     .listRowInsets(EdgeInsets())
+                                    .id(alert.id)
                                 }
                             }
                         } header: {
@@ -678,7 +720,6 @@ struct AlertsView: View {
             .background(DatawatchColors.background)
             .scrollContentBackground(.hidden)
             .refreshable { await vm.refreshAsync() }
-        }
     }
 
     /// D49a/D50d: no per-alert read state or swipe — opening the page acks all,
