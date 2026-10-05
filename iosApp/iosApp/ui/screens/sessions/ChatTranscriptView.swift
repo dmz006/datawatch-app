@@ -20,7 +20,18 @@ struct ChatTranscriptView: View {
     @State private var transient: String? = nil
     @State private var subscription: IosSubscription? = nil
     @State private var connected = false
+    /// PWA BL82 `<details class="chat-thread">`: > 6 messages collapse all but the last 4.
+    @State private var earlierExpanded = false
     private static let maxEntries = 200
+    private static let collapseThreshold = 6
+    private static let recentKept = 4
+
+    private var collapsible: Bool { entries.count > Self.collapseThreshold }
+
+    private var shownEntries: [Entry] {
+        guard collapsible && !earlierExpanded else { return entries }
+        return Array(entries.suffix(Self.recentKept))
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -49,7 +60,8 @@ struct ChatTranscriptView: View {
                                 .padding(.top, 40)
                         }
                     }
-                    ForEach(entries) { e in bubble(e).id(e.id) }
+                    if collapsible { earlierHeader }
+                    ForEach(shownEntries) { e in bubble(e).id(e.id) }
                     if let transient {
                         Text(transient)
                             .font(DatawatchFonts.labelSmall.italic())
@@ -67,6 +79,20 @@ struct ChatTranscriptView: View {
         .background(DatawatchColors.background)
         .onAppear(perform: start)
         .onDisappear { subscription?.cancel(); subscription = nil }
+    }
+
+    /// PWA chat-thread-header: "💬 N earlier messages" (tap to expand / collapse).
+    private var earlierHeader: some View {
+        let older: Int = entries.count - Self.recentKept
+        return Button {
+            earlierExpanded.toggle()
+        } label: {
+            Text((earlierExpanded ? "▾ " : "▸ ") + "💬 " + String(format: L("%lld earlier messages"), Int64(older)))
+                .font(.system(size: 11))
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityHint(earlierExpanded ? "Collapse earlier messages" : "Expand earlier messages")
     }
 
     @ViewBuilder

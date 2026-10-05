@@ -39,6 +39,7 @@ struct SessionStatsView: View {
                             Text("Token rate / latency coming in a later server release.")
                                 .font(DatawatchFonts.labelSmall)
                                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            openLink("Open LLM →", cardId: "llms")
                         }
                     }
                 }
@@ -55,7 +56,7 @@ struct SessionStatsView: View {
     @ViewBuilder
     private var hostCard: some View {
         if let env = snapshot?.envelope {
-            card("Host") {
+            card(hostTitle(env)) {
                 HStack(alignment: .center, spacing: 14) {
                     Donut(value: env.cpuPct / 100, color: thresholdColor(env.cpuPct))
                         .frame(width: 60, height: 60)
@@ -77,12 +78,25 @@ struct SessionStatsView: View {
                 }
             }
         } else {
-            card("Host") {
-                Text("No process stats for this session yet.")
-                    .font(DatawatchFonts.labelSmall.italic())
+            // PWA renderSessionStats: no envelope → "Process Stats" +
+            // `session_stats_no_envelope_body`.
+            card(L("Process Stats")) {
+                Text("The observer hasn't attributed a process tree to this session. Most common causes: (1) SessionAttribution is off in the observer config, or (2) the LLM runs inside a container the observer can't enter. Falling back to backend-level stats when available.")
+                    .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// PWA titles: `session_stats_process_title` for the session's own envelope,
+    /// `session_stats_backend_title — <label>` for the backend fallback.
+    private func hostTitle(_ env: StatEnvelopeDto) -> String {
+        if env.kind == "backend" {
+            let label: String = env.label.isEmpty ? (session.backend ?? "") : env.label
+            return L("Backend Stats") + " — " + label
+        }
+        return L("Process Stats")
     }
 
     // MARK: Compute node
@@ -111,7 +125,23 @@ struct SessionStatsView: View {
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
             }
+            // PWA `stats_open_cn` → navigate('compute') (Android onNavigateToComputeTab).
+            openLink("Open Compute Node →", cardId: "compute_nodes")
         }
+    }
+
+    /// PWA accent2 underlined link (`stats_open_cn` / `stats_open_llm`) into Settings.
+    private func openLink(_ title: String, cardId: String) -> some View {
+        Button {
+            SettingsDeepLink.open(cardId: cardId)
+        } label: {
+            Text(L(title))
+                .font(.system(size: 11))
+                .underline()
+                .foregroundStyle(DatawatchColors.secondary)
+        }
+        .buttonStyle(.borderless)
+        .padding(.top, 2)
     }
 
     // MARK: Building blocks

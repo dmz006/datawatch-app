@@ -15,7 +15,8 @@ struct SessionsView: View {
     @ObservedObject private var localPrefs = LocalSessionPrefs.shared
 
     @State private var filterText: String = ""
-    @State private var showFilter: Bool = false
+    /// PWA `cs_filters_collapsed`: toolbar hidden by default, choice persisted.
+    @AppStorage("dw.sessions.filters_open") private var showFilter: Bool = false
     /// PWA cs_session_state_chip: "all" | a real state key.
     @AppStorage("dw.sessions.state_chip") private var stateChip: String = "all"
     @State private var stateFilterOpen = false
@@ -31,6 +32,8 @@ struct SessionsView: View {
 
     @State private var cardStatus: [String: CardStatus] = [:]
     @State private var responseSession: DwSession? = nil
+    /// PWA `state._summarizing` — full ids with a POST /summarize in flight.
+    @State private var summarizing: Set<String> = []
 
     @State private var selectMode = false
     @State private var selected: Set<String> = []
@@ -96,8 +99,9 @@ struct SessionsView: View {
             get: { responseSession != nil },
             set: { if !$0 { responseSession = nil } }
         )) {
-            if let s = responseSession {
-                LastResponseSheet(session: s)
+            // D43a: cached first paint, then GET /api/sessions/response ("(updating…)").
+            if let s = responseSession, let profile = profileFor(s) {
+                SessionResponseSheet(profile: profile, session: s) { responseSession = nil }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -111,6 +115,7 @@ struct SessionsView: View {
         .onAppear {
             viewModel.update(profiles: activeList)
             viewModel.startPolling()
+            viewModel.loadSummarizerConfig()
             applyPendingFilter()
             // A persisted historical chip would otherwise show nothing on launch.
             if Self.historicalChips.contains(stateChip) { showHistory = true }
@@ -204,6 +209,34 @@ struct SessionsView: View {
                 DispatchQueue.main.async {
                     cardStatus[key] = CardStatus(text: "(\(msg))", generatedAt: Date())
                 }
+            }
+        )
+    }
+
+    /// PWA manualSummarize: running / rate-limited sessions use the current-status
+    /// path; others POST /summarize (debounced per id), then refresh the list so
+    /// the card shows the new `last_response` / `last_summary_long`.
+    private func manualSummarize(_ session: DwSession) {
+        let key = session.fullId
+        guard !summarizing.contains(key) else { return }
+        if session.state == .running || session.state == .rateLimited {
+            fetchCurrentStatus(for: session)
+            return
+        }
+        guard let profile = profileFor(session) else { return }
+        summarizing.insert(key)
+        IosServiceLocator.shared.resummarizeSession(
+            sessionId: session.id,
+            profile: profile,
+            onSuccess: { _ in
+                DispatchQueue.main.async {
+                    summarizing.remove(key)
+                    viewModel.refresh()
+                }
+            },
+            // PWA logs and moves on (console.warn) — no user-facing error.
+            onError: { _ in
+                DispatchQueue.main.async { summarizing.remove(key) }
             }
         )
     }
@@ -396,10 +429,11 @@ struct SessionsView: View {
                 }
             }
             if llmFilterOpen && (backendTypes.count > 1 || backendTypes.contains("council-virtual")) {
-                // D64: council-virtual renders as the 🎭 Council chip (Android council_session_filter).
+                // PWA backendShort badges (label + count, no state dot); D64: council-virtual
+                // renders as the 🎭 Council chip (Android council_session_filter).
                 chipRow(backendTypes.map { bt in
-                    (bt, bt == "council-virtual" ? "🎭 Council" : bt, DatawatchColors.secondary, viewModel.sessions.filter { $0.backend == bt }.count, filterText.lowercased() == bt.lowercased())
-                }) { key in filterText = filterText.lowercased() == key.lowercased() ? "" : key }
+                    (bt, bt == "council-virtual" ? "🎭 Council" : Self.backendShort(bt), DatawatchColors.secondary, viewModel.sessions.filter { $0.backend == bt }.count, filterText.lowercased() == bt.lowercased())
+                }, dotted: false) { key in filterText = filterText.lowercased() == key.lowercased() ? "" : key }
             }
             if stateFilterOpen {
                 chipRow(visibleStateChips.map { c in
@@ -424,12 +458,13 @@ struct SessionsView: View {
         .buttonStyle(.borderless)
     }
 
-    private func chipRow(_ chips: [(String, String, Color, Int, Bool)], onTap: @escaping (String) -> Void) -> some View {
+    /// `dotted`: state chips carry the PWA ● + 3 pt colour edge; LLM badges don't.
+    private func chipRow(_ chips: [(String, String, Color, Int, Bool)], dotted: Bool = true, onTap: @escaping (String) -> Void) -> some View {
         FlowLayout(spacing: 4) {
             ForEach(chips, id: \.0) { c in
                 Button { onTap(c.0) } label: {
                     HStack(spacing: 4) {
-                        Text("●").foregroundStyle(c.2)
+                        if dotted { Text("●").foregroundStyle(c.2) }
                         Text(L(c.1)).foregroundStyle(c.4 ? DatawatchColors.background : DatawatchColors.onSurface)
                         Text("\(c.3)").foregroundStyle(c.4 ? DatawatchColors.background.opacity(0.8) : DatawatchColors.onSurfaceMuted)
                     }
@@ -437,10 +472,28 @@ struct SessionsView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(c.4 ? DatawatchColors.primary : DatawatchColors.chipBackground, in: Capsule())
-                    .overlay(alignment: .leading) { Capsule().fill(c.2).frame(width: 3).padding(.vertical, 4) }
+                    .overlay(alignment: .leading) {
+                        if dotted { Capsule().fill(c.2).frame(width: 3).padding(.vertical, 4) }
+                    }
                 }
                 .buttonStyle(.borderless)
             }
+        }
+    }
+
+    /// PWA `backendShort` (app.js renderSessionsView) — compact LLM filter labels;
+    /// unknown backends fall through unchanged.
+    static func backendShort(_ backend: String) -> String {
+        switch backend {
+        case "claude-code": return "claude"
+        case "opencode": return "oc"
+        case "opencode-acp": return "acp"
+        case "opencode-prompt": return "oc-p"
+        case "openwebui": return "owui"
+        case "ollama": return "olla"
+        case "gemini": return "gem"
+        case "shell": return "sh"
+        default: return backend
         }
     }
 
@@ -694,7 +747,10 @@ struct SessionsView: View {
             onExpand: { DashExpandNav.shared.open(session.fullId) },
             watched: isLocal(.watchedSessions, session),
             onWatchToggle: { toggleLocal(.watchedSessions, session) },
-            muted: isLocal(.mutedSessions, session)
+            muted: isLocal(.mutedSessions, session),
+            summarizerEnabled: summarizerOn(session),
+            summarizing: summarizing.contains(session.fullId),
+            onSummarize: { manualSummarize(session) }
         )
         Group {
             if selectMode {
@@ -719,6 +775,11 @@ struct SessionsView: View {
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if !selectMode { muteSwipeButton(session) }
         }
+    }
+
+    private func summarizerOn(_ session: DwSession) -> Bool {
+        guard let pid = profileFor(session)?.id else { return false }
+        return viewModel.summarizerProfiles.contains(pid)
     }
 
     private func muteSwipeButton(_ session: DwSession) -> some View {
@@ -766,34 +827,6 @@ struct SessionsView: View {
         if viewModel.error != nil && !viewModel.sessions.isEmpty { return .reconnecting(attempt: 1) }
         if viewModel.isLoading && viewModel.sessions.isEmpty { return .connecting }
         return .connected
-    }
-}
-
-/// Last-response viewer (PWA showResponseViewer; D43a).
-private struct LastResponseSheet: View {
-    let session: DwSession
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                Text(session.lastResponse ?? "")
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-            }
-            .background(DatawatchColors.background)
-            .navigationTitle("Last response")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-                ToolbarItem(placement: .primaryAction) {
-                    ShareLink(item: session.lastResponse ?? "") { Image(systemName: "square.and.arrow.up") }
-                }
-            }
-        }
     }
 }
 
