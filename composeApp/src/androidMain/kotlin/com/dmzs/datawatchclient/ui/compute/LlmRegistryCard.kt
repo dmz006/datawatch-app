@@ -657,7 +657,10 @@ private fun LlmRegistryDialog(
     val isNodeBased = kind in NODE_BASED_KINDS
     val isAutoAdd = existing?.autoAddModels ?: false
     // alpha.41 core fields
-    var apiKeyRef by remember(existing) { mutableStateOf(existing?.apiKeyRef ?: "") }
+    // A literal key is never shown; the field starts blank and blank keeps it (iOS form rule).
+    val existingKey = existing?.apiKeyRef.orEmpty()
+    val existingLiteralKey = existingKey.isNotEmpty() && !com.dmzs.datawatchclient.transport.SecretMask.isReference(existingKey)
+    var apiKeyRef by remember(existing) { mutableStateOf(if (existingLiteralKey) "" else existingKey) }
     var timeout by remember(existing) { mutableStateOf(existing?.timeout?.toString() ?: "") }
     val tags = remember(existing) { mutableStateListOf(*(existing?.tags?.toTypedArray() ?: emptyArray())) }
     var tagInput by remember { mutableStateOf("") }
@@ -909,6 +912,8 @@ private fun LlmRegistryDialog(
                     value = apiKeyRef,
                     onValueChange = { apiKeyRef = it },
                     label = { Text(stringResource(R.string.llm_field_api_key_ref)) },
+                    placeholder = { if (existingLiteralKey) Text(com.dmzs.datawatchclient.transport.SecretMask.PLACEHOLDER) },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -1190,7 +1195,7 @@ private fun LlmRegistryDialog(
                 onClick = {
                     val commonFields = { base: LlmRegistryEntryDto ->
                         base.copy(
-                            apiKeyRef = apiKeyRef.trim().ifBlank { null },
+                            apiKeyRef = apiKeyRef.trim().ifBlank { existingKey.takeIf { existingLiteralKey } },
                             timeout = timeout.trim().toIntOrNull(),
                             tags = tags.toList().ifEmpty { null },
                             binary = if (isSessionBackend) binary.trim().ifBlank { null } else null,

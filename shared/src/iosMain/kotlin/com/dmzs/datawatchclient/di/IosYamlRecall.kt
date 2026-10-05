@@ -63,7 +63,11 @@ public object IosYamlRecall {
     ) {
         scope.launch {
             t(profile).fetchLlmJson(name).fold(
-                onSuccess = { o -> onSuccess(pretty.encodeToString(JsonObject.serializer(), o)) },
+                onSuccess = { o ->
+                    // Literal secrets are masked; save/test restore them from the server copy.
+                    val shown: JsonObject = com.dmzs.datawatchclient.transport.SecretMask.mask(o)
+                    onSuccess(pretty.encodeToString(JsonObject.serializer(), shown))
+                },
                 onFailure = { onError(it.message ?: "Load failed.") },
             )
         }
@@ -82,7 +86,10 @@ public object IosYamlRecall {
                 onDone("JSON parse error: expected a JSON object")
                 return@launch
             }
-            val r: Result<Unit> = t(profile).saveLlmJson(name, obj)
+            val server: JsonObject? = t(profile).fetchLlmJson(name).getOrNull()
+            val restored: JsonObject =
+                if (server != null) com.dmzs.datawatchclient.transport.SecretMask.restore(obj, server) else obj
+            val r: Result<Unit> = t(profile).saveLlmJson(name, restored)
             onDone(r.exceptionOrNull()?.let { "Save failed: " + (it.message ?: "") })
         }
     }
@@ -101,8 +108,11 @@ public object IosYamlRecall {
                 onError("JSON parse error: expected a JSON object")
                 return@launch
             }
+            val server: JsonObject? = t(profile).fetchLlmJson(name).getOrNull()
+            val restored: JsonObject =
+                if (server != null) com.dmzs.datawatchclient.transport.SecretMask.restore(obj, server) else obj
             val tr: TransportClient = t(profile)
-            val saved: Result<Unit> = tr.saveLlmJson(name, obj)
+            val saved: Result<Unit> = tr.saveLlmJson(name, restored)
             val saveErr: Throwable? = saved.exceptionOrNull()
             if (saveErr != null) {
                 onError((saveErr.message ?: "Test failed.").take(240))

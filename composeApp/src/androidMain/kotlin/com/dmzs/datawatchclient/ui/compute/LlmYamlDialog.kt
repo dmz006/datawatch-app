@@ -48,6 +48,8 @@ internal fun LlmYamlDialog(
     val scope = rememberCoroutineScope()
     val dw = LocalDatawatchColors.current
     var text by remember(name) { mutableStateOf("") }
+    // Server copy; literal secrets are masked in [text] and restored from here on save.
+    var original by remember(name) { mutableStateOf<JsonObject?>(null) }
     var loaded by remember(name) { mutableStateOf(false) }
     var status by remember { mutableStateOf<Pair<String, Boolean?>?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -61,7 +63,8 @@ internal fun LlmYamlDialog(
         val tr = resolveActiveTransport() ?: return@LaunchedEffect
         tr.fetchLlmJson(name).fold(
             onSuccess = {
-                text = prettyJson.encodeToString(JsonObject.serializer(), it)
+                original = it
+                text = prettyJson.encodeToString(JsonObject.serializer(), com.dmzs.datawatchclient.transport.SecretMask.mask(it))
                 loaded = true
             },
             onFailure = { status = (it.message ?: "Load failed") to false },
@@ -71,7 +74,8 @@ internal fun LlmYamlDialog(
     fun parsed(): JsonObject? {
         val obj = runCatching { Json.parseToJsonElement(text) as? JsonObject }.getOrNull()
         if (obj == null) status = "JSON parse error: expected a JSON object" to false
-        return obj
+        val base = original ?: return obj
+        return obj?.let { com.dmzs.datawatchclient.transport.SecretMask.restore(it, base) }
     }
 
     AlertDialog(
