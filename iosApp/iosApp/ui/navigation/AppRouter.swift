@@ -12,7 +12,7 @@ struct SessionRoute: Hashable {
 /// Handles `datawatch://` deep links (D84b — same scheme as Android).
 ///
 ///   datawatch://session/<id>   → Sessions tab, open that session
-///   datawatch://alert/<id>     → Alerts tab
+///   datawatch://alert/<id>     → Alerts tab focused on that alert (sub-tab, chip/search cleared, card expanded, scrolled)
 ///   datawatch://<tab>          → sessions | automata | alerts | observer | dashboard | settings
 ///
 /// The scheme is registered in project.yml (`CFBundleURLTypes`). For a custom
@@ -51,10 +51,30 @@ final class AppRouter: ObservableObject {
                 )
             }
         case "alert", "alerts":
+            // Android parity: focus the alert (bare link = tab only) and skip
+            // the D40a session restore for this launch.
+            AlertDeepLinkFocus.shared.request(id ?? "")
             selectedTab.wrappedValue = .alerts
         default:
             if let tab = AppTab(rawValue: target) { selectedTab.wrappedValue = tab }
         }
+    }
+}
+
+/// Pending `datawatch://alert/<id>` target (Android DeepLinks.pendingAlertTarget).
+/// AlertsView consumes `pendingId` once the alert has loaded; a bare link opens the tab only.
+@MainActor
+final class AlertDeepLinkFocus: ObservableObject {
+    static let shared = AlertDeepLinkFocus()
+    private init() {}
+
+    @Published var pendingId: String? = nil
+    /// Set by any alert link — RootView then skips the D40a last-session restore.
+    private(set) var skipRestore: Bool = false
+
+    func request(_ id: String) {
+        skipRestore = true
+        pendingId = id.isEmpty ? nil : id
     }
 }
 

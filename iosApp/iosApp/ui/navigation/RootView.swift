@@ -249,6 +249,8 @@ struct RootView: View {
         guard let route = ShellRestore.lastSession() else { return }
         // Let the first frame settle so the push animates onto a built stack.
         try? await Task.sleep(nanoseconds: 300_000_000)
+        // Launched from an alert deep link: stay on Alerts (Android parity).
+        if AlertDeepLinkFocus.shared.skipRestore { return }
         if sessionsPath.isEmpty {
             selectedTab = .sessions
             sessionsPath.append(route)
