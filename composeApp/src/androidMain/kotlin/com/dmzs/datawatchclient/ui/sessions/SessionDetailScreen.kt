@@ -2274,6 +2274,7 @@ private fun ReplyComposer(
     // PWA-style recording dialog: shown while mic is active.
     if (showRecordingDialog) {
         VoiceRecordingDialog(
+                level = { recorder?.level() ?: 0f },
             onCancel = {
                 recorder?.cancel()
                 recorder = null

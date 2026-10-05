@@ -4,11 +4,11 @@ import DatawatchShared
 
 /// Last probe result per server, shared by every dot. Toolbars re-create their
 /// items often (spinners, badge counts); without a shared cache each new dot
-/// started at "probing" (amber) and never settled on busy screens.
+/// started unprobed and never settled on busy screens.
 ///
 /// Also mirrors the app-wide active server from `ServerProfileStore` (attached
 /// once at launch), so a dot whose `profile` argument is nil or stale still
-/// probes and shows the active server. Root cause of the amber-forever dot on
+/// probes and shows the active server. Root cause of the never-green dot on
 /// Sessions/Alerts: the old dot captured `profile` in a Timer closure on
 /// appear (nil while the store / view model was still loading) and relied on
 /// `.onChange(of: profile?.id)`, which toolbar items don't reliably re-run — so
@@ -61,8 +61,9 @@ final class ReachabilityCache: ObservableObject {
     }
 }
 
-/// Animated reachability dot — green (online), red (unreachable), amber/pulsing
-/// (probing). Tap opens a sheet with last-probe time and a retry button
+/// Reachability dot — PWA `.status-dot` (style.css:193-204): green when the
+/// last probe succeeded, red otherwise (including not-yet-probed — no separate
+/// probing colour, operator 2026-10-05). Tap opens a sheet with last-probe time and a retry button
 /// (Android `ReachabilityDot`). Long-press = PWA status-dot long-press (D38a):
 /// re-probe now and reconnect live sockets (`.dwReconnectRequested`).
 struct ReachabilityDotView: View {
@@ -83,7 +84,7 @@ struct ReachabilityDotView: View {
         switch reachable {
         case .some(true):  DatawatchColors.success
         case .some(false): DatawatchColors.error
-        case .none:   DatawatchColors.warning
+        case .none:   DatawatchColors.error
         }
     }
 
@@ -96,7 +97,7 @@ struct ReachabilityDotView: View {
     }
 
     var body: some View {
-        PulsingDot(color: dotColor, pulsing: reachable == nil)
+        StatusDot(color: dotColor)
             .frame(width: 24, height: 24)
             .contentShape(Rectangle())
             .onTapGesture { sheetOpen = true }
@@ -139,40 +140,18 @@ struct ReachabilityDotView: View {
     }
 }
 
-// ── Pulsing dot ───────────────────────────────────────────────────────────────
+// ── Status dot ────────────────────────────────────────────────────────────────
 
-private struct PulsingDot: View {
+/// 10 pt circle; colour changes ease over 0.3 s like the PWA's
+/// `transition: background 0.3s ease`. No pulse (the PWA dot never pulses).
+private struct StatusDot: View {
     let color: Color
-    let pulsing: Bool
-
-    /// PWA `prefers-reduced-motion` disables pulses (style.css:2356-2358).
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var scale: CGFloat = 1.0
 
     var body: some View {
         Circle()
             .fill(color)
             .frame(width: 10, height: 10)
-            .scaleEffect(scale)
-            .onAppear { updateScale() }
-            .onChange(of: pulsing) { _ in updateScale() }
-            .onChange(of: reduceMotion) { _ in updateScale() }
-    }
-
-    private func updateScale() {
-        if pulsing && !reduceMotion {
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                scale = 1.4
-            }
-        } else if reduceMotion {
-            var t = Transaction()
-            t.disablesAnimations = true
-            withTransaction(t) { scale = 1.0 }
-        } else {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                scale = 1.0
-            }
-        }
+            .animation(.easeInOut(duration: 0.3), value: color)
     }
 }
 

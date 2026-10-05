@@ -53,6 +53,17 @@ public class VoiceRecorder(private val context: Context) {
             }
     }
 
+    /**
+     * Live input level 0..1 for the recording dialog's waveform — peak
+     * amplitude since the previous call ([MediaRecorder.getMaxAmplitude]),
+     * square-root scaled so normal speech fills most of the bar range.
+     */
+    public fun level(): Float {
+        val amp = runCatching { recorder?.maxAmplitude ?: 0 }.getOrDefault(0)
+        val norm = (amp / 32767f).coerceIn(0f, 1f)
+        return kotlin.math.sqrt(norm)
+    }
+
     /** Stops recording and returns the captured bytes + MIME type. */
     public fun stop(): Pair<ByteArray, String>? {
         val r = recorder ?: return null

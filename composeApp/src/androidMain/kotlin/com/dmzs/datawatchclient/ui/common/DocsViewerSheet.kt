@@ -426,6 +426,7 @@ private fun DocsSearchDialog(
 
     if (showVoiceDialog) {
         VoiceRecordingDialog(
+                level = { voiceRecorder?.level() ?: 0f },
             onCancel = {
                 voiceRecorder?.cancel()
                 voiceRecorder = null

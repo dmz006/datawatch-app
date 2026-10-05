@@ -97,15 +97,28 @@ class RestTransportIosHTest {
         }
 
     @Test
-    fun docsTrustAddPostsToTrustRoot() =
+    fun docsTrustExportYamlReturnsServerSnippet() =
         runTest {
-            server.enqueue(json("""{"ok":true}"""))
-            assertTrue(transport.docsTrustAdd("skill:x").isSuccess)
+            server.enqueue(json("""{"yaml_snippet":"docs_search:\n  trust:\n    - core\n"}"""))
+            val yaml = transport.docsTrustExportYaml().getOrThrow()
+            assertEquals("docs_search:\n  trust:\n    - core\n", yaml)
             val req = server.takeRequest()
-            assertEquals("POST", req.method)
-            assertEquals("/api/docs/trust", req.path)
-            val body = Json.parseToJsonElement(req.body.readUtf8()) as JsonObject
-            assertEquals("skill:x", body["source"]!!.jsonPrimitive.content)
+            assertEquals("GET", req.method)
+            assertEquals("/api/docs/trust/export", req.path)
+        }
+
+    @Test
+    fun recallDiscussionReadsResultContent() =
+        runTest {
+            server.enqueue(
+                json("""{"discussion_id":"sprint 42","results":[{"id":1,"content":"hello"},{"id":2}],"count":2}"""),
+            )
+            val entries = transport.recallDiscussion("sprint 42").getOrThrow()
+            assertEquals(2, entries.size)
+            assertEquals("hello", entries[0])
+            assertTrue(entries[1].contains("\"id\":2"))
+            val req = server.takeRequest()
+            assertEquals("/api/memory/discussion/sprint%2042?top_k=10", req.path)
         }
 
     @Test

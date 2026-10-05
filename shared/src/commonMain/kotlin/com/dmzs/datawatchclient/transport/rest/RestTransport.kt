@@ -76,6 +76,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLPathPart
 import io.ktor.utils.io.core.writeFully
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.client.statement.bodyAsChannel
@@ -2343,18 +2344,6 @@ public class RestTransport(
             }.body<com.dmzs.datawatchclient.transport.dto.DocsHowtosResponse>().howtos
         }
 
-    override suspend fun docsTrustAdd(source: String): Result<Unit> =
-        request {
-            // Server route is POST /api/docs/trust (there is no /trust/add — that path
-            // falls through to the DELETE /trust/{source} handler).
-            client.post("${profile.baseUrl}/api/docs/trust") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-                contentType(io.ktor.http.ContentType.Application.Json)
-                setBody(com.dmzs.datawatchclient.transport.dto.DocsTrustAddRequest(source))
-            }
-            Unit
-        }
-
     // ---- v0.73.0 Sprint 4: Identity, Algorithm Mode, Evals ----
 
     override suspend fun getIdentity(): Result<com.dmzs.datawatchclient.transport.dto.IdentityDto> =
@@ -4325,6 +4314,35 @@ public class RestTransport(
                 parser.finish()?.let { frame ->
                     emit(com.dmzs.datawatchclient.transport.dto.CouncilRunEventParser.parse(frame.event, frame.data))
                 }
+            }
+        }
+
+    // ---- PWA parity: YAML export + discussion recall (2026-10-05) ----
+
+    override suspend fun docsTrustExportYaml(): Result<String> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/docs/trust/export") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            (obj["yaml_snippet"] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+        }
+
+    override suspend fun recallDiscussion(
+        id: String,
+        topK: Int,
+    ): Result<List<String>> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/memory/discussion/${id.encodeURLPathPart()}") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("top_k", topK)
+                }.body()
+            val arr = obj["results"] as? kotlinx.serialization.json.JsonArray
+            arr.orEmpty().map { el ->
+                val o = el as? kotlinx.serialization.json.JsonObject
+                val content = (o?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content
+                if (content.isNullOrEmpty()) el.toString() else content
             }
         }
 

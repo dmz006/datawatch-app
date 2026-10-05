@@ -161,6 +161,7 @@ struct DocsTrustSections: View {
     @State private var selected: Set<String> = []
     @State private var loaded = false
     @State private var error: String?
+    @State private var exportYaml: String?
 
     var body: some View {
         Group {
@@ -180,8 +181,32 @@ struct DocsTrustSections: View {
                 }
             }
             .listRowBackground(DatawatchColors.surface)
+            Section {
+                Button("Export YAML") { export() }
+                    .foregroundStyle(DatawatchColors.primary)
+            }
+            .listRowBackground(DatawatchColors.surface)
         }
         .task { load() }
+        .sheet(isPresented: exportShown) {
+            DocsTrustExportSheet(yaml: exportYaml ?? "")
+        }
+    }
+
+    private var exportShown: Binding<Bool> {
+        Binding(get: { exportYaml != nil }, set: { if !$0 { exportYaml = nil } })
+    }
+
+    /// PWA docsTrustExport: GET /api/docs/trust/export → yaml_snippet modal.
+    private func export() {
+        IosYamlRecall.shared.docsTrustExport(profile: profile, onSuccess: { yaml in
+            DispatchQueue.main.async {
+                error = nil
+                exportYaml = yaml
+            }
+        }, onError: { msg in
+            DispatchQueue.main.async { error = msg }
+        })
     }
 
     @ViewBuilder
@@ -289,6 +314,41 @@ struct DocsTrustSections: View {
                 load()
             }
         }
+    }
+}
+
+/// PWA docsTrustExport modal: the YAML snippet plus the config.yaml paste hint.
+private struct DocsTrustExportSheet: View {
+    let yaml: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(verbatim: yaml)
+                        .font(DatawatchFonts.terminalSmall)
+                        .foregroundStyle(DatawatchColors.onSurface)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 4))
+                    Text("Paste this into your config.yaml's docs_search.trust block to make runtime trust survive a wipe.")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+                .padding()
+            }
+            .background(DatawatchColors.background)
+            .navigationTitle(L("Trust list — YAML for config.yaml"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+        .dwThemed()
     }
 }
 

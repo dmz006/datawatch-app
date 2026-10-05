@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -35,7 +36,6 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
@@ -1172,14 +1172,6 @@ private fun SessionRow(
                     modifier = Modifier.padding(end = 8.dp),
                 )
             }
-            if (reorderMode) {
-                Icon(
-                    Icons.Filled.DragHandle,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp).padding(end = 4.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
             // Parity D16a — PWA line 1: name, else task (80 chars), else "(no task)".
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 val line1 =
@@ -1240,6 +1232,12 @@ private fun SessionRow(
                     )
                 }
             }
+            SessionDragHandle(
+                enabled = !selectionMode,
+                onDragStart = onDragStart,
+                onDrag = onDrag,
+                onDragEnd = onDragEnd,
+            )
         }
 
         // Meta row: short-id pill (+ hostname only with several servers);
@@ -1840,12 +1838,53 @@ private fun SessionsHeaderTitle(
 }
 
 /**
+ * PWA `.drag-handle` (style.css:2176): always-visible `⋮⋮`, text2 colour at
+ * opacity .4, 14 sp, last item of the card's title row. Dragging it reorders
+ * immediately — no long-press and no separate reorder mode (operator
+ * 2026-10-05); the whole-card long-press drag still works too.
+ */
+@Composable
+private fun SessionDragHandle(
+    enabled: Boolean,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+) {
+    val desc = stringResource(R.string.session_drag_handle)
+    Text(
+        "⋮⋮",
+        fontSize = 14.sp,
+        letterSpacing = (-1).sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        modifier =
+            Modifier
+                .padding(start = 4.dp)
+                .alpha(0.4f)
+                .widthIn(min = 24.dp)
+                .semantics { contentDescription = desc }
+                .pointerInput(enabled) {
+                    if (!enabled) return@pointerInput
+                    detectDragGestures(
+                        onDragStart = { _: androidx.compose.ui.geometry.Offset -> onDragStart() },
+                        onDragEnd = { onDragEnd() },
+                        onDragCancel = { onDragEnd() },
+                        onDrag = { change, delta ->
+                            change.consume()
+                            onDrag(delta.y)
+                        },
+                    )
+                }
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+    )
+}
+
+/**
  * 8 dp status dot next to the server-picker title. Reflects the current
  * active profile's [com.dmzs.datawatchclient.transport.TransportClient.isReachable]:
  *   - green:  reachable (last probe succeeded)
- *   - grey:   reachability still unknown (no probe completed yet after start
- *             or profile switch, per ADR-0013's "probing, not failed" state)
- *   - red:    reachable flipped to false (last probe failed)
+ *   - red:    not connected — last probe failed or none completed yet
+ *             (PWA .status-dot has no separate probing state)
  *
  * Tap opens a bottom sheet with the last-probe timestamp plus a retry button.
  */
@@ -1858,30 +1897,20 @@ private fun ReachabilityDot(
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
     val reconnectMsg = stringResource(R.string.status_dot_reconnecting)
-    val color =
-        when (reachable) {
-            true -> Color(0xFF10B981)
-            false -> Color(0xFFEF4444)
-            null -> Color(0xFFF59E0B)
-        }
+    // PWA .status-dot: red until connected, green when connected — no
+    // separate probing colour (operator 2026-10-05). 300 ms colour
+    // transition mirrors `transition: background 0.3s ease`.
+    val color by androidx.compose.animation.animateColorAsState(
+        targetValue = if (reachable == true) Color(0xFF10B981) else Color(0xFFEF4444),
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+        label = "status-dot",
+    )
     val description =
         when (reachable) {
             true -> stringResource(R.string.sessions_server_online)
             false -> stringResource(R.string.sessions_server_unreachable)
             null -> stringResource(R.string.sessions_probing)
         }
-    // v0.36.2 — pulse the dot when actively probing (reachable == null)
-    // so the user sees that work is happening rather than a static
-    // amber. Steady green / red doesn't pulse — those are settled
-    // states.
-    val scale by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
-        initial = 1f,
-        target = 1.4f,
-        durationMs = 900,
-        staticValue = 1f,
-        active = reachable == null,
-        label = "probe-pulse",
-    )
     Box(
         modifier =
             Modifier
@@ -1898,12 +1927,7 @@ private fun ReachabilityDot(
         Surface(
             color = color,
             modifier =
-                Modifier
-                    .size(12.dp)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
+                Modifier.size(12.dp),
             shape = CircleShape,
         ) {}
     }

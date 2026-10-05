@@ -1056,8 +1056,8 @@
     <string name="stats_field_pid">PID</string>
     <string name="stats_field_net">Red</string>
     <string name="stats_field_gpu">GPU</string>
-    <string name="stats_open_compute">Abrir en Compute →</string>
-    <string name="stats_open_llm">Abrir en LLM →</string>
+    <string name="stats_open_compute">Abrir Compute Node →</string>
+    <string name="stats_open_llm">Abrir LLM →</string>
     <string name="stats_llm_more_soon">Tasa de tokens · latencia · estado del modelo en la próxima actualización</string>
     <string name="stats_container_id">ID de contenedor</string>
     <string name="stats_container_image">Imagen</string>
@@ -1292,4 +1292,21 @@
     <string name="council_cancel_btn_label">cancelar</string>
     <string name="council_running_label">Ejecutando consejo…</string>
     <string name="council_personas_count">personas</string>
+    <string name="docs_export_btn">Exportar YAML</string>
+    <string name="docs_export_title">Lista de confianza — YAML para config.yaml</string>
+    <string name="docs_export_hint">Pega esto en el bloque docs_search.trust de tu config.yaml para que la confianza en tiempo de ejecución sobreviva a un borrado.</string>
+    <string name="discussion_recall_btn">Recuperar</string>
+    <string name="discussion_recall_title">%1$s — %2$d entradas</string>
+    <string name="discussion_no_entries">(sin entradas)</string>
+    <string name="llm_yaml_btn">&lt;/&gt; YAML</string>
+    <string name="llm_yaml_title">Editar LLM: %1$s</string>
+    <string name="llm_edit_yaml_tip">Editar YAML en bruto — el formulario recargará con los valores parseados al guardar</string>
+    <string name="llm_yaml_after_save">Editor YAML disponible tras el primer guardado</string>
+    <string name="action_test">Probar</string>
+    <string name="form_edit_testing">Probando valores no guardados…</string>
+    <string name="form_edit_saving">Guardando…</string>
+    <string name="form_edit_test_ok">Prueba pasó:</string>
+    <string name="form_edit_test_fail">Prueba falló:</string>
+    <string name="form_edit_save_fail">Error al guardar:</string>
+    <string name="session_drag_handle">Arrastra para reordenar</string>
 </resources>

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
@@ -55,6 +57,8 @@ public fun DiscussionScopesCard() {
     var sendResult by remember { mutableStateOf<String?>(null) }
     var newDiscussionId by remember { mutableStateOf("") }
     var creating by remember { mutableStateOf(false) }
+    // PWA discussionViewEntries: (id, entries) shown in a modal.
+    var recalled by remember { mutableStateOf<Pair<String, List<String>>?>(null) }
     val sendOkLabel = stringResource(R.string.discussion_send_ok)
 
     suspend fun transport(): TransportClient? {
@@ -76,6 +80,48 @@ public fun DiscussionScopesCard() {
     }
 
     LaunchedEffect(Unit) { reload() }
+
+    fun recall(discId: String) {
+        scope.launch {
+            transport()?.recallDiscussion(discId)
+                ?.onSuccess { recalled = discId to it }
+                ?.onFailure { loadError = it.message }
+        }
+    }
+
+    recalled?.let { (discId, entries) ->
+        AlertDialog(
+            onDismissRequest = { recalled = null },
+            title = {
+                Text(
+                    stringResource(R.string.discussion_recall_title, discId, entries.size),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    if (entries.isEmpty()) {
+                        Text(
+                            stringResource(R.string.discussion_no_entries),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    entries.forEachIndexed { i, entry ->
+                        if (i > 0) HorizontalDivider()
+                        Text(
+                            entry,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { recalled = null }) { Text(stringResource(R.string.action_close)) }
+            },
+        )
+    }
 
     // Write-message dialog
     selectedDiscussion?.let { discId ->
@@ -207,6 +253,13 @@ public fun DiscussionScopesCard() {
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
+                        }
+                        // PWA discussion scope row: "Recall" button.
+                        TextButton(onClick = { recall(discId) }) {
+                            Text(
+                                stringResource(R.string.discussion_recall_btn),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
                         }
                     }
                     if (idx < discussions.lastIndex) HorizontalDivider()

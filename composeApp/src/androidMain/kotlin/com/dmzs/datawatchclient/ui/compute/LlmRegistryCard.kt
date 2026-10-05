@@ -70,7 +70,7 @@ import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private suspend fun resolveActiveTransport() =
+internal suspend fun resolveActiveTransport() =
     ServiceLocator.profileRepository.observeAll().first().let { profiles ->
         val activeId = ServiceLocator.activeServerStore.get()
         (
@@ -106,6 +106,11 @@ public fun LlmRegistryCard() {
     var llmDeleteBlocked by remember { mutableStateOf<LlmRegistryEntryDto?>(null) }
     var detailLlm by remember { mutableStateOf<LlmRegistryEntryDto?>(null) }
     var refreshTick by remember { mutableStateOf(0) }
+    // PWA "</> YAML": raw editor for this LLM; after save the form reopens.
+    var yamlLlmName by remember { mutableStateOf<String?>(null) }
+    var reopenAfterYaml by remember { mutableStateOf<String?>(null) }
+    val yamlAfterSaveMsg = stringResource(R.string.llm_yaml_after_save)
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(refreshTick) {
         loading = true
@@ -125,6 +130,13 @@ public fun LlmRegistryCard() {
         transport.listComputeNodes().onSuccess { computeNodes = it }
         transport.getMigrationStatus().onSuccess { migrationStatus = it }
         loading = false
+        reopenAfterYaml?.let { n ->
+            reopenAfterYaml = null
+            llms.firstOrNull { it.name == n }?.let {
+                selectedLlm = it
+                showAddDialog = true
+            }
+        }
     }
 
     PwaCard(
@@ -245,6 +257,17 @@ public fun LlmRegistryCard() {
                 showAddDialog = false
                 selectedLlm = null
             },
+            onOpenYaml = {
+                val n = selectedLlm?.name
+                if (n == null) {
+                    // PWA: "YAML editor available after first save" toast.
+                    android.widget.Toast.makeText(context, yamlAfterSaveMsg, android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    showAddDialog = false
+                    selectedLlm = null
+                    yamlLlmName = n
+                }
+            },
             onSave = { dto ->
                 scope.launch {
                     val transport = resolveActiveTransport() ?: return@launch
@@ -266,6 +289,18 @@ public fun LlmRegistryCard() {
                         onFailure = { banner = "Save failed — ${it.message ?: it::class.simpleName}" },
                     )
                 }
+            },
+        )
+    }
+
+    yamlLlmName?.let { n ->
+        LlmYamlDialog(
+            name = n,
+            onDismiss = { yamlLlmName = null },
+            onSaved = {
+                yamlLlmName = null
+                reopenAfterYaml = n
+                refreshTick++
             },
         )
     }
@@ -608,6 +643,7 @@ private fun LlmRegistryDialog(
     existing: LlmRegistryEntryDto?,
     computeNodes: List<ComputeNodeDto>,
     onDismiss: () -> Unit,
+    onOpenYaml: () -> Unit,
     onSave: (LlmRegistryEntryDto) -> Unit,
 ) {
     var name by remember(existing) { mutableStateOf(existing?.name ?: "") }
@@ -1205,7 +1241,11 @@ private fun LlmRegistryDialog(
             ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            Row {
+                // PWA buildLLM panel: "</> YAML" escape hatch (left of Cancel).
+                TextButton(onClick = onOpenYaml) { Text(stringResource(R.string.llm_yaml_btn)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            }
         },
     )
 }
