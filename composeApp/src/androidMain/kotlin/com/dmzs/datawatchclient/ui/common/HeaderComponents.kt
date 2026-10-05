@@ -131,9 +131,10 @@ private fun AlertsBellPill(
                     0.55f,
                 )
             alertsBadge > 0 ->
+                // Parity D3a — PWA pill: blue-tint background, accent2 (purple) border.
                 Triple(
                     Color(0xFF60A5FA).copy(alpha = 0.18f),
-                    Color(0xFF60A5FA),
+                    com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2,
                     1f,
                 )
             else ->
@@ -158,7 +159,7 @@ private fun AlertsBellPill(
             label,
             fontSize = 13.sp,
             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-            color = border,
+            color = if (!alertsMuted && alertsBadge > 0) MaterialTheme.colorScheme.onSurface else border,
         )
     }
 }
