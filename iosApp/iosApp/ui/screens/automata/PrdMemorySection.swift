@@ -41,7 +41,7 @@ struct PrdMemorySection: View {
             recallCard
         }
         .padding(14)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
     }
 
     // ── BL387 stats tile ───────────────────────────────────────────────────

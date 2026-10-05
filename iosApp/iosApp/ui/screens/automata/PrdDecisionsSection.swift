@@ -36,7 +36,7 @@ struct PrdDecisionsSection: View {
             }
         }
         .padding(14)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
     }
 
     private func card(_ d: DecisionDto) -> some View {

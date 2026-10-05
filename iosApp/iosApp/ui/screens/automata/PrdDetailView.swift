@@ -381,7 +381,7 @@ struct PrdDetailView: View {
             }
         }
         .padding(14)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
     }
 
     private var metaRow: some View {
@@ -476,7 +476,7 @@ struct PrdDetailView: View {
         }
         .tint(DatawatchColors.primary)
         .padding(14)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
     }
 
     private var storiesSection: some View {
@@ -569,7 +569,7 @@ struct PrdDetailView: View {
         }
         .tint(DatawatchColors.primary)
         .padding(12)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
     }
 
     // ── Status graphs + capacity (parity B17; PWA _renderStatusGraphs) ─────
@@ -591,7 +591,7 @@ struct PrdDetailView: View {
                          fraction: tasks.isEmpty ? 0 : Double(tasksDone) / Double(tasks.count))
             }
             .padding(14)
-            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
         }
     }
 
@@ -648,7 +648,7 @@ struct PrdDetailView: View {
                 }
             }
             .padding(14)
-            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
         }
     }
 

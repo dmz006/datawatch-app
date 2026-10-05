@@ -34,8 +34,8 @@ struct AlertsBellButton: View {
                 .foregroundStyle(DatawatchColors.onSurface)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 2)
-                .background(background, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(border, lineWidth: 1))
+                .background(background, in: RoundedRectangle(cornerRadius: DatawatchRadius.pill))
+                .overlay(RoundedRectangle(cornerRadius: DatawatchRadius.pill).stroke(border, lineWidth: 1))
                 .opacity(active ? 1 : 0.55)
                 .fixedSize()
         }

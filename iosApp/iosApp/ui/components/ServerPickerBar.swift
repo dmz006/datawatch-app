@@ -16,8 +16,8 @@ struct ServerPickerBar: View {
                 .foregroundStyle(active ? Color.white : DatawatchColors.onSurface)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 2)
-                .background(active ? DatawatchColors.secondary : DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DatawatchColors.border, lineWidth: 1))
+                .background(active ? DatawatchColors.secondary : DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: DatawatchRadius.pill))
+                .overlay(RoundedRectangle(cornerRadius: DatawatchRadius.pill).stroke(DatawatchColors.border, lineWidth: 1))
         }
         .buttonStyle(.borderless)
         .accessibilityAddTraits(active ? .isSelected : [])
@@ -50,8 +50,8 @@ struct ServerPickerBar: View {
                 .foregroundStyle(active ? Color.white : DatawatchColors.onSurface)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 2)
-                .background(active ? DatawatchColors.secondary : DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DatawatchColors.border, lineWidth: 1))
+                .background(active ? DatawatchColors.secondary : DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: DatawatchRadius.pill))
+                .overlay(RoundedRectangle(cornerRadius: DatawatchRadius.pill).stroke(DatawatchColors.border, lineWidth: 1))
         }
         .buttonStyle(.borderless)
         .accessibilityAddTraits(active ? .isSelected : [])

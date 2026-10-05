@@ -33,6 +33,13 @@ struct RootView: View {
         }
     }
 
+    /// PWA `updateAlertBadge`: hidden at 0, `99+` cap.
+    private var alertBadgeText: Text? {
+        let n: Int = alertBadgeCount
+        if n <= 0 { return nil }
+        return Text(verbatim: n > 99 ? "99+" : String(n))
+    }
+
     var body: some View {
         Group {
             if horizontalSizeClass == .regular {
@@ -108,10 +115,10 @@ struct RootView: View {
                         Label(L(tab.title), systemImage: tab.iconName)
                     }
                     .tag(tab)
-                    .badge(tab == .alerts ? alertBadgeCount : 0)
+                    .badge(tab == .alerts ? alertBadgeText : Text?.none)
             }
         }
-        .tint(DatawatchColors.primary)
+        .tint(DatawatchColors.secondary)
         .dwThemed()
     }
 
@@ -148,7 +155,7 @@ struct RootView: View {
         } detail: {
             tabStack(selectedTab)
         }
-        .tint(DatawatchColors.primary)
+        .tint(DatawatchColors.secondary)
         .dwThemed()
     }
 
