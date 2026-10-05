@@ -13,7 +13,7 @@ import com.dmzs.datawatchclient.ui.DeepLinks
 /**
  * Launch Activity. Hands off to the Compose navigation root — see
  * [com.dmzs.datawatchclient.ui.AppRoot]. Also extracts session-deep-link
- * targets from the intent (`dwclient://session/<id>`) and surfaces them via
+ * targets from the intent (`datawatch://session/<id>`) and surfaces them via
  * [DeepLinks] for AppRoot to consume.
  */
 public class MainActivity : FragmentActivity() {
@@ -55,9 +55,11 @@ public class MainActivity : FragmentActivity() {
 
     private fun consumeDeepLink(intent: Intent?) {
         val uri: Uri = intent?.data ?: return
-        if (uri.scheme != "dwclient") return
+        // Parity D84b: `datawatch://` is canonical; `dwclient://` is accepted
+        // as a one-release alias (notifications posted by the previous build).
+        if (!DeepLinks.isAppScheme(uri.scheme)) return
         if (uri.host == "session") {
-            // dwclient://session/<id>  → path "/<id>"
+            // datawatch://session/<id>  → path "/<id>"
             val id = uri.pathSegments.firstOrNull() ?: return
             DeepLinks.pendingSessionTarget.tryEmit(id)
         }

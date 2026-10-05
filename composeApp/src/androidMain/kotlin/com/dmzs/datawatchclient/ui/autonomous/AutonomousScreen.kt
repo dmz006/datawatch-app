@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,19 +27,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -74,7 +69,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.transport.dto.IdentityDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
@@ -116,7 +110,6 @@ public fun AutonomousScreen(
     var tmplCreateOpen by remember { mutableStateOf(false) }
     var identityWizardOpen by remember { mutableStateOf(false) }
     var identity by remember { mutableStateOf(IdentityDto()) }
-    var pickerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -174,24 +167,7 @@ public fun AutonomousScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    AutonomousServerPickerTitle(
-                        active = state.activeProfile,
-                        allMode = state.allServersMode,
-                        open = pickerOpen,
-                        onToggle = { pickerOpen = !pickerOpen },
-                        onDismiss = { pickerOpen = false },
-                        profiles = state.allProfiles,
-                        onSelectAll = {
-                            vm.selectAllServers()
-                            pickerOpen = false
-                        },
-                        onSelect = {
-                            vm.selectProfile(it)
-                            pickerOpen = false
-                        },
-                    )
-                },
+                title = { Text(stringResource(R.string.nav_automata)) },
                 actions = {
                     // Robot icon FIRST (left of all) — screen-specific identity shortcut
                     IconButton(onClick = { identityWizardOpen = true }) {
@@ -226,6 +202,14 @@ public fun AutonomousScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                com.dmzs.datawatchclient.ui.common.ServerPickerBar(
+                    profiles = state.allProfiles,
+                    activeId = state.activeProfile?.id,
+                    allMode = state.allServersMode,
+                    onSelect = vm::selectProfile,
+                    showAll = true,
+                    onSelectAll = vm::selectAllServers,
+                )
                 // Custom tab row — matches SessionDetailScreen style with icons on right
                 val tabBorderColor = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.border
                 Row(
@@ -502,6 +486,17 @@ public fun AutonomousScreen(
                     vm.hardDeletePrdWithMemory(id, strategy, roleFilter, archiveToScope)
                 },
                 onArchive = { vm.archivePrd(id) },
+                scanResult = state.scanResult,
+                scanLoading = state.scanLoading,
+                onLoadScan = { vm.loadScanResult(id) },
+                onTriggerScan = { vm.triggerScan(id) },
+                onCreateFixPrd = { vm.createFixPrd(id) { newId -> openPrdId = newId } },
+                onProposeRules = { vm.proposeRules(id) },
+                proposedRules = state.proposedRules,
+                onDismissProposedRules = { vm.clearProposedRules() },
+                rulesResult = state.rulesResult,
+                rulesLoading = state.rulesLoading,
+                onRunRules = { vm.runRulesCheck(id) },
                 prdEnvelopes = state.prdEnvelopes,
                 prdComputeNodeDetail = state.prdComputeNodeDetail,
                 prdComputeNodeRef = state.prdComputeNodeRef,
@@ -709,7 +704,7 @@ private fun PrdsBody(
                 compareBy(
                     { if (it.id in pinnedIds) 0 else 1 },
                     { prdStateRank(it.status) },
-                    { -(it.createdAt?.hashCode() ?: 0) },
+                    { -prdActivityKey(it) },
                 ),
             )
     Box(modifier = Modifier.fillMaxSize()) {
@@ -931,6 +926,36 @@ private fun PrdRow(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                         )
                     }
+                }
+                // PWA renderProgressBar: 4dp bar (accent; success at 100%) +
+                // "done/total tasks · pct%".
+                prdTaskProgress(prd)?.let { (done, total) ->
+                    val pct = Math.round(done * 100f / total)
+                    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+                    Box(
+                        modifier =
+                            Modifier
+                                .padding(top = 6.dp, bottom = 2.dp)
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .background(dw.bg, RoundedCornerShape(2.dp)),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(pct / 100f)
+                                    .height(4.dp)
+                                    .background(
+                                        if (pct == 100) dw.success else MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(2.dp),
+                                    ),
+                        )
+                    }
+                    Text(
+                        "$done/$total tasks · $pct%",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 // PWA renderCurrentPosition: "▶ Story i: … · Task j: … (verifying/testing)".
                 currentPositionLine(prd)?.let { line ->
@@ -1443,18 +1468,32 @@ private fun isApprovalState(statusLower: String) =
     statusLower in setOf("needs_review", "awaiting_approval", "revisions_asked")
 
 /** Sort rank: action-needed statuses first, then active, then terminal. */
+/** PWA `_AUTOMATA_STATE_RANK` verbatim (alpha.31 #272) — lower sorts first; unknown = 9. */
 internal fun prdStateRank(status: String): Int =
     when (status.lowercase()) {
-        "needs_review", "revisions_asked", "awaiting_approval" -> 0
-        "running" -> 1
-        "decomposing", "planning" -> 2
-        "approved" -> 3
-        "draft" -> 4
-        // completed shown by default (v8.33.29 / #180) — sorted after active, before terminal
-        "completed", "complete" -> 6
-        "cancelled", "canceled", "rejected", "archived" -> 10
-        else -> 5
+        "waiting_input", "needs_review", "revisions_asked", "awaiting_approval" -> 0
+        "blocked" -> 1
+        "running", "decomposing" -> 2
+        "approved", "planning" -> 3
+        "draft", "" -> 4
+        "completed", "complete", "rejected", "cancelled", "canceled" -> 5
+        "archived" -> 6
+        else -> 9
     }
+
+/** PWA list tiebreak: last activity (`updated_at` else `created_at`) descending. */
+internal fun prdActivityKey(prd: com.dmzs.datawatchclient.transport.dto.PrdDto): Long {
+    val ts = prd.updatedAt?.takeIf { it.isNotBlank() } ?: prd.createdAt
+    return ts?.let { runCatching { kotlinx.datetime.Instant.parse(it).toEpochMilliseconds() }.getOrNull() } ?: 0L
+}
+
+/** PWA card `renderProgressBar`: done/total tasks (status == completed); null when no tasks. */
+internal fun prdTaskProgress(prd: com.dmzs.datawatchclient.transport.dto.PrdDto): Pair<Int, Int>? {
+    val total = prd.stories.sumOf { it.tasks.size }
+    if (total == 0) return null
+    val done = prd.stories.sumOf { s -> s.tasks.count { it.status == "completed" } }
+    return done to total
+}
 
 internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {
@@ -1467,97 +1506,6 @@ internal fun prdStatusColor(status: String): Color =
         "draft", "cancelled", "canceled", "archived" -> Color(0xFF94A3B8)
         else -> Color(0xFF94A3B8)
     }
-
-@Composable
-private fun AutonomousServerPickerTitle(
-    active: ServerProfile?,
-    allMode: Boolean,
-    open: Boolean,
-    onToggle: () -> Unit,
-    onDismiss: () -> Unit,
-    profiles: List<ServerProfile>,
-    onSelectAll: () -> Unit,
-    onSelect: (String) -> Unit,
-) {
-    Box {
-        Row(
-            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                if (allMode) {
-                    stringResource(
-                        R.string.sessions_all_servers,
-                    )
-                } else {
-                    (active?.displayName ?: stringResource(R.string.sessions_no_server))
-                },
-            )
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = stringResource(R.string.sessions_switch_server),
-                modifier = Modifier.padding(start = 4.dp),
-            )
-        }
-        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-            if (profiles.size > 1) {
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                stringResource(R.string.sessions_all_servers),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (allMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    },
-                    onClick = onSelectAll,
-                )
-                HorizontalDivider()
-            }
-            if (profiles.isEmpty()) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.sessions_no_servers)) },
-                    onClick = onDismiss,
-                    enabled = false,
-                )
-            } else {
-                profiles.forEach { p ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                AutonomousStatusDot(enabled = p.enabled)
-                                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                                    Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Text(
-                                        p.baseUrl,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                if (p.id == active?.id) {
-                                    Icon(
-                                        Icons.Filled.Check,
-                                        "Active",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        },
-                        onClick = { onSelect(p.id) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AutonomousStatusDot(enabled: Boolean) {
-    val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-    Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
-}
 
 /** Action button matching PWA .automata-action-btn — border pill, accent when active. */
 @Composable

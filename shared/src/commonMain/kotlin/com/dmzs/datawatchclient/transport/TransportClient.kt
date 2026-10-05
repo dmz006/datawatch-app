@@ -1844,6 +1844,42 @@ public interface TransportClient {
      */
     public suspend fun fetchSessionResponse(sessionId: String): Result<String> =
         Result.failure(UnsupportedOperationException("fetchSessionResponse"))
+
+    // ---- parity-android-remaining (2026-10-04) ----
+
+    /**
+     * GET /api/sessions/response?id= — the live last response (PWA
+     * `showResponseViewer`, D43a). Returns the `response` field ("" when none).
+     */
+    public suspend fun getSessionResponse(sessionId: String): Result<String> =
+        Result.failure(UnsupportedOperationException("getSessionResponse"))
+
+    /**
+     * POST /api/sessions/{id}/guardrail `{name}` — run one named guardrail on the
+     * session (PWA quick-command "Guardrails" group). Returns the raw verdict
+     * object (`guardrail`, `outcome`, `summary`, ...).
+     */
+    public suspend fun runNamedSessionGuardrail(
+        sessionId: String,
+        name: String,
+    ): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("runNamedSessionGuardrail"))
+
+    /**
+     * POST /api/sessions/{id}/guardrail/{name}/approve with a `{}` body (PWA
+     * `approveGuardrailVerdict`). Returns the server's `session_unblocked` flag.
+     */
+    public suspend fun approveGuardrailVerdict(
+        sessionId: String,
+        guardrailName: String,
+    ): Result<Boolean> = Result.failure(UnsupportedOperationException("approveGuardrailVerdict"))
+
+    /**
+     * POST /api/autonomous/prds/{id}/scan/rules — AGENT.md / project-rules check
+     * (PWA Rules tab, D24a). Returns the raw result object.
+     */
+    public suspend fun runPrdRulesCheck(prdId: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("runPrdRulesCheck"))
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

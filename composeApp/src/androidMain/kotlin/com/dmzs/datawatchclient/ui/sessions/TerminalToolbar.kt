@@ -74,6 +74,9 @@ public class TerminalToolbarState internal constructor(
             scrollModeState.value = value
             controller.setScrollMode(value)
         }
+
+    /** Parity D69a — terminal search bar visible (🔍 toggle). */
+    public var searchOpen: Boolean by mutableStateOf(false)
 }
 
 @Composable
@@ -155,6 +158,15 @@ public fun TerminalToolbarControls(
                 )
             }
         }
+        // Parity D69a — terminal search / copy (xterm search addon bridge).
+        TermToolBtn(
+            label = "🔍",
+            onClick = {
+                if (state.searchOpen) controller.searchClear()
+                state.searchOpen = !state.searchOpen
+            },
+            highlight = state.searchOpen,
+        )
         // BL-SD-4: scroll-back icon matches PWA ⤒ (U+2912), 18sp bold.
         TermToolBtn(
             label = if (state.scrollMode) "⏹" else "⤒",
@@ -338,3 +350,55 @@ private const val DEFAULT_TERM_FONT_PX: Int = 9
 private const val MIN_TERM_FONT_PX: Int = 5
 private const val MAX_TERM_FONT_PX: Int = 20
 private const val FONT_STEP_PX: Int = 1
+
+/**
+ * Parity D69a — terminal search bar under the viewport: query field, ▲ / ▼
+ * (dwSearchPrev / dwSearchNext), 📋 copy selection, ✕ close (clears
+ * highlights). Mirrors the iOS `TerminalSearchBar`.
+ */
+@Composable
+public fun TerminalSearchBar(state: TerminalToolbarState) {
+    if (!state.searchOpen) return
+    var query by remember { mutableStateOf("") }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val copiedMsg = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.response_viewer_copied)
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            androidx.compose.material3.OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                singleLine = true,
+                placeholder = {
+                    Text(androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.terminal_search_ph), fontSize = 12.sp)
+                },
+                textStyle = MaterialTheme.typography.bodySmall,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { state.controller.searchNext(query) }),
+                modifier = Modifier.weight(1f),
+            )
+            TermToolBtn(label = "▲", onClick = { state.controller.searchPrev(query) }, enabled = query.isNotEmpty())
+            TermToolBtn(label = "▼", onClick = { state.controller.searchNext(query) }, enabled = query.isNotEmpty())
+            TermToolBtn(
+                label = "📋",
+                onClick = {
+                    state.controller.copySelection { text ->
+                        if (text.isNotEmpty()) {
+                            clipboard.setText(androidx.compose.ui.text.AnnotatedString(text))
+                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(copiedMsg)
+                        }
+                    }
+                },
+            )
+            TermToolBtn(
+                label = "✕",
+                onClick = {
+                    state.controller.searchClear()
+                    state.searchOpen = false
+                },
+            )
+        }
+    }
+}

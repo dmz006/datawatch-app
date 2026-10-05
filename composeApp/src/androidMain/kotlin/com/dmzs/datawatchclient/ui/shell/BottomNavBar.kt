@@ -100,7 +100,7 @@ internal fun BottomNavBar(
                             BadgedBox(
                                 badge = {
                                     Badge(containerColor = MaterialTheme.colorScheme.error) {
-                                        Text(alertsBadge.toString(), style = MaterialTheme.typography.labelSmall)
+                                        Text(alertBadgeLabel(alertsBadge), style = MaterialTheme.typography.labelSmall)
                                     }
                                 },
                             ) {
@@ -152,3 +152,6 @@ private fun NavGlyph(item: BottomNavItem) {
         )
     }
 }
+
+/** PWA `updateAlertBadge`: counts above 99 render as "99+". */
+internal fun alertBadgeLabel(count: Int): String = if (count > 99) "99+" else count.toString()

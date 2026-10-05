@@ -1,5 +1,12 @@
 package com.dmzs.datawatchclient.ui.stats
 
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -232,6 +239,22 @@ private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     StatsCard(id = "rtk", title = stringResource(R.string.stats_section_rtk)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow(stringResource(R.string.stats_row_version), s.rtkVersion ?: "?")
+            // PWA BL223 RTK update badge: tap copies the upstream upgrade one-liner.
+            if (s.rtkUpdateAvailable) {
+                val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+                val copied = stringResource(R.string.response_viewer_copied)
+                Text(
+                    "→ " + stringResource(R.string.rtk_update_available),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier =
+                        Modifier.clickable {
+                            clipboard.setText(androidx.compose.ui.text.AnnotatedString(RTK_INSTALL_CMD))
+                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(copied)
+                        },
+                )
+            }
             val hooksColor =
                 if (s.rtkHooksActive) {
                     LocalDatawatchColors.current.success
@@ -539,12 +562,8 @@ private fun SessionStatisticsCard(
     val total = s.sessionsTotal
     val max = (maxSessions ?: total).coerceAtLeast(total).coerceAtLeast(1)
     val fraction = (total.toFloat() / max.toFloat()).coerceIn(0f, 1f)
-    val ringColor =
-        when {
-            fraction >= 0.9f -> MaterialTheme.colorScheme.error
-            fraction >= 0.7f -> dw.warning
-            else -> dw.success
-        }
+    // PWA donut is always the success colour (no threshold tint).
+    val ringColor = dw.success
     StatsCard(id = "sessions", title = stringResource(R.string.stats_section_sessions)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -657,7 +676,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 } else {
                     null
                 }
-            UsageBar("CPU Load", cpuPct, cpuSub)
+            UsageBar("CPU Load", cpuPct, cpuSub, StatsMetric.Cpu)
             PerCoreCpuStrip(s.cpuCoresDetail)
 
             // Memory — show used/total under the bar.
@@ -675,7 +694,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 } else {
                     null
                 }
-            UsageBar("Memory", memPct, memSub)
+            UsageBar("Memory", memPct, memSub, StatsMetric.Memory)
 
             // Disk — same pattern, also tolerate v1 flat scalar.
             val diskUsed = s.diskUsed
@@ -692,7 +711,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 } else {
                     null
                 }
-            UsageBar("Disk", diskPct, diskSub)
+            UsageBar("Disk", diskPct, diskSub, StatsMetric.Disk)
 
             // Swap — only render when the host actually has swap configured.
             if (s.swapTotal > 0) {
@@ -712,7 +731,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
             if (s.gpuName != null || gpuUtilPct != null) {
                 val tempSuffix = s.gpuTemp?.let { " · ${"%.0f".format(it)}°C" } ?: ""
                 val gpuSub = s.gpuName?.plus(tempSuffix) ?: tempSuffix.ifBlank { null }
-                UsageBar("GPU", gpuUtilPct, gpuSub)
+                UsageBar("GPU", gpuUtilPct, gpuSub, StatsMetric.Gpu)
             }
 
             // GPU VRAM — shown as a bar.
@@ -811,6 +830,7 @@ private fun UsageBar(
     label: String,
     pct: Double?,
     subtitle: String?,
+    metric: StatsMetric = StatsMetric.Other,
 ) {
     if (pct == null) return
     val clamped = pct.coerceIn(0.0, 100.0)
@@ -820,7 +840,7 @@ private fun UsageBar(
             Text(
                 "${"%.1f".format(clamped)}%",
                 style = MaterialTheme.typography.bodyMedium,
-                color = pctColor(clamped),
+                color = pctColor(metric, clamped),
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -832,7 +852,7 @@ private fun UsageBar(
                     .padding(top = 4.dp)
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-            color = pctColor(clamped),
+            color = pctColor(metric, clamped),
             trackColor = LocalDatawatchColors.current.bg3,
         )
         subtitle?.let {
@@ -846,13 +866,42 @@ private fun UsageBar(
     }
 }
 
+/** Parity D29a — the metrics the PWA stats panel colours with its own thresholds. */
+internal enum class StatsMetric { Cpu, Memory, Disk, Gpu, Other }
+
+/** Colour role a [StatsMetric] bar takes at a given percentage. */
+internal enum class StatsTone { Error, Warning, Success, Accent, Accent2 }
+
+/**
+ * Parity D29a — PWA `renderStatsData` thresholds verbatim (strict `>`):
+ * CPU >80 error / >50 warning / success; Memory >85 error / accent;
+ * Disk >90 error / accent2; GPU >80 error / success. Bars the PWA doesn't
+ * draw (swap, VRAM) use accent.
+ */
+internal fun statsMetricTone(
+    metric: StatsMetric,
+    pct: Double,
+): StatsTone =
+    when (metric) {
+        StatsMetric.Cpu -> if (pct > 80) StatsTone.Error else if (pct > 50) StatsTone.Warning else StatsTone.Success
+        StatsMetric.Memory -> if (pct > 85) StatsTone.Error else StatsTone.Accent
+        StatsMetric.Disk -> if (pct > 90) StatsTone.Error else StatsTone.Accent2
+        StatsMetric.Gpu -> if (pct > 80) StatsTone.Error else StatsTone.Success
+        StatsMetric.Other -> StatsTone.Accent
+    }
+
 @Composable
-private fun pctColor(pct: Double): Color {
+private fun pctColor(
+    metric: StatsMetric,
+    pct: Double,
+): Color {
     val dw = LocalDatawatchColors.current
-    return when {
-        pct >= 90 -> MaterialTheme.colorScheme.error
-        pct >= 70 -> dw.warning
-        else -> dw.success
+    return when (statsMetricTone(metric, pct)) {
+        StatsTone.Error -> MaterialTheme.colorScheme.error
+        StatsTone.Warning -> dw.warning
+        StatsTone.Success -> dw.success
+        StatsTone.Accent -> MaterialTheme.colorScheme.primary
+        StatsTone.Accent2 -> dw.accent2
     }
 }
 
@@ -934,6 +983,12 @@ private fun WebSearchCardV2(ws: WebSearchStatsV2Dto) {
                 androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
                 WebSearchSparkline(ws.dailySeries)
             }
+            // PWA webSearchOpenHistoryView — last 50 searches.
+            var historyOpen by remember { mutableStateOf(false) }
+            androidx.compose.material3.TextButton(onClick = { historyOpen = true }) {
+                Text(stringResource(R.string.ws_history_btn), style = MaterialTheme.typography.labelSmall)
+            }
+            if (historyOpen) WebSearchHistoryDialog(onDismiss = { historyOpen = false })
         }
     }
 }
@@ -1012,4 +1067,72 @@ private fun GpuProbeFailedCard(error: String) {
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
+}
+
+/** PWA RTK install/upgrade one-liner (upstream rtk-ai/rtk install.sh), copied verbatim. */
+private const val RTK_INSTALL_CMD: String =
+    "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"
+
+/** PWA history row tag: error → "error", cache hit → "cache", else "live". */
+internal fun webSearchHistoryTag(e: com.dmzs.datawatchclient.transport.dto.WebSearchHistoryEntryDto): String =
+    when {
+        !e.success -> "error"
+        e.cacheHit -> "cache"
+        else -> "live"
+    }
+
+/** PWA web-search history view: last 50 searches with live / cache / error tags. */
+@Composable
+private fun WebSearchHistoryDialog(onDismiss: () -> Unit) {
+    var rows by remember { mutableStateOf<List<com.dmzs.datawatchclient.transport.dto.WebSearchHistoryEntryDto>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val (_, transport) = com.dmzs.datawatchclient.ui.common.ProfileResolver.Default.resolve() ?: return@LaunchedEffect
+        transport.fetchWebSearchHistory(limit = 50).fold(
+            onSuccess = { rows = it.history },
+            onFailure = { failed = true },
+        )
+    }
+    val dw = LocalDatawatchColors.current
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ws_history_title)) },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
+                val list = rows
+                when {
+                    failed -> Text(stringResource(R.string.channel_diag_unavailable), style = MaterialTheme.typography.bodySmall)
+                    list == null -> Text(stringResource(R.string.loading_ellipsis_short), style = MaterialTheme.typography.bodySmall)
+                    list.isEmpty() -> Text(stringResource(R.string.ws_history_empty), style = MaterialTheme.typography.bodySmall)
+                    else ->
+                        list.forEach { e ->
+                            val tag = webSearchHistoryTag(e)
+                            val tagColor =
+                                when (tag) {
+                                    "error" -> MaterialTheme.colorScheme.error
+                                    "cache" -> dw.accent2
+                                    else -> dw.success
+                                }
+                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(tag, style = MaterialTheme.typography.labelSmall, color = tagColor)
+                                    Text(
+                                        "  ${e.providerName} · ${e.time.take(19).replace('T', ' ')}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Text(e.query, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                Text(
+                                    if (e.success) "${e.resultCount} results · ${e.latencyMs} ms" else e.error,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (e.success) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+    )
 }

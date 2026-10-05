@@ -218,8 +218,8 @@
     <string name="prd_detail_description_label">Descripción</string>
     <string name="prd_detail_files_label">Archivos</string>
     <string name="prd_detail_files_hint">Una ruta por línea, máx. 50.</string>
-    <string name="prd_detail_delete_title">¿Eliminar PRD?</string>
-    <string name="prd_detail_delete_body">Elimina permanentemente «%1$s» y todos los PRDs hijos. Esta acción no se puede deshacer.</string>
+    <string name="prd_detail_delete_title">¿Eliminar autómata?</string>
+    <string name="prd_detail_delete_body">Elimina permanentemente «%1$s» y todos los autómatas hijos. Esta acción no se puede deshacer.</string>
     <string name="prd_detail_edit_files">✎ archivos</string>
 
     <!-- ── Monitor ── -->
@@ -393,7 +393,7 @@
     <string name="chat_role_system">Sistema</string>
     <string name="chat_role_thinking">Pensando</string>
     <string name="chat_role_user">Usted</string>
-    <string name="fab_launch_auto">Lanzar automatización</string>
+    <string name="fab_launch_auto">Lanzar autómata</string>
     <string name="fab_new_session">Iniciar nueva sesión</string>
     <string name="input_ph_command">Enviar comando o entrada…</string>
     <string name="input_ph_message">Enviar mensaje…</string>
@@ -440,12 +440,12 @@
     <string name="prd_action_reject">Rechazar</string>
     <string name="prd_action_request_revision">Solicitar revisión</string>
     <string name="prd_btn_clone_template">Clonar a Plantilla</string>
-    <string name="prd_btn_clone_template_title">Guardar este automaton como plantilla reutilizable</string>
+    <string name="prd_btn_clone_template_title">Guardar este autómata como plantilla reutilizable</string>
     <string name="prd_btn_delete">Eliminar</string>
-    <string name="prd_btn_delete_title">Eliminar permanentemente el PRD y todos sus descendientes</string>
+    <string name="prd_btn_delete_title">Eliminar permanentemente el autómata y todos sus descendientes</string>
     <string name="prd_btn_edit_spec">Editar Spec</string>
     <string name="prd_btn_request_revision">Solicitar Revisión</string>
-    <string name="prd_btn_request_revision_title">Devolver el PRD para revisión con una nota</string>
+    <string name="prd_btn_request_revision_title">Devolver el autómata para revisión con una nota</string>
     <string name="prd_btn_settings">Ajustes</string>
     <string name="prd_decision_detail">Detalle</string>
     <string name="prd_decisions_count">decisiones</string>
@@ -456,28 +456,28 @@
     <string name="prd_edit_story_title_prefix">Editar historia</string>
     <string name="prd_edit_task_files_title">Editar archivos de tarea</string>
     <string name="prd_edit_task_title_prefix">Editar tarea</string>
-    <string name="prd_list_empty">No hay PRDs que coincidan.</string>
+    <string name="prd_list_empty">No hay autómatas que coincidan.</string>
     <string name="prd_more_actions">Más acciones</string>
     <string name="prd_new_backend_label">Backend</string>
     <string name="prd_new_effort_label">Esfuerzo</string>
     <string name="prd_new_model_label">Modelo (opcional)</string>
     <string name="prd_new_spec_label">Spec — describa la funcionalidad en inglés llano</string>
     <string name="prd_new_spec_ph">Agregar una columna CACHE a /api/stats…</string>
-    <string name="prd_new_title">Nuevo PRD</string>
+    <string name="prd_new_title">Nuevo autómata</string>
     <string name="prd_new_title_label">Título (opcional)</string>
     <string name="prd_new_title_ph">Titular corto</string>
     <string name="prd_no_decisions">Aún no se han registrado decisiones.</string>
     <string name="prd_no_stories">Aún no hay historias.</string>
     <string name="prd_no_tasks">Sin tareas.</string>
     <string name="prd_revision_prompt">¿Qué necesita revisión?</string>
-    <string name="prd_scan_help">Análisis estático (SAST, secretos, dependencias, LLM grader) sobre el spec del PRD y los archivos asociados. Ejecuta los escáneres configurados y reporta un veredicto y hallazgos.</string>
-    <string name="prd_scan_run_title">Ejecutar todos los escáneres configurados contra este PRD</string>
+    <string name="prd_scan_help">Análisis estático (SAST, secretos, dependencias, LLM grader) sobre el spec del autómata y los archivos asociados. Ejecuta los escáneres configurados y reporta un veredicto y hallazgos.</string>
+    <string name="prd_scan_run_title">Ejecutar todos los escáneres configurados contra este autómata</string>
     <string name="prd_set_llm_hint">Las tareas sin override por tarea heredan estos valores. Vacío = predeterminado global session.llm_backend.</string>
-    <string name="prd_set_llm_title">LLM trabajador a nivel de PRD</string>
-    <string name="prd_set_story_profile_hint">Vacío = heredar el perfil de ejecución predeterminado del PRD. Un nombre anula solo esta historia.</string>
+    <string name="prd_set_llm_title">LLM trabajador a nivel de autómata</string>
+    <string name="prd_set_story_profile_hint">Vacío = heredar el perfil de ejecución predeterminado del autómata. Un nombre anula solo esta historia.</string>
     <string name="prd_set_story_profile_title">Anular perfil de ejecución</string>
     <string name="prd_settings_guided_label">Modo guiado — pausar para el operador tras cada story</string>
-    <string name="prd_settings_modal_title">Ajustes del automaton</string>
+    <string name="prd_settings_modal_title">Ajustes del autómata</string>
     <string name="prd_settings_save_failed">Falló al guardar</string>
     <string name="prd_settings_saved">Ajustes guardados</string>
     <string name="prd_settings_skills_hint">IDs de skill desde /api/skills pasados a cada sesión de task.</string>
@@ -500,7 +500,7 @@
     <string name="prd_stories_tasks">Historias y tareas</string>
     <string name="prd_story_desc_label">Descripción</string>
     <string name="prd_story_title_label">Título</string>
-    <string name="prd_task_llm_hint">Override de LLM por tarea — vacío hereda del PRD y luego global.</string>
+    <string name="prd_task_llm_hint">Override de LLM por tarea — vacío hereda del autómata y luego global.</string>
     <string name="prd_view_spec">Ver spec</string>
     <string name="profile_agent_settings_section">Configuración del agente</string>
     <string name="profile_claude_key_secret_label">Secreto de clave de auth Claude</string>
@@ -724,8 +724,8 @@
     <string name="memory_similarity_label">similitud</string>
 
     <!-- ── v0.70.0 Automata/Theme strings ── -->
-    <string name="toggle_automata_filters">Alternar filtros de Automata</string>
-    <string name="automata_orchestrator">Orquestador de Automata</string>
+    <string name="toggle_automata_filters">Alternar filtros de autómatas</string>
+    <string name="automata_orchestrator">Orquestador de autómatas</string>
     <string name="prd_terminal_state_hint">Este autómata ha alcanzado un estado terminal. Crea una nueva ejecución para continuar.</string>
     <string name="identity_wizard_open">Abrir Identity Wizard</string>
     <string name="identity_wizard_title_hint">Identity Wizard</string>
@@ -901,7 +901,7 @@
     <string name="pipeline_status_done">Completado</string>
     <string name="pipeline_no_pipelines">No hay pipelines en ejecución</string>
     <string name="pipeline_cancel">Cancelar</string>
-    <string name="orchestrator_graphs_title">Orquestador de automatas</string>
+    <string name="orchestrator_graphs_title">Orquestador de autómatas</string>
     <string name="orchestrator_create_graph">Crear grafo</string>
     <string name="orchestrator_graph_title_hint">Título (requerido)</string>
     <string name="orchestrator_graph_dir_hint">Directorio del proyecto (opcional)</string>
@@ -1020,7 +1020,7 @@
     <string name="wear_notification_council_title">Consenso del consejo alcanzado</string>
     <string name="wear_notification_error_channel">Notificaciones de error</string>
     <string name="wear_notification_error_title">Error de sesión</string>
-    <string name="complication_automata_label">Automata</string>
+    <string name="complication_automata_label">Autómatas</string>
     <string name="wear_health_good">Sistema saludable</string>
     <string name="wear_health_waiting">Se necesita entrada</string>
     <string name="wear_health_error">Error de sesión</string>

@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.Schedule
 import com.dmzs.datawatchclient.ui.theme.PwaCard
+import androidx.compose.ui.res.stringResource
+import com.dmzs.datawatchclient.R
+import androidx.compose.material.icons.filled.Edit
 
 private const val SCHEDULES_PAGE_SIZE = 10
 
@@ -51,8 +54,7 @@ public fun SchedulesCard(vm: SchedulesViewModel = viewModel()) {
     var addOpen by remember { mutableStateOf(false) }
 
     // v0.33.13 (B16): title matches PWA "Scheduled Events".
-    // Explicit Refresh button dropped — VM polls every 15 s
-    // and re-fetches on active-profile change.
+    // Loaded one-shot (D54b) and on active-profile change.
     PwaCard(
         id = "schedules",
         title = "Scheduled Events",
@@ -118,6 +120,70 @@ private fun SchedulesCardBody(
         // Events does the same — render-all was eating the entire
         // Settings scroll on servers with many entries.
         var pageState by remember(state.schedules.size) { mutableStateOf(0) }
+        // PWA select-all checkbox + "Delete selected" (with confirm).
+        var selected by remember(state.schedules) { mutableStateOf<Set<String>>(emptySet()) }
+        var confirmBulk by remember { mutableStateOf(false) }
+        var editTarget by remember { mutableStateOf<Schedule?>(null) }
+        var editCommand by remember { mutableStateOf<String?>(null) }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val allIds = state.schedules.map { it.id }.toSet()
+            androidx.compose.material3.Checkbox(
+                checked = allIds.isNotEmpty() && selected.containsAll(allIds),
+                onCheckedChange = { on -> selected = if (on) allIds else emptySet() },
+            )
+            Text(
+                stringResource(R.string.schedules_select_all),
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = { confirmBulk = true }, enabled = selected.isNotEmpty()) {
+                Text(stringResource(R.string.schedules_delete_selected), color = MaterialTheme.colorScheme.error)
+            }
+        }
+        if (confirmBulk) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { confirmBulk = false },
+                text = { Text(stringResource(R.string.schedules_delete_selected_confirm, selected.size)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.deleteMany(selected)
+                        selected = emptySet()
+                        confirmBulk = false
+                    }) { Text(stringResource(R.string.action_yes)) }
+                },
+                dismissButton = { TextButton(onClick = { confirmBulk = false }) { Text(stringResource(R.string.action_no)) } },
+            )
+        }
+        // Parity D56b — the PWA edits a schedule with two prompt()s:
+        // "Edit command:" then "New time (ISO, or empty to keep):".
+        editTarget?.let { target ->
+            val cmd = editCommand
+            if (cmd == null) {
+                SchedulePromptDialog(
+                    message = stringResource(R.string.schedules_edit_command_prompt),
+                    initial = target.task,
+                    onCancel = { editTarget = null },
+                    onOk = { editCommand = it },
+                )
+            } else {
+                SchedulePromptDialog(
+                    message = stringResource(R.string.schedules_edit_time_prompt),
+                    initial = target.runAt?.toString().orEmpty(),
+                    onCancel = {
+                        editTarget = null
+                        editCommand = null
+                    },
+                    onOk = { time ->
+                        vm.update(target.id, target.task, cmd, time)
+                        editTarget = null
+                        editCommand = null
+                    },
+                )
+            }
+        }
         val pageSize = SCHEDULES_PAGE_SIZE
         val total = state.schedules.size
         val lastPage = ((total - 1).coerceAtLeast(0)) / pageSize
@@ -128,6 +194,12 @@ private fun SchedulesCardBody(
             ScheduleRow(
                 schedule = schedule,
                 onDelete = { vm.delete(schedule.id) },
+                checked = schedule.id in selected,
+                onCheckedChange = { on -> selected = if (on) selected + schedule.id else selected - schedule.id },
+                onEdit = {
+                    editCommand = null
+                    editTarget = schedule
+                },
             )
         }
         if (total > pageSize) {
@@ -169,11 +241,15 @@ private fun SchedulesCardBody(
 private fun ScheduleRow(
     schedule: Schedule,
     onDelete: () -> Unit,
+    checked: Boolean = false,
+    onCheckedChange: (Boolean) -> Unit = {},
+    onEdit: () -> Unit = {},
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        androidx.compose.material3.Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 schedule.task,
@@ -207,6 +283,13 @@ private fun ScheduleRow(
                 )
             }
         }
+        IconButton(onClick = onEdit) {
+            Icon(
+                androidx.compose.material.icons.Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.schedules_edit),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Filled.Delete,
@@ -215,4 +298,31 @@ private fun ScheduleRow(
             )
         }
     }
+}
+
+/** A browser-`prompt()` equivalent: message, one prefilled field, Cancel / OK. */
+@Composable
+private fun SchedulePromptDialog(
+    message: String,
+    initial: String,
+    onCancel: () -> Unit,
+    onOk: (String) -> Unit,
+) {
+    var text by remember(message) { mutableStateOf(initial) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onCancel,
+        text = {
+            Column {
+                Text(message, style = MaterialTheme.typography.bodyMedium)
+                androidx.compose.material3.OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onOk(text) }) { Text(stringResource(R.string.action_ok)) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) } },
+    )
 }

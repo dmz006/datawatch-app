@@ -22,12 +22,16 @@ import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.MatrixStatusDto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 @Composable
 public fun MatrixStatusCard() {
     var status by remember { mutableStateOf<MatrixStatusDto?>(null) }
     var banner by remember { mutableStateOf<String?>(null) }
+    var profileRef by remember { mutableStateOf<com.dmzs.datawatchclient.domain.ServerProfile?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val sentMsg = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.matrix_test_sent)
 
     LaunchedEffect(Unit) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
@@ -39,6 +43,7 @@ public fun MatrixStatusCard() {
                 banner = "No enabled server."
                 return@LaunchedEffect
             }
+        profileRef = profile
         ServiceLocator.transportFor(profile).fetchMatrixStatus().fold(
             onSuccess = { status = it },
             onFailure = { banner = "Matrix status unavailable — ${it.message ?: it::class.simpleName}" },
@@ -49,6 +54,25 @@ public fun MatrixStatusCard() {
         id = "matrix_status",
         title = "Matrix",
         docsAnchor = "communication-configuration",
+        // PWA `matrixSendTest` — POST /api/matrix/test → toast (dock entry here).
+        headerActions = {
+            val p = profileRef
+            if (p != null) {
+                androidx.compose.material3.TextButton(onClick = {
+                    scope.launch {
+                        ServiceLocator.transportFor(p).sendMatrixTest().fold(
+                            onSuccess = { com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(sentMsg) },
+                            onFailure = {
+                                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                                    it.message ?: it::class.simpleName.orEmpty(),
+                                    com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                                )
+                            },
+                        )
+                    }
+                }) { Text(androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.matrix_test_btn)) }
+            }
+        },
     ) {
         banner?.let {
             Text(

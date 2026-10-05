@@ -10,6 +10,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -362,16 +364,14 @@ public fun SessionDetailScreen(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
+                            // Parity D66a — agent ⬡ and "Chrome" header badges.
+                            state.session?.agentId?.takeIf { it.isNotBlank() }?.let { agent ->
+                                Spacer(modifier = Modifier.width(6.dp))
+                                SessionHeaderBadge("⬡ ${agent.take(12)}")
+                            }
                             if (state.session?.chrome == true) {
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    "· " + stringResource(R.string.session_chrome),
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                )
+                                SessionHeaderBadge(stringResource(R.string.session_chrome))
                             }
                             state.messagingBackend?.takeIf { it.isNotBlank() }?.let { ch ->
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -466,7 +466,9 @@ public fun SessionDetailScreen(
         // — Description-glyph is the single canonical icon used
         // across SessionInfoBar + the quick-actions row below.
         var responseOpen by remember { mutableStateOf(false) }
-        val hasResponse = !state.session?.lastResponse.isNullOrBlank()
+        // Parity D43a: PWA always shows the Response button; the viewer
+        // fetches the live response itself.
+        val hasResponse = state.session != null
         val isCouncilVirtual =
             state.session?.backend == "council-virtual" ||
                 state.session?.fullId?.startsWith("council-") == true
@@ -633,7 +635,13 @@ public fun SessionDetailScreen(
                         LastResponseSheet(
                             response = state.session?.lastResponse.orEmpty(),
                             onDismiss = { responseOpen = false },
+                            fetchFresh = { vm.fetchFreshResponse() },
+                            title = state.session?.let { it.name ?: it.id },
                         )
+                    }
+                    // Parity D45a — inline process-stats bar above the output.
+                    if (state.session?.state == SessionState.Running || state.session?.state == SessionState.Waiting) {
+                        ProcessStatsBar(fetch = { vm.fetchProcessEnvelope() })
                     }
                     // PWA conn-status-banner: channel/ACP sessions that are active
                     // but whose MCP channel / ACP server isn't connected yet.
@@ -829,6 +837,7 @@ public fun SessionDetailScreen(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             controller = terminalController,
                         )
+                        TerminalSearchBar(toolbarState)
                         TerminalScrollModeStrip(toolbarState)
                         // Backend-specific minimum cols/rows. Matches parent
                         // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
@@ -894,7 +903,31 @@ public fun SessionDetailScreen(
                 // Connecting overlay — datawatch splash covers the black terminal until both
                 // the WS connects (reachable != null) AND the first pane_capture arrives.
                 // Stays up through the full "WS handshake → resize_term → first frame" sequence.
+                // PWA connect watchdog (startTermConnectWatchdog): every 5 s
+                // without a first frame, re-subscribe, up to 3 times; then show
+                // "Unable to connect…" with Retry / Use without terminal.
+                var watchdogEpoch by remember { mutableStateOf(0) }
+                var watchdogAttempt by remember { mutableStateOf(0) }
+                var watchdogFailed by remember { mutableStateOf(false) }
+                var withoutTerminal by remember { mutableStateOf(false) }
+                androidx.compose.runtime.LaunchedEffect(watchdogEpoch, hadContent) {
+                    if (hadContent) return@LaunchedEffect
+                    watchdogAttempt = 0
+                    watchdogFailed = false
+                    while (!hadContent) {
+                        kotlinx.coroutines.delay(TERM_CONNECT_TIMEOUT_MS)
+                        if (hadContent) break
+                        if (watchdogAttempt >= TERM_CONNECT_MAX_RETRIES) {
+                            watchdogFailed = true
+                            break
+                        }
+                        watchdogAttempt++
+                        vm.restartStream()
+                    }
+                }
+                val reconnectingLabel = stringResource(R.string.term_reconnecting_attempt, watchdogAttempt, TERM_CONNECT_MAX_RETRIES)
                 val connectStatus = when {
+                    watchdogAttempt > 0 -> reconnectingLabel
                     state.reachable == null -> "connecting…"
                     !contentReady -> "waiting for terminal…"
                     else -> "connecting…"
@@ -903,9 +936,19 @@ public fun SessionDetailScreen(
                 // overlay; the header reachability dot is the only disconnect
                 // signal (PWA minimal).
                 SessionLoadingOverlay(
-                    visible = !hadContent && (state.reachable == null || !contentReady),
+                    visible = !hadContent && !withoutTerminal && !watchdogFailed &&
+                        (state.reachable == null || !contentReady),
                     statusText = connectStatus,
                 )
+                if (watchdogFailed && !hadContent && !withoutTerminal) {
+                    TermConnectFailedPanel(
+                        onRetry = {
+                            vm.restartStream()
+                            watchdogEpoch++
+                        },
+                        onUseWithout = { withoutTerminal = true },
+                    )
+                }
                 } // close Box(weight(1f))
 
                 // Composer in its own layer responding to keyboard insets separately.
@@ -939,6 +982,8 @@ public fun SessionDetailScreen(
                                     chatMode && !statusMode && state.session?.state != SessionState.Waiting &&
                                         state.session?.backend.let { it == "claude" || it == "claude-code" || it == "opencode-acp" },
                                 onSendChannel = vm::sendViaChannel,
+                                connReady = state.reachable == true,
+                                channelMode = chatMode && !statusMode,
                             )
                         }
                     }
@@ -1216,7 +1261,7 @@ private fun SessionInfoBar(
                         expanded = stateMenuOpen,
                         onDismissRequest = onStateMenuDismiss,
                     ) {
-                        SessionState.values().forEach { target ->
+                        PWA_OVERRIDE_STATES.forEach { target ->
                             androidx.compose.material3.DropdownMenuItem(
                                 text = {
                                     Text(
@@ -2032,6 +2077,8 @@ private fun ReplyComposer(
     whisperConfigured: Boolean = false,
     channelSend: Boolean = false,
     onSendChannel: () -> Unit = {},
+    connReady: Boolean = true,
+    channelMode: Boolean = false,
 ) {
     HorizontalDivider()
     // Parity D21b — PWA keys strip: "Commands…" dropdown + inline custom input.
@@ -2436,10 +2483,13 @@ private fun ReplyComposer(
             onValueChange = onTextChange,
             placeholder = {
                 Text(
+                    // PWA input-bar placeholder (app.js:2988).
                     when {
                         transcribing -> "Transcribing…"
-                        waitingInput -> stringResource(R.string.session_detail_reply_waiting)
-                        else -> stringResource(R.string.session_detail_reply_hint)
+                        !connReady -> stringResource(R.string.input_ph_waiting)
+                        waitingInput -> stringResource(R.string.input_ph_response)
+                        channelMode -> stringResource(R.string.input_ph_message)
+                        else -> stringResource(R.string.input_ph_command)
                     },
                 )
             },
@@ -2630,7 +2680,7 @@ private fun StateOverrideDialog(
         title = { Text(stringResource(R.string.session_detail_override_state)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SessionState.values().forEach { s ->
+                PWA_OVERRIDE_STATES.forEach { s ->
                     TextButton(
                         onClick = { onPick(s) },
                         modifier = Modifier.fillMaxWidth(),
@@ -3003,6 +3053,124 @@ private fun LogModeView(
                     },
                 modifier = Modifier.padding(vertical = 1.dp),
             )
+        }
+    }
+}
+
+/**
+ * PWA `showStateOverride` options (app.js): running · waiting_input · complete ·
+ * killed · failed — no New / Rate limited.
+ */
+internal val PWA_OVERRIDE_STATES: List<SessionState> =
+    listOf(SessionState.Running, SessionState.Waiting, SessionState.Completed, SessionState.Killed, SessionState.Error)
+
+/** Small accent2-outlined pill for the header metadata row (D66a agent / Chrome). */
+@Composable
+private fun SessionHeaderBadge(label: String) {
+    val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+    Text(
+        label,
+        maxLines = 1,
+        softWrap = false,
+        style = MaterialTheme.typography.labelSmall,
+        color = accent2,
+        modifier =
+            Modifier
+                .border(1.dp, accent2, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                .padding(horizontal = 5.dp),
+    )
+}
+
+/**
+ * Parity D45a — PWA `session-stats-bar`: CPU (PWA thresholds) · RAM · Threads ·
+ * FDs · Net (when moving) · GPU (when used), polled every 5 s; hidden while
+ * the server reports no envelope for this session.
+ */
+@Composable
+private fun ProcessStatsBar(fetch: suspend () -> com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto?) {
+    var env by remember { mutableStateOf<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto?>(null) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        while (true) {
+            env = fetch()
+            kotlinx.coroutines.delay(5_000L)
+        }
+    }
+    val e = env ?: return
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+    val cpuColor =
+        when {
+            e.cpuPct > 80 -> MaterialTheme.colorScheme.error
+            e.cpuPct > 50 -> dw.warning
+            else -> dw.success
+        }
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(dw.bg2)
+                .horizontalScroll(androidx.compose.foundation.rememberScrollState())
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        StatsBarCell("CPU", "%.1f%%".format(e.cpuPct), cpuColor)
+        StatsBarCell("RAM", statsBarBytes(e.rssBytes))
+        StatsBarCell("Threads", e.threads.toString())
+        StatsBarCell("FDs", e.fds.toString())
+        if (e.netRxBps > 0 || e.netTxBps > 0) {
+            StatsBarCell("Net", "↓${statsBarRate(e.netRxBps)} ↑${statsBarRate(e.netTxBps)}")
+        }
+        if (e.gpuPct > 0) {
+            val mem = if (e.gpuMemBytes > 0) " / %.1fGB".format(e.gpuMemBytes / 1e9) else ""
+            StatsBarCell("GPU", "%.1f%%".format(e.gpuPct) + mem)
+        }
+    }
+}
+
+@Composable
+private fun StatsBarCell(
+    label: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            value,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+    }
+}
+
+/** PWA watchdog: 5 s per attempt, 3 re-subscribes before giving up. */
+internal const val TERM_CONNECT_TIMEOUT_MS: Long = 5_000L
+internal const val TERM_CONNECT_MAX_RETRIES: Int = 3
+
+/** PWA "Unable to connect to session terminal" panel with Retry / Use without terminal. */
+@Composable
+private fun TermConnectFailedPanel(
+    onRetry: () -> Unit,
+    onUseWithout: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+            Text(stringResource(R.string.term_connect_failed), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.term_connect_retries_failed_n, TERM_CONNECT_MAX_RETRIES),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+            Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.term_retry)) }
+                androidx.compose.material3.OutlinedButton(onClick = onUseWithout) { Text(stringResource(R.string.term_use_without)) }
+            }
         }
     }
 }

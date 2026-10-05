@@ -139,10 +139,19 @@ public fun SessionStatusPanel(
             )
         }
 
+        // Guardrail verdicts with Approve on blocked + Run guardrail (PWA
+        // renderSessionGuardrailVerdicts + quick-cmd Guardrails group).
+        GuardrailVerdictsCard(
+            verdicts = uiState.telemetry?.guardrailVerdicts.orEmpty(),
+            approved = uiState.approvedGuardrails,
+            running = uiState.runningGuardrail,
+            onApprove = vm::approveGuardrail,
+            onRun = vm::runGuardrail,
+        )
         // BL303 Telemetry: task tree, progress, guardrail verdicts
         uiState.telemetry?.let { telem ->
             if (telem.tasks.isNotEmpty()) TaskTreeCard(telem.tasks, telem.progress, telem.failedTaskBuf)
-            if (telem.guardrailVerdicts.isNotEmpty()) GuardrailVerdictsCard(telem.guardrailVerdicts)
+
             // Sprint ancestry breadcrumb (only if richer than board.sprint)
             telem.sprint?.let { sprint ->
                 if (sprint.automata.isNotBlank() && sprint.name.isNotBlank()) {
@@ -439,8 +448,21 @@ private fun TaskTreeCard(
 }
 
 @Composable
-private fun GuardrailVerdictsCard(verdicts: List<GuardrailVerdictDto>) {
+private fun GuardrailVerdictsCard(
+    verdicts: List<GuardrailVerdictDto>,
+    approved: Set<String> = emptySet(),
+    running: String? = null,
+    onApprove: (String) -> Unit = {},
+    onRun: (String) -> Unit = {},
+) {
     StatusCard(title = stringResource(R.string.telemetry_guardrails_title)) {
+        if (verdicts.isEmpty()) {
+            Text(
+                stringResource(R.string.guardrail_no_verdicts),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         verdicts.forEach { verdict ->
             val (dot, color) =
                 when (verdict.outcome) {
@@ -469,6 +491,34 @@ private fun GuardrailVerdictsCard(verdicts: List<GuardrailVerdictDto>) {
                     verdict.outcome,
                     style = MaterialTheme.typography.labelSmall,
                     color = color,
+                )
+                // GH#153 — Approve on a blocked, not-yet-approved verdict.
+                if (verdict.outcome == "block") {
+                    if (verdict.guardrail in approved) {
+                        Text("✓", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = { onApprove(verdict.guardrail) },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, color),
+                        ) { Text(stringResource(R.string.guardrail_approve), style = MaterialTheme.typography.labelSmall, color = color) }
+                    }
+                }
+            }
+        }
+        // "Run guardrail" — the PWA's built-in sast / secrets / deps scans.
+        Text(
+            stringResource(R.string.guardrail_run_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            SessionStatusViewModel.BUILTIN_GUARDRAILS.forEach { g ->
+                androidx.compose.material3.AssistChip(
+                    onClick = { onRun(g) },
+                    enabled = running == null,
+                    label = { Text(if (running == g) "… $g" else "▶ $g", style = MaterialTheme.typography.labelSmall) },
                 )
             }
         }

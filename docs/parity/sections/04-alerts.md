@@ -9,7 +9,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | data | List source GET /api/alerts (single server) | ✓ js:19169 on view render | ✓ A:AlertsViewModel.kt:234 5 s poll while mounted | ✓ I:AlertsView.swift `refreshAsync` 5 s sequential poll while visible | aligned | | PWA fetches once per render + ↻; apps poll |
 | data | Multi-server aggregate GET /api/alerts/aggregated | ✓ js:19169 when activeServer=='all' | ~ A:AlertsViewModel.kt:200–226 client-side merge of per-profile listAlerts | ✗ `ServerPickerBar()` without All; active profile only | ios-missing | decided D2a | Android merge is functionally equivalent |
 | data | Server picker bar on Alerts view | ✓ js:19168 `_injectServerPickerBar` | ✓ A:AlertsScreen.kt AlertsTopBar dropdown incl. All servers | ✓ I:AlertsView.swift:306 `ServerPickerBar()` (no All chip) | aligned | decided D2a | All chip tracked on aggregate row |
-| data | Saved commands GET /api/commands for quick reply | ✓ js:19171 | ✗ not fetched; quick reply opens the session | ✓ I:AlertsView `IosQuickCommands.loadSaved` on appear | android-missing | | Android quick reply is a navigate button |
+| data | Saved commands GET /api/commands for quick reply | ✓ js:19171 | ✓ `AlertsViewModel.loadSavedCommands` | ✓ I:AlertsView `IosQuickCommands.loadSaved` on appear | aligned | | Android quick reply is a navigate button |
 | data | Sessions GET /api/sessions for liveness (Active vs Historical) | ✓ js:19172 refreshes state.sessions | ✓ A:AlertsViewModel.kt grouping by session state | ✓ I:AlertsView.swift:87 `isActive` — listSessions each poll, Active = live & not done | aligned | | iOS now uses the PWA liveness rule |
 | data | Auto-ack all on opening Alerts page POST /api/alerts {all:true} | ✓ js:19191 | ✓ A:AlertsScreen.kt:89 `vm.ackAllOnOpen()` | ✓ I:AlertsView.swift:250 `acknowledgeAll` after each fetch while open (48eaea28) | aligned | decided D49a | |
 | data | Dismiss all = POST {all:true, delete:true} | ✓ js:19535 | ✓ A:AlertsViewModel.kt:601 `deleteAllAlerts()` | ✓ I:AlertsView.swift:280 `deleteAllAlerts` | aligned | decided D48a | |
@@ -44,13 +44,13 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | interaction | Live text search (title+body) | ✓ js alertsSearchInput | ✓ A OutlinedTextField alert_search_ph | ✓ I filterText + clear button | aligned | | |
 | element | By-session group card: header bg2, name link, state text, "N alerts · 🟡 P", "last HH:MM:SS" mono | ✓ js:19470–19485 | ✓ A:AlertGroupCard | ✓ I:AlertsView `groupHeader` | aligned | | |
 | interaction | Group header tap collapses/expands | ✓ js toggles display | ✓ A onToggleExpand ▼/▶ | ✓ I:AlertsView `collapsed` set | aligned | | |
-| element | Group ordering waiting → running → others; System card last | ✓ js:19631 stateRank | ~ A:AlertsViewModel.kt:343–345 sorted by last alert ts | ✓ I:AlertsViewModel `groups` stateRank | misaligned | | Android orders by recency |
+| element | Group ordering waiting → running → others; System card last | ✓ js:19631 stateRank | ✓ `alertGroupStateRank` waiting → running → others, then recency | ✓ I:AlertsViewModel `groups` stateRank | aligned | | Android orders by recency |
 | element | Chronological mode: flat newest-first with tiny session link | ✓ js:19430–19445 | ✓ A flatChrono AlertsScreen.kt:303 | ✓ I:AlertsView chrono list with per-row session link | aligned | | |
 | element | Alert row: 3px left border + bg tint by category | ✓ js renderRow | ✓ A:AlertCard | ✓ I:AlertRow border/bg | aligned | | |
 | element | Kind badge 🟡 PROMPT / 🔴 ERROR / ⚪ level (bg2) | ✓ js kindBadge | ✓ A badgeText/Bg/Fg | ~ I:AlertsView.swift:817 adds 🟠 WARNING badge | misaligned | | PWA shows warn as ⚪ warn |
 | element | Time: HH:MM:SS mono, opacity .55 | ✓ js | ✓ A formatAlertTime | ✓ I alertTime monospaced | aligned | | |
 | element | Title 13px/600, body 12px text2 | ✓ | ✓ | ✓ (bodyMedium/labelSmall) | aligned | | iOS clamps title 2 / body 3 lines; Dynamic Type per D7b |
-| element | Quick reply `<select>` of saved commands on prompt alerts → alertSendCmd | ✓ js:19413 grouped (latest alert, waiting) + js:19615 chrono (prompt) | ~ A:AlertsScreen.kt:713 "Quick reply…" button navigates to session | ~ I:AlertsView `quickReply` Menu (built-ins + saved) grouped mode only | misaligned | | Android sends nothing; iOS adds built-ins, no chrono |
+| element | Quick reply `<select>` of saved commands on prompt alerts → alertSendCmd | ✓ js:19413 grouped (latest alert, waiting) + js:19615 chrono (prompt) | ✓ "Quick reply… ▾" saved-commands menu → send to session (grouped: latest alert of waiting session; chrono: prompt alerts) | ~ I:AlertsView `quickReply` Menu (built-ins + saved) grouped mode only | misaligned | | Android sends nothing; iOS adds built-ins, no chrono · Android aligned; iOS adds built-ins, no chrono (2026-10-04) |
 | element | Per-alert ✓ mark-read control / unread dot | ✗ | ✗ removed | ~ I:AlertsView.swift:757 unread dot + dimmed read rows | misaligned | decided D49a | iOS should drop read UI |
 | interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✗ removed | ✗ | aligned | decided D50d | |
 | interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ✗ removed 2026-10-04 | aligned | decided D50d | D50d done on iOS |
@@ -73,7 +73,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Car head-unit notification actions (CarAppExtender Play/Reply) | n/a | ✓ A:NotificationPoster.kt:235 | n/a | n/a | | |
 
 ## Coverage
-rows: 65 · aligned: 40 · ios-missing: 4 · android-missing: 1 · pwa-missing: 2 · misaligned: 10 · n/a: 8
+rows: 65 · aligned: 42 · ios-missing: 4 · android-missing: 0 · pwa-missing: 2 · misaligned: 9 · n/a: 8
 
 ## Decisions (resolved 2026-10-04)
 1. 🔕 semantics → **D47a** apps implement a real dock mute (Android done; iOS pending, needs dock).

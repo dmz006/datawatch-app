@@ -46,7 +46,12 @@ class PrdStatusColorTest {
 class PrdStateRankTest {
     @Test fun `needs_review ranks before running`() = assertTrue(prdStateRank("needs_review") < prdStateRank("running"))
 
-    @Test fun `running ranks before decomposing`() = assertTrue(prdStateRank("running") < prdStateRank("decomposing"))
+    @Test fun `running ranks with decomposing (PWA rank 2)`() = assertEquals(prdStateRank("running"), prdStateRank("decomposing"))
+
+    @Test fun `blocked ranks between review and running`() =
+        assertTrue(prdStateRank("needs_review") < prdStateRank("blocked") && prdStateRank("blocked") < prdStateRank("running"))
+
+    @Test fun `archived ranks after terminal states`() = assertTrue(prdStateRank("cancelled") < prdStateRank("archived"))
 
     @Test fun `decomposing ranks before approved`() = assertTrue(prdStateRank("decomposing") < prdStateRank("approved"))
 

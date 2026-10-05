@@ -189,7 +189,7 @@ public class OrchestratorGraphViewModel(
             if (matchingId == null) {
                 _state.value = UiState(
                     banner = "No orchestrator graph found for this automaton. " +
-                        "Create one in the Automata settings tab and add this PRD's ID.",
+                        "Create one in the Automata settings tab and add this Automaton's ID.",
                 )
                 return@launch
             }

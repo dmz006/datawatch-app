@@ -51,6 +51,9 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
+                <!-- Parity D84b: datawatch:// is canonical; dwclient:// is kept as an
+                     alias for one release so already-posted notifications still open. -->
+                <data android:scheme="datawatch" android:host="session"/>
                 <data android:scheme="dwclient" android:host="session"/>
             </intent-filter>
         </activity>

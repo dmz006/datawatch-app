@@ -8,6 +8,19 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed (Android — follows the web UI, 2026-10-04 remaining-work sweep)
+- **Server picker bar**: Sessions, Automata, Observer and Dashboard show the web UI's "Server: [All] [a] [b]" chip bar under the header instead of a title dropdown.
+- **Sessions**: "What's it doing?" answers inline in the card (with ▼ details and ↻ refresh); a 🤖 Summary button appears when the server's summarizer is on; the Response viewer always loads the latest response, renders markdown and has a 📋 copy button.
+- **Shell**: links use `datawatch://` (old `dwclient://` links still open for one release); the app reopens on the last tab and session; long-press the status dot to force a reconnect; with no server configured the Sessions tab offers "Add server" directly (no separate onboarding page).
+- **Observer**: the web UI's card order with one collapsible System Statistics block; per-metric colour thresholds; stats load once and then update live; 📊 peer snapshot; filter pills with counts; Memory Maintenance is dry-run only on phones; channel diagnostics, Matrix Test, web-search history, memory role/since filters, RTK update badge; scheduled events can be edited and bulk-deleted; Pipelines and Identity now live only in Settings.
+- **Automata**: detail tabs are Overview · Stories · Decisions · Scan · Rules (graph and progress are cards on Overview); list cards show a progress bar; list order matches the web UI.
+- **Alerts**: "Quick reply…" sends a saved command to the session; waiting sessions are listed first; the header pill uses the purple border; the tab badge caps at 99+.
+- **Session detail**: live process-stats bar (CPU / RAM / threads / FDs / net / GPU); terminal search with copy; agent and Chrome badges; guardrail verdicts can be approved when blocked and built-in guardrails can be run; the terminal retries 3 times before offering Retry / "Use without terminal"; state override offers the web UI's five states; composer placeholders match the web UI.
+- **New Session**: warns when the chosen LLM's backend isn't installed on the server; OpenCode models are a flat list.
+- **Settings**: Plugin Manager (enable / disable / reload); missing config fields (default backend family, Whisper backend, web-search cache, Vision, orchestrator guardrail model, automaton planning / capacity / recursion / guardrail / injection settings); vault status inside the Secrets card; "Restart now" appears inline after a save; MCP tools card in About.
+- **Dashboard**: header strip with sessions, tasks, guardrail blocks/warnings and today's burn rate.
+- User-facing text says "Automaton" / "Automata" everywhere (all languages).
+
 ### Added (Android — PWA features the app was missing, 2026-10-04 sweep)
 - **Light theme**: Settings → Theme Light uses the web UI's light palette, and theme changes apply immediately. Dark stays the default.
 - **Reduced motion**: pulsing dots, skeletons and loading labels stop animating when system animations are turned off.

@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +64,6 @@ import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
-import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -96,7 +96,6 @@ public fun DashboardScreen(
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
     val dw = LocalDatawatchColors.current
-    var pickerOpen by remember { mutableStateOf(false) }
     var editSheetOpen by remember { mutableStateOf(false) }
     val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
@@ -123,19 +122,7 @@ public fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    SingleServerPickerTitle(
-                        active = state.activeProfile,
-                        open = pickerOpen,
-                        onToggle = { pickerOpen = !pickerOpen },
-                        onDismiss = { pickerOpen = false },
-                        profiles = state.allProfiles,
-                        onSelect = {
-                            vm.selectProfile(it)
-                            pickerOpen = false
-                        },
-                    )
-                },
+                title = { Text(stringResource(R.string.nav_dashboard)) },
                 actions = {
                     DocsLinkAction("datawatch-definitions.md#dashboard")
                     IconButton(onClick = { editSheetOpen = true }) {
@@ -190,6 +177,13 @@ public fun DashboardScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState()),
         ) {
+            com.dmzs.datawatchclient.ui.common.ServerPickerBar(
+                profiles = state.allProfiles,
+                activeId = state.activeProfile?.id,
+                allMode = false,
+                onSelect = vm::selectProfile,
+            )
+            DashboardStatStrip(dashStatStrip(state.sessions, state.boards, state.costTodayUsd, state.prds.size))
             // tree and orbital are synonyms for the same constellation view.
             val rendered = mutableSetOf<String>()
             cardIds.forEach { id ->
@@ -274,7 +268,7 @@ private fun ConstellationCard(
         if (prds.isNotEmpty()) {
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
             Text(
-                "PRDs",
+                "Automata",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 2.dp),
@@ -307,7 +301,7 @@ private fun ConstellationCard(
             }
             if (prds.size > 4) {
                 Text(
-                    "+${prds.size - 4} more PRDs",
+                    "+${prds.size - 4} more Automata",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
@@ -937,5 +931,49 @@ private fun relativeTime(instant: Instant): String {
         diff < 60.minutes -> "${diff.inWholeMinutes}m ago"
         diff.inWholeHours < 24 -> "${diff.inWholeHours}h ago"
         else -> "${diff.inWholeDays}d ago"
+    }
+}
+
+/**
+ * Parity D34a — PWA dashboard header strip: "N sess · M active · $x" ·
+ * "done/total tasks" · "⚠ n blk / n warn" · burn rate ("$x today · n running ·
+ * n automata").
+ */
+@Composable
+private fun DashboardStatStrip(s: DashStatStrip) {
+    val dw = LocalDatawatchColors.current
+    val small = MaterialTheme.typography.labelSmall
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "${s.sessions} sess · ${s.active} active" + if (s.costUsd > 0) " · $" + "%.2f".format(s.costUsd) else "",
+            style = small,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (s.tasksTotal > 0) {
+            Text("${s.tasksDone}/${s.tasksTotal} tasks", style = small, color = dw.success)
+        }
+        if (s.verdictBlock > 0) {
+            Text("⚠ ${s.verdictBlock} blk", style = small, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+        }
+        if (s.verdictWarn > 0) {
+            Text("${s.verdictWarn} warn", style = small, color = dw.warning)
+        }
+        if (s.costUsd > 0 || s.active > 0 || s.automata > 0) {
+            val parts =
+                buildList {
+                    if (s.costUsd > 0) add("$" + "%.2f".format(s.costUsd) + " today")
+                    add("${s.active} running")
+                    if (s.automata > 0) add("${s.automata} automata")
+                }
+            Text(parts.joinToString(" · "), style = small, color = MaterialTheme.colorScheme.primary)
+        }
     }
 }

@@ -107,6 +107,10 @@ public class SessionsViewModel : ViewModel() {
         val deleteSupported: Boolean = true,
         /** True when the active server has `whisper.backend` configured; hides mic button when false. */
         val whisperConfigured: Boolean = false,
+        /** Parity D43a — `session.summarizer.enabled`; gates the card's 🤖 Summary button. */
+        val summarizerEnabled: Boolean = false,
+        /** Session ids with a manual summarize in flight (PWA `state._summarizing`). */
+        val summarizingIds: Set<String> = emptySet(),
         /**
          * Parity D12a — PWA state chip key (`cs_session_state_chip`):
          * "all" or a wire state ([STATE_CHIP_KEYS]).
@@ -366,6 +370,8 @@ public class SessionsViewModel : ViewModel() {
     private val _deleteSupported = MutableStateFlow(true)
     private val _backendByProfileId = MutableStateFlow<Map<String, String>>(emptyMap())
     private val _whisperConfigured = MutableStateFlow(false)
+    private val _summarizerEnabled = MutableStateFlow(false)
+    private val _summarizingIds = MutableStateFlow<Set<String>>(emptySet())
     private val _treeView = MutableStateFlow(prefs().getString(PREF_TREE_VIEW, "0") == "1")
     private val _pendingSchedules = MutableStateFlow<List<com.dmzs.datawatchclient.domain.Schedule>>(emptyList())
 
@@ -449,8 +455,12 @@ public class SessionsViewModel : ViewModel() {
                     reorderMode = args[15] as Boolean,
                 )
             }
-        return combine(baseFlow, _whisperConfigured, _treeView, _pendingSchedules) { base, wc, tree, sched ->
-            base.copy(whisperConfigured = wc, treeView = tree, pendingSchedules = sched)
+        val withExtras =
+            combine(baseFlow, _whisperConfigured, _treeView, _pendingSchedules) { base, wc, tree, sched ->
+                base.copy(whisperConfigured = wc, treeView = tree, pendingSchedules = sched)
+            }
+        return combine(withExtras, _summarizerEnabled, _summarizingIds) { base, summarizer, summarizing ->
+            base.copy(summarizerEnabled = summarizer, summarizingIds = summarizing)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
 
@@ -470,11 +480,13 @@ public class SessionsViewModel : ViewModel() {
             .onEach { profile ->
                 if (profile == null) {
                     _whisperConfigured.value = false
+                    _summarizerEnabled.value = false
                 } else {
                     ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
                         _whisperConfigured.value =
                             (cfg.raw["whisper.backend"] as? kotlinx.serialization.json.JsonPrimitive)
                                 ?.content?.isNotBlank() == true
+                        _summarizerEnabled.value = summarizerEnabledIn(cfg.raw)
                     }
                 }
             }
@@ -482,7 +494,12 @@ public class SessionsViewModel : ViewModel() {
         // Open a persistent WS connection per active profile to receive server-pushed
         // session-list updates. The server sends a "sessions" frame immediately on
         // connect and again on every session change; SessionsHub routes it here.
-        activeProfile
+        // Parity D38a: a status-dot long-press bumps ReconnectBus.tick, which
+        // re-keys this flatMapLatest so the socket is closed and reopened.
+        kotlinx.coroutines.flow.combine(
+            activeProfile,
+            com.dmzs.datawatchclient.events.ReconnectBus.tick,
+        ) { profile, _ -> profile }
             .flatMapLatest { profile ->
                 if (profile == null) emptyFlow()
                 else ServiceLocator.wsTransportFor(profile).globalStream()
@@ -780,6 +797,35 @@ public class SessionsViewModel : ViewModel() {
         return com.dmzs.datawatchclient.transport.dto.CurrentStatusDto(currentStatus = result.summary)
     }
 
+    /**
+     * Parity D43a — PWA `showResponseViewer`: always re-fetch the live last
+     * response (`GET /api/sessions/response?id=`); the cached copy is only the
+     * instant first paint.
+     */
+    public suspend fun fetchFreshResponse(sessionId: String): Result<String> {
+        val profile = profileForSession(sessionId) ?: return Result.failure<String>(IllegalStateException("no server"))
+        return ServiceLocator.transportFor(profile).getSessionResponse(fullIdFor(sessionId))
+    }
+
+    /**
+     * Parity D43a — PWA `manualSummarize`: POST /summarize for a non-running
+     * session, debounced per id, then refresh so the card shows the new
+     * last_response. Running sessions use the current-status path instead.
+     */
+    public fun manualSummarize(sessionId: String) {
+        if (sessionId in _summarizingIds.value) return
+        val profile = profileForSession(sessionId) ?: return
+        _summarizingIds.value = _summarizingIds.value + sessionId
+        viewModelScope.launch {
+            try {
+                ServiceLocator.transportFor(profile).summarizeSession(fullIdFor(sessionId))
+                refresh()
+            } finally {
+                _summarizingIds.value = _summarizingIds.value - sessionId
+            }
+        }
+    }
+
     /** Fetch server-configured system quick-commands (datawatch#28). Empty list = use client fallback. */
     public suspend fun fetchSystemQuickCommands(sessionId: String): List<QuickCommandItem> {
         val profile = profileForSession(sessionId) ?: return emptyList()
@@ -1004,4 +1050,11 @@ public class SessionsViewModel : ViewModel() {
                 }
         }
     }
+}
+
+/** `session.summarizer.enabled` from a nested `/api/config` map (PWA app.js:352). */
+internal fun summarizerEnabledIn(raw: Map<String, kotlinx.serialization.json.JsonElement>): Boolean {
+    val session = raw["session"] as? kotlinx.serialization.json.JsonObject ?: return false
+    val summarizer = session["summarizer"] as? kotlinx.serialization.json.JsonObject ?: return false
+    return (summarizer["enabled"] as? kotlinx.serialization.json.JsonPrimitive)?.content == "true"
 }
