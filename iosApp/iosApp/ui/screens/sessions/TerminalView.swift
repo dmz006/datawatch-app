@@ -128,48 +128,24 @@ struct TerminalView: View {
 
             // Splash stays up through socket connect → subscribe → first pane_capture,
             // so the user never sees a black terminal (Android SessionLoadingOverlay).
-            if !hasContent && !disconnected {
+            if !hasContent {
                 SessionLoadingOverlay(status: connected ? "waiting for terminal…" : "connecting…")
                     .transition(.opacity)
             }
-
-            if disconnected {
-                reconnectOverlay
-                    .transition(.opacity)
-            }
+            // D46b (PWA minimal): no blocking disconnect overlay. The shared
+            // transport reconnects on its own with backoff; the last frame stays
+            // visible and the header status dot shows reachability. Long-press
+            // on the dot forces an immediate resubscribe.
         }
         .animation(.easeInOut(duration: 0.25), value: hasContent)
-        .animation(.easeInOut(duration: 0.25), value: disconnected)
         .background(DatawatchColors.background)
         // The xterm terminal is always dark (PWA termOpts.theme), whatever the app theme.
         .environment(\.colorScheme, .dark)
-    }
-
-    private var reconnectOverlay: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "wifi.slash")
-                .font(.system(.largeTitle))
-                .foregroundStyle(DatawatchColors.error)
-                .accessibilityHidden(true)
-
-            Text("Terminal disconnected")
-                .font(DatawatchFonts.bodyMedium)
-                .foregroundStyle(DatawatchColors.onSurface)
-
-            Button("Reconnect") {
-                disconnected = false
-                connected = false
-                reconnectGeneration += 1
-            }
-            .font(DatawatchFonts.bodyMedium)
-            .foregroundStyle(DatawatchColors.primary)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 10)
-            .overlay(Capsule().stroke(DatawatchColors.primary, lineWidth: 1))
-            .accessibilityHint("Resubscribes to the session stream")
+        .onReceive(NotificationCenter.default.publisher(for: .dwReconnectRequested)) { _ in
+            connected = false
+            disconnected = false
+            reconnectGeneration += 1
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DatawatchColors.background.opacity(0.92))
     }
 }
 

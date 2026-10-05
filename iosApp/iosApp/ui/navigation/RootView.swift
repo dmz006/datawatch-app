@@ -1,18 +1,37 @@
 import SwiftUI
+import DatawatchShared
 
-/// Root view — 6-tab structure matching Android bottom nav and PWA sidebar.
+/// Root view — PWA nav order: Sessions · Automata · Alerts · Observer ·
+/// Dashboard · Settings. Automata and Dashboard are hidden until the active
+/// server reports `autonomous.enabled` (PWA `navBtnAutonomous` /
+/// `navBtnDashboard` gating; Android `probeAutonomous`); unknown = shown.
 ///
-/// Tab order: Sessions | Alerts | Automata | Observer | Dashboard | Settings
-/// Matches composeApp's BottomNavItem ordering so deep links resolve to the
-/// same conceptual surface regardless of platform.
+/// iPhone: TabView, one NavigationStack per tab. iPad (regular width):
+/// NavigationSplitView sidebar + detail.
 ///
-/// Story 13: On iPad (regular horizontal size class) uses NavigationSplitView
-/// for a sidebar+detail layout. On iPhone uses TabView.
+/// Shell services owned here: the alert dock overlay (D3a), live WS alert feed
+/// (D51a), interim local notifications (D87b), `datawatch://` deep links
+/// (D84b) and cold-start restore of the last tab + open session (D40a).
 struct RootView: View {
     @EnvironmentObject private var profileStore: ServerProfileStore
-    @State private var selectedTab: AppTab = .sessions
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("dw.alert.badge") private var alertBadgeCount: Int = 0
+    /// D40a: last tab, restored on cold start.
+    @AppStorage(ShellRestore.tabKey) private var lastTab: String = AppTab.sessions.rawValue
+    @State private var selectedTab: AppTab = ShellRestore.initialTab()
+    /// Sessions tab stack — deep links, notification taps and D40a restore push here.
+    @State private var sessionsPath = NavigationPath()
+    /// nil = unknown (tabs shown); false hides Automata + Dashboard.
+    @State private var autonomousEnabled: Bool? = nil
+    @State private var restored = false
+
+    private var visibleTabs: [AppTab] {
+        AppTab.allCases.filter { tab in
+            guard autonomousEnabled == false else { return true }
+            return tab != .automata && tab != .dashboard
+        }
+    }
 
     var body: some View {
         Group {
@@ -23,6 +42,42 @@ struct RootView: View {
             }
         }
         .modifier(ServerPickerDialogModifier())
+        .alertDockOverlay()
+        .onOpenURL { url in
+            AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToAlerts)) { _ in
+            selectedTab = .alerts
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToSessions)) { _ in
+            selectedTab = .sessions
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToDashboard)) { _ in
+            selectedTab = .dashboard
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .deepLinkSession)) { note in
+            openSession(note.userInfo)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .deepLinkAlert)) { _ in
+            selectedTab = .alerts
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dwReconnectRequested)) { _ in
+            LiveAlertFeed.shared.stop()
+            if scenePhase == .active { LiveAlertFeed.shared.start() }
+        }
+        .onChange(of: selectedTab) { tab in
+            lastTab = tab.rawValue
+            AlertDock.shared.close()
+        }
+        .onChange(of: profileStore.profiles) { _ in profilesChanged() }
+        .onChange(of: profileStore.activeProfileId) { _ in probeAutonomous() }
+        .onChange(of: scenePhase) { phase in shellServices(active: phase == .active) }
+        .onAppear {
+            ReachabilityCache.shared.attach(profileStore)
+            profilesChanged()
+            shellServices(active: true)
+        }
+        .task { await restoreOnce() }
         #if DEBUG
         .onAppear {
             DebugLaunchHooks.applyTheme()
@@ -40,30 +95,32 @@ struct RootView: View {
 
     private var iPhoneLayout: some View {
         TabView(selection: $selectedTab) {
-            ForEach(AppTab.allCases) { tab in
-                NavigationStack {
-                    tab.rootView
-                }
-                .tabItem {
-                    Label(L(tab.title), systemImage: tab.iconName)
-                }
-                .tag(tab)
-                .badge(tab == .alerts ? alertBadgeCount : 0)
+            ForEach(visibleTabs) { tab in
+                tabStack(tab)
+                    .tabItem {
+                        Label(L(tab.title), systemImage: tab.iconName)
+                    }
+                    .tag(tab)
+                    .badge(tab == .alerts ? alertBadgeCount : 0)
             }
         }
         .tint(DatawatchColors.primary)
         .dwThemed()
-        .onOpenURL { url in
-            AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToAlerts)) { _ in
-            selectedTab = .alerts
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToSessions)) { _ in
-            selectedTab = .sessions
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToDashboard)) { _ in
-            selectedTab = .dashboard
+    }
+
+    @ViewBuilder
+    private func tabStack(_ tab: AppTab) -> some View {
+        if tab == .sessions {
+            NavigationStack(path: $sessionsPath) {
+                tab.rootView
+                    .navigationDestination(for: SessionRoute.self) { route in
+                        DeepLinkSessionView(route: route)
+                    }
+            }
+        } else {
+            NavigationStack {
+                tab.rootView
+            }
         }
     }
 
@@ -71,7 +128,7 @@ struct RootView: View {
 
     private var iPadLayout: some View {
         NavigationSplitView {
-            List(AppTab.allCases, selection: Binding<AppTab?>(get: { selectedTab }, set: { if let t = $0 { selectedTab = t } })) { tab in
+            List(visibleTabs, selection: Binding<AppTab?>(get: { selectedTab }, set: { if let t = $0 { selectedTab = t } })) { tab in
                 NavigationLink(value: tab) {
                     Label(L(tab.title), systemImage: tab.iconName)
                         .foregroundStyle(DatawatchColors.onSurface)
@@ -82,33 +139,112 @@ struct RootView: View {
             .background(DatawatchColors.surface)
             .navigationTitle("datawatch")
         } detail: {
-            NavigationStack {
-                selectedTab.rootView
-            }
+            tabStack(selectedTab)
         }
         .tint(DatawatchColors.primary)
         .dwThemed()
-        .onOpenURL { url in
-            AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
+    }
+
+    // ── Shell services ────────────────────────────────────────────────────
+
+    private func profilesChanged() {
+        let profiles = profileStore.profiles
+        LiveAlertFeed.shared.update(profiles: profiles)
+        LocalAlertWatcher.shared.update(profiles: profiles)
+        probeAutonomous()
+    }
+
+    /// Foreground-only: live alert sockets + the D87b polling watcher.
+    private func shellServices(active: Bool) {
+        if active {
+            LiveAlertFeed.shared.start()
+            LocalAlertWatcher.shared.start()
+        } else {
+            LiveAlertFeed.shared.stop()
+            LocalAlertWatcher.shared.stop()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToAlerts)) { _ in
-            selectedTab = .alerts
+    }
+
+    private func probeAutonomous() {
+        // All-servers mode keeps the tabs (any server may have autonomous on).
+        guard !profileStore.isAllServers, let profile = profileStore.activeProfile else {
+            autonomousEnabled = nil
+            return
         }
-        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToSessions)) { _ in
+        let pid = profile.id
+        IosShellProbe.shared.autonomousEnabled(profile: profile) { code in
+            let value: Int = Int(code.int32Value)
+            DispatchQueue.main.async {
+                guard profileStore.activeProfile?.id == pid else { return }
+                if value < 0 { return }
+                autonomousEnabled = value == 1
+                if value == 0 && (selectedTab == .automata || selectedTab == .dashboard) {
+                    selectedTab = .sessions
+                }
+            }
+        }
+    }
+
+    private func openSession(_ info: [AnyHashable: Any]?) {
+        guard let id = info?["id"] as? String, !id.isEmpty else { return }
+        let pid = info?["profileId"] as? String
+        selectedTab = .sessions
+        AlertDock.shared.close()
+        sessionsPath = NavigationPath()
+        sessionsPath.append(SessionRoute(sessionId: id, profileId: pid))
+    }
+
+    /// D40a: reopen the session that was open when the app was last killed.
+    private func restoreOnce() async {
+        guard !restored else { return }
+        restored = true
+        guard let route = ShellRestore.lastSession() else { return }
+        // Let the first frame settle so the push animates onto a built stack.
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        if sessionsPath.isEmpty {
             selectedTab = .sessions
+            sessionsPath.append(route)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToDashboard)) { _ in
-            selectedTab = .dashboard
+    }
+}
+
+// ── D40a restore store ────────────────────────────────────────────────────
+
+/// Persists the last tab and the session open in detail (PWA `cs_active_view`
+/// / `cs_active_session`). Only ids — nothing secret.
+enum ShellRestore {
+    static let tabKey = "dw.shell.last_tab"
+    static let sessionKey = "dw.shell.last_session"
+
+    static func initialTab() -> AppTab {
+        let raw = UserDefaults.standard.string(forKey: tabKey) ?? ""
+        return AppTab(rawValue: raw) ?? .sessions
+    }
+
+    /// SessionDetailView calls this on appear (open) and disappear (nil).
+    static func setOpenSession(profileId: String?, sessionId: String?) {
+        if let sid = sessionId, let pid = profileId {
+            UserDefaults.standard.set(pid + "|" + sid, forKey: sessionKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: sessionKey)
         }
+    }
+
+    static func lastSession() -> SessionRoute? {
+        guard let raw = UserDefaults.standard.string(forKey: sessionKey) else { return nil }
+        let parts = raw.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        guard parts.count == 2, !parts[1].isEmpty else { return nil }
+        return SessionRoute(sessionId: parts[1], profileId: parts[0].isEmpty ? nil : parts[0])
     }
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
+/// Declaration order = PWA nav order (index.html nav-btn sequence).
 enum AppTab: String, CaseIterable, Identifiable, Hashable {
     case sessions  = "sessions"
-    case alerts    = "alerts"
     case automata  = "automata"
+    case alerts    = "alerts"
     case observer  = "observer"
     case dashboard = "dashboard"
     case settings  = "settings"

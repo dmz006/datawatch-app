@@ -4134,6 +4134,21 @@ public class RestTransport(
             Unit
         }
 
+    // ---- iOS session-detail parity (D43a) ----
+
+    override suspend fun fetchSessionResponse(sessionId: String): Result<String> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/sessions/response") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("id", sessionId)
+                }.body()
+            (obj["response"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNullSafe().orEmpty()
+        }
+
+    private fun kotlinx.serialization.json.JsonPrimitive.contentOrNullSafe(): String? =
+        if (this is kotlinx.serialization.json.JsonNull) null else content
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
