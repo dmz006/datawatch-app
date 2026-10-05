@@ -154,7 +154,7 @@ final class PrdListViewModel: ObservableObject {
         return list.sorted { a, b in
             let ap = pinned.contains(a.id) ? 0 : 1, bp = pinned.contains(b.id) ? 0 : 1
             if ap != bp { return ap < bp }
-            let ar = Self.rank[a.status] ?? 9, br = Self.rank[b.status] ?? 9
+            let ar = Self.rank[a.status.isEmpty ? "draft" : a.status] ?? 9, br = Self.rank[b.status.isEmpty ? "draft" : b.status] ?? 9
             if ar != br { return ar < br }
             return (a.updatedAt ?? a.createdAt ?? "") > (b.updatedAt ?? b.createdAt ?? "")
         }
@@ -530,7 +530,7 @@ struct PrdListView: View {
         let allSelected = !vm.visible.isEmpty && vm.visible.allSatisfy { vm.selected.contains($0.id) }
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                batchButton(allSelected ? "None" : "All", count: nil) { vm.selectAllVisible(!allSelected) }
+                batchButton(allSelected ? "☑ None" : "☑ All", count: vm.visible.count) { vm.selectAllVisible(!allSelected) }
                 batchButton("Run", count: vm.eligibleIds("run").count) { Task { await vm.runBatch("run") } }
                 batchButton("Approve", count: vm.eligibleIds("approve").count) { Task { await vm.runBatch("approve") } }
                 batchButton("Cancel run", count: vm.eligibleIds("cancel").count) { Task { await vm.runBatch("cancel") } }
@@ -588,12 +588,36 @@ struct PrdListView: View {
                         ForEach(PrdListViewModel.filterTypes, id: \.self) { ty in
                             chip(ty, on: vm.typeFilter.contains(ty)) { vm.toggleType(ty) }
                         }
+                        selectAllToggle
                     }
                 }
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    /// PWA `#automataSelectAll` "All" checkbox at the end of the filter bar
+    /// (Android TriStateCheckbox): ticks every visible row; mixed when some are.
+    private var selectAllToggle: some View {
+        let ids: [String] = vm.visible.map { $0.id }
+        let n: Int = ids.filter { vm.selected.contains($0) }.count
+        let all: Bool = !ids.isEmpty && n == ids.count
+        let icon: String = all ? "checkmark.square.fill" : (n > 0 ? "minus.square.fill" : "square")
+        return Button {
+            if !all && !vm.selectMode { vm.selectMode = true }
+            vm.selectAllVisible(!all)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                Text("All")
+            }
+            .font(DatawatchFonts.labelSmall)
+            .foregroundStyle(n > 0 ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+        }
+        .buttonStyle(.borderless)
+        .disabled(ids.isEmpty)
+        .accessibilityLabel(all ? "Deselect all visible" : "Select all visible")
     }
 
     private var searchField: some View {

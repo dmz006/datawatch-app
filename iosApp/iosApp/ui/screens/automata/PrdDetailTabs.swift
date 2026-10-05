@@ -2,13 +2,13 @@ import SwiftUI
 import DatawatchShared
 
 /// D24a: PWA automaton detail sub-tabs (`_renderDetailTabStrip`). Graph/Progress
-/// stay as cards on the Overview tab. Order per the decision text.
+/// stay as cards on the Overview tab. Order = PWA tab strip (Scan before Rules).
 enum PrdDetailTab: String, CaseIterable, Hashable {
     case overview = "Overview"
     case stories = "Stories"
     case decisions = "Decisions"
-    case rules = "Rules"
     case scan = "Scan"
+    case rules = "Rules"
 }
 
 /// Native segmented control carrying the PWA tab content ("PWA content, iOS controls").
