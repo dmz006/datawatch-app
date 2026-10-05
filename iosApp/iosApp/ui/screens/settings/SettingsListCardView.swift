@@ -115,7 +115,7 @@ struct SettingsListCardView: View {
         } else if kind == "compute_nodes" {
             ComputeNodeFormSheet(profile: profile, editName: nil) { load() }
         } else if jsonEdit {
-            SettingsProfileJsonSheet(profile: profile, kind: kind, name: nil) { load() }
+            ProfileEditorSheet(profile: profile, kind: kind, name: nil) { load() }
         } else {
             SettingsAddEntrySheet(fields: addFields) { values, done in
                 create(values, done: done)
@@ -130,7 +130,7 @@ struct SettingsListCardView: View {
         } else if kind == "compute_nodes" {
             ComputeNodeFormSheet(profile: profile, editName: name) { load() }
         } else if jsonEdit {
-            SettingsProfileJsonSheet(profile: profile, kind: kind, name: name) { load() }
+            ProfileEditorSheet(profile: profile, kind: kind, name: name) { load() }
         } else {
             SettingsCrudEditSheet(profile: profile, kind: kind, id: name, fields: addFields) { load() }
         }
