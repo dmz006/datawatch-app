@@ -190,6 +190,9 @@ public fun AutonomousScreen(
                 FloatingActionButton(
                     onClick = { if (currentTab == 1) tmplCreateOpen = true else newOpen = true },
                     modifier = Modifier.offset(y = 36.dp).padding(end = 4.dp),
+                    // PWA `.fab` fill = accent2 (D4a: M3 shape, PWA colour).
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                 ) {
                     if (currentTab == 0) {
                         Text("⚡", style = MaterialTheme.typography.titleMedium)
