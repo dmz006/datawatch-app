@@ -145,6 +145,8 @@ private struct PulsingDot: View {
     let color: Color
     let pulsing: Bool
 
+    /// PWA `prefers-reduced-motion` disables pulses (style.css:2356-2358).
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scale: CGFloat = 1.0
 
     var body: some View {
@@ -154,13 +156,18 @@ private struct PulsingDot: View {
             .scaleEffect(scale)
             .onAppear { updateScale() }
             .onChange(of: pulsing) { _ in updateScale() }
+            .onChange(of: reduceMotion) { _ in updateScale() }
     }
 
     private func updateScale() {
-        if pulsing {
+        if pulsing && !reduceMotion {
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
                 scale = 1.4
             }
+        } else if reduceMotion {
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) { scale = 1.0 }
         } else {
             withAnimation(.easeInOut(duration: 0.2)) {
                 scale = 1.0

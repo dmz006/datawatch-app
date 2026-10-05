@@ -46,6 +46,17 @@ final class AlertsViewModel: ObservableObject {
         case error = "Error"
         case warning = "Warn"
         case info = "Info"
+
+        /// PWA `alert_chip_*` copy (rawValue stays the persisted key).
+        var label: String {
+            switch self {
+            case .all: return L("all")
+            case .prompt: return "🟡 " + L("prompts")
+            case .error: return "🔴 " + L("errors")
+            case .warning: return "🟠 " + L("warn")
+            case .info: return "⚪ " + L("info")
+            }
+        }
     }
 
     /// PWA `setAlertsSort`: grouped by session (default) or flat chronological.
@@ -563,29 +574,29 @@ struct AlertsView: View {
         }
     }
 
+    /// PWA `chipBtn`: bg2 + full-colour border, filled with the colour when active.
     @ViewBuilder
     private func severityChip(_ filter: AlertsViewModel.AlertSeverityFilter) -> some View {
-        let selected = vm.severityFilter == filter
-        let count = vm.chipCount(for: filter)
-        let (emoji, color): (String, Color) = {
-            switch filter {
-            case .all:     return ("", DatawatchColors.onSurfaceMuted)
-            case .prompt:  return ("🟡 ", DatawatchColors.warning)
-            case .error:   return ("🔴 ", DatawatchColors.error)
-            case .warning: return ("🟠 ", DatawatchColors.warning)
-            case .info:    return ("⚪ ", DatawatchColors.onSurfaceMuted)
-            }
-        }()
-        let label = "\(emoji)\(filter.rawValue) ×\(count)"
+        let selected: Bool = vm.severityFilter == filter
+        let count: Int = vm.chipCount(for: filter)
+        let color: Color = chipColor(filter)
         Button { vm.severityFilter = filter } label: {
-            Text(label)
+            Text(verbatim: "\(filter.label) ×\(count)")
                 .font(DatawatchFonts.badge)
-                .foregroundStyle(selected ? DatawatchColors.background : color)
+                .foregroundStyle(selected ? DatawatchColors.background : DatawatchColors.onSurface)
                 .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(selected ? color : color.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.4), lineWidth: 1))
+                .padding(.vertical, 3)
+                .background(selected ? color : DatawatchColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: DatawatchRadius.pill))
+                .overlay(RoundedRectangle(cornerRadius: DatawatchRadius.pill).stroke(color, lineWidth: 1))
+        }
+    }
+
+    private func chipColor(_ filter: AlertsViewModel.AlertSeverityFilter) -> Color {
+        switch filter {
+        case .all, .info: return DatawatchColors.onSurfaceMuted
+        case .prompt, .warning: return DatawatchColors.warning
+        case .error: return DatawatchColors.error
         }
     }
 
@@ -868,22 +879,16 @@ private struct AlertRow: View {
             .background(DatawatchColors.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 3))
     }
 
+    /// PWA `renderAlert`: only prompt and error get a colour; warn/info use the
+    /// plain border and a transparent background.
     private var borderColor: Color {
         if isPrompt { return DatawatchColors.warning }
-        switch alert.severity {
-        case .error: return DatawatchColors.error
-        case .warning: return DatawatchColors.warning
-        default: return DatawatchColors.border
-        }
+        return alert.severity == .error ? DatawatchColors.error : DatawatchColors.border
     }
 
     private var alertBackground: Color {
-        if isPrompt { return DatawatchColors.warning.opacity(0.06) }
-        switch alert.severity {
-        case .error:   return DatawatchColors.error.opacity(0.05)
-        case .warning: return DatawatchColors.warning.opacity(0.04)
-        default:       return Color.clear
-        }
+        if isPrompt { return DatawatchColors.warning.opacity(0.08) }
+        return alert.severity == .error ? DatawatchColors.error.opacity(0.06) : Color.clear
     }
 
     @ViewBuilder
@@ -891,13 +896,14 @@ private struct AlertRow: View {
         if isPrompt {
             badgeLabel("🟡 PROMPT", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
         } else {
+            // PWA kindBadge: 🔴 ERROR, otherwise "⚪ <level>" on bg2 (warn included).
             switch alert.severity {
             case .error:
                 badgeLabel("🔴 ERROR", fg: .white, bg: DatawatchColors.error)
             case .warning:
-                badgeLabel("🟠 WARNING", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
+                badgeLabel("⚪ warn", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface)
             default:
-                badgeLabel("⚪ info", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface2)
+                badgeLabel("⚪ info", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface)
             }
         }
     }

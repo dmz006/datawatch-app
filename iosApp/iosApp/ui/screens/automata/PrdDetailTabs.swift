@@ -56,7 +56,7 @@ struct PrdRulesCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
     }
 
     @ViewBuilder

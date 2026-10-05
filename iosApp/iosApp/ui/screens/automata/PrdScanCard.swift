@@ -74,7 +74,7 @@ struct PrdScanCard: View {
             }
         }
         .padding(14)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
         .task(id: prdId) { load() }
         .alert("Fix automaton created", isPresented: $fixCreated) {
             Button("OK", role: .cancel) {}

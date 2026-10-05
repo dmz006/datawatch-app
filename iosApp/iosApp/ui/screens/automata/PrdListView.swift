@@ -84,8 +84,8 @@ struct PrdStatusChip: View {
             .foregroundStyle(fg)
             .padding(.horizontal, 7)
             .padding(.vertical, 1)
-            .background(bg, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(fg, lineWidth: 1))
+            .background(bg, in: RoundedRectangle(cornerRadius: DatawatchRadius.pill))
+            .overlay(RoundedRectangle(cornerRadius: DatawatchRadius.pill).stroke(fg, lineWidth: 1))
             .opacity(pulsing && dim ? 0.55 : 1.0)
             .onAppear { restartPulse() }
             .onChange(of: pulsing) { _ in restartPulse() }
@@ -398,7 +398,7 @@ struct PrdListView: View {
                 Text("⚡")
                     .font(.system(size: 24))
                     .frame(width: 56, height: 56)
-                    .background(DatawatchColors.primary, in: Circle())
+                    .background(DatawatchColors.secondary, in: Circle()) // PWA .fab: accent2 fill
                     .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
             }
             .padding(.trailing, 20)
