@@ -13,8 +13,8 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | data | Sessions GET /api/sessions for liveness (Active vs Historical) | ✓ js:19172 refreshes state.sessions | ✓ A:AlertsViewModel.kt grouping by session state | ✓ I:AlertsView.swift:87 `isActive` — listSessions each poll, Active = live & not done | aligned | | iOS now uses the PWA liveness rule |
 | data | Auto-ack all on opening Alerts page POST /api/alerts {all:true} | ✓ js:19191 | ✓ A:AlertsScreen.kt:89 `vm.ackAllOnOpen()` | ✓ I:AlertsView.swift:250 `acknowledgeAll` after each fetch while open (48eaea28) | aligned | decided D49a | |
 | data | Dismiss all = POST {all:true, delete:true} | ✓ js:19535 | ✓ A:AlertsViewModel.kt:601 `deleteAllAlerts()` | ✓ I:AlertsView.swift:280 `deleteAllAlerts` | aligned | decided D48a | |
-| data | Per-alert mark-read POST /api/alerts {id} | ✗ (auto-ack makes it moot) | ~ A:AlertsViewModel.kt:571 fn kept, no UI | ~ I:AlertsView.swift:260 `dismiss(alert)` via swipe → markAlertRead | misaligned | decided D49a | iOS should drop with per-alert swipe (D50d) |
-| data | WS `alert` frame → unread++ + toast | ✓ js:879 handleAlert, showToast 4 s | ✓ WebSocketTransport `tryRouteAlertFrame` → `AlertsHub` → A:AppRoot.kt:594 `LiveAlertFeed` dock entry | ✗ | ios-missing | decided D51a | |
+| data | Per-alert mark-read POST /api/alerts {id} | ✗ (auto-ack makes it moot) | ~ A:AlertsViewModel.kt:571 fn kept, no UI | ✓ removed (no per-alert read UI / call) | aligned | decided D49a | iOS should drop with per-alert swipe (D50d) · D49a/D50d done on iOS |
+| data | WS `alert` frame → unread++ + toast | ✓ js:879 handleAlert, showToast 4 s | ✓ WebSocketTransport `tryRouteAlertFrame` → `AlertsHub` → A:AppRoot.kt:594 `LiveAlertFeed` dock entry | ✓ `IosAlertFeed` → `LiveAlertFeed` (badge +1 with watched filter, dock entry, id de-dup) | aligned | decided D51a | D51a done on iOS |
 | data | Unread count source | state.alertUnread (WS increments, reset on page open) | ~ REST unreadCount + dock ×N pill contributions (AlertDockChannel) | ~ REST unreadCount → @AppStorage dw.alert.badge | ios-missing | decided D51a | iOS lacks the WS increment path |
 | data | Alert rules GET/POST/DELETE /api/alert-rules, POST …/enable/disable | ✓ js:21179–21260 (Settings) | ✓ A:AlertRulesCard.kt:73–125 | ✓ I:IosAlertRules.kt list/create/delete/setEnabled | aligned | | Lives in Settings on all three |
 | data | Alert rule firings GET (listAlertRuleFirings) | ✗ | ✓ A:AlertRulesCard.kt:76,132 "Recent Firings (N)" ×20 | ✓ I:AlertRulesView.swift:67 "Recent Firings (N)" ×20 | pwa-missing | decided D70a | → #172 |
@@ -25,9 +25,9 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | data | Push delivery: APNs token registration POST /api/devices/register platform=ios | n/a | n/a (FCM removed) | ~ I:NotificationService.swift:42 registerApnsToken — server #185/BL335 pending | n/a | | Blocked on server |
 | data | Push payload deep-link routing (session_waiting/input_needed → session; alert → alerts) | n/a | ✓ A:NotificationPoster.kt:131 deepLinkIntent | ✓ I:NotificationService.swift:49 | aligned | | |
 | data | Notification dedup (SSE + ntfy same event) | n/a | ✓ A:NotificationPoster.kt:41–56 (256-entry LRU) | ✗ | n/a | | |
-| data | Waiting-state settle window before notifying (45 s) + prompt dedup | ✓ server detection.alert_settle | ✓ A:SessionStateWatcher.kt:47 SETTLE_MS mirrors server | ✗ no local notifications | ios-missing | decided D87b | Interim poll-sourced local notifications not built |
+| data | Waiting-state settle window before notifying (45 s) + prompt dedup | ✓ server detection.alert_settle | ✓ A:SessionStateWatcher.kt:47 SETTLE_MS mirrors server | ✓ `LocalAlertWatcher` 45 s settle + prompt dedup + cold-start seed → foreground local notifications (D87b) | aligned | decided D87b | Interim poll-sourced local notifications not built · interim until APNs |
 | nav | Alerts in bottom nav with unread badge (99+ cap) | ✓ js:16304 `#alertBadge` | ~ A:BottomNavBar.kt:99 badge hidden at 0 (D39a), no 99+ cap | ~ I:RootView.swift:51 `.badge(alertBadgeCount)` (no 99+ cap) | misaligned | | Both apps lack the 99+ cap |
-| nav | Header alert pill 🔔 N always visible | ✓ js:936 states muted/0/N, `--accent2` border when N≥1 | ✓ A:HeaderComponents.kt:102–134 | ~ I:AlertsBellButton.swift bell + red unread badge | ios-missing | decided D3a | iOS to build the pill + dock |
+| nav | Header alert pill 🔔 N always visible | ✓ js:936 states muted/0/N, `--accent2` border when N≥1 | ✓ A:HeaderComponents.kt:102–134 | ✓ `AlertsBellButton` pill (muted / 0 / N) toggles the dock | aligned | decided D3a | iOS to build the pill + dock · D3a done on iOS |
 | nav | Pill click → toggle dock | ✓ js toggleAlertDock | ✓ A:HeaderComponents.kt:134 AlertDockChannel.toggle() | ✗ navigates to Alerts tab | ios-missing | decided D3a | |
 | nav | Alert → open session (session-detail) | ✓ js:19253 sessNavBtn / group header link | ✓ A:AlertsScreen.kt onOpenSession (group header name) | ✓ I:AlertsView `sessionLabel` NavigationLink → SessionDetailView | aligned | | |
 | element | Tab bar Active / Historical / System with counts | ✓ js:19480 `output-tab` buttons | ✓ A:AlertsScreen.kt:131–153 Tab() | ✓ I:AlertsView `tabRow` "Tab (N)" via tabCount | aligned | | |
@@ -36,11 +36,11 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Filter bar row 1: "🔔 N alerts" + ⏷/🕒 sort + ✕ + 🔕 + ↻ | ✓ js:19500–19525 | ✓ A:AlertsScreen.kt:184–225 | ✓ I:AlertsView `filterBar` | aligned | | |
 | interaction | Sort toggle by session ↔ chronological (persisted per tab) | ✓ js setAlertsSort | ✓ A:AlertsViewModel.kt SortMode | ✓ I:AlertsViewModel `SortMode`, persisted per tab | aligned | | |
 | interaction | ✕ dismiss all | ✓ js dismissAlertsAll (delete) | ✓ A:AlertsScreen.kt:222 → deleteAllAlerts | ✓ I:AlertsView.swift:435 → deleteAllAlerts | aligned | decided D48a | |
-| interaction | 🔕 button | ✓ muteAlertDock — session-scoped dock mute, no server call | ✓ A:AlertsScreen.kt:224 `AlertDockChannel.mute()` | ~ I:AlertsView.swift:437 controlBtn("🔕") { dismissAll() } | ios-missing | decided D47a | iOS still dismiss-all; needs dock mute |
+| interaction | 🔕 button | ✓ muteAlertDock — session-scoped dock mute, no server call | ✓ A:AlertsScreen.kt:224 `AlertDockChannel.mute()` | ✓ AlertsView 🔕 → `AlertDock.mute()` | aligned | decided D47a | iOS still dismiss-all; needs dock mute · D47a done on iOS |
 | interaction | ↻ refresh | ✓ | ✓ | ✓ | aligned | | |
 | element | Chips all / 🟡 prompts / 🔴 errors / 🟠 warn / ⚪ info with counts | ✓ js:19505–19509 | ✓ A:AlertsScreen.kt chip row | ~ I:AlertsView `severityChip` "All/Prompt/Error/Warn/Info ×N" | misaligned | | iOS casing/wording differs from PWA |
 | token | Chip colors: text2 / warning / error / warning / text2; selected = filled | ✓ js chipBtn | ✓ A chipBorderColor + chipBg | ✓ I severityChip | aligned | | |
-| element | Prompt category rule: session waiting_input OR title matches needs input / prompt / waiting (regex, case-insensitive) | ✓ js catOf | ✓ A:AlertsScreen.kt + AlertsViewModel.isPromptAlert | ~ I:AlertsView.swift:104 `isPrompt` type contains input/prompt only | misaligned | | iOS has sessions loaded but ignores waiting_input + title |
+| element | Prompt category rule: session waiting_input OR title matches needs input / prompt / waiting (regex, case-insensitive) | ✓ js catOf | ✓ A:AlertsScreen.kt + AlertsViewModel.isPromptAlert | ✓ `AlertsViewModel.isPrompt/category` (PWA catOf: waiting_input session or title regex; exclusive) | aligned | | iOS has sessions loaded but ignores waiting_input + title |
 | interaction | Live text search (title+body) | ✓ js alertsSearchInput | ✓ A OutlinedTextField alert_search_ph | ✓ I filterText + clear button | aligned | | |
 | element | By-session group card: header bg2, name link, state text, "N alerts · 🟡 P", "last HH:MM:SS" mono | ✓ js:19470–19485 | ✓ A:AlertGroupCard | ✓ I:AlertsView `groupHeader` | aligned | | |
 | interaction | Group header tap collapses/expands | ✓ js toggles display | ✓ A onToggleExpand ▼/▶ | ✓ I:AlertsView `collapsed` set | aligned | | |
@@ -53,14 +53,14 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Quick reply `<select>` of saved commands on prompt alerts → alertSendCmd | ✓ js:19413 grouped (latest alert, waiting) + js:19615 chrono (prompt) | ~ A:AlertsScreen.kt:713 "Quick reply…" button navigates to session | ~ I:AlertsView `quickReply` Menu (built-ins + saved) grouped mode only | misaligned | | Android sends nothing; iOS adds built-ins, no chrono |
 | element | Per-alert ✓ mark-read control / unread dot | ✗ | ✗ removed | ~ I:AlertsView.swift:757 unread dot + dimmed read rows | misaligned | decided D49a | iOS should drop read UI |
 | interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✗ removed | ✗ | aligned | decided D50d | |
-| interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ~ I:AlertsView.swift:592 swipeActions Dismiss | misaligned | decided D50d | iOS should remove swipe |
+| interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ✗ removed 2026-10-04 | aligned | decided D50d | D50d done on iOS |
 | data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✓ I:AlertsView.swift:20 `LocalSessionPrefs.badgeCount` | pwa-missing | decided D61a | → #172 |
-| element | Alert dock panel (header chips per type, collapse chevron, ✕, 🔕; body cards with ×N, 3-line clamp, left rail) | ✓ js:15044 | ✓ A:AlertDockOverlay.kt + AlertDockChannel.kt | ✗ | ios-missing | decided D3a | |
-| data | Dock coalescing: family key, 60 s window, ×N, max 100 | ✓ js:15004–15040 | ✓ A:AlertDockChannel.kt:42–43 MAX_ENTRIES 100, 60 s window | ✗ | ios-missing | decided D3a | |
+| element | Alert dock panel (header chips per type, collapse chevron, ✕, 🔕; body cards with ×N, 3-line clamp, left rail) | ✓ js:15044 | ✓ A:AlertDockOverlay.kt + AlertDockChannel.kt | ✓ `AlertDockPanel` (type ×N chips, ⌄, ✕, 🔕; cards with rail, ×N, ✕, 3-line clamp ▸ more) | aligned | decided D3a | |
+| data | Dock coalescing: family key, 60 s window, ×N, max 100 | ✓ js:15004–15040 | ✓ A:AlertDockChannel.kt:42–43 MAX_ENTRIES 100, 60 s window | ✓ `AlertDock.post` family key, 60 s, ×N, max 100 | aligned | decided D3a | |
 | data | Dock mute persisted per browser session (sessionStorage cs_alert_muted) | ✓ js:15204 | ✓ A:AlertDockChannel.kt:48,77 in-memory per app session | ✗ | ios-missing | decided D47a | |
 | motion | Dock expand/collapse animation | ✗ static (panel created/removed) | ✗ static | n/a (no dock) | aligned | decided D36b | |
 | motion | Alert card hover bg3 transition .15 s | ✓ style.css:2232–2242 | n/a (touch) | n/a | n/a | | |
-| motion | Toast on WS alert, 4 s | ✓ js:891 showToast | ✓ dock entry (toasts retired, D41a) | ✗ | ios-missing | decided D51a | |
+| motion | Toast on WS alert, 4 s | ✓ js:891 showToast | ✓ dock entry (toasts retired, D41a) | ✓ dock entry (D41a/D51a) | aligned | decided D51a | |
 | motion | Loading state | ✓ spinner "Loading…" (common_loading) | ~ A:AlertsScreen.kt:332 spinner, no text | ✓ I LoadingIndicator "Loading alerts…" | misaligned | | Minor copy drift |
 | string | Empty state copy | "No alerts." (common_no_alerts) | ✓ "No alerts." (`alerts_empty`) every tab | ~ I:AlertsView.swift:538 "No <tab> alerts" | misaligned | decided D35a | iOS to adopt "No alerts." |
 | string | Error state copy | "Failed to load alerts." (alerts_load_error) | ~ A:AlertsViewModel.kt:242 banner "Alerts fetch failed — <msg>" | ~ I ErrorCard raw error.localizedDescription | misaligned | | Neither app uses alerts_load_error copy |
@@ -73,7 +73,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Car head-unit notification actions (CarAppExtender Play/Reply) | n/a | ✓ A:NotificationPoster.kt:235 | n/a | n/a | | |
 
 ## Coverage
-rows: 65 · aligned: 30 · ios-missing: 11 · android-missing: 1 · pwa-missing: 2 · misaligned: 13 · n/a: 8
+rows: 65 · aligned: 40 · ios-missing: 4 · android-missing: 1 · pwa-missing: 2 · misaligned: 10 · n/a: 8
 
 ## Decisions (resolved 2026-10-04)
 1. 🔕 semantics → **D47a** apps implement a real dock mute (Android done; iOS pending, needs dock).
