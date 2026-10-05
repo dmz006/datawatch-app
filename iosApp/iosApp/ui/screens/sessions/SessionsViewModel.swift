@@ -18,6 +18,9 @@ final class SessionsViewModel: ObservableObject {
     @Published private(set) var activeProfile: ServerProfile? = nil
     /// PWA `🕒 N` pending-schedules badge (single-server view only).
     @Published private(set) var pendingSchedules: [IosScheduleRow] = []
+    /// D43a: profile ids whose `session.summarizer.enabled` is true (PWA
+    /// `state._summarizerEnabled`, read from /api/config) — gates `🤖 Summary`.
+    @Published private(set) var summarizerProfiles: Set<String> = []
 
     // ── Private ───────────────────────────────────────────────────────────
 
@@ -44,6 +47,8 @@ final class SessionsViewModel: ObservableObject {
         profiles = newProfiles
         byProfile = byProfile.filter { newIds.contains($0.key) }
         activeProfile = newProfiles.first
+        summarizerProfiles = summarizerProfiles.filter { newIds.contains($0) }
+        loadSummarizerConfig()
         if !newProfiles.isEmpty {
             if polling {
                 startPolling(restart: true)
@@ -147,6 +152,25 @@ final class SessionsViewModel: ObservableObject {
         self.error = firstError
         isLoading = false
         loadPendingSchedules()
+    }
+
+    // ── Summarizer gate (PWA app.js:352 `cfg.session.summarizer.enabled`) ──
+
+    func loadSummarizerConfig() {
+        for profile in profiles {
+            let pid = profile.id
+            IosSettingsConfig.shared.load(
+                profile: profile,
+                onSuccess: { [weak self] map in
+                    let on: Bool = map["session.summarizer.enabled"] == "true"
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        if on { self.summarizerProfiles.insert(pid) } else { self.summarizerProfiles.remove(pid) }
+                    }
+                },
+                onError: { _ in }
+            )
+        }
     }
 
     // ── Pending schedules (PWA schedBadge / Android loadPendingSchedules) ──
