@@ -50,4 +50,13 @@
     <string name="ws_history_btn">履歴</string>
     <string name="ws_history_title">Web 検索履歴</string>
     <string name="ws_history_empty">まだ検索はありません。</string>
+    <string name="plugins_manager_title">プラグインマネージャー</string>
+    <string name="plugins_reload">プラグインを再読み込み</string>
+    <string name="plugins_native">ネイティブ</string>
+    <string name="plugins_subprocess">サブプロセス</string>
+    <string name="plugins_none_subprocess">サブプロセスプラグインはインストールされていません</string>
+    <string name="plugins_enable">有効化</string>
+    <string name="plugins_disable">無効化</string>
+    <string name="restart_required_hint">変更を反映するには再起動が必要です。</string>
+    <string name="restart_now_link">今すぐ再起動</string>
 </resources>
