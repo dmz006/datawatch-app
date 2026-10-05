@@ -27,7 +27,7 @@ struct TemplatesView: View {
                         }
                     }
                     if templates.isEmpty {
-                        Text("No templates yet. Create one, or save an automaton as a template from its ⋯ menu.")
+                        Text("No templates yet.")
                             .font(DatawatchFonts.bodyMedium)
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                             .listRowBackground(Color.clear)
