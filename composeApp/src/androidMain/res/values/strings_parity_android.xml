@@ -59,4 +59,5 @@
     <string name="plugins_disable">Disable</string>
     <string name="restart_required_hint">Restart required to apply changes.</string>
     <string name="restart_now_link">Restart now</string>
+    <string name="automata_confirm_cancel_planning">⚠️ Planning is running on the server.\n\nCancelling will abort the entire automaton — the plan being generated will be discarded. The server-side planning job may continue briefly before stopping.\n\nCancel the automaton?</string>
 </resources>

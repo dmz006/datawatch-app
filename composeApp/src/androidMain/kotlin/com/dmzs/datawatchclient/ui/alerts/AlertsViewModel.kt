@@ -239,7 +239,10 @@ public class AlertsViewModel : ViewModel() {
                             },
                             onFailure = {
                                     err ->
-                                _banner.value = "Alerts fetch failed — ${err.message ?: err::class.simpleName}"
+                                // PWA copy `alerts_load_error` ("Failed to load alerts.").
+                                android.util.Log.w("AlertsViewModel", "listAlerts failed: ${err::class.simpleName}")
+                                _banner.value =
+                                    ServiceLocator.context().getString(com.dmzs.datawatchclient.R.string.alerts_load_error)
                             },
                         )
                     }

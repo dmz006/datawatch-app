@@ -336,7 +336,16 @@ public fun AlertsScreen(
                 if (groups.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (state.refreshing) {
-                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
+                            // PWA loading state: spinner + "Loading…" (common_loading).
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
+                                Text(
+                                    stringResource(R.string.common_loading),
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         } else {
                             Text(
                                 // Parity D35a — PWA single "No alerts." on every tab.

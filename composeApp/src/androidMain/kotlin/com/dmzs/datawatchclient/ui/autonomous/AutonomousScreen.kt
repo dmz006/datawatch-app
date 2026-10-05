@@ -360,14 +360,19 @@ public fun AutonomousScreen(
             onDismissRequest = { vm.dismissCancelConfirm() },
             title = { Text(stringResource(R.string.automata_confirm_cancel_title)) },
             text = {
-                Text(
-                    stringResource(
-                        R.string.automata_confirm_cancel_body,
-                        prd?.title?.takeIf {
-                            it.isNotBlank()
-                        } ?: prd?.name ?: cancelId,
-                    ),
-                )
+                // PWA automataCancel: planning-specific abort warning.
+                if (prd?.status == "planning") {
+                    Text(stringResource(R.string.automata_confirm_cancel_planning))
+                } else {
+                    Text(
+                        stringResource(
+                            R.string.automata_confirm_cancel_body,
+                            prd?.title?.takeIf {
+                                it.isNotBlank()
+                            } ?: prd?.name ?: cancelId,
+                        ),
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = { vm.cancelPrd(cancelId) }) {
@@ -714,14 +719,17 @@ private fun PrdsBody(
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_foreground),
             contentDescription = null,
-            modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.10f),
+            modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.045f), // PWA `.sessions-watermark` .045
         )
         if (visible.isEmpty() && state.loading) {
             DatawatchLoadingContent(modifier = Modifier.align(Alignment.Center))
         } else if (visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    stringResource(R.string.autonomous_empty_state),
+                    // PWA `_automataRenderCards` empty copy: history vs active.
+                    stringResource(
+                        if (historyOn) R.string.automata_empty_history else R.string.automata_empty_active,
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1470,16 +1478,15 @@ internal fun LifecycleStrip(
 private fun isApprovalState(statusLower: String) =
     statusLower in setOf("needs_review", "awaiting_approval", "revisions_asked")
 
-/** Sort rank: action-needed statuses first, then active, then terminal. */
 /** PWA `_AUTOMATA_STATE_RANK` verbatim (alpha.31 #272) — lower sorts first; unknown = 9. */
 internal fun prdStateRank(status: String): Int =
-    when (status.lowercase()) {
-        "waiting_input", "needs_review", "revisions_asked", "awaiting_approval" -> 0
+    when (status.lowercase().ifEmpty { "draft" }) {
+        "waiting_input", "needs_review", "revisions_asked" -> 0
         "blocked" -> 1
         "running", "decomposing" -> 2
         "approved", "planning" -> 3
-        "draft", "" -> 4
-        "completed", "complete", "rejected", "cancelled", "canceled" -> 5
+        "draft" -> 4
+        "completed", "rejected", "cancelled" -> 5
         "archived" -> 6
         else -> 9
     }

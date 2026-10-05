@@ -59,4 +59,5 @@
     <string name="plugins_disable">Deshabilitar</string>
     <string name="restart_required_hint">Se requiere reiniciar para aplicar los cambios.</string>
     <string name="restart_now_link">Reiniciar ahora</string>
+    <string name="automata_confirm_cancel_planning">⚠️ La planificación se está ejecutando en el servidor.\n\nCancelar abortará todo el autómata: el plan que se está generando se descartará. El trabajo de planificación del servidor puede continuar brevemente antes de detenerse.\n\n¿Cancelar el autómata?</string>
 </resources>
