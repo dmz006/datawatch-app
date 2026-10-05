@@ -1277,4 +1277,14 @@
     <string name="discussion_recall_btn">呼び出し</string>
     <string name="discussion_recall_title">%1$s — %2$d 件</string>
     <string name="discussion_no_entries">(エントリなし)</string>
+    <string name="llm_yaml_btn">&lt;/&gt; YAML</string>
+    <string name="llm_yaml_title">編集 LLM: %1$s</string>
+    <string name="llm_edit_yaml_tip">生のYAMLを編集 — 保存時にフォームが解析後の値で再読込されます</string>
+    <string name="llm_yaml_after_save">YAMLエディターは初回保存後に利用できます</string>
+    <string name="action_test">テスト</string>
+    <string name="form_edit_testing">未保存の値をテスト中…</string>
+    <string name="form_edit_saving">保存中…</string>
+    <string name="form_edit_test_ok">テスト成功:</string>
+    <string name="form_edit_test_fail">テスト失敗:</string>
+    <string name="form_edit_save_fail">保存失敗:</string>
 </resources>
