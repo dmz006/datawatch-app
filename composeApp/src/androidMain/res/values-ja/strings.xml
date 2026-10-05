@@ -1056,8 +1056,8 @@
     <string name="stats_field_pid">PID</string>
     <string name="stats_field_net">ネットワーク</string>
     <string name="stats_field_gpu">GPU</string>
-    <string name="stats_open_compute">Computeで開く →</string>
-    <string name="stats_open_llm">LLMで開く →</string>
+    <string name="stats_open_compute">コンピュートノードを開く →</string>
+    <string name="stats_open_llm">LLMを開く →</string>
     <string name="stats_llm_more_soon">トークン率・レイテンシ・モデル状態は次回更新で</string>
     <string name="stats_container_id">コンテナID</string>
     <string name="stats_container_image">イメージ</string>
