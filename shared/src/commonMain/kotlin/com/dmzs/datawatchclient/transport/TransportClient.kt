@@ -1170,25 +1170,13 @@ public interface TransportClient {
         limit: Int = 10,
     ): Result<List<com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto>>
 
-    /** GET /api/docs/trust/pending — list sources awaiting trust approval. */
-    public suspend fun docsPendingList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto>>
-
-    /** POST /api/docs/trust/accept — bulk-accept pending sources. */
-    public suspend fun docsTrustAccept(paths: List<String>): Result<Unit>
-
-    /** POST /api/docs/trust/dismiss — bulk-dismiss pending sources. */
-    public suspend fun docsTrustDismiss(paths: List<String>): Result<Unit>
-
-    /** GET /api/docs/trust — list currently trusted sources. */
-    public suspend fun docsTrustedList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto>>
-
     /** DELETE /api/docs/trust/{path} — remove trust from a source. */
     public suspend fun docsTrustRemove(path: String): Result<Unit>
 
     /** GET /api/docs/howtos — list how-to guides with exec metadata. */
     public suspend fun docsListHowtos(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsHowtoDto>>
 
-    /** POST /api/docs/trust/add — add a new docs source to the trust list. */
+    /** POST /api/docs/trust `{source, granted_by}` — add a docs source to the trust list. */
     public suspend fun docsTrustAdd(source: String): Result<Unit>
 
     // ---- v0.73.0 Sprint 4: Identity, Algorithm Mode, Evals ----

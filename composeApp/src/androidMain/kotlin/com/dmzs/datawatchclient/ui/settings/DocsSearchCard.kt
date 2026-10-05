@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Checkbox
@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,9 +41,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto
+import com.dmzs.datawatchclient.transport.DocsTrustEntry
 import com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto
-import com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,7 +59,6 @@ import kotlinx.coroutines.launch
 public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var query by remember { mutableStateOf("") }
-    var trustedExpanded by remember { mutableStateOf(false) }
     var addSourceText by remember { mutableStateOf("") }
     var addSourceExpanded by remember { mutableStateOf(false) }
 
@@ -119,70 +119,91 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
             HorizontalDivider()
         }
 
-        // Pending trust queue
-        if (state.pending.isNotEmpty()) {
-            PwaSectionTitle(stringResource(R.string.docs_trust_pending_title))
-            val allSelected =
-                state.selected.size == state.pending.size && state.pending.isNotEmpty()
+        // Pending trust queue (PWA loadDocsTrustPanel): title always shown,
+        // "none" when empty, else select-all toolbar + per-row Trust / Dismiss.
+        PwaSectionTitle(stringResource(R.string.docs_trust_pending_title))
+        if (state.pending.isEmpty()) {
+            DocsTrustNone(loaded = state.loaded)
+        } else {
+            val allSelected = state.selected.size == state.pending.size
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = allSelected,
                     onCheckedChange = { vm.selectAll(it) },
                 )
-                Text(stringResource(R.string.docs_trust_select_all))
+                Text(stringResource(R.string.docs_trust_select_all), style = MaterialTheme.typography.labelSmall)
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { vm.trustSelected() }) {
-                    Text(stringResource(R.string.docs_trust_accept))
+                TextButton(onClick = { vm.decideSelected(accept = true) }) {
+                    Text(
+                        stringResource(R.string.docs_trust_accept),
+                        color = LocalDatawatchColors.current.success,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
                 }
-                TextButton(onClick = { vm.dismissSelected() }) {
-                    Text(stringResource(R.string.docs_trust_dismiss))
+                TextButton(onClick = { vm.decideSelected(accept = false) }) {
+                    Text(stringResource(R.string.docs_trust_dismiss), style = MaterialTheme.typography.labelSmall)
                 }
             }
-            state.pending.forEach { source ->
+            HorizontalDivider()
+            state.pending.forEach { entry ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
-                        checked = source.path in state.selected,
-                        onCheckedChange = { vm.toggle(source.path, it) },
+                        checked = entry.source in state.selected,
+                        onCheckedChange = { vm.toggle(entry.source, it) },
                     )
-                    Text(
-                        source.path,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    source.reason?.let {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            it,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            entry.source,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
                         )
+                        if (entry.detail.isNotEmpty()) {
+                            Text(
+                                entry.detail,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    TextButton(onClick = { vm.decide(listOf(entry.source), accept = true) }) {
+                        Text(
+                            stringResource(R.string.docs_trust_row_accept),
+                            color = LocalDatawatchColors.current.success,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                    TextButton(onClick = { vm.decide(listOf(entry.source), accept = false) }) {
+                        Text(stringResource(R.string.docs_trust_row_dismiss), style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
         }
 
-        // Trusted sources
-        if (state.trusted.isNotEmpty()) {
-            TextButton(onClick = { trustedExpanded = !trustedExpanded }) {
-                Text(stringResource(R.string.docs_trusted_sources, state.trusted.size))
-                Icon(
-                    if (trustedExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null,
+        // Trusted sources (PWA: source · granted_by · × unless `core`).
+        PwaSectionTitle(stringResource(R.string.docs_trusted_sources))
+        if (state.trusted.isEmpty()) {
+            DocsTrustNone(loaded = state.loaded)
+        }
+        state.trusted.forEach { entry ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    entry.source,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
                 )
-            }
-            if (trustedExpanded) {
-                state.trusted.forEach { source ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            source.path,
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodySmall,
+                Text(
+                    entry.detail,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (entry.source != "core") {
+                    IconButton(onClick = { vm.removeTrusted(entry.source) }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.docs_trust_remove),
+                            modifier = Modifier.size(16.dp),
                         )
-                        IconButton(onClick = { vm.removeTrusted(source.path) }) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.docs_trust_remove),
-                            )
-                        }
                     }
                 }
             }
@@ -215,7 +236,7 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
                     },
                     enabled = addSourceText.isNotBlank(),
                 ) {
-                    Text(stringResource(R.string.docs_trust_accept))
+                    Text(stringResource(R.string.docs_trust_row_accept))
                 }
             }
         }
@@ -232,23 +253,44 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
     }
 }
 
+/** PWA renders an italic, muted "none" for an empty pending / trusted list. */
+@Composable
+private fun DocsTrustNone(loaded: Boolean) {
+    Text(
+        if (loaded) stringResource(R.string.docs_trust_none) else stringResource(R.string.common_loading),
+        style = MaterialTheme.typography.bodySmall,
+        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(vertical = 4.dp),
+    )
+}
+
 public class DocsSearchViewModel : ViewModel() {
     public data class UiState(
         val results: List<DocsSearchResultDto> = emptyList(),
-        val pending: List<DocsPendingSourceDto> = emptyList(),
-        val trusted: List<DocsTrustedSourceDto> = emptyList(),
+        val pending: List<DocsTrustEntry> = emptyList(),
+        val trusted: List<DocsTrustEntry> = emptyList(),
         val selected: Set<String> = emptySet(),
+        val loaded: Boolean = false,
         val error: String? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
+    /** PWA loadDocsTrustPanel: `{pending:[…]}` + `{trusted:[…]}`. */
     public fun loadAll() {
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
-            transport.docsPendingList().onSuccess { _state.value = _state.value.copy(pending = it, selected = emptySet()) }
-            transport.docsTrustedList().onSuccess { _state.value = _state.value.copy(trusted = it) }
+            transport.docsTrustPendingEntries()
+                .onSuccess { list ->
+                    val keep = _state.value.selected.intersect(list.map { it.source }.toSet())
+                    _state.value = _state.value.copy(pending = list, selected = keep)
+                }.onFailure { reportError(it) }
+            transport.docsTrustedEntries()
+                .onSuccess { _state.value = _state.value.copy(trusted = it) }
+                .onFailure { reportError(it) }
+            _state.value = _state.value.copy(loaded = true)
         }
     }
 
@@ -257,7 +299,7 @@ public class DocsSearchViewModel : ViewModel() {
             val transport = resolveTransport() ?: return@launch
             transport.docsSearch(q, limit = 10).fold(
                 onSuccess = { _state.value = _state.value.copy(results = it, error = null) },
-                onFailure = { _state.value = _state.value.copy(error = it.message ?: it::class.simpleName) },
+                onFailure = { reportError(it) },
             )
         }
     }
@@ -269,41 +311,55 @@ public class DocsSearchViewModel : ViewModel() {
     public fun selectAll(select: Boolean) {
         _state.value =
             _state.value.copy(
-                selected = if (select) _state.value.pending.map { it.path }.toSet() else emptySet(),
+                selected = if (select) _state.value.pending.map { it.source }.toSet() else emptySet(),
             )
     }
 
     public fun toggle(
-        path: String,
+        source: String,
         checked: Boolean,
     ) {
         val current = _state.value.selected.toMutableSet()
-        if (checked) current.add(path) else current.remove(path)
+        if (checked) current.add(source) else current.remove(source)
         _state.value = _state.value.copy(selected = current)
     }
 
-    public fun trustSelected() {
-        val paths = _state.value.selected.toList()
-        if (paths.isEmpty()) return
+    /** PWA docsTrustBulkAccept / docsTrustBulkDismiss. */
+    public fun decideSelected(accept: Boolean) {
+        val sources = _state.value.selected.toList()
+        if (sources.isEmpty()) {
+            _state.value = _state.value.copy(error = "Select one or more sources first")
+            return
+        }
+        decide(sources, accept)
+    }
+
+    /** POST /api/docs/trust/{accept|dismiss} `{sources:[…]}`. */
+    public fun decide(
+        sources: List<String>,
+        accept: Boolean,
+    ) {
+        if (sources.isEmpty()) return
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
-            transport.docsTrustAccept(paths).onSuccess { loadAll() }
+            transport.docsTrustDecide(sources, accept)
+                .onSuccess {
+                    _state.value = _state.value.copy(selected = _state.value.selected - sources.toSet(), error = null)
+                    loadAll()
+                }.onFailure { reportError(it) }
         }
     }
 
-    public fun dismissSelected() {
-        val paths = _state.value.selected.toList()
-        if (paths.isEmpty()) return
+    /** DELETE /api/docs/trust/{source} — `core` is never offered for removal. */
+    public fun removeTrusted(source: String) {
+        if (source == "core") return
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
-            transport.docsTrustDismiss(paths).onSuccess { loadAll() }
-        }
-    }
-
-    public fun removeTrusted(path: String) {
-        viewModelScope.launch {
-            val transport = resolveTransport() ?: return@launch
-            transport.docsTrustRemove(path).onSuccess { loadAll() }
+            transport.docsTrustRemove(source)
+                .onSuccess {
+                    _state.value = _state.value.copy(error = null)
+                    loadAll()
+                }.onFailure { reportError(it) }
         }
     }
 
@@ -313,6 +369,10 @@ public class DocsSearchViewModel : ViewModel() {
             transport.docsTrustAdd(source).onSuccess { loadAll() }
                 .onFailure { _state.value = _state.value.copy(error = "Add failed: ${it.message}") }
         }
+    }
+
+    private fun reportError(t: Throwable) {
+        _state.value = _state.value.copy(error = t.message ?: t::class.simpleName)
     }
 
     private suspend fun resolveTransport(): com.dmzs.datawatchclient.transport.TransportClient? {
