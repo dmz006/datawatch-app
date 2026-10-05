@@ -35,6 +35,10 @@ import kotlinx.coroutines.launch
  * Per ADR-0013 the UI fails fast on disconnected actions — no queue.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+/** Outlives a closing session screen so its scroll-mode exit still reaches the server. */
+private val scrollExitScope =
+    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+
 public class SessionDetailViewModel(
     public val sessionId: String,
 ) : ViewModel() {
@@ -565,6 +569,37 @@ public class SessionDetailViewModel(
     }
 
     /** Parity D43a — live last response for the viewer (GET /api/sessions/response). */
+    /**
+     * Scroll mode (tmux copy-mode) enter / exit. Sent over REST `/api/command`
+     * so the result is acknowledged — a WS `command` frame is dropped silently
+     * while the socket reconnects (e.g. after the phone slept on the scrollback),
+     * which left tmux in copy-mode with the app showing the live composer: the
+     * terminal looked hung until ESC was pressed by hand. Falls back to the WS
+     * frame only when REST is unavailable. Returns true when the server accepted it.
+     */
+    public suspend fun scrollModeCommand(enter: Boolean): Boolean {
+        val id = fullIdOrShort()
+        val text = if (enter) "tmux-copy-mode $id" else "sendkey $id: Escape"
+        val profile = profileCache
+        if (profile != null) {
+            val r = ServiceLocator.transportFor(profile).runCommand(text)
+            if (r.isSuccess) {
+                val out = r.getOrNull().orEmpty()
+                return !(out.startsWith("Error") || out.contains("not found"))
+            }
+        }
+        return com.dmzs.datawatchclient.transport.ws.WsOutbound.sendCommand(sessionId, text)
+    }
+
+    /**
+     * Leaving the session while still in scroll mode: take tmux out of copy-mode
+     * so the pane isn't frozen next time. Runs outside [viewModelScope], which
+     * is cancelled as the screen goes away.
+     */
+    public fun exitScrollModeDetached() {
+        scrollExitScope.launch { scrollModeCommand(enter = false) }
+    }
+
     public suspend fun fetchFreshResponse(): Result<String> {
         val profile = profileCache ?: return Result.failure<String>(IllegalStateException("no server"))
         return ServiceLocator.transportFor(profile).getSessionResponse(fullIdOrShort())

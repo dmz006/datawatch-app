@@ -258,7 +258,6 @@
 "Compute Nodes" = "Nœuds de calcul";
 "Compute node" = "Nœud de calcul";
 "ComputeNodes (multi-select; ordered failover)" = "Nœuds de calcul (sélection multiple ; basculement ordonné)";
-"Config Viewer" = "Visionneuse de configuration";
 "Configure" = "Configurer";
 "Connect a server in Settings to manage automata." = "Connectez un serveur dans Paramètres pour gérer les automates.";
 "Connected" = "Connecté";

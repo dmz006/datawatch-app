@@ -61,7 +61,7 @@ enum SettingsConfigExtra {
 
 /// Bespoke (non-schema) cards.
 enum SettingsCustomCard {
-    case notifications, security, docsSearch, configViewer, rawConfig
+    case notifications, security, docsSearch, rawConfig
     case servers, commBackends, push
     case alertRules, savedCommands, outputFilters
     case identity, automataTypes, pipelineManager, orchestratorGraphs, algorithmMode
@@ -211,7 +211,6 @@ enum SettingsCatalog {
         ]),
         // iOS additions (decisions D79a / platform security)
         .custom("security", "Security", "lock", .security),
-        .custom("config_viewer", "Config Viewer", "doc.text.magnifyingglass", .configViewer),
         .custom("raw_config", "Raw Config", "curlybraces", .rawConfig),
     ]
 

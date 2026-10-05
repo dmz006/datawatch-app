@@ -52,7 +52,6 @@ private struct SettingsServerCustomCard: View {
         case .identity: SettingsIdentityCard(profile: profile)
         case .algorithmMode: SettingsAlgorithmModeCard(profile: profile)
         case .docsSearch: SettingsDocsSearchCard(profile: profile)
-        case .configViewer: SettingsConfigViewerCard(profile: profile)
         case .rawConfig: SettingsRawConfigCard(profile: profile)
         case .apiLinks: SettingsApiLinksCard(profile: profile)
         case .mcpTools: SettingsMcpToolsCard(profile: profile)

@@ -38,7 +38,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Discussion Scopes card (scopes list, write message, New Discussion) | ✓ discussion_scopes A:23897 | ✓ DiscussionScopesCard | ✓ list card (scopes) + New Discussion (+) + Write message row | misaligned | | |
 | element | Security card: biometric lock toggle | ✗ (platform n/a) | ✓ S:703 BiometricPrompt via FragmentActivity | ✓ toggle (auth required to enable) → `BiometricLockModifier` on the app root: locks on cold start + return from background; skipped without passcode | misaligned | | **iOS bug**: gate not enforced (re-checked 2026-10-04) · fixed 2026-10-04 |
 | element | Secrets vault status | ✓ inside Secrets Store card (Compute) | ✓ `SecretsVaultStatusRow` inside Secrets Store card | ✓ vault status row inside Secrets Store list card (PWA placement) | misaligned | decided D33a | Android must fold it into SecretsCard per D33a · Android must fold it into SecretsCard per D33a · per D33a (2026-10-04) |
-| element | Config Viewer card (read-only effective config) | ✗ | ✓ ConfigViewerCard | ✓ SettingsConfigViewerCard | pwa-missing | decided D79a | → #172 |
+| element | Config Viewer card (read-only effective config) | ✗ | ✗ removed | ✗ removed | n/a | operator 2026-10-05 | Removed from both apps: duplicated the editable Settings cards. Raw config card kept. PWA: do not add (#172 updated) |
 | element | Raw config editor card | ✗ | ✓ RawConfigCard | ✓ SettingsRawConfigCard — diffed dotted-key PUT, masked values never sent | pwa-missing | decided D79a | → #172 |
 | element | Encryption status card (local DB cipher / keystore, file list) | ✗ (no local DB) | ✓ EncryptionStatusCard (About tab) | ✓ SettingsEncryptionCard: Data Protection class per file, Keychain accessibility + token count, server secure_mode | aligned | decided D90a | PWA n/a (no local store) |
 
@@ -147,7 +147,7 @@ Re-audited 2026-10-04 against current code (after B26–B32, 16ed1a85 iOS theme,
 3. Restart-needed signalling → **D57b** apps adopt the PWA inline "Restart now" link.
 4. Settings density → **D32** iOS-native density (sanctioned).
 5. Secrets vault status placement → **D33a** Android moves it into the Secrets card.
-6. Config Viewer + Raw config editor → **D79a** add to PWA + iOS (PWA via #172).
+6. Config Viewer + Raw config editor → **D79a** add to PWA + iOS (PWA via #172). **Revised by operator 2026-10-05:** Config Viewer removed everywhere (duplicates the Settings cards); only the Raw config card stays.
 7. iOS encryption-status card → **D90a** show Data Protection class + Keychain state.
 8. Certificate pinning → **D91a** Android adopts TOFU pinning.
 9. Push card → **D88c** iOS card = APNs registration status + test.

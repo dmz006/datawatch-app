@@ -21,11 +21,4 @@ class SplashGateTest {
 
     @Test
     fun `24 h later shows`() = assertTrue(SplashGate.shouldShow(34 * hour, 10 * hour, "1.0.0", "1.0.0"))
-
-    @Test
-    fun `updated badge only on a real version change`() {
-        assertNull(SplashGate.updatedTo(null, "1.0.0"))
-        assertNull(SplashGate.updatedTo("1.0.0", "1.0.0"))
-        assertEquals("1.0.1", SplashGate.updatedTo("1.0.0", "1.0.1"))
-    }
 }

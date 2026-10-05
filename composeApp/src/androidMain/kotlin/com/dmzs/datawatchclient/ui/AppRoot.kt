@@ -212,18 +212,17 @@ private fun Nav(
             val splashContext = LocalContext.current
             // Parity D37a — splash only on first launch, app version change,
             // or >24 h since last shown; otherwise go straight in.
-            val splashDecision =
+            val splashGate =
                 remember {
-                    SplashGate.consumeDecision(splashContext, com.dmzs.datawatchclient.Version.VERSION)
+                    SplashGate.consume(splashContext, com.dmzs.datawatchclient.Version.VERSION)
                 }
-            val showSplash = rememberSaveable { splashDecision.show }
+            val showSplash = rememberSaveable { splashGate }
             var splashStatus by remember { mutableStateOf("unlocking vault…") }
             if (showSplash) {
                 MatrixSplashScreen(
                     replay = false,
                     autoAdvance = false,
                     statusText = splashStatus,
-                    updatedTo = splashDecision.updatedTo,
                     onFinished = { /* managed by LaunchedEffect below */ },
                 )
             } else {

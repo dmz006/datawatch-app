@@ -18,21 +18,11 @@ enum SplashGate {
 
     /// Decides whether this cold launch shows the splash and, when it does, records
     /// the time + version (same point the PWA / Android write them).
-    /// PWA `isNewVersion` / Android `SplashGate.updatedTo`: the new app version when
-    /// this launch follows a version change (first launch is not an update).
-    private(set) static var updatedTo: String? = nil
-
-    static func versionChange(lastVersion: String?, currentVersion: String) -> String? {
-        guard let last = lastVersion, !last.isEmpty, last != currentVersion else { return nil }
-        return currentVersion
-    }
-
     static func consume() -> Bool {
         let d = UserDefaults.standard
         let now: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
         let last: Int64 = (d.object(forKey: keyTime) as? NSNumber)?.int64Value ?? 0
         let lastVersion: String? = d.string(forKey: keyVersion)
-        updatedTo = versionChange(lastVersion: lastVersion, currentVersion: appVersion)
         let show = shouldShow(nowMs: now, lastShownMs: last, lastVersion: lastVersion, currentVersion: appVersion)
         if show {
             d.set(NSNumber(value: now), forKey: keyTime)
@@ -80,9 +70,6 @@ struct LaunchSplashView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 56)
         }
-        .overlay(alignment: .topTrailing) {
-            if !replay, let version = SplashGate.updatedTo { updatedBadge(version) }
-        }
         .onAppear {
             guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { bright = true }
@@ -95,17 +82,6 @@ struct LaunchSplashView: View {
             try? await Task.sleep(nanoseconds: 180_000_000)
             onFinished()
         }
-    }
-
-    /// PWA splash badge: top-right, accent bg, white 10 px semibold, radius 8.
-    private func updatedBadge(_ version: String) -> some View {
-        Text(verbatim: L("Updated to") + " " + version)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(Color.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .background(DatawatchColors.primary, in: RoundedRectangle(cornerRadius: 8))
-            .padding(8)
     }
 
     private var statusAlpha: Double {

@@ -258,7 +258,6 @@
 "Compute Nodes" = "Compute-Nodes";
 "Compute node" = "Compute-Node";
 "ComputeNodes (multi-select; ordered failover)" = "Compute-Nodes (Mehrfachauswahl; geordnetes Failover)";
-"Config Viewer" = "Konfigurationsansicht";
 "Configure" = "Konfigurieren";
 "Connect a server in Settings to manage automata." = "Verbinde in den Einstellungen einen Server, um Automaten zu verwalten.";
 "Connected" = "Verbunden";

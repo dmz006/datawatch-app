@@ -86,7 +86,6 @@ import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
 import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
-import com.dmzs.datawatchclient.ui.config.ConfigViewerCard
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
@@ -287,7 +286,6 @@ public fun SettingsScreen(
                                 // Pipelines / Autonomous / Orchestrator / Agents →
                                 // Automata tab. Plugins → Plugins tab.
                                 SecurityCard()
-                                ConfigViewerCard()
                                 RawConfigCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,

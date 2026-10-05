@@ -1896,6 +1896,16 @@ public interface TransportClient {
         name: String,
         body: kotlinx.serialization.json.JsonObject,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("putRemoteServerJson"))
+
+    // ---- Scroll-mode exit (2026-10-05) ----
+
+    /**
+     * POST /api/command `{text}` → `{result}` — the same command router the WS
+     * `command` frame reaches (`sendkey <id>: Escape`, `tmux-copy-mode <id>` …),
+     * but acknowledged, so callers can tell when it didn't arrive.
+     */
+    public suspend fun runCommand(text: String): Result<String> =
+        Result.failure(UnsupportedOperationException("runCommand"))
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

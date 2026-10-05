@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 /**
  * Terminal toolbar — exact PWA parity (app.js:1635-1643).
@@ -77,6 +79,39 @@ public class TerminalToolbarState internal constructor(
 
     /** Parity D69a — terminal search bar visible (🔍 toggle). */
     public var searchOpen: Boolean by mutableStateOf(false)
+
+    /**
+     * Sends the copy-mode enter (`true`) / exit (`false`) command and reports
+     * whether the server accepted it. Set by the session screen (REST with WS
+     * fallback); null → WS frame only.
+     */
+    public var scrollCommand: (suspend (enter: Boolean) -> Boolean)? = null
+
+    /** True while an enter/exit command is in flight (ignore repeat taps). */
+    public var scrollBusy: Boolean by mutableStateOf(false)
+
+    /**
+     * Enter/exit scroll mode. The UI only flips once the server confirms, so a
+     * dropped command can't leave tmux in copy-mode behind a live composer
+     * (the "terminal looks hung" case); on failure the strip stays up and ESC
+     * can be tapped again.
+     */
+    public suspend fun setScroll(enter: Boolean) {
+        val id = sessionId ?: return
+        if (scrollBusy) return
+        scrollBusy = true
+        try {
+            val ok =
+                scrollCommand?.invoke(enter)
+                    ?: com.dmzs.datawatchclient.transport.ws.WsOutbound.sendCommand(
+                        id,
+                        if (enter) "tmux-copy-mode $id" else "sendkey $id: Escape",
+                    )
+            if (ok) scrollMode = enter
+        } finally {
+            scrollBusy = false
+        }
+    }
 }
 
 @Composable
@@ -115,6 +150,7 @@ public fun TerminalToolbarControls(
     state: TerminalToolbarState,
     modifier: Modifier = Modifier,
 ) {
+    val scrollScope = rememberCoroutineScope()
     val controller = state.controller
     val sessionId = state.sessionId
     var fontMenuOpen by remember { mutableStateOf(false) }
@@ -172,16 +208,9 @@ public fun TerminalToolbarControls(
             label = if (state.scrollMode) "⏹" else "⤒",
             onClick = {
                 if (sessionId == null) return@TermToolBtn
-                if (state.scrollMode) {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: Escape")
-                } else {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "tmux-copy-mode $sessionId")
-                }
-                state.scrollMode = !state.scrollMode
+                scrollScope.launch { state.setScroll(enter = !state.scrollMode) }
             },
-            enabled = sessionId != null,
+            enabled = sessionId != null && !state.scrollBusy,
             highlight = state.scrollMode,
             scrollIcon = !state.scrollMode,
         )
@@ -200,6 +229,7 @@ public fun TerminalToolbarControls(
  */
 @Composable
 public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
+    val scrollScope = rememberCoroutineScope()
     val sessionId = state.sessionId ?: return
     if (!state.scrollMode) return
     Surface(
@@ -239,11 +269,7 @@ public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
                 label = "ESC / Exit",
                 modifier = Modifier.weight(1f),
                 highlight = true,
-                onClick = {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: Escape")
-                    state.scrollMode = false
-                },
+                onClick = { scrollScope.launch { state.setScroll(enter = false) } },
             )
         }
     }
