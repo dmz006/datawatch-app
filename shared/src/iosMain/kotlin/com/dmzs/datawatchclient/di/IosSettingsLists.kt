@@ -134,6 +134,11 @@ public object IosSettingsLists {
                             val idx = id.toIntOrNull() ?: -1
                             tr.setRoutingRules(cur.rules.filterIndexed { i, _ -> i != idx }).getOrThrow()
                         }
+                    "channel_routing" ->
+                        tr.getChannelRouting().mapCatching { cur ->
+                            val idx: Int = id.toIntOrNull() ?: -1
+                            tr.putChannelRouting(cur.rules.filterIndexed { i, _ -> i != idx }).getOrThrow()
+                        }
                     else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             onDone(msg(r.exceptionOrNull(), "Delete failed."))
@@ -419,7 +424,7 @@ public object IosSettingsLists {
                 }
             "channel_routing" ->
                 tr.getChannelRouting().getOrThrow().rules.mapIndexed { i, r ->
-                    row(i.toString(), r.channelPattern, listOf(r.peerName, r.automataType).filter { it.isNotEmpty() }.joinToString(" · "))
+                    row(i.toString(), r.channelPattern, listOf(r.peerName, r.automataType).filter { it.isNotEmpty() }.joinToString(" · "), canDelete = true)
                 }
             "web_search_providers" ->
                 tr.listWebSearchProviders().getOrThrow().map { w ->

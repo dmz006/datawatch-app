@@ -7,7 +7,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
 | nav | Header title "Observer", no FAB | ✓ app.js:23323 | ~ ObserverScreen TopAppBar title = SingleServerPickerTitle (no "Observer" text) | ✓ HeaderView "Observer" | misaligned | decided D2a | Android header title is the server dropdown; D2a wants title + picker bar |
-| nav | Server picker in header (multi-profile) | ✓ `_injectServerPickerBar` app.js:23721 | ~ SingleServerPickerTitle header dropdown | ~ segmented Picker (ObserverView.profilePicker), not the shared ServerPickerBar | misaligned | decided D2a | PWA has the picker bar here too; both apps should use the picker bar (iOS ServerPickerBar exists for Sessions/Alerts) |
+| nav | Server picker in header (multi-profile) | ✓ `_injectServerPickerBar` app.js:23721 | ~ SingleServerPickerTitle header dropdown | ✓ shared `ServerPickerBar` (D2a) | misaligned | decided D2a | Android still header dropdown; iOS done |
 | nav | Per-card docs link (settingsSectionHeader 3rd arg) | ✓ e.g. `flow/observer-flow.md`, `memory.md` | ✓ per-card "?" link in the shared PwaCard header (PWA defsLink slug), page link kept in TopAppBar | ✓ per-card DocsLinkButton (ObsSection, defsLink slug) | aligned | decided D26a | per D26a · Android 5a209324 |
 | interaction | Collapsible cards with disclosure chevron, state persisted | ✓ `secContent(key)` + localStorage | ✓ PwaCard + PwaCardCollapseStore (theme/PwaCard.kt; PWA keys, default expanded) | ✓ ObsSection + ObserverCollapseStore (UserDefaults) | aligned | decided D27a | per D27a · Android 5a209324 |
 | motion | Chevron rotate on collapse `transition:transform 0.15s` | ✓ app.js:23371 | ✓ PwaCard chevron rotate tween(150) (PwaCard.kt:100) | ✓ chevron.right rotate easeInOut 0.15 s | aligned | decided D27a |  |
@@ -52,7 +52,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | interaction | Peer row tap → compute node / peer detail | ✗ (snapshot modal instead) | ✗ (PeerResourcesCard rows no longer clickable) | ✗ | aligned | decided D55a | per D55a — no client navigates; snapshot modal instead |
 | element | Observer peers block: filter pills with counts (all/free/attached…) | ✓ All/Agents/Standalone/Cluster with counts, cs_peer_filter (app.js:20221–20240) | ~ FilterChip All/Standalone/Cluster/Agents, no counts (FederatedPeersCard.kt:170) | ✓ All/Agents/Standalone/Cluster + counts, cs_peer_filter | misaligned |  | Android pills lack counts and PWA order |
 | interaction | Group-by-compute-node toggle | ✓ togglePeerGroupByNode | ✓ peer_group_by_node | ✓ meta-peers buckets | aligned | | |
-| interaction | "Cross-host view" button → showCrossHostView() | ✓ app.js:20061 | ✓ ↔ Cross-host view dialog (`/api/observer/envelopes/all-peers`, 🔗 cross tags) | ✗ | ios-missing |  | Android FederatedPeersCard CrossHostDialog; iOS missing |
+| interaction | "Cross-host view" button → showCrossHostView() | ✓ app.js:20061 | ✓ ↔ Cross-host view dialog (`/api/observer/envelopes/all-peers`, 🔗 cross tags) | ✓ ↔ Cross-host view pill → CrossHostSheet (by peer, listen / outbound, 🔗 cross callers) | aligned |  | |
 | interaction | 📊 Snapshot button → showObserverPeerSnapshot modal | ✓ | ✗ no snapshot action (row has × remove only) | ✓ PeerSnapshotSheet (envelopes; no per-envelope process drill-down) | android-missing | decided D55a | Android needs 📊 snapshot modal |
 | interaction | × Remove peer (rotates token) with confirm | ✓ removeObserverPeer | ✓ × with confirm → removeObserverPeer (FederatedPeersCard.kt:278) | ✓ alert confirm | aligned | decided D55a |  |
 | element | Peer dot colors by last push: green <15 s / amber <60 s / red ≥60 s / grey never | ✓ | ✓ FederatedPeersCard Canvas + relative age (v1.23.4) | ✓ | aligned | | |
@@ -105,14 +105,14 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | **7.10 Federated Peers (bottom card)** | | | | | | | |
 | element | Stats row pills (`/api/observer/stats`) + Config table (`/api/observer/config`) + peer list; "live" dot, 8 s | ✓ renderObserverPeersCard app.js:23712 | ✓ FederatedPeersCard 8 s (monitoring) | ✓ ObserverFederatedPeersCard 8 s | aligned | | |
 | element | Federation peers (server-to-server) list: enabled dot, URL, capability group badge, Test / Delete | ✓ Settings › Comms (loadFederationPeersPanel app.js:23776) | ✓ Settings FederationPeersCard (SettingsScreen.kt:353) | ✓ Settings list fed_peers (SettingsCatalog.swift:238) | aligned |  | all three host it in Settings (07); iOS row fields (unverified) |
-| interaction | Test peer → toast; Delete peer → confirm | ✓ | ✓ FederationPeersCard | ~ delete only, no Test (IosSettingsLists.kt:118) | ios-missing |  | iOS lacks Test peer; Android Test (unverified) |
+| interaction | Test peer → toast; Delete peer → confirm | ✓ | ✓ FederationPeersCard | ✓ Settings fed_peers row action Test (OK — latency (version) / FAIL: error) + swipe delete w/ confirm | aligned |  | Android Test (unverified) |
 | **iOS-only today** | | | | | | | |
 | element | 2×3 metric tiles with icon + value + 4 px bar | ✗ | ✗ | ✗ removed (D30a) | aligned | decided D30a | per D30a |
 | element | "Updated Xs ago" line | ✗ | ✗ | ✗ removed | aligned | decided D30a | per D30a |
 | string | Empty copy "Add a server in Settings to monitor metrics." | n/a | "No enabled server. Add or enable one in Settings." | ✓ | misaligned |  | no PWA string; unify app copy (D35a spirit) |
 
 ## Coverage
-rows: 93 · aligned: 55 · ios-missing: 2 · android-missing: 8 · pwa-missing: 4 · misaligned: 23 · n/a: 1
+rows: 93 · aligned: 57 · ios-missing: 0 · android-missing: 8 · pwa-missing: 4 · misaligned: 23 · n/a: 1
 
 ## Decisions (resolved 2026-10-04)
 1. Docs links → D26a: per-card docs links on both apps.
