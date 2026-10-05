@@ -1799,6 +1799,16 @@ public interface TransportClient {
     /** DELETE /api/queue/{id}. */
     public suspend fun deleteQueueItem(id: String): Result<Unit> =
         Result.failure(UnsupportedOperationException("deleteQueueItem"))
+
+    // ---- iOS session-detail parity (D43a) ----
+
+    /**
+     * GET /api/sessions/response?id=<id> — the session's last captured response,
+     * fetched fresh (PWA `showResponseViewer`, BL178: the cached copy can be stale).
+     * Returns the `response` field ("" when none was captured).
+     */
+    public suspend fun fetchSessionResponse(sessionId: String): Result<String> =
+        Result.failure(UnsupportedOperationException("fetchSessionResponse"))
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

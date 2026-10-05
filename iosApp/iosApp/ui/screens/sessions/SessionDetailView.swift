@@ -3,44 +3,50 @@ import PhotosUI
 import AVFoundation
 import DatawatchShared
 
-/// Detail screen for a single session — shows the live terminal plus metadata bar.
+/// Detail screen for a single session — PWA `renderSessionDetail`:
+/// info bar (badges · state pill · last activity · ■ Stop / ↻ Restart / 🗑 Delete
+/// · 🕑 timeline · 📄 response), pending-schedules strip, channel connection
+/// banner, inline process stats, output tabs (with the Aa▾ font menu), the
+/// terminal / chat / channel / status panes, saved-commands row and composer.
+///
+/// `session` is the snapshot the caller navigated with; `cur` is refreshed
+/// every 10 s (and after Stop / Restart) so state-dependent controls follow
+/// the live session. The terminal keeps the original snapshot (stable socket).
 struct SessionDetailView: View {
     let session: DwSession
     let profile: ServerProfile
 
-    @State private var isKilling = false
-    @State private var killError: String? = nil
-    @State private var showKillConfirm = false
+    @State private var live: DwSession? = nil
+    @State private var isStopping = false
+    @State private var showStopConfirm = false
     @State private var isRestarting = false
     @State private var showDeleteSheet = false
     @State private var showTimeline = false
     @State private var stateOverrideLabel: String? = nil
     @State private var overridingState = false
-    @State private var isDeleting = false
     @State private var showRenameDialog = false
     @State private var renameText: String = ""
-    @State private var showLastResponse = false
+    @State private var renamedTo: String? = nil
+    @State private var showResponse = false
     @State private var replyText: String = ""
     @State private var termFontSize: Int = UserDefaults.standard.integer(forKey: "dw.terminal.font_size_px").nonZero ?? 9
-    @State private var messagingBackend: String? = nil
     @State private var terminalInput: String? = nil
     @State private var whisperEnabled = false
     @State private var voiceRecorder: VoiceRecorder? = nil
     @State private var isTranscribing = false
-    /// Transient composer note (PWA toast stand-in until D41): text + isWarning.
+    /// Inline composer note (transcription result): text + isWarning.
     @State private var composerNote: (String, Bool)? = nil
     @State private var recordingPulse = false
     @Environment(\.dismiss) private var dismiss
-    /// PWA output tab bar: "tmux" (terminal) or "status".
+    /// PWA output tab: "tmux" (terminal / chat), "channel" or "status".
     @State private var detailTab = "tmux"
     /// D67a: last-used output tab persists across sessions (Android chat_mode pref).
     @AppStorage("dw.session.detail.tab") private var savedDetailTab = "tmux"
     /// D61a watch toggle.
     @ObservedObject private var localPrefs = LocalSessionPrefs.shared
-    /// D67a rate-limit notice + hooks-installed toast.
+    /// D67a rate-limit notice.
     @State private var rateLimitShown = false
     @State private var rateRetryAt: Date? = nil
-    @State private var toast: String? = nil
     /// D69a terminal search / copy strip.
     @State private var showSearch = false
     /// Status tab sub-tabs (PWA switchStatusSubtab): "status" | "stats".
@@ -49,112 +55,58 @@ struct SessionDetailView: View {
     /// PWA scroll mode (tmux copy-mode): the scroll strip replaces the input bar.
     @State private var scrollMode = false
     @State private var showSchedule = false
+    @State private var scheduleReload = 0
     @State private var photoItem: PhotosPickerItem? = nil
     /// nil = idle; "uploading" or "✓ <name>" for the composer banner (PWA _composerBanner).
     @State private var imageBanner: String? = nil
+    /// PWA dismissConnBanner — "use tmux only".
+    @State private var connBannerDismissed = false
+
+    /// Live copy of the session (falls back to the navigation snapshot).
+    private var cur: DwSession { live ?? session }
 
     var body: some View {
         ZStack {
             DatawatchColors.background.ignoresSafeArea()
-
             VStack(spacing: 0) {
-                metadataBar
-                detailTabBar
-                if rateLimitShown && !isTerminalState {
+                infoBar
+                PendingSchedulesStrip(profile: profile, session: session, reloadToken: scheduleReload)
+                if showConnBanner {
+                    ChannelConnectionBanner(mode: sessionMode, waiting: isWaiting) { connBannerDismissed = true }
+                }
+                if !isDone { InlineProcessStatsBar(profile: profile, session: session) }
+                if !isChatMode { detailTabBar }
+                if rateLimitShown && !isDone {
                     RateLimitNotice(retryAt: rateRetryAt) { rateLimitShown = false }
                 }
-                if detailTab == "tmux" && !isChatMode { terminalFontBar }
                 if showSearch && detailTab == "tmux" && !isChatMode {
                     TerminalSearchBar(controller: terminal) { showSearch = false }
                 }
-                ZStack {
-                    if isChatMode {
-                        ChatTranscriptView(profile: profile, session: session)
-                            .opacity(detailTab == "tmux" ? 1 : 0)
-                            .allowsHitTesting(detailTab == "tmux")
-                    } else {
-                    // Kept mounted while Status is shown so the session socket stays open.
-                    TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput, controller: terminal)
-                        .ignoresSafeArea(edges: .bottom)
-                        .opacity(detailTab == "tmux" ? 1 : 0)
-                        .allowsHitTesting(detailTab == "tmux")
-                    }
-                    if detailTab == "channel" {
-                        ChannelTabView(profile: profile, session: session)
-                    }
-                    if detailTab == "status" {
-                        VStack(spacing: 0) {
-                            statusSubtabStrip
-                            if statusSubtab == "stats" {
-                                SessionStatsView(profile: profile, session: session)
-                            } else {
-                                SessionStatusView(profile: profile, session: session)
-                            }
-                        }
-                        .background(DatawatchColors.background)
-                    }
-                }
-                if isTerminalState {
-                    terminalActionBar
-                } else if scrollMode && detailTab == "tmux" {
-                    scrollStrip
-                } else {
-                    composerBar
-                }
+                outputPanes
+                bottomBar
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Button {
-                    renameText = sessionTitle
-                    showRenameDialog = true
-                } label: {
-                    Text(sessionTitle)
-                        .font(DatawatchFonts.titleMedium)
-                        .foregroundStyle(DatawatchColors.onSurface)
-                        .lineLimit(1)
-                }
-                .accessibilityLabel("Rename session")
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 4) {
-                    Button { showTimeline = true } label: {
-                        Image(systemName: "clock")
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    }
-                    .accessibilityLabel("Timeline")
-                    watchButton
-                    DocsLinkButton(profile: profile, anchor: "sessions")
-                    if let resp = session.lastResponse, !resp.isEmpty {
-                        Button { showLastResponse = true } label: {
-                            Image(systemName: "doc.text")
-                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                        }
-                        .accessibilityLabel("View last response")
-                    }
-                    killButton
-                }
-            }
-        }
-        .alert("Kill session?", isPresented: $showKillConfirm) {
-            Button("Kill", role: .destructive) { performKill() }
+        .toolbar { toolbarContent }
+        // PWA view-full: no bottom nav inside a session.
+        .toolbar(.hidden, for: .tabBar)
+        .alert("Stop session?", isPresented: $showStopConfirm) {
+            Button("Stop", role: .destructive) { performStop() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This stops the tmux session on the server. The session cannot be resumed (a new session would need to be started).")
+            Text("This stops the session on the server. It can be restarted later with the same task.")
         }
         .sheet(isPresented: $showDeleteSheet) {
-            SessionDeleteSheet(profile: profile, session: session) { dismiss() }
+            SessionDeleteSheet(profile: profile, session: cur) { dismiss() }
         }
-        .sheet(isPresented: $showSchedule) {
+        .sheet(isPresented: $showSchedule, onDismiss: { scheduleReload += 1 }) {
             ScheduleInputSheet(profile: profile, session: session, prefill: replyText)
-        }
-        .onChange(of: photoItem) { item in
-            guard let item else { return }
-            attachImage(item)
         }
         .sheet(isPresented: $showTimeline) {
             SessionTimelineSheet(profile: profile, session: session)
+        }
+        .sheet(isPresented: $showResponse) {
+            SessionResponseSheet(profile: profile, session: cur) { showResponse = false }
         }
         .alert("Rename session", isPresented: $showRenameDialog) {
             TextField("Display name", text: $renameText)
@@ -162,43 +114,73 @@ struct SessionDetailView: View {
             Button("Save") { performRename() }
             Button("Cancel", role: .cancel) {}
         }
-        .sheet(isPresented: $showLastResponse) {
-            LastResponseSheet(session: session, onDismiss: { showLastResponse = false })
+        .onChange(of: photoItem) { item in
+            guard let item else { return }
+            attachImage(item)
         }
-        .overlay(alignment: .top) {
-            VStack(spacing: 6) {
-                if let errorMsg = killError {
-                    Text(errorMsg)
-                        .font(DatawatchFonts.labelSmall)
-                        .foregroundStyle(DatawatchColors.error)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(DatawatchColors.surface)
-                        .cornerRadius(8)
-                        .padding(.top, 8)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .onTapGesture { killError = nil }
-                }
-                if let toast { SessionToast(text: toast).onTapGesture { self.toast = nil } }
-            }
-        }
-        .animation(.easeInOut, value: killError)
-        .animation(.easeInOut, value: toast)
         .onChange(of: detailTab) { tab in savedDetailTab = tab }
-        .onAppear {
-            applyDetailExtras()
-            terminal.onAutoFontSize = { px in termFontSize = px }
-            terminal.setMinCols(TerminalController.defaultMinCols(backend: session.backend))
-            fetchMessagingBackend()
-            IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
-                DispatchQueue.main.async { self.whisperEnabled = enabled.boolValue }
+        .onAppear(perform: onAppear)
+        .onDisappear {
+            LocalAlertWatcher.shared.foregroundSessionId = nil
+            ShellRestore.setOpenSession(profileId: nil, sessionId: nil)
+        }
+        .task { await refreshLoop() }
+        .overlay {
+            if voiceRecorder != nil { recordingOverlay }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Button {
+                renameText = sessionTitle
+                showRenameDialog = true
+            } label: {
+                Text(sessionTitle)
+                    .font(DatawatchFonts.titleMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .lineLimit(1)
+            }
+            .accessibilityLabel("Rename session")
+        }
+        ToolbarItem(placement: .navigationBarTrailing) {
+            HStack(spacing: 4) {
+                watchButton
+                DocsLinkButton(profile: profile, anchor: "sessions")
+                AlertsBellButton()
+                // D46b: the global status dot is the disconnect indicator (no overlay).
+                ReachabilityDotView(profile: profile)
             }
         }
-        // Recording overlay — shown while mic is active.
-        .overlay {
-            if voiceRecorder != nil {
-                recordingOverlay
-            }
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+
+    private func onAppear() {
+        applyDetailExtras()
+        terminal.onAutoFontSize = { px in termFontSize = px }
+        terminal.setMinCols(TerminalController.defaultMinCols(backend: session.backend))
+        IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
+            DispatchQueue.main.async { self.whisperEnabled = enabled.boolValue }
+        }
+        LocalAlertWatcher.shared.foregroundSessionId = session.id
+        ShellRestore.setOpenSession(profileId: profile.id, sessionId: session.id)
+    }
+
+    /// Keeps `cur` fresh while the screen is up (cancelled on disappear).
+    private func refreshLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 10_000_000_000)
+            await refreshSession()
+        }
+    }
+
+    private func refreshSession() async {
+        guard let list = try? await ServiceLocatorAsync.listSessions(profile: profile) else { return }
+        if let s = list.first(where: { $0.id == session.id || $0.fullId == session.fullId }) {
+            live = s
+            stateOverrideLabel = nil
         }
     }
 
@@ -231,72 +213,77 @@ struct SessionDetailView: View {
                 rateLimitShown = true
             }
         }
-        // One-time hooks-installed toast for claude-code sessions (Android SDS:275).
+        // One-time hooks-installed note for claude-code sessions (Android SDS:275) → dock (D41a).
         let key = "dw.session.hook_toast." + session.id
         if (session.backend ?? "").lowercased() == "claude-code" && !UserDefaults.standard.bool(forKey: key) {
             UserDefaults.standard.set(true, forKey: key)
             let path: String = session.taskSummary.map { String($0.prefix(30)) } ?? String(session.id.prefix(8))
-            toast = String(format: L("Hooks installed in %@/.claude/"), path)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { toast = nil }
+            AlertDock.shared.post(String(format: L("Hooks installed in %@/.claude/"), path), level: .info)
         }
     }
 
-    private func fetchMessagingBackend() {
-        IosServiceLocator.shared.fetchServerInfo(
-            profile: profile,
-            onSuccess: { info in
-                DispatchQueue.main.async {
-                    let mb = info.messagingBackend ?? "tmux"
-                    let normalized = mb.lowercased()
-                    if !["tmux", "", "none"].contains(normalized) {
-                        self.messagingBackend = normalized
-                    }
-                }
-            },
-            onError: { _ in }
-        )
-    }
+    // ── Info bar (PWA session-info-bar) ───────────────────────────────────
 
-    // ── Metadata bar ──────────────────────────────────────────────────────
-
-    @ViewBuilder
-    private var metadataBar: some View {
-        let hasMetadata = session.backend != nil ||
-            session.llmRef != nil ||
-            session.computeNodeRef != nil ||
-            session.agentId != nil ||
-            session.chrome ||
-            messagingBackend != nil
-        if hasMetadata {
+    private var infoBar: some View {
+        VStack(spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    if let backend = session.backend, !backend.isEmpty {
-                        metaBadge(backend.lowercased(), color: DatawatchColors.primary)
+                    infoBadges
+                    stateMenu
+                    if !isDone {
+                        LastActivityIndicator(since: cur.lastActivityAt.toEpochMilliseconds())
                     }
-                    if let llm = session.llmRef, !llm.isEmpty {
-                        metaBadge("⚡ \(llm)", color: DatawatchColors.success)
-                    }
-                    if let node = session.computeNodeRef, !node.isEmpty {
-                        metaBadge("⚙ \(node)", color: DatawatchColors.secondary)
-                    }
-                    if let mb = messagingBackend {
-                        metaBadge(mb, color: DatawatchColors.secondary)
-                    }
-                    if let agentId = session.agentId {
-                        metaBadge("⬡ \(agentId)", color: DatawatchColors.secondary)
-                    }
-                    if session.chrome {
-                        metaBadge("Chrome", color: DatawatchColors.primary)
-                    }
-                    if !isTerminalState {
-                        LastActivityIndicator(since: session.lastActivityAt.toEpochMilliseconds())
-                    }
+                    SessionActionButtons(
+                        isDone: isDone,
+                        busy: isStopping || isRestarting,
+                        onStop: { showStopConfirm = true },
+                        onRestart: performRestart,
+                        onDelete: { showDeleteSheet = true }
+                    )
+                    infoIcon("🕑", label: "Timeline") { showTimeline = true }
+                    // D43a: always offered; the viewer fetches fresh.
+                    infoIcon("📄", label: "View last response") { showResponse = true }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
             }
             .background(DatawatchColors.surface)
             Divider().background(DatawatchColors.border)
+        }
+    }
+
+    @ViewBuilder
+    private var infoBadges: some View {
+        if let llm = cur.llmRef, !llm.isEmpty {
+            metaBadge("⚡ \(llm)", color: DatawatchColors.success)
+        } else if let backend = cur.backend, !backend.isEmpty {
+            metaBadge(backend.lowercased(), color: DatawatchColors.onSurfaceMuted)
+        }
+        if let node = cur.computeNodeRef, !node.isEmpty {
+            metaBadge("⚙ \(node)", color: DatawatchColors.secondary)
+        }
+        // D17a: the mode badge shows only for plain tmux sessions (the tab strip
+        // already conveys channel / acp / chat).
+        if sessionMode == "tmux" && !isChatMode {
+            metaBadge("tmux", color: DatawatchColors.primary)
+        }
+        if let agentId = cur.agentId {
+            metaBadge("⬡ \(agentId)", color: DatawatchColors.secondary)
+        }
+        if cur.chrome {
+            metaBadge("Chrome", color: DatawatchColors.primary)
+        }
+        if let parent = cur.parentId, !parent.isEmpty {
+            Button {
+                NotificationCenter.default.post(
+                    name: .deepLinkSession, object: nil,
+                    userInfo: ["id": parent, "profileId": profile.id]
+                )
+            } label: {
+                metaBadge("↑ " + L("parent"), color: DatawatchColors.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open parent session")
         }
     }
 
@@ -310,22 +297,44 @@ struct SessionDetailView: View {
             .clipShape(Capsule())
     }
 
-    // ── Terminal state ────────────────────────────────────────────────────
-
-    private var isTerminalState: Bool {
-        session.state == .completed || session.state == .killed || session.state == .error
+    private func infoIcon(_ glyph: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(glyph)
+                .font(DatawatchFonts.bodyMedium)
+                .frame(minWidth: 32, minHeight: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L(label))
     }
+
+    // ── Session flags ─────────────────────────────────────────────────────
+
+    private var isDone: Bool {
+        cur.state == .completed || cur.state == .killed || cur.state == .error
+    }
+
+    private var isWaiting: Bool { cur.state == .waiting }
 
     /// PWA: chat-transcript sessions (OpenWebUI / Ollama) render bubbles, not a terminal.
     private var isChatMode: Bool { session.outputMode == "chat" }
 
-    /// PWA getSessionMode: claude / claude-code sessions run in channel mode.
-    private var isChannelMode: Bool {
-        let b = (session.backend ?? "").lowercased()
-        return b == "claude" || b == "claude-code"
+    /// PWA getSessionMode: tmux | channel | acp.
+    private var sessionMode: String { SessionMode.of(session) }
+
+    private var isChannelMode: Bool { sessionMode == "channel" }
+
+    /// PWA: the input bar only shows while active and input_mode != none.
+    private var inputAllowed: Bool {
+        !isDone && (cur.inputMode ?? "tmux").lowercased() != "none"
     }
 
-    /// PWA output tabs: Tmux|Chat · Channel (channel mode only) · Status.
+    private var showConnBanner: Bool {
+        !isDone && !connBannerDismissed && !cur.channelReady && (sessionMode == "channel" || sessionMode == "acp")
+    }
+
+    /// PWA output tabs: Tmux · Channel (channel mode only) · Status. Chat-only
+    /// sessions have no tab bar.
     private var detailTabs: [(String, String)] {
         var tabs = [("tmux", isChatMode ? "Chat" : "Tmux")]
         if isChannelMode { tabs.append(("channel", "Channel")) }
@@ -333,30 +342,66 @@ struct SessionDetailView: View {
         return tabs
     }
 
-    // ── Output tab bar (PWA: Tmux · Status) ──────────────────────────────
+    // ── Output tab bar (PWA output-tabs, fontCtrl on the right) ───────────
 
     private var detailTabBar: some View {
         HStack(spacing: 0) {
             ForEach(detailTabs, id: \.0) { tab in
-                Button {
-                    detailTab = tab.0
-                } label: {
-                    VStack(spacing: 4) {
-                        Text(L(tab.1))
-                            .font(DatawatchFonts.badge)
-                            .foregroundStyle(detailTab == tab.0 ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
-                        Rectangle()
-                            .fill(detailTab == tab.0 ? DatawatchColors.primary : Color.clear)
-                            .frame(height: 2)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 6)
-                }
-                .accessibilityAddTraits(detailTab == tab.0 ? .isSelected : [])
+                tabButton(tab.0, title: tab.1)
             }
+            Spacer(minLength: 4)
+            if detailTab == "tmux" { terminalTools }
         }
         .background(DatawatchColors.surface)
         .overlay(Divider().background(DatawatchColors.border), alignment: .bottom)
+    }
+
+    private func tabButton(_ id: String, title: String) -> some View {
+        Button {
+            detailTab = id
+        } label: {
+            VStack(spacing: 4) {
+                Text(L(title))
+                    .font(DatawatchFonts.badge)
+                    .foregroundStyle(detailTab == id ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                Rectangle()
+                    .fill(detailTab == id ? DatawatchColors.primary : Color.clear)
+                    .frame(height: 2)
+            }
+            .fixedSize()
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+        }
+        .accessibilityAddTraits(detailTab == id ? .isSelected : [])
+    }
+
+    /// D20a Aa▾ font menu + D69a search + scroll mode.
+    private var terminalTools: some View {
+        HStack(spacing: 0) {
+            TerminalFontMenu(size: $termFontSize) { terminal.fitToWidth() }
+            Button {
+                showSearch.toggle()
+                if !showSearch { terminal.clearSearch() }
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(showSearch ? DatawatchColors.primary : DatawatchColors.onSurface)
+                    .frame(minWidth: 40, minHeight: 40)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel(showSearch ? "Close search" : "Search terminal")
+            if !isDone {
+                Button(action: toggleScrollMode) {
+                    Text(scrollMode ? "⏹" : "⤒")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(scrollMode ? DatawatchColors.warning : DatawatchColors.onSurface)
+                        .frame(minWidth: 40, minHeight: 40)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(scrollMode ? "Exit scroll mode" : "Scroll mode")
+            }
+        }
+        .padding(.trailing, 4)
     }
 
     private var statusSubtabStrip: some View {
@@ -382,6 +427,47 @@ struct SessionDetailView: View {
         .padding(.top, 6)
     }
 
+    // ── Output panes ──────────────────────────────────────────────────────
+
+    private var outputPanes: some View {
+        ZStack {
+            if isChatMode {
+                ChatTranscriptView(profile: profile, session: session)
+                    .opacity(detailTab == "tmux" ? 1 : 0)
+                    .allowsHitTesting(detailTab == "tmux")
+            } else {
+                // Kept mounted while other tabs show so the session socket stays open.
+                TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput, controller: terminal)
+                    .ignoresSafeArea(edges: .bottom)
+                    .opacity(detailTab == "tmux" ? 1 : 0)
+                    .allowsHitTesting(detailTab == "tmux")
+            }
+            if detailTab == "channel" {
+                ChannelTabView(profile: profile, session: session)
+            }
+            if detailTab == "status" {
+                VStack(spacing: 0) {
+                    statusSubtabStrip
+                    if statusSubtab == "stats" {
+                        SessionStatsView(profile: profile, session: session)
+                    } else {
+                        SessionStatusView(profile: profile, session: session)
+                    }
+                }
+                .background(DatawatchColors.background)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var bottomBar: some View {
+        if scrollMode && detailTab == "tmux" && !isDone {
+            scrollStrip
+        } else if inputAllowed {
+            composerBar
+        }
+    }
+
     // ── Image attach (PWA sessionImageInput → [image:<path>]) ─────────────
 
     private func attachImage(_ item: PhotosPickerItem) {
@@ -389,7 +475,11 @@ struct SessionDetailView: View {
         Task {
             guard let raw = try? await item.loadTransferable(type: Data.self),
                   let jpeg = UIImage(data: raw)?.jpegData(compressionQuality: 0.85) else {
-                await MainActor.run { imageBanner = nil; killError = "Couldn't read that image."; photoItem = nil }
+                await MainActor.run {
+                    imageBanner = nil
+                    photoItem = nil
+                    AlertDock.shared.post(L("Couldn't read that image."), level: .error)
+                }
                 return
             }
             let name = "photo_\(Int(Date().timeIntervalSince1970)).jpg"
@@ -404,41 +494,14 @@ struct SessionDetailView: View {
                     }
                 },
                 onError: { msg in
-                    DispatchQueue.main.async { imageBanner = nil; killError = msg; photoItem = nil }
+                    DispatchQueue.main.async {
+                        imageBanner = nil
+                        photoItem = nil
+                        AlertDock.shared.post(msg, level: .error)
+                    }
                 }
             )
         }
-    }
-
-    // ── Keys strip (PWA: ␛ · ↑ ↓ ← → · ⏎, right-aligned) ────────────────
-
-    private var keysStrip: some View {
-        HStack(spacing: 6) {
-            Spacer()
-            keyButton("␛", key: "Escape", label: "Escape")
-            Text("·").foregroundStyle(DatawatchColors.onSurfaceMuted)
-            keyButton("↑", key: "Up", label: "Arrow up")
-            keyButton("↓", key: "Down", label: "Arrow down")
-            keyButton("←", key: "Left", label: "Arrow left")
-            keyButton("→", key: "Right", label: "Arrow right")
-            Text("·").foregroundStyle(DatawatchColors.onSurfaceMuted)
-            keyButton("⏎", key: "Enter", label: "Enter")
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
-    }
-
-    private func keyButton(_ glyph: String, key: String, label: String) -> some View {
-        Button {
-            _ = IosSessionOps.shared.sendKey(session: session, key: key)
-        } label: {
-            Text(glyph)
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                .foregroundStyle(DatawatchColors.onSurface)
-                .frame(minWidth: 34, minHeight: 30)
-                .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 6))
-        }
-        .accessibilityLabel(label)
     }
 
     // ── Scroll mode (PWA toggleScrollMode / scrollPage / exitScrollMode) ─
@@ -485,7 +548,7 @@ struct SessionDetailView: View {
         }
     }
 
-    // ── State badge → state override (PWA showStateOverride) ─────────────
+    // ── State pill → state override (PWA showStateOverride) ──────────────
 
     private static let overrideStates: [(wire: String, label: String)] = [
         ("running", "Running"), ("waiting_input", "Waiting input"), ("complete", "Complete"),
@@ -494,7 +557,7 @@ struct SessionDetailView: View {
 
     private var currentStateLabel: String {
         if let o = stateOverrideLabel { return o }
-        switch session.state {
+        switch cur.state {
         case .running: return "Running"
         case .waiting: return "Waiting input"
         case .rateLimited: return "Rate limited"
@@ -509,13 +572,13 @@ struct SessionDetailView: View {
         Menu {
             Section("Set state") {
                 ForEach(Self.overrideStates, id: \.wire) { st in
-                    Button(st.label) { overrideState(st.wire, label: st.label) }
+                    Button(L(st.label)) { overrideState(st.wire, label: st.label) }
                 }
             }
         } label: {
             HStack(spacing: 4) {
                 if overridingState { ProgressView().controlSize(.mini) }
-                Text(currentStateLabel.uppercased())
+                Text(L(currentStateLabel).uppercased())
                     .font(DatawatchFonts.badge)
                 Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
             }
@@ -538,110 +601,32 @@ struct SessionDetailView: View {
                 DispatchQueue.main.async {
                     overridingState = false
                     stateOverrideLabel = label
+                    AlertDock.shared.post(String(format: L("State set to %@"), wire), level: .success)
                 }
             },
             onError: { msg in
                 DispatchQueue.main.async {
                     overridingState = false
-                    killError = msg
+                    AlertDock.shared.post(msg, level: .error)
                 }
             }
         )
     }
 
-    // ── Terminal font-size toolbar (PWA Aa▾ parity) ───────────────────────
-
-    private var terminalFontBar: some View {
-        HStack(spacing: 0) {
-            stateMenu
-                .padding(.leading, 12)
-            Spacer()
-            Button {
-                if termFontSize > 5 {
-                    termFontSize -= 1
-                    UserDefaults.standard.set(termFontSize, forKey: "dw.terminal.font_size_px")
-                }
-            } label: {
-                Text("A−")
-                    .font(.system(.caption, design: .monospaced).weight(.medium))
-                    .foregroundStyle(termFontSize > 5 ? DatawatchColors.onSurface : DatawatchColors.onSurfaceMuted)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .disabled(termFontSize <= 5)
-            .accessibilityLabel("Decrease font size")
-
-            Text("\(termFontSize)px")
-                .font(.system(.caption2, design: .monospaced))
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                .padding(.horizontal, 4)
-
-            Button {
-                if termFontSize < 20 {
-                    termFontSize += 1
-                    UserDefaults.standard.set(termFontSize, forKey: "dw.terminal.font_size_px")
-                }
-            } label: {
-                Text("A+")
-                    .font(.system(.caption, design: .monospaced).weight(.medium))
-                    .foregroundStyle(termFontSize < 20 ? DatawatchColors.onSurface : DatawatchColors.onSurfaceMuted)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .disabled(termFontSize >= 20)
-            .accessibilityLabel("Increase font size")
-
-            Button {
-                terminal.fitToWidth()
-            } label: {
-                Text("Fit")
-                    .font(.system(.caption, design: .monospaced).weight(.medium))
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel("Fit terminal to width")
-
-            // D69a: search within the terminal buffer + copy selection / visible text.
-            Button {
-                showSearch.toggle()
-                if !showSearch { terminal.clearSearch() }
-            } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(showSearch ? DatawatchColors.primary : DatawatchColors.onSurface)
-                    .frame(minWidth: 40, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel(showSearch ? "Close search" : "Search terminal")
-
-            if !isTerminalState {
-                Button {
-                    toggleScrollMode()
-                } label: {
-                    Text(scrollMode ? "⏹" : "⤒")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(scrollMode ? DatawatchColors.warning : DatawatchColors.onSurface)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel(scrollMode ? "Exit scroll mode" : "Scroll mode")
-            }
-        }
-        .background(DatawatchColors.surface)
-        .overlay(Divider().background(DatawatchColors.border), alignment: .bottom)
-    }
-
-    // ── Composer bar (active sessions) ───────────────────────────────────
-
-    private var isWaiting: Bool { session.state == .waiting }
+    // ── Composer bar (active sessions, input_mode != none) ────────────────
 
     /// PWA input placeholder rule (app.js input_ph_*).
     private var composerPlaceholder: String {
         if isTranscribing { return "Transcribing…" }
         if isWaiting { return "Type your response…" }
-        if session.isChatMode || session.inputMode == "channel" { return "Send message…" }
+        if session.isChatMode || sessionMode == "channel" { return "Send message…" }
         return "Send command or input…"
+    }
+
+    /// PWA `▶ ch`: on the Channel tab (channel mode, not waiting) the composer
+    /// sends via POST /api/channel/send instead of tmux.
+    private var sendsViaChannel: Bool {
+        isChannelMode && detailTab == "channel" && !isWaiting
     }
 
     private func flashComposerNote(_ text: String, warning: Bool, seconds: Double) {
@@ -654,210 +639,164 @@ struct SessionDetailView: View {
     private var composerBar: some View {
         VStack(spacing: 0) {
             if isWaiting {
-                Rectangle()
-                    .fill(DatawatchColors.waiting)
-                    .frame(height: 2)
+                Rectangle().fill(DatawatchColors.waiting).frame(height: 2)
             } else {
                 Divider().background(DatawatchColors.border)
             }
             if isChatMode && detailTab == "tmux" {
                 ChatMemoryCmdBar { prefix in replyText = prefix }
             }
-            keysStrip
-            if isTranscribing {
-                // PWA _composerBanner('Transcribing voice message…').
-                HStack(spacing: 6) {
-                    ProgressView().controlSize(.mini).tint(DatawatchColors.onSurfaceMuted)
-                    Text("Transcribing voice message…")
-                        .font(DatawatchFonts.labelSmall)
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.top, 4)
-            } else if let note = composerNote {
-                Text(note.0)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(note.1 ? DatawatchColors.warning : DatawatchColors.success)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 4)
+            // D21b: Commands… dropdown + custom input, hold-to-repeat arrows.
+            SavedCommandsRow(profile: profile, session: session) { _ in
+                LocalAlertWatcher.shared.onReplied(sessionId: session.id)
             }
-            if let banner = imageBanner {
-                Text(banner == "uploading" ? "Uploading image…" : banner)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(banner == "uploading" ? DatawatchColors.warning : DatawatchColors.success)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 4)
-            }
-            HStack(spacing: 8) {
-                Button {
-                    showSchedule = true
-                } label: {
-                    Image(systemName: "clock.badge")
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                }
-                .accessibilityLabel("Schedule input")
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Image(systemName: "camera")
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                }
-                .disabled(imageBanner == "uploading")
-                .accessibilityLabel("Attach image")
-                TextField(L(composerPlaceholder), text: $replyText)
-                    .disabled(isTranscribing)
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(isWaiting ? DatawatchColors.waiting.opacity(0.08) : DatawatchColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                if whisperEnabled {
-                    if isTranscribing {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(DatawatchColors.onSurfaceMuted)
-                    } else {
-                        Button {
-                            startRecording()
-                        } label: {
-                            Image(systemName: "mic")
-                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                        }
-                        .accessibilityLabel("Record voice message")
-                    }
-                }
-                Button {
-                    sendReply()
-                } label: {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundStyle(replyText.isEmpty ? DatawatchColors.onSurfaceMuted : (isWaiting ? DatawatchColors.waiting : DatawatchColors.primary))
-                }
-                .disabled(replyText.isEmpty)
-                .accessibilityLabel("Send reply")
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(DatawatchColors.background)
+            composerNotes
+            composerInputRow
         }
     }
 
-    // ── Terminal action bar (completed / killed / error sessions) ─────────
-
-    private var terminalActionBar: some View {
-        VStack(spacing: 0) {
-            Divider().background(DatawatchColors.border)
-            HStack(spacing: 12) {
-                Button {
-                    performRestart()
-                } label: {
-                    HStack(spacing: 4) {
-                        if isRestarting {
-                            ProgressView().controlSize(.small).tint(DatawatchColors.primary)
-                        } else {
-                            Image(systemName: "arrow.counterclockwise")
-                        }
-                        Text("Restart")
-                    }
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.primary)
-                }
-                .disabled(isRestarting || isDeleting)
-
-                Spacer()
-
-                Button {
-                    showDeleteSheet = true
-                } label: {
-                    HStack(spacing: 4) {
-                        if isDeleting {
-                            ProgressView().controlSize(.small).tint(DatawatchColors.error)
-                        } else {
-                            Image(systemName: "trash")
-                        }
-                        Text("Delete")
-                    }
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.error)
-                }
-                .disabled(isRestarting || isDeleting)
+    @ViewBuilder
+    private var composerNotes: some View {
+        if isTranscribing {
+            // PWA _composerBanner('Transcribing voice message…').
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.mini).tint(DatawatchColors.onSurfaceMuted)
+                Text("Transcribing voice message…")
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(DatawatchColors.background)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.top, 4)
+        } else if let note = composerNote {
+            Text(note.0)
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(note.1 ? DatawatchColors.warning : DatawatchColors.success)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
         }
+        if let banner = imageBanner {
+            Text(banner == "uploading" ? "Uploading image…" : banner)
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(banner == "uploading" ? DatawatchColors.warning : DatawatchColors.success)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
+        }
+    }
+
+    private var composerInputRow: some View {
+        HStack(spacing: 8) {
+            Button { showSchedule = true } label: {
+                Image(systemName: "clock.badge").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            .accessibilityLabel("Schedule input")
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                Image(systemName: "camera").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            .disabled(imageBanner == "uploading")
+            .accessibilityLabel("Attach image")
+            TextField(L(composerPlaceholder), text: $replyText)
+                .disabled(isTranscribing)
+                .font(DatawatchFonts.bodyMedium)
+                .foregroundStyle(DatawatchColors.onSurface)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .submitLabel(.send)
+                .onSubmit(sendReply)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(isWaiting ? DatawatchColors.waiting.opacity(0.08) : DatawatchColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            if whisperEnabled { micButton }
+            sendButton
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(DatawatchColors.background)
+    }
+
+    @ViewBuilder
+    private var micButton: some View {
+        if isTranscribing {
+            ProgressView().controlSize(.small).tint(DatawatchColors.onSurfaceMuted)
+        } else {
+            Button(action: startRecording) {
+                Image(systemName: "mic").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            .accessibilityLabel("Record voice message")
+        }
+    }
+
+    private var sendButton: some View {
+        Button(action: sendReply) {
+            if sendsViaChannel {
+                Text("▶ ch")
+                    .font(DatawatchFonts.labelSmall.weight(.bold))
+                    .foregroundStyle(DatawatchColors.secondary)
+            } else {
+                Image(systemName: "paperplane.fill")
+                    .foregroundStyle(isWaiting ? DatawatchColors.waiting : DatawatchColors.primary)
+            }
+        }
+        .accessibilityLabel(sendsViaChannel ? "Send via MCP channel" : "Send reply")
     }
 
     private func sendReply() {
         if imageBanner == "uploading" {
-            killError = "Wait for image upload to finish"
+            AlertDock.shared.post(L("Wait for image upload to finish"), level: .warning)
             return
         }
         let text = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
         imageBanner = nil
-        if isChatMode {
+        LocalAlertWatcher.shared.onReplied(sessionId: session.id)
+        if sendsViaChannel {
+            guard !text.isEmpty else { return }
             replyText = ""
-            if !IosSessionOps.shared.sendText(session: session, text: text + "\r") {
-                killError = "Chat isn't connected yet — try again in a moment."
+            IosSessionComposer.shared.sendChannel(profile: profile, sessionId: session.fullId, text: text) { err in
+                if let err { AlertDock.notify(err, level: .error) }
             }
             return
         }
         replyText = ""
-        // TerminalView forwards this as a `send_input` frame on the session's
-        // /ws hub (WsOutbound) — the only reply path the server exposes.
-        // Append \r so the shell executes the command.
+        if isChatMode {
+            guard !text.isEmpty else { return }
+            if !IosSessionOps.shared.sendText(session: session, text: text + "\r") {
+                AlertDock.shared.post(L("Chat isn't connected yet — try again in a moment."), level: .error)
+            }
+            return
+        }
+        // PWA: an empty input sends Enter. TerminalView forwards this as a
+        // `send_input` frame on the session's /ws hub (WsOutbound).
         terminalInput = text + "\r"
     }
 
-    // ── Kill button ───────────────────────────────────────────────────────
-
-    @ViewBuilder
-    private var killButton: some View {
-        if !isTerminalState {
-            if isKilling {
-                ProgressView()
-                    .tint(DatawatchColors.error)
-                    .controlSize(.small)
-            } else {
-                Button {
-                    showKillConfirm = true
-                } label: {
-                    Image(systemName: "stop.circle")
-                        .foregroundStyle(DatawatchColors.error)
-                }
-                .accessibilityLabel("Kill session")
-            }
-        }
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // ── Actions ───────────────────────────────────────────────────────────
 
     private var sessionTitle: String {
-        if let name = session.name, !name.isEmpty { return name }
-        if let task = session.taskSummary, !task.isEmpty { return task }
+        if let r = renamedTo { return r }
+        if let name = cur.name, !name.isEmpty { return name }
+        if let task = cur.taskSummary, !task.isEmpty { return task }
         return session.id
     }
 
-    private func performKill() {
-        isKilling = true
-        killError = nil
+    private func performStop() {
+        isStopping = true
         IosServiceLocator.shared.killSession(
             profile: profile,
             sessionId: session.id,
             onSuccess: {
                 DispatchQueue.main.async {
-                    self.isKilling = false
-                    dismiss()
+                    isStopping = false
+                    AlertDock.shared.post(L("Session stopped"), level: .success)
+                    Task { await refreshSession() }
                 }
             },
             onError: { message in
                 DispatchQueue.main.async {
-                    self.isKilling = false
-                    self.killError = message
+                    isStopping = false
+                    AlertDock.shared.post(String(format: L("Stop failed: %@"), message), level: .error)
                 }
             }
         )
@@ -869,14 +808,22 @@ struct SessionDetailView: View {
             profile: profile,
             sessionId: session.id,
             onSuccess: {
-                DispatchQueue.main.async { self.isRestarting = false }
+                DispatchQueue.main.async {
+                    isRestarting = false
+                    AlertDock.shared.post(L("Session restarted"), level: .success)
+                    Task { await refreshSession() }
+                }
             },
-            onError: { _ in
-                DispatchQueue.main.async { self.isRestarting = false }
+            onError: { message in
+                DispatchQueue.main.async {
+                    isRestarting = false
+                    AlertDock.shared.post(String(format: L("Restart failed: %@"), message), level: .error)
+                }
             }
         )
     }
 
+    /// PWA rename toast → alert dock (D41a).
     private func performRename() {
         let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
@@ -884,14 +831,22 @@ struct SessionDetailView: View {
             profile: profile,
             sessionId: session.id,
             name: name,
-            onSuccess: {},
-            onError: { _ in }
+            onSuccess: {
+                DispatchQueue.main.async {
+                    renamedTo = name
+                    AlertDock.shared.post(L("Session renamed"), level: .success)
+                }
+            },
+            onError: { message in
+                DispatchQueue.main.async {
+                    AlertDock.shared.post(String(format: L("Rename failed: %@"), message), level: .error)
+                }
+            }
         )
     }
 
     // ── Voice recording ───────────────────────────────────────────────────
 
-    @ViewBuilder
     private var recordingOverlay: some View {
         ZStack {
             Color.black.opacity(0.5).ignoresSafeArea()
@@ -916,16 +871,14 @@ struct SessionDetailView: View {
                     }
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    Button("Send") {
-                        stopAndTranscribe()
-                    }
-                    .font(DatawatchFonts.bodyMedium)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 10)
-                    .background(DatawatchColors.error)
-                    .clipShape(Capsule())
+                    Button("Send") { stopAndTranscribe() }
+                        .font(DatawatchFonts.bodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(DatawatchColors.error)
+                        .clipShape(Capsule())
                 }
             }
             .padding(32)
@@ -944,7 +897,7 @@ struct SessionDetailView: View {
                     try rec.start()
                     self.voiceRecorder = rec
                 } catch {
-                    // hardware error after permission granted — silently drop
+                    AlertDock.shared.post(L("Couldn't start recording."), level: .error)
                 }
             }
         }
@@ -989,36 +942,6 @@ struct SessionDetailView: View {
 private extension Int {
     var nonZero: Int? { self == 0 ? nil : self }
 }
-
-// ── Last response sheet ───────────────────────────────────────────────────────
-
-private struct LastResponseSheet: View {
-    let session: DwSession
-    let onDismiss: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                Text(session.lastResponse ?? "")
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .background(DatawatchColors.background)
-            .navigationTitle("Last Response")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { onDismiss() }
-                }
-            }
-        }
-        .dwThemed()
-    }
-}
-
-
 
 /// PWA session-last-activity (D19a): dot green < 30 s, amber < 5 min, red beyond,
 /// plus grey age text; ticks every second.
