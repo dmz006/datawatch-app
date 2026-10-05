@@ -70,7 +70,11 @@ public object AutoServiceLocator {
             }
 
     private var _httpClient: HttpClient? = null
-    private var _trustAllClient: HttpClient? = null
+    private val trustAllClients = HashMap<String, HttpClient>()
+
+    // "Trust all certificates (insecure)" opt-in — bypass scoped to [host] only.
+    private fun trustAllClient(host: String): HttpClient =
+        synchronized(trustAllClients) { trustAllClients.getOrPut(host) { createTrustAllHttpClient(host) } }
     private val pinnedClients = HashMap<String, HttpClient>()
 
     private fun pinnedClient(pin: String): HttpClient =
@@ -80,9 +84,6 @@ public object AutoServiceLocator {
 
     private val httpClient: HttpClient
         get() = _httpClient ?: createHttpClient().also { _httpClient = it }
-
-    private val trustAllClient: HttpClient
-        get() = _trustAllClient ?: createTrustAllHttpClient().also { _trustAllClient = it }
 
     // Must match ServiceLocator — the auto module reads the same DB and
     // Keystore, so it must build transports the same way.
@@ -95,7 +96,9 @@ public object AutoServiceLocator {
         val anchor = profile.trustAnchorSha256
         val client =
             when {
-                anchor == TRUST_ALL_SENTINEL -> trustAllClient
+                anchor == TRUST_ALL_SENTINEL ->
+                    com.dmzs.datawatchclient.transport.trustAllHostOf(profile.baseUrl)
+                        ?.let { trustAllClient(it) } ?: httpClient
                 // Parity D91a — pinned profiles are enforced in the car too.
                 com.dmzs.datawatchclient.transport.CertPins.isPin(anchor, TRUST_ALL_SENTINEL) ->
                     pinnedClient(com.dmzs.datawatchclient.transport.CertPins.normalize(anchor!!))

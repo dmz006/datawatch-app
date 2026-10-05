@@ -107,7 +107,9 @@ public class WearAlertListenerService : WearableListenerService() {
         val dismissIntent = PendingIntent.getBroadcast(
             this,
             GUARDRAIL_DISMISS_REQ,
-            Intent(GUARDRAIL_DISMISS_ACTION).apply { setPackage(packageName) },
+            // Explicit component (not just setPackage) so the PendingIntent can only
+            // ever resolve to our own non-exported receiver.
+            Intent(this, GuardrailDismissReceiver::class.java).setAction(GUARDRAIL_DISMISS_ACTION),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -228,22 +230,22 @@ public class WearAlertListenerService : WearableListenerService() {
         val approveIntent = PendingIntent.getBroadcast(
             this,
             PRD_APPROVE_REQ,
-            android.content.Intent("com.dmzs.datawatchclient.wear.ACTION_PRD_APPROVE").apply {
-                setPackage(packageName)
-                putExtra("prd_id", prdId)
-                putExtra("prd_action", "approve")
-            },
+            // Explicit component → only our non-exported PrdActionReceiver can receive it.
+            Intent(this, PrdActionReceiver::class.java)
+                .setAction("com.dmzs.datawatchclient.wear.ACTION_PRD_APPROVE")
+                .putExtra("prd_id", prdId)
+                .putExtra("prd_action", "approve"),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
         val rejectIntent = PendingIntent.getBroadcast(
             this,
             PRD_REJECT_REQ,
-            android.content.Intent("com.dmzs.datawatchclient.wear.ACTION_PRD_REJECT").apply {
-                setPackage(packageName)
-                putExtra("prd_id", prdId)
-                putExtra("prd_action", "reject")
-            },
+            // Explicit component → only our non-exported PrdActionReceiver can receive it.
+            Intent(this, PrdActionReceiver::class.java)
+                .setAction("com.dmzs.datawatchclient.wear.ACTION_PRD_REJECT")
+                .putExtra("prd_id", prdId)
+                .putExtra("prd_action", "reject"),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
