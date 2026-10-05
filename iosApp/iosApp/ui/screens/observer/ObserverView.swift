@@ -244,17 +244,10 @@ final class ObserverViewModel: ObservableObject {
 /// Toast host for Observer actions (PWA showToast).
 @MainActor
 final class ObserverToastCenter: ObservableObject {
-    @Published private(set) var message: String? = nil
-    private var dismissTask: Task<Void, Never>? = nil
-
+    /// D41a: Observer notices go to the alert dock (PWA `showToast` →
+    /// `pushToAlertDock`), not a floating toast.
     func show(_ text: String) {
-        dismissTask?.cancel()
-        withAnimation { message = text }
-        dismissTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 2_500_000_000)
-            guard !Task.isCancelled else { return }
-            withAnimation { self?.message = nil }
-        }
+        AlertDock.notify(text)
     }
 }
 
@@ -293,9 +286,6 @@ struct ObserverView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DatawatchColors.background)
-        .overlay(alignment: .bottom) {
-            if let msg = toaster.message { ObsToast(text: msg) }
-        }
         .environmentObject(toaster)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

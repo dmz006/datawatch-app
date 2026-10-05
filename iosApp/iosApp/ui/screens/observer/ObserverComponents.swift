@@ -361,21 +361,3 @@ struct ObsButton: View {
     }
 }
 
-/// Lightweight toast used by Observer actions (PWA showToast).
-struct ObsToast: View {
-    let text: String
-
-    var body: some View {
-        Text(text)
-            .font(DatawatchFonts.bodyMedium)
-            .foregroundStyle(DatawatchColors.onSurface)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(DatawatchColors.surface2, in: Capsule())
-            .overlay(Capsule().stroke(DatawatchColors.border, lineWidth: 1))
-            .shadow(radius: 6)
-            .padding(.bottom, 16)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-            .accessibilityAddTraits(.isStaticText)
-    }
-}
