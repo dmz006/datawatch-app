@@ -85,6 +85,18 @@ class AndroidParitySweepTest {
     }
 
     @Test
+    fun `chat bubbles use the PWA chat palette`() {
+        val role = com.dmzs.datawatchclient.domain.SessionEvent.ChatMessage.Role
+        val user = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(role.User)
+        val ai = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(role.Assistant)
+        val sys = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(role.System)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF3B82F6), user.avatarBg)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF10B981), ai.avatarBg)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF64748B), sys.avatarBg)
+        assertEquals(listOf("U", "AI", "S"), listOf(user.avatar, ai.avatar, sys.avatar))
+    }
+
+    @Test
     fun `comm backends keep PWA order and capitalised labels`() {
         val cfg =
             Json.parseToJsonElement(
