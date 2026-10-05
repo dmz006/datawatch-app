@@ -26,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.Spacer
+import kotlinx.datetime.toLocalDateTime
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -247,123 +249,145 @@ private fun ChatQuickCmdBar(onQuickCmd: (String) -> Unit) {
     }
 }
 
-@Composable
-private fun ChatBubble(entry: ChatEntry) {
-    when (entry.role) {
+/** PWA `.chat-user` / `.chat-assistant` / `.chat-system` palette (style.css). */
+internal data class ChatBubbleStyle(
+    val avatar: String,
+    val label: String,
+    val avatarBg: Color,
+    val roleColor: Color,
+    val bubbleBg: Color,
+    val bubbleBorder: Color,
+)
+
+internal fun chatBubbleStyle(role: SessionEvent.ChatMessage.Role): ChatBubbleStyle =
+    when (role) {
         SessionEvent.ChatMessage.Role.User ->
-            UserOrAssistantBubble(
+            ChatBubbleStyle(
                 avatar = "U",
                 label = "You",
-                content = entry.content,
-                ts = entry.ts,
-                alignEnd = true,
-                background = MaterialTheme.colorScheme.primaryContainer,
-                foreground = MaterialTheme.colorScheme.onPrimaryContainer,
-                isStreaming = false,
+                avatarBg = Color(0xFF3B82F6),
+                roleColor = Color(0xFF60A5FA),
+                bubbleBg = Color(0xFF3B82F6).copy(alpha = 0.15f),
+                bubbleBorder = Color(0xFF3B82F6).copy(alpha = 0.25f),
             )
-
         SessionEvent.ChatMessage.Role.Assistant ->
-            UserOrAssistantBubble(
+            ChatBubbleStyle(
                 avatar = "AI",
                 label = "Assistant",
-                content = entry.content,
-                ts = entry.ts,
-                alignEnd = false,
-                background = MaterialTheme.colorScheme.surfaceVariant,
-                foreground = MaterialTheme.colorScheme.onSurfaceVariant,
-                isStreaming = entry.isStreaming,
+                avatarBg = Color(0xFF10B981),
+                roleColor = Color(0xFF34D399),
+                bubbleBg = Color(0xFF10B981).copy(alpha = 0.10f),
+                bubbleBorder = Color(0xFF10B981).copy(alpha = 0.20f),
             )
-
         SessionEvent.ChatMessage.Role.System ->
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    entry.content,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            ChatBubbleStyle(
+                avatar = "S",
+                label = "System",
+                avatarBg = Color(0xFF64748B),
+                roleColor = Color(0xFF94A3B8),
+                bubbleBg = Color(0xFF94A3B8).copy(alpha = 0.08f),
+                bubbleBorder = Color(0xFF94A3B8).copy(alpha = 0.15f),
+            )
     }
-}
 
+/**
+ * PWA `.chat-bubble`: header (22 px avatar · uppercase 10 px role · 9 px time)
+ * inside the bubble; user right-aligned with a 2 px bottom-right corner,
+ * assistant / system left-aligned (assistant 2 px bottom-left, system radius 8).
+ */
 @Composable
-private fun UserOrAssistantBubble(
-    avatar: String,
-    label: String,
-    content: String,
-    ts: Instant,
-    alignEnd: Boolean,
-    background: androidx.compose.ui.graphics.Color,
-    foreground: androidx.compose.ui.graphics.Color,
-    isStreaming: Boolean,
-) {
+private fun ChatBubble(entry: ChatEntry) {
+    val style = chatBubbleStyle(entry.role)
+    val isUser = entry.role == SessionEvent.ChatMessage.Role.User
+    val isSystem = entry.role == SessionEvent.ChatMessage.Role.System
+    val shape =
+        when {
+            isUser -> RoundedCornerShape(12.dp, 12.dp, 2.dp, 12.dp)
+            isSystem -> RoundedCornerShape(8.dp)
+            else -> RoundedCornerShape(12.dp, 12.dp, 12.dp, 2.dp)
+        }
+    val widthFraction = if (isUser) 0.85f else if (isSystem) 0.80f else 0.90f
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
-        if (!alignEnd) AvatarDot(avatar)
-        Column(
-            modifier = Modifier.padding(horizontal = 6.dp).fillMaxWidth(0.82f),
-            horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start,
+        Surface(
+            color = style.bubbleBg,
+            shape = shape,
+            border = androidx.compose.foundation.BorderStroke(1.dp, style.bubbleBorder),
+            modifier = Modifier.fillMaxWidth(widthFraction),
         ) {
-            Row {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    "  " + ts.toString().substringAfter('T').substringBefore('.'),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (isStreaming) {
+            Column(
+                modifier =
+                    if (isSystem) {
+                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    } else {
+                        Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                    },
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+                    AvatarDot(style.avatar, style.avatarBg)
                     Text(
-                        "  · typing",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
+                        style.label.uppercase(),
+                        modifier = Modifier.padding(start = 6.dp),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.5.sp,
+                        color = style.roleColor,
+                    )
+                    if (entry.isStreaming) {
+                        Text(
+                            "  · typing",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        chatTimeLabel(entry.ts),
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.alpha(0.6f),
+                    )
+                }
+                // PWA renderChatMarkdown: assistant content only (code blocks,
+                // inline code, headings, lists); user/system stay plain text.
+                if (entry.role == SessionEvent.ChatMessage.Role.Assistant && !entry.isStreaming) {
+                    com.dmzs.datawatchclient.ui.autonomous.MarkdownView(entry.content)
+                } else {
+                    Text(
+                        entry.content,
+                        fontSize = if (isSystem) 12.sp else 13.sp,
+                        lineHeight = if (isSystem) 18.sp else 21.sp,
+                        color =
+                            if (isSystem) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
                     )
                 }
             }
-            Surface(
-                color = background,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.padding(top = 2.dp),
-            ) {
-                Text(
-                    content,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = foreground,
-                    fontFamily = if (label == "Assistant") FontFamily.Monospace else null,
-                )
-            }
         }
-        if (alignEnd) AvatarDot(avatar)
     }
 }
 
+/** PWA `toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})` in the device zone. */
+private fun chatTimeLabel(ts: Instant): String {
+    val local = ts.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    return local.hour.toString().padStart(2, '0') + ":" + local.minute.toString().padStart(2, '0')
+}
+
 @Composable
-private fun AvatarDot(label: String) {
+private fun AvatarDot(
+    label: String,
+    bg: Color,
+) {
     Box(
-        modifier =
-            Modifier
-                .size(28.dp)
-                .background(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    CircleShape,
-                ),
+        modifier = Modifier.size(22.dp).background(bg, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold,
-        )
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 

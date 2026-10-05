@@ -190,6 +190,9 @@ public fun AutonomousScreen(
                 FloatingActionButton(
                     onClick = { if (currentTab == 1) tmplCreateOpen = true else newOpen = true },
                     modifier = Modifier.offset(y = 36.dp).padding(end = 4.dp),
+                    // PWA `.fab` fill = accent2 (D4a: M3 shape, PWA colour).
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                 ) {
                     if (currentTab == 0) {
                         Text("⚡", style = MaterialTheme.typography.titleMedium)
@@ -266,6 +269,8 @@ public fun AutonomousScreen(
                             typeFilter = it
                         }, onToggleSelect = {
                             vm.toggleSelection(it)
+                        }, onSelectAll = { ids, checked ->
+                            vm.setSelection(ids, checked)
                         }, onTogglePin = {
                             vm.togglePin(it)
                         }, onWatchToggleAutomata = {
@@ -357,14 +362,19 @@ public fun AutonomousScreen(
             onDismissRequest = { vm.dismissCancelConfirm() },
             title = { Text(stringResource(R.string.automata_confirm_cancel_title)) },
             text = {
-                Text(
-                    stringResource(
-                        R.string.automata_confirm_cancel_body,
-                        prd?.title?.takeIf {
-                            it.isNotBlank()
-                        } ?: prd?.name ?: cancelId,
-                    ),
-                )
+                // PWA automataCancel: planning-specific abort warning.
+                if (prd?.status == "planning") {
+                    Text(stringResource(R.string.automata_confirm_cancel_planning))
+                } else {
+                    Text(
+                        stringResource(
+                            R.string.automata_confirm_cancel_body,
+                            prd?.title?.takeIf {
+                                it.isNotBlank()
+                            } ?: prd?.name ?: cancelId,
+                        ),
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = { vm.cancelPrd(cancelId) }) {
@@ -568,6 +578,7 @@ private fun PrdsBody(
     onIncludeTemplates: (Boolean) -> Unit,
     onTypeFilter: (String?) -> Unit = {},
     onToggleSelect: (String) -> Unit = {},
+    onSelectAll: (List<String>, Boolean) -> Unit = { _, _ -> },
     onTogglePin: (String) -> Unit = {},
     onWatchToggleAutomata: (String) -> Unit = {},
     onRequestCancel: (String) -> Unit = {},
@@ -579,6 +590,26 @@ private fun PrdsBody(
 ) {
     // PWA automata filter bar text search (`automata_filter_search`): title / id.
     var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false.
+    // "completed" moved to active group (v8.33.29 / #180): shown by default like "running".
+    val terminalStatuses = setOf("cancelled", "canceled", "rejected", "archived")
+    val visible =
+        state.prds
+            .filter { prd ->
+                (includeTemplates || !prd.isTemplate) &&
+                    (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
+                    (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
+                    // History filter: override when a status filter is explicitly set
+                    (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses) &&
+                    matchesAutomataSearch(prd, search)
+            }
+            .sortedWith(
+                compareBy(
+                    { if (it.id in pinnedIds) 0 else 1 },
+                    { prdStateRank(it.status) },
+                    { -prdActivityKey(it) },
+                ),
+            )
     if (filterOpen) {
         androidx.compose.material3.OutlinedTextField(
             value = search,
@@ -677,6 +708,31 @@ private fun PrdsBody(
                     )
                 })
             }
+            // PWA `#automataSelectAll` "All" checkbox: ticks every visible row
+            // (checked when all are selected, indeterminate when some are).
+            item {
+                val ids = visible.map { it.id }
+                val selectedCount = ids.count { it in state.selectedIds }
+                val toggle =
+                    when {
+                        ids.isNotEmpty() && selectedCount == ids.size -> androidx.compose.ui.state.ToggleableState.On
+                        selectedCount > 0 -> androidx.compose.ui.state.ToggleableState.Indeterminate
+                        else -> androidx.compose.ui.state.ToggleableState.Off
+                    }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier.clickable {
+                            onSelectAll(ids, toggle != androidx.compose.ui.state.ToggleableState.On)
+                        },
+                ) {
+                    androidx.compose.material3.TriStateCheckbox(
+                        state = toggle,
+                        onClick = { onSelectAll(ids, toggle != androidx.compose.ui.state.ToggleableState.On) },
+                    )
+                    Text(stringResource(R.string.autonomous_filter_all), style = MaterialTheme.typography.labelSmall)
+                }
+            }
         }
     }
     state.banner?.let { banner ->
@@ -687,38 +743,21 @@ private fun PrdsBody(
             style = MaterialTheme.typography.bodySmall,
         )
     }
-    // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false.
-    // "completed" moved to active group (v8.33.29 / #180): shown by default like "running".
-    val terminalStatuses = setOf("cancelled", "canceled", "rejected", "archived")
-    val visible =
-        state.prds
-            .filter { prd ->
-                (includeTemplates || !prd.isTemplate) &&
-                    (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
-                    (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
-                    // History filter: override when a status filter is explicitly set
-                    (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses) &&
-                    matchesAutomataSearch(prd, search)
-            }
-            .sortedWith(
-                compareBy(
-                    { if (it.id in pinnedIds) 0 else 1 },
-                    { prdStateRank(it.status) },
-                    { -prdActivityKey(it) },
-                ),
-            )
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_foreground),
             contentDescription = null,
-            modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.10f),
+            modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.045f), // PWA `.sessions-watermark` .045
         )
         if (visible.isEmpty() && state.loading) {
             DatawatchLoadingContent(modifier = Modifier.align(Alignment.Center))
         } else if (visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    stringResource(R.string.autonomous_empty_state),
+                    // PWA `_automataRenderCards` empty copy: history vs active.
+                    stringResource(
+                        if (historyOn) R.string.automata_empty_history else R.string.automata_empty_active,
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1467,16 +1506,15 @@ internal fun LifecycleStrip(
 private fun isApprovalState(statusLower: String) =
     statusLower in setOf("needs_review", "awaiting_approval", "revisions_asked")
 
-/** Sort rank: action-needed statuses first, then active, then terminal. */
 /** PWA `_AUTOMATA_STATE_RANK` verbatim (alpha.31 #272) — lower sorts first; unknown = 9. */
 internal fun prdStateRank(status: String): Int =
-    when (status.lowercase()) {
-        "waiting_input", "needs_review", "revisions_asked", "awaiting_approval" -> 0
+    when (status.lowercase().ifEmpty { "draft" }) {
+        "waiting_input", "needs_review", "revisions_asked" -> 0
         "blocked" -> 1
         "running", "decomposing" -> 2
         "approved", "planning" -> 3
-        "draft", "" -> 4
-        "completed", "complete", "rejected", "cancelled", "canceled" -> 5
+        "draft" -> 4
+        "completed", "rejected", "cancelled" -> 5
         "archived" -> 6
         else -> 9
     }

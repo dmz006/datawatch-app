@@ -160,7 +160,16 @@ public fun SessionsScreen(
     // 2026-04-24 (dmz006/datawatch#23). The top-app-bar search icon
     // toggles this. Stays implicitly "expanded" when filter text or
     // history are active so typed queries / visible state aren't hidden.
-    var toolbarExpanded by remember { mutableStateOf(false) }
+    // PWA `cs_filters_collapsed`: collapsed by default, choice persisted.
+    val toolbarCtx = androidx.compose.ui.platform.LocalContext.current
+    val toolbarPrefs =
+        remember { android.preference.PreferenceManager.getDefaultSharedPreferences(toolbarCtx) }
+    var toolbarExpanded by remember {
+        mutableStateOf(!toolbarPrefs.getBoolean(PREF_FILTERS_COLLAPSED, true))
+    }
+    LaunchedEffect(toolbarExpanded) {
+        toolbarPrefs.edit().putBoolean(PREF_FILTERS_COLLAPSED, !toolbarExpanded).apply()
+    }
     val pendingFilter by SessionsNavChannel.pendingFilter.collectAsState()
     LaunchedEffect(pendingFilter) {
         val f = pendingFilter ?: return@LaunchedEffect
@@ -279,6 +288,9 @@ public fun SessionsScreen(
                         Modifier
                             .offset(y = 36.dp)
                             .padding(end = 4.dp),
+                    // PWA `.fab` fill = accent2 (D4a: M3 shape, PWA colour).
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.sessions_fab_new))
                 }
@@ -373,7 +385,7 @@ public fun SessionsScreen(
                                 .fillMaxWidth(0.85f)
                                 .aspectRatio(1f)
                                 .align(androidx.compose.ui.Alignment.Center)
-                                .alpha(0.10f),
+                                .alpha(0.045f), // PWA `.sessions-watermark` opacity .045
                     )
                     LazyColumn {
                         // Key = profile:id to avoid LazyColumn duplicate-key crashes
@@ -1086,17 +1098,17 @@ private fun SessionRow(
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     val colors = LocalDatawatchColors.current
     val timeLabel = relativeTimeLabel(session.lastActivityAt.toEpochMilliseconds())
-    val isDoneState =
-        session.state == SessionState.Completed ||
-            session.state == SessionState.Killed ||
-            session.state == SessionState.Error
+    // PWA `.session-card.state-complete` opacity .7, `.state-killed` .5,
+    // `.state-failed` none. (The PWA's `.card-actions { opacity: 1 }` override
+    // cannot lift a parent's CSS group opacity, so the whole card renders dimmed.)
+    val doneAlpha = sessionCardAlpha(session.state)
 
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp)
-                .alpha(if (isDoneState) 0.6f else 1.0f)
+                .alpha(doneAlpha)
                 .graphicsLayer {
                     // While being dragged, the row floats vertically
                     // and sits above its neighbours — neighbours stay
@@ -2523,3 +2535,14 @@ private fun OutlineBadge(
                 .padding(horizontal = 7.dp, vertical = 2.dp),
     )
 }
+
+/** PWA done-card dimming: complete .7, killed .5, everything else (incl. failed) 1.0. */
+internal fun sessionCardAlpha(state: SessionState): Float =
+    when (state) {
+        SessionState.Completed -> 0.7f
+        SessionState.Killed -> 0.5f
+        else -> 1.0f
+    }
+
+/** PWA localStorage key `cs_filters_collapsed` (true = toolbar hidden). */
+private const val PREF_FILTERS_COLLAPSED: String = "cs_filters_collapsed"

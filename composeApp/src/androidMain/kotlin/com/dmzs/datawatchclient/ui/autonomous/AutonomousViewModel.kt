@@ -978,6 +978,16 @@ public class AutonomousViewModel(
             )
     }
 
+    /** PWA `toggleAutomataSelectAll`: tick / untick every visible row. */
+    public fun setSelection(
+        ids: Collection<String>,
+        selected: Boolean,
+    ) {
+        val current = _state.value.selectedIds
+        _state.value =
+            _state.value.copy(selectedIds = if (selected) current + ids else current - ids.toSet())
+    }
+
     /** Clear all multi-select selections (v0.76.0). */
     public fun clearSelection() {
         _state.value = _state.value.copy(selectedIds = emptySet())
