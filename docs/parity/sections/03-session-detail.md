@@ -117,7 +117,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | data | Render from `pane_capture` only; input via `send_input`/`command` on /ws | ✓ 3383+ | ✓ TV:674 + WsOutbound | ✓ iTV (shared host.html) | aligned | | iOS fixed v1.23.115 |
 | data | `resize_term` on cols/rows change (200 ms debounce) | ✓ 3489, 3528 | ✓ TV onResize → WsOutbound.sendResizeTerm; SDVM:345 | ✓ iTV bridge resize | aligned | | |
 | token | xterm theme bg #0f1117 fg #e2e8f0 cursor #a855f7 selection rgba(168,85,247,.3), scrollback 5000, cursorBlink | ✓ 3511–3534 | ✓ HH:115–143 | ✓ (HH) | aligned | | |
-| token | Font family: 'JetBrains Mono','Fira Code' | ✓ 3505 | ~ HH:117 'Roboto Mono','Droid Sans Mono' | ~ (HH) → falls to system mono | misaligned | decided D8a | JetBrains Mono not bundled in either app yet |
+| token | Font family: 'JetBrains Mono','Fira Code' | ✓ 3505 | ✓ HH bundled JetBrains Mono (xterm/fonts) | ✓ (HH, shared assets) | aligned | per D8a | done 2026-10-04: v2.304 bundled; monthly font-update.yml keeps it current |
 | token | Default font 9px, persisted (`cs_term_font_size` / prefs / UserDefaults) | ✓ 3480 | ✓ TT:91 | ✓ SDV:20 | aligned | | |
 | interaction | A−/A+ clamp 5..20 | ✓ changeTermFontSize 3180 (clamp?) | ✓ TT MIN/MAX | ✓ SDV:201/221 | aligned | | Verify PWA clamp |
 | interaction | Fit to width (shrink font until no horizontal overflow) | ✓ termFitToWidth 3196 | ✓ HH dwAutoFitToWidth, TT "Fit" | ✓ SDV "Fit" → TerminalController.fitToWidth (dwAutoFitToWidth) | aligned | | |
