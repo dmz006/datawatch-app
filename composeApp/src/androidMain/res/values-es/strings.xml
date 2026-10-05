@@ -1056,8 +1056,8 @@
     <string name="stats_field_pid">PID</string>
     <string name="stats_field_net">Red</string>
     <string name="stats_field_gpu">GPU</string>
-    <string name="stats_open_compute">Abrir en Compute →</string>
-    <string name="stats_open_llm">Abrir en LLM →</string>
+    <string name="stats_open_compute">Abrir Compute Node →</string>
+    <string name="stats_open_llm">Abrir LLM →</string>
     <string name="stats_llm_more_soon">Tasa de tokens · latencia · estado del modelo en la próxima actualización</string>
     <string name="stats_container_id">ID de contenedor</string>
     <string name="stats_container_image">Imagen</string>
