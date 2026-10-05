@@ -165,6 +165,12 @@ public class WebSocketTransport(
                                         tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
                                         continue
                                     }
+                                    // PWA handleChannelReadyEvent: MCP channel / ACP
+                                    // server connected → cache per full id.
+                                    if (dto.type == "channel_ready") {
+                                        ChannelReadyHub.routeFrame(dto.data)
+                                        continue
+                                    }
                                     // v0.33.19: trace every inbound frame
                                     // type + count mapped → events, so we
                                     // can see when pane_captures arrive but
@@ -172,6 +178,10 @@ public class WebSocketTransport(
                                     // session-id check (B27 live-update
                                     // investigation).
                                     val events = dto.toDomainEvents(subscriptionId, storageId)
+                                    // PWA markChannelReadyIfDetected: scan this
+                                    // session's output / pane / chat text for the
+                                    // channel- or ACP-ready markers.
+                                    ChannelReadyHub.scanEvents(subscriptionId, events)
                                     println(
                                         "WsTransport: rx type=${dto.type} " +
                                             "mapped=${events.size} bytes=${text.length}",
@@ -260,6 +270,7 @@ public class WebSocketTransport(
                                         "sessions" -> tryRouteSessionsFrame(dto.data, json, profile.id)
                                         "session_state" -> tryRouteSessionStateFrame(dto.data, json, profile.id)
                                         "channel_reply", "channel_notify" -> tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
+                                        "channel_ready" -> ChannelReadyHub.routeFrame(dto.data)
                                         "alert" -> tryRouteAlertFrame(dto.data, profile.id)
                                         "hook_update" -> HookHub.route(dto.data, profile.id)
                                     }
@@ -350,6 +361,7 @@ private fun tryRouteSessionsFrame(
     runCatching {
         val payload = json.decodeFromJsonElement(WsSessionsFrameDataDto.serializer(), data)
         val sessions = payload.sessions?.map { it.toDomain(profileId) } ?: return
+        ChannelReadyHub.observeSessions(sessions)
         SessionsHub.emitFullList(SessionsUpdate(profileId, sessions))
     }.onFailure { println("WsTransport: failed to parse sessions frame: ${it.message}") }
 }
@@ -364,6 +376,7 @@ private fun tryRouteSessionStateFrame(
     runCatching {
         val payload = json.decodeFromJsonElement(WsSessionStateFrameDataDto.serializer(), data)
         val session = payload.session?.toDomain(profileId) ?: return
+        ChannelReadyHub.observeSessions(listOf(session))
         SessionsHub.emitSingle(SessionStateUpdate(profileId, session))
     }.onFailure { println("WsTransport: failed to parse session_state frame: ${it.message}") }
 }
