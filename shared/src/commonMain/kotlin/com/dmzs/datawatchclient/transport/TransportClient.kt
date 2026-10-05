@@ -1906,7 +1906,26 @@ public interface TransportClient {
      */
     public suspend fun runCommand(text: String): Result<String> =
         Result.failure(UnsupportedOperationException("runCommand"))
+
+    // ---- iOS-H: docs trust queue (PWA loadDocsTrustPanel wire shape) ----
+
+    /** GET /api/docs/trust/pending → `{pending:[{source, detail}]}`. */
+    public suspend fun docsTrustPendingEntries(): Result<List<DocsTrustEntry>> =
+        Result.failure(UnsupportedOperationException("docsTrustPendingEntries"))
+
+    /** GET /api/docs/trust → `{trusted:[{source, granted_by}]}` (detail = granted_by). */
+    public suspend fun docsTrustedEntries(): Result<List<DocsTrustEntry>> =
+        Result.failure(UnsupportedOperationException("docsTrustedEntries"))
+
+    /** POST /api/docs/trust/accept (or /dismiss when [accept] is false) `{sources:[…]}`. */
+    public suspend fun docsTrustDecide(
+        sources: List<String>,
+        accept: Boolean,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("docsTrustDecide"))
 }
+
+/** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */
+public data class DocsTrustEntry(val source: String, val detail: String)
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */
 public data class SignalLinkEvent(val event: String, val data: String)

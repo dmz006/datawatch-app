@@ -326,6 +326,8 @@ public object IosSettingsLists {
                     row(
                         e.name, e.name, listOf(e.kind, model).filter { it.isNotEmpty() }.joinToString(" · "),
                         badges = e.tags.orEmpty(), hasToggle = true, enabled = e.enabled, canDelete = true,
+                        // PWA "▾ In use…" — handled in Swift (LlmInUseSheet), not by [action].
+                        actions = listOf("In use…"),
                         detail = enc(com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto.serializer(), e),
                     )
                 }
@@ -412,7 +414,7 @@ public object IosSettingsLists {
                     row(g.id.ifEmpty { g.name }, g.name.ifEmpty { g.id }, g.guardrails.joinToString(", "), badges = g.blockOn.map { "block:$it" }, canDelete = true)
                 }
             "guardrail_library" ->
-                tr.listGuardrailLibrary().getOrThrow().map { g -> row(g.name, g.name, g.description, badges = listOf(g.kind).filter { it.isNotEmpty() }) }
+                tr.listGuardrailLibrary().getOrThrow().map { g -> row(g.name, g.name, g.description, badges = listOf(g.kind.ifEmpty { "scan" })) }
             "evals" ->
                 tr.evalsList().getOrThrow().map { e ->
                     row(
