@@ -327,6 +327,20 @@ public object IosServiceLocator {
     }
 
     /** Mark all alerts as read on the server (dismiss all). */
+    /** D48a dismiss-all: delete every alert on the server (PWA `{all:true, delete:true}`). */
+    public fun deleteAllAlerts(
+        profile: ServerProfile,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).deleteAllAlerts().fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Failed to dismiss alerts.") },
+            )
+        }
+    }
+
     public fun markAllAlertsRead(
         profile: ServerProfile,
         onSuccess: () -> Unit,
