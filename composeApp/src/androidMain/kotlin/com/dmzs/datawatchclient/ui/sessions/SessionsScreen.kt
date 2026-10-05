@@ -1,11 +1,6 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -36,9 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -62,12 +55,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -92,7 +83,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -153,7 +143,6 @@ public fun SessionsScreen(
     val state by vm.state.collectAsState()
     val watchedIds by vm.watchedIds.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
-    var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     // Parity D15a — PWA select mode: entered with the ☑ toolbar button (only
     // while History is on), checkboxes on inactive cards, fixed bottom bar.
@@ -197,29 +186,11 @@ public fun SessionsScreen(
             run {
                 TopAppBar(
                     title = {
-                        ServerPickerTitle(
+                        // Parity D2a: brand title + server chip; switching
+                        // moved to the PWA picker bar under the header.
+                        SessionsHeaderTitle(
                             active = state.activeProfile,
                             allMode = state.allServersMode,
-                            open = pickerOpen,
-                            onToggle = { pickerOpen = !pickerOpen },
-                            onDismiss = { pickerOpen = false },
-                            profiles = state.allProfiles,
-                            onSelectAll = {
-                                vm.selectAllServers()
-                                pickerOpen = false
-                            },
-                            onSelect = {
-                                vm.selectProfile(it)
-                                pickerOpen = false
-                            },
-                            onEdit = {
-                                pickerOpen = false
-                                onEditServer(it)
-                            },
-                            onAdd = {
-                                pickerOpen = false
-                                onAddServer()
-                            },
                         )
                     },
                     actions = {
@@ -313,6 +284,14 @@ public fun SessionsScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            com.dmzs.datawatchclient.ui.common.ServerPickerBar(
+                profiles = state.allProfiles,
+                activeId = state.activeProfile?.id,
+                allMode = state.allServersMode,
+                onSelect = vm::selectProfile,
+                showAll = true,
+                onSelectAll = vm::selectAllServers,
+            )
             state.banner?.let {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Text(
@@ -354,7 +333,11 @@ public fun SessionsScreen(
                 if (state.refreshing) {
                     SessionSkeletonList()
                 } else {
-                    EmptyState(showHint = state.activeProfile != null)
+                    EmptyState(
+                        showHint = state.activeProfile != null,
+                        noServer = state.allProfiles.none { it.enabled },
+                        onAddServer = onAddServer,
+                    )
                 }
             } else {
                 // v0.33.15 (B9): datawatch eye watermark behind the
@@ -962,8 +945,18 @@ private fun SessionSkeletonList() {
 
 /** Parity D35a — PWA empty state: 💬 "No active sessions" + hint. */
 @Composable
-private fun EmptyState(showHint: Boolean = true) {
+private fun EmptyState(
+    showHint: Boolean = true,
+    noServer: Boolean = false,
+    onAddServer: () -> Unit = {},
+) {
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+        if (noServer) {
+            // Parity D86c — minimal first run: no onboarding screen; the
+            // Sessions tab itself says no server is connected and offers Add.
+            NoServerEmptyState(onAddServer)
+            return@Box
+        }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 "💬",
@@ -985,6 +978,33 @@ private fun EmptyState(showHint: Boolean = true) {
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun NoServerEmptyState(onAddServer: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "🖥",
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        )
+        Text(
+            stringResource(R.string.first_run_no_server),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Text(
+            stringResource(R.string.first_run_no_server_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        androidx.compose.material3.Button(onClick = onAddServer, modifier = Modifier.padding(top = 16.dp)) {
+            Text(stringResource(R.string.sessions_add_server))
         }
     }
 }
@@ -1665,117 +1685,25 @@ private fun ConfirmDialog(
 }
 
 @Composable
-private fun ServerPickerTitle(
+private fun SessionsHeaderTitle(
     active: ServerProfile?,
     allMode: Boolean,
-    open: Boolean,
-    onToggle: () -> Unit,
-    onDismiss: () -> Unit,
-    profiles: List<ServerProfile>,
-    onSelectAll: () -> Unit,
-    onSelect: (String) -> Unit,
-    onEdit: (String) -> Unit,
-    onAdd: () -> Unit,
 ) {
-    Box {
-        // User 2026-04-24: "top header has space above host name" —
-        // drop the title Row's vertical padding; the TopAppBar already
-        // centre-aligns the title within its own fixed height, so any
-        // extra vertical padding here just pushes the server-name down
-        // from the visible centre line and makes the header feel like
-        // it has a dead strip above the label.
-        Row(
-            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Parity D1a/D9a: the Sessions header title is the brand
-            // "datawatch" (PWA `nav_home`). The active server stays visible
-            // as a muted sub-line so the picker affordance isn't lost —
-            // picker placement itself is a separate decision (D2).
-            Column {
-                Text(stringResource(R.string.nav_home))
-                Text(
-                    if (allMode) {
-                        stringResource(
-                            R.string.sessions_all_servers,
-                        )
-                    } else {
-                        (active?.displayName ?: stringResource(R.string.sessions_no_server))
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = stringResource(R.string.sessions_switch_server),
-                modifier = Modifier.padding(start = 4.dp),
-            )
-        }
-        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-            if (profiles.size > 1) {
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                stringResource(R.string.sessions_all_servers),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (allMode) {
-                                Icon(
-                                    Icons.Filled.Check,
-                                    "Active",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
-                    },
-                    onClick = onSelectAll,
-                )
-                HorizontalDivider()
-            }
-            if (profiles.isEmpty()) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.sessions_no_servers)) },
-                    onClick = onDismiss,
-                    enabled = false,
-                )
+    // Parity D1a/D9a + D2a: brand title "datawatch" (PWA `nav_home`) with the
+    // active server as a muted sub-line (the PWA's server-indicator chip).
+    // Switching lives in the ServerPickerBar under the header.
+    Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+        Text(stringResource(R.string.nav_home))
+        Text(
+            if (allMode) {
+                stringResource(R.string.sessions_all_servers)
             } else {
-                profiles.forEach { p ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                StatusDot(enabled = p.enabled)
-                                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                                    Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Text(
-                                        p.baseUrl,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                if (p.id == active?.id) {
-                                    Icon(
-                                        Icons.Filled.Check,
-                                        contentDescription = "Active",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                TextButton(onClick = { onEdit(p.id) }) { Text("Edit") }
-                            }
-                        },
-                        onClick = { onSelect(p.id) },
-                    )
-                }
-            }
-            HorizontalDivider()
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.sessions_add_server)) },
-                onClick = onAdd,
-            )
-        }
+                (active?.displayName ?: stringResource(R.string.sessions_no_server))
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 
@@ -1789,7 +1717,7 @@ private fun ServerPickerTitle(
  *
  * Tap opens a bottom sheet with the last-probe timestamp plus a retry button.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ReachabilityDot(
     reachable: Boolean?,
@@ -1797,6 +1725,7 @@ private fun ReachabilityDot(
     onRetry: () -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
+    val reconnectMsg = stringResource(R.string.status_dot_reconnecting)
     val color =
         when (reachable) {
             true -> Color(0xFF10B981)
@@ -1826,7 +1755,12 @@ private fun ReachabilityDot(
             Modifier
                 .padding(start = 8.dp)
                 .size(24.dp)
-                .clickable(onClick = { sheetOpen = true }),
+                // Parity D38a: tap opens the status sheet; long-press
+                // force-refreshes the connection (PWA forceRefreshConnection).
+                .combinedClickable(
+                    onClick = { sheetOpen = true },
+                    onLongClick = { com.dmzs.datawatchclient.ui.common.forceRefreshConnection(reconnectMsg, onRetry) },
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -2380,20 +2314,6 @@ private fun WorkerPill(agentId: String) {
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun StatusDot(enabled: Boolean) {
-    val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-    Box(
-        modifier =
-            Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .padding(0.dp),
-    ) {
-        Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
     }
 }
 

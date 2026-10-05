@@ -63,7 +63,6 @@ import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
-import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -96,7 +95,6 @@ public fun DashboardScreen(
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
     val dw = LocalDatawatchColors.current
-    var pickerOpen by remember { mutableStateOf(false) }
     var editSheetOpen by remember { mutableStateOf(false) }
     val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
@@ -123,19 +121,7 @@ public fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    SingleServerPickerTitle(
-                        active = state.activeProfile,
-                        open = pickerOpen,
-                        onToggle = { pickerOpen = !pickerOpen },
-                        onDismiss = { pickerOpen = false },
-                        profiles = state.allProfiles,
-                        onSelect = {
-                            vm.selectProfile(it)
-                            pickerOpen = false
-                        },
-                    )
-                },
+                title = { Text(stringResource(R.string.nav_dashboard)) },
                 actions = {
                     DocsLinkAction("datawatch-definitions.md#dashboard")
                     IconButton(onClick = { editSheetOpen = true }) {
@@ -190,6 +176,12 @@ public fun DashboardScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState()),
         ) {
+            com.dmzs.datawatchclient.ui.common.ServerPickerBar(
+                profiles = state.allProfiles,
+                activeId = state.activeProfile?.id,
+                allMode = false,
+                onSelect = vm::selectProfile,
+            )
             // tree and orbital are synonyms for the same constellation view.
             val rendered = mutableSetOf<String>()
             cardIds.forEach { id ->

@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - rate_limited / completed / state_change → default-importance
  * - error → high-importance
  *
- * Tap intent always opens the app via the `dwclient://session/<id>` deep link
+ * Tap intent always opens the app via the `datawatch://session/<id>` deep link
  * declared in AndroidManifest, so the Sessions tab can navigate directly to
  * SessionDetail.
  */
@@ -129,7 +129,7 @@ public class NotificationPoster(private val context: Context) {
     }
 
     private fun deepLinkIntent(sessionId: String): PendingIntent {
-        val uri = Uri.parse("dwclient://session/$sessionId")
+        val uri = Uri.parse(com.dmzs.datawatchclient.ui.DeepLinks.sessionUri(sessionId))
         val intent =
             Intent(Intent.ACTION_VIEW, uri).apply {
                 setPackage(context.packageName)
@@ -156,7 +156,7 @@ public class NotificationPoster(private val context: Context) {
             PendingIntent.getActivity(
                 context,
                 sessionId.hashCode() xor PLAY_LONG_REQUEST_CODE_SALT,
-                Intent(Intent.ACTION_VIEW, Uri.parse("dwclient://session/$sessionId")).apply {
+                Intent(Intent.ACTION_VIEW, Uri.parse(com.dmzs.datawatchclient.ui.DeepLinks.sessionUri(sessionId))).apply {
                     setPackage(context.packageName)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     setClass(context, MainActivity::class.java)
