@@ -269,6 +269,8 @@ public fun AutonomousScreen(
                             typeFilter = it
                         }, onToggleSelect = {
                             vm.toggleSelection(it)
+                        }, onSelectAll = { ids, checked ->
+                            vm.setSelection(ids, checked)
                         }, onTogglePin = {
                             vm.togglePin(it)
                         }, onWatchToggleAutomata = {
@@ -576,6 +578,7 @@ private fun PrdsBody(
     onIncludeTemplates: (Boolean) -> Unit,
     onTypeFilter: (String?) -> Unit = {},
     onToggleSelect: (String) -> Unit = {},
+    onSelectAll: (List<String>, Boolean) -> Unit = { _, _ -> },
     onTogglePin: (String) -> Unit = {},
     onWatchToggleAutomata: (String) -> Unit = {},
     onRequestCancel: (String) -> Unit = {},
@@ -587,6 +590,26 @@ private fun PrdsBody(
 ) {
     // PWA automata filter bar text search (`automata_filter_search`): title / id.
     var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false.
+    // "completed" moved to active group (v8.33.29 / #180): shown by default like "running".
+    val terminalStatuses = setOf("cancelled", "canceled", "rejected", "archived")
+    val visible =
+        state.prds
+            .filter { prd ->
+                (includeTemplates || !prd.isTemplate) &&
+                    (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
+                    (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
+                    // History filter: override when a status filter is explicitly set
+                    (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses) &&
+                    matchesAutomataSearch(prd, search)
+            }
+            .sortedWith(
+                compareBy(
+                    { if (it.id in pinnedIds) 0 else 1 },
+                    { prdStateRank(it.status) },
+                    { -prdActivityKey(it) },
+                ),
+            )
     if (filterOpen) {
         androidx.compose.material3.OutlinedTextField(
             value = search,
@@ -685,6 +708,31 @@ private fun PrdsBody(
                     )
                 })
             }
+            // PWA `#automataSelectAll` "All" checkbox: ticks every visible row
+            // (checked when all are selected, indeterminate when some are).
+            item {
+                val ids = visible.map { it.id }
+                val selectedCount = ids.count { it in state.selectedIds }
+                val toggle =
+                    when {
+                        ids.isNotEmpty() && selectedCount == ids.size -> androidx.compose.ui.state.ToggleableState.On
+                        selectedCount > 0 -> androidx.compose.ui.state.ToggleableState.Indeterminate
+                        else -> androidx.compose.ui.state.ToggleableState.Off
+                    }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier.clickable {
+                            onSelectAll(ids, toggle != androidx.compose.ui.state.ToggleableState.On)
+                        },
+                ) {
+                    androidx.compose.material3.TriStateCheckbox(
+                        state = toggle,
+                        onClick = { onSelectAll(ids, toggle != androidx.compose.ui.state.ToggleableState.On) },
+                    )
+                    Text(stringResource(R.string.autonomous_filter_all), style = MaterialTheme.typography.labelSmall)
+                }
+            }
         }
     }
     state.banner?.let { banner ->
@@ -695,26 +743,6 @@ private fun PrdsBody(
             style = MaterialTheme.typography.bodySmall,
         )
     }
-    // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false.
-    // "completed" moved to active group (v8.33.29 / #180): shown by default like "running".
-    val terminalStatuses = setOf("cancelled", "canceled", "rejected", "archived")
-    val visible =
-        state.prds
-            .filter { prd ->
-                (includeTemplates || !prd.isTemplate) &&
-                    (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
-                    (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
-                    // History filter: override when a status filter is explicitly set
-                    (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses) &&
-                    matchesAutomataSearch(prd, search)
-            }
-            .sortedWith(
-                compareBy(
-                    { if (it.id in pinnedIds) 0 else 1 },
-                    { prdStateRank(it.status) },
-                    { -prdActivityKey(it) },
-                ),
-            )
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_foreground),
