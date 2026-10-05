@@ -112,7 +112,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | string | Empty copy "Add a server in Settings to monitor metrics." | n/a | ✓ "Add a server in Settings to monitor metrics." (observer_no_server) | ✓ | aligned |  | no PWA string; unify app copy (D35a spirit) · Android-I 2026-10-05: Android copy unified with iOS |
 
 ## Coverage
-rows: 93 · aligned: 81 · ios-missing: 0 · android-missing: 0 · pwa-missing: 4 · misaligned: 7 · n/a: 1
+rows: 93 · aligned: 88 · ios-missing: 0 · android-missing: 0 · pwa-missing: 4 · misaligned: 0 · n/a: 1
 
 ## Decisions (resolved 2026-10-04)
 1. Docs links → D26a: per-card docs links on both apps.
