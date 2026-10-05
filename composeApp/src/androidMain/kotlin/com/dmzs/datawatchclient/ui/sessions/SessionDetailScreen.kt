@@ -837,6 +837,7 @@ public fun SessionDetailScreen(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             controller = terminalController,
                         )
+                        TerminalSearchBar(toolbarState)
                         TerminalScrollModeStrip(toolbarState)
                         // Backend-specific minimum cols/rows. Matches parent
                         // v0.14.1 per-LLM console-size rule (claude-code = 120×40).

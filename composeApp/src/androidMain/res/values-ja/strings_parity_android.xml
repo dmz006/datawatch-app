@@ -42,4 +42,5 @@
     <string name="guardrail_run_label">ガードレールを実行</string>
     <string name="backend_setup_warn_title">バックエンドがインストールまたは設定されていません</string>
     <string name="backend_setup_warn_detail">このサーバーは「%1$s」をインストール済み・有効なバックエンドとして報告していません。開始前にインストールするか、設定 › LLM で有効にしてください。</string>
+    <string name="terminal_search_ph">ターミナルを検索…</string>
 </resources>
