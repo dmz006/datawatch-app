@@ -1584,4 +1584,19 @@
     <string name="daemon_log_newest">Newest</string>
     <string name="daemon_log_older">Older</string>
     <string name="daemon_log_info">Showing %1$d of %2$d lines (offset %3$d)</string>
+    <!-- Automata story/task LLM overrides, live planning, template badges -->
+    <string name="prd_set_story_llm_title">Story LLM override</string>
+    <string name="prd_story_llm_hint">Per-story LLM override — empty inherits from the Automaton then the global config. All tasks in this story inherit this unless they have their own override.</string>
+    <string name="prd_story_llm_btn">Override LLM for this story</string>
+    <string name="prd_story_profile_inherit">(inherit automaton default)</string>
+    <string name="prd_task_spawn_badge">↳ spawn</string>
+    <string name="prd_task_spawn_hint">This task spec is a child automaton spec; the executor will Plan + Approve + Run it</string>
+    <string name="prd_task_child_link">→ child %1$s</string>
+    <string name="decompose_in_progress">Decomposing Automaton…</string>
+    <string name="decompose_story_count">%1$d stories generated</string>
+    <string name="decompose_error">Decompose failed</string>
+    <string name="tmpl_builtin_badge">built-in</string>
+    <string name="tmpl_used_count">Used %1$d×</string>
+    <string name="prd_instantiate_vars_label">Template vars (k=v,k=v)</string>
+    <string name="automata_filter_toggle">Toggle Automata filters</string>
 </resources>

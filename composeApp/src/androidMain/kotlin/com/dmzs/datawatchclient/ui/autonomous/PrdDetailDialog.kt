@@ -83,7 +83,7 @@ import com.dmzs.datawatchclient.ui.sessions.SessionStatsViewModel
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import androidx.compose.material3.OutlinedButton
 
-private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
+internal val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
 
 /**
  * PRD detail — full-screen Scaffold with 3 tabs: Overview, Stories, Decisions.
@@ -178,8 +178,29 @@ internal fun PrdDetailDialog(
     rulesResult: String? = null,
     rulesLoading: Boolean = false,
     onRunRules: (() -> Unit)? = null,
+    /** PWA story ⚙ — project profile names for the execution-profile override. */
+    projectProfiles: List<String> = emptyList(),
+    /** PWA story 🤖 — POST set_story_llm (storyId, backend, effort, model). */
+    onSetStoryLlm: ((storyId: String, backend: String, effort: String, model: String) -> Unit)? = null,
+    /** PWA story ⚙ — POST set_story_profile (storyId, profile; empty = inherit). */
+    onSetStoryProfile: ((storyId: String, profile: String) -> Unit)? = null,
+    /** PWA task ✎ "Edit spec + LLM" — edit_task and/or set_task_llm. */
+    onEditTaskSpecLlm: ((taskId: String, newSpec: String?, llm: Triple<String, String, String>?) -> Unit)? = null,
+    /** Live planning stream state for this automaton (PWA _startDecomposeStream). */
+    decomposeLive: com.dmzs.datawatchclient.transport.sse.DecomposeLiveState? = null,
+    /** PWA lifecycle strip "Instantiate" for template automata. */
+    onInstantiateTemplate: ((vars: Map<String, String>) -> Unit)? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
+    val modelsFor: (String) -> List<String> = { b ->
+        when {
+            b.contains("ollama", ignoreCase = true) -> ollamaModels
+            b.contains("openwebui", ignoreCase = true) -> openWebUiModels
+            b.startsWith("opencode", ignoreCase = true) -> openCodeModels
+            else -> extraBackendModels[b].orEmpty()
+        }
+    }
+    var instantiateOpen by remember { mutableStateOf(false) }
 
     val status = prd.status
     val canReview = status == "needs_review" || status == "revisions_asked"
@@ -351,8 +372,14 @@ internal fun PrdDetailDialog(
                         }
                     }
 
-                    // Lifecycle strip
-                    LifecycleStrip(status)
+                    // Lifecycle strip (template automata: single Instantiate step, PWA renderLifecycleStrip)
+                    LifecycleStrip(
+                        status,
+                        isTemplate = prd.isTemplate,
+                        onInstantiate = if (onInstantiateTemplate != null) ({ instantiateOpen = true }) else null,
+                    )
+                    // Live planning stream (PWA #decompose-progress box under the toolbar)
+                    if (decomposeLive != null) DecomposeLiveCard(decomposeLive)
 
                     // Active session card — PWA prdActiveSessionCard parity (planning/decomposing/running/blocked)
                     if (status in setOf("planning", "decomposing", "running", "blocked")) {
@@ -452,10 +479,8 @@ internal fun PrdDetailDialog(
                             }
                             if (status == "draft" || status == "revisions_asked") {
                                 FilledTonalButton(
-                                    onClick = {
-                                        onDecompose()
-                                        onDismiss()
-                                    },
+                                    // Stay on the detail so the live planning stream shows (PWA).
+                                    onClick = { onDecompose() },
                                     modifier = Modifier.weight(1f),
                                 ) { Text(stringResource(R.string.prd_detail_decompose)) }
                             }
@@ -685,6 +710,12 @@ internal fun PrdDetailDialog(
                                             onRejectStory = onRejectStory?.let { cb -> { reason -> cb(story.id, reason) } },
                                             projectDir = prd.projectDir,
                                             onOpenFile = onOpenFile,
+                                            backends = backends,
+                                            modelsFor = modelsFor,
+                                            projectProfiles = projectProfiles,
+                                            onSetStoryLlm = onSetStoryLlm?.let { cb -> { b, e, m -> cb(story.id, b, e, m) } },
+                                            onSetStoryProfile = onSetStoryProfile?.let { cb -> { p -> cb(story.id, p) } },
+                                            onEditTaskSpecLlm = onEditTaskSpecLlm,
                                         )
                                     }
                                 }
@@ -904,6 +935,13 @@ internal fun PrdDetailDialog(
     }
 
     // ── Sub-dialogs ────────────────────────────────────────────────────────
+
+    if (instantiateOpen && onInstantiateTemplate != null) {
+        PrdInstantiateTemplateDialog(
+            onDismiss = { instantiateOpen = false },
+            onSubmit = { vars -> onInstantiateTemplate(vars) },
+        )
+    }
 
     if (approveOpen) {
         AlertDialog(
@@ -1518,7 +1556,17 @@ private fun StoryRow(
     onRejectStory: ((reason: String) -> Unit)? = null,
     projectDir: String? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
+    backends: List<String> = emptyList(),
+    modelsFor: (String) -> List<String> = { emptyList() },
+    projectProfiles: List<String> = emptyList(),
+    onSetStoryLlm: ((backend: String, effort: String, model: String) -> Unit)? = null,
+    onSetStoryProfile: ((profile: String) -> Unit)? = null,
+    onEditTaskSpecLlm: ((taskId: String, newSpec: String?, llm: Triple<String, String, String>?) -> Unit)? = null,
 ) {
+    // PWA renderStory `editable` gate (needs_review / revisions_asked / cancelled).
+    val pwaEditable = com.dmzs.datawatchclient.transport.dto.PrdLlmBadge.isEditable(prdStatus)
+    var storyLlmOpen by remember { mutableStateOf(false) }
+    var storyProfileOpen by remember { mutableStateOf(false) }
     val activeStoryStatuses = remember {
         setOf("running", "in_progress", "active", "awaiting_approval", "verifying", "running_tests")
     }
@@ -1563,6 +1611,15 @@ private fun StoryRow(
                 modifier = Modifier.padding(horizontal = 6.dp),
             )
             StoryStatusPill(effectiveStatus)
+        }
+        // PWA story header pills: prof (read-only only) + LLM override.
+        val profPill = com.dmzs.datawatchclient.transport.dto.PrdLlmBadge.storyProfileLabel(story, pwaEditable)
+        val llmPill = com.dmzs.datawatchclient.transport.dto.PrdLlmBadge.storyLabel(story)
+        if (profPill != null || llmPill != null) {
+            FlowRow(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
+                profPill?.let { PrdMiniPill(it) }
+                llmPill?.let { PrdMiniPill(it) }
+            }
         }
 
         // Guided-mode approve/reject: visible only when story is awaiting_approval and PRD is running.
@@ -1659,6 +1716,17 @@ private fun StoryRow(
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }
+                            // PWA ⚙ execution-profile + 🤖 LLM override (editable states only).
+                            if (pwaEditable && onSetStoryProfile != null) {
+                                TextButton(onClick = { storyProfileOpen = true }) {
+                                    Text("⚙", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                            if (pwaEditable && onSetStoryLlm != null) {
+                                TextButton(onClick = { storyLlmOpen = true }) {
+                                    Text("🤖", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
                             val storyIsActive = story.status !in setOf("complete", "cancelled", "rejected")
                             if (onCancelStory != null && storyIsActive) {
                                 TextButton(onClick = { cancelStoryReason = ""; cancelStoryOpen = true }) {
@@ -1748,6 +1816,9 @@ private fun StoryRow(
                             onRemoveTask = onRemoveTask?.let { cb -> { cb(task.id) } },
                             projectDir = projectDir,
                             onOpenFile = onOpenFile,
+                            backends = backends,
+                            modelsFor = modelsFor,
+                            onEditTaskSpecLlm = onEditTaskSpecLlm?.let { cb -> { spec, llm -> cb(task.id, spec, llm) } },
                         )
                     }
                 }
@@ -1763,6 +1834,29 @@ private fun StoryRow(
         }
     }
 
+    if (storyLlmOpen && onSetStoryLlm != null) {
+        PrdItemLlmDialog(
+            title = stringResource(R.string.prd_set_story_llm_title),
+            hint = stringResource(R.string.prd_story_llm_hint),
+            spec = null,
+            currentBackend = story.backend.orEmpty(),
+            currentEffort = story.effort.orEmpty(),
+            currentModel = story.model.orEmpty(),
+            backends = backends,
+            modelsFor = modelsFor,
+            onDismiss = { storyLlmOpen = false },
+            onSave = { _, llm -> llm?.let { (b, e, m) -> onSetStoryLlm(b, e, m) } },
+        )
+    }
+    if (storyProfileOpen && onSetStoryProfile != null) {
+        PrdStoryProfileDialog(
+            storyId = story.id,
+            current = story.executionProfile.orEmpty(),
+            profiles = projectProfiles,
+            onDismiss = { storyProfileOpen = false },
+            onSave = { onSetStoryProfile(it) },
+        )
+    }
     if (cancelStoryOpen && onCancelStory != null) {
         AlertDialog(
             onDismissRequest = { cancelStoryOpen = false },
@@ -1868,6 +1962,9 @@ private fun TaskRow(
     onRemoveTask: (() -> Unit)? = null,
     projectDir: String? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
+    backends: List<String> = emptyList(),
+    modelsFor: (String) -> List<String> = { emptyList() },
+    onEditTaskSpecLlm: ((newSpec: String?, llm: Triple<String, String, String>?) -> Unit)? = null,
 ) {
     // Server now accepts reset_task for PRDBlocked (same as PRDFailed) — widen gate to match.
     val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus in setOf("running", "blocked", "cancelled")
@@ -1956,6 +2053,29 @@ private fun TaskRow(
                 color = statusColor,
                 modifier = Modifier.padding(start = 4.dp),
             )
+        }
+        // PWA inline badges (visible collapsed or expanded): LLM override, ↳ spawn, → child.
+        val taskLlm = com.dmzs.datawatchclient.transport.dto.PrdLlmBadge.taskLabel(task)
+        val childId = task.childPrdId?.takeIf { it.isNotBlank() }
+        if (taskLlm != null || task.spawnPrd || childId != null) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 2.dp),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                taskLlm?.let { PrdMiniPill(it) }
+                if (task.spawnPrd) {
+                    PrdMiniPill(stringResource(R.string.prd_task_spawn_badge), color = Color(0xFF8B5CF6))
+                }
+                childId?.let { cid ->
+                    Text(
+                        stringResource(R.string.prd_task_child_link, cid.take(8)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
+                }
+            }
         }
         AnimatedVisibility(visible = expanded) { Column(modifier = Modifier.padding(top = 4.dp)) {
         // Full spec text
@@ -2064,7 +2184,8 @@ private fun TaskRow(
         }
         // Action buttons row
         val hasActions = (canRetry && onResetTask != null) || (canRequeue && onRequeueTask != null) ||
-            (canCancel && onCancelTask != null) || (canEdit && onEditTask != null) || (canEdit && onRemoveTask != null)
+            (canCancel && onCancelTask != null) || (canEdit && (onEditTask != null || onEditTaskSpecLlm != null)) ||
+            (canEdit && onRemoveTask != null)
         if (hasActions) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 if (canRetry && onResetTask != null) {
@@ -2077,8 +2198,8 @@ private fun TaskRow(
                         Text("↺ Re-run", style = MaterialTheme.typography.labelSmall, color = Color(0xFF3B82F6))
                     }
                 }
-                if (canEdit && onEditTask != null) {
-                    TextButton(onClick = { editTaskSpec = task.task; editTaskOpen = true }) {
+                if (canEdit && (onEditTask != null || onEditTaskSpecLlm != null)) {
+                    TextButton(onClick = { editTaskSpec = task.spec.ifBlank { task.task }; editTaskOpen = true }) {
                         Text(
                             stringResource(R.string.action_edit),
                             style = MaterialTheme.typography.labelSmall,
@@ -2135,7 +2256,21 @@ private fun TaskRow(
         )
     }
 
-    if (editTaskOpen && onEditTask != null) {
+    if (editTaskOpen && onEditTaskSpecLlm != null) {
+        // PWA openPRDEditTaskModal: spec + per-task LLM override in one dialog.
+        PrdItemLlmDialog(
+            title = stringResource(R.string.prd_edit_task_title_prefix) + " " + task.id.take(8),
+            hint = stringResource(R.string.prd_task_llm_hint),
+            spec = task.spec.ifBlank { task.task },
+            currentBackend = task.backend.orEmpty(),
+            currentEffort = task.effort.orEmpty(),
+            currentModel = task.model.orEmpty(),
+            backends = backends,
+            modelsFor = modelsFor,
+            onDismiss = { editTaskOpen = false },
+            onSave = { spec, llm -> onEditTaskSpecLlm(spec, llm) },
+        )
+    } else if (editTaskOpen && onEditTask != null) {
         AlertDialog(
             onDismissRequest = { editTaskOpen = false },
             title = { Text(stringResource(R.string.prd_detail_edit_task_title)) },

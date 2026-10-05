@@ -1271,4 +1271,19 @@
     <string name="daemon_log_newest">Neueste</string>
     <string name="daemon_log_older">Älter</string>
     <string name="daemon_log_info">%1$d von %2$d Zeilen (Offset %3$d)</string>
+    <!-- Automata story/task LLM overrides, live planning, template badges -->
+    <string name="prd_set_story_llm_title">Story-LLM-Überschreibung</string>
+    <string name="prd_story_llm_hint">Story-spezifische LLM-Überschreibung — leer erbt vom Automaten dann die globale Konfiguration. Alle Aufgaben in dieser Story erben diesen Wert, sofern sie keine eigene Überschreibung haben.</string>
+    <string name="prd_story_llm_btn">LLM für diese Story überschreiben</string>
+    <string name="prd_story_profile_inherit">(Automaton-Standard erben)</string>
+    <string name="prd_task_spawn_badge">↳ spawn</string>
+    <string name="prd_task_spawn_hint">Diese Aufgabe ist die Spezifikation eines Kind-Automaten; der Executor plant, genehmigt und startet ihn</string>
+    <string name="prd_task_child_link">→ Kind %1$s</string>
+    <string name="decompose_in_progress">Automaton wird zerlegt…</string>
+    <string name="decompose_story_count">%1$d Stories generiert</string>
+    <string name="decompose_error">Zerlegung fehlgeschlagen</string>
+    <string name="tmpl_builtin_badge">integriert</string>
+    <string name="tmpl_used_count">%1$d× verwendet</string>
+    <string name="prd_instantiate_vars_label">Vorlagenvariablen (k=v,k=v)</string>
+    <string name="automata_filter_toggle">Automata-Filter umschalten</string>
 </resources>

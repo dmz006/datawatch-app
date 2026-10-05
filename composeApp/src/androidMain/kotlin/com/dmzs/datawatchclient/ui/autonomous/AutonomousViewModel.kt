@@ -1255,4 +1255,132 @@ public class AutonomousViewModel(
         val current = ServiceLocator.pinnedAutomataStore.isPinned(profileId, prdId)
         ServiceLocator.pinnedAutomataStore.setPinned(profileId, prdId, !current)
     }
+
+    // ── Story / task LLM + profile overrides (PWA ⚙ / 🤖 / ✎ spec + LLM) ──────
+
+    private val _projectProfiles = MutableStateFlow<List<String>>(emptyList())
+
+    /** Project profile names for the story ⚙ execution-profile picker. */
+    public val projectProfiles: StateFlow<List<String>> = _projectProfiles.asStateFlow()
+
+    public fun loadProjectProfiles() {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.listKindProfiles("project").onSuccess { list ->
+                _projectProfiles.value =
+                    list.mapNotNull { obj -> (obj["name"] as? JsonPrimitive)?.content }.filter { it.isNotBlank() }.sorted()
+            }
+        }
+    }
+
+    /** POST …/set_story_llm `{story_id, backend, effort, model, actor}` — empty values inherit. */
+    public fun setStoryLlm(prdId: String, storyId: String, backend: String, effort: String, model: String) {
+        val body =
+            buildJsonObject {
+                put("story_id", JsonPrimitive(storyId))
+                put("backend", JsonPrimitive(backend))
+                put("effort", JsonPrimitive(effort))
+                put("model", JsonPrimitive(model))
+                put("actor", JsonPrimitive("operator"))
+            }
+        prdOp("Story LLM") { it.prdAction(prdId, "set_story_llm", body) }
+    }
+
+    /** POST …/set_story_profile `{story_id, profile, actor}` — empty profile inherits. */
+    public fun setStoryProfile(prdId: String, storyId: String, profile: String) {
+        val body =
+            buildJsonObject {
+                put("story_id", JsonPrimitive(storyId))
+                put("profile", JsonPrimitive(profile))
+                put("actor", JsonPrimitive("operator"))
+            }
+        prdOp("Story profile") { it.prdAction(prdId, "set_story_profile", body) }
+    }
+
+    /**
+     * PWA openPRDEditTaskModal save: edit_task when the spec changed, set_task_llm
+     * when backend/effort/model changed.
+     */
+    public fun editTaskSpecAndLlm(
+        prdId: String,
+        taskId: String,
+        newSpec: String?,
+        llm: Triple<String, String, String>?,
+    ) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            if (!newSpec.isNullOrBlank()) {
+                transport.editPrdTask(prdId, taskId, newSpec).onFailure { err ->
+                    _state.value = _state.value.copy(banner = "Edit task failed — ${err.message ?: err::class.simpleName}")
+                    return@launch
+                }
+            }
+            if (llm != null) {
+                val body =
+                    buildJsonObject {
+                        put("task_id", JsonPrimitive(taskId))
+                        put("backend", JsonPrimitive(llm.first))
+                        put("effort", JsonPrimitive(llm.second))
+                        put("model", JsonPrimitive(llm.third))
+                        put("actor", JsonPrimitive("operator"))
+                    }
+                transport.prdAction(prdId, "set_task_llm", body).onFailure { err ->
+                    _state.value = _state.value.copy(banner = "Task LLM failed — ${err.message ?: err::class.simpleName}")
+                    return@launch
+                }
+            }
+            refresh()
+        }
+    }
+
+    /** PWA openPRDInstantiateModal: POST …/{templateId}/instantiate `{vars, actor}`. */
+    public fun instantiatePrdTemplate(prdId: String, vars: Map<String, String>) {
+        val body =
+            buildJsonObject {
+                put("vars", buildJsonObject { vars.forEach { (k, v) -> put(k, JsonPrimitive(v)) } })
+                put("actor", JsonPrimitive("operator"))
+            }
+        prdOp("Instantiate") { it.prdAction(prdId, "instantiate", body) }
+    }
+
+    // ── Live planning stream (PWA _startDecomposeStream) ──────────────────────
+
+    private val _decomposeLive = MutableStateFlow<Pair<String, com.dmzs.datawatchclient.transport.sse.DecomposeLiveState>?>(null)
+
+    /** (prdId, accumulated stream state) while a planning stream is open or just finished. */
+    public val decomposeLive: StateFlow<Pair<String, com.dmzs.datawatchclient.transport.sse.DecomposeLiveState>?> =
+        _decomposeLive.asStateFlow()
+    private var decomposeJob: Job? = null
+
+    /** Open the planning stream for [prdId]; no-op when one is already running for it. */
+    public fun startDecomposeStream(prdId: String) {
+        if (decomposeJob?.isActive == true && _decomposeLive.value?.first == prdId) return
+        decomposeJob?.cancel()
+        _decomposeLive.value = prdId to com.dmzs.datawatchclient.transport.sse.DecomposeLiveState()
+        decomposeJob =
+            viewModelScope.launch {
+                val (_, transport) = resolver.resolve() ?: return@launch
+                runCatching {
+                    transport.decomposeEvents(prdId).collect { ev ->
+                        val cur = _decomposeLive.value?.second ?: com.dmzs.datawatchclient.transport.sse.DecomposeLiveState()
+                        _decomposeLive.value = prdId to cur.apply(ev)
+                    }
+                }
+                // Stream over: pull the planned automaton (PWA _refreshAutomataOrPRD).
+                fetchFullPrd(prdId)
+                refresh()
+                val end = _decomposeLive.value?.second
+                if (end != null && (end.finished || end.error != null)) {
+                    // Keep the ✓ / ✗ outcome visible briefly, like the PWA (3 s / 8 s).
+                    delay(if (end.error != null) 8_000L else 3_000L)
+                }
+                if (_decomposeLive.value?.first == prdId) _decomposeLive.value = null
+            }
+    }
+
+    public fun stopDecomposeStream() {
+        decomposeJob?.cancel()
+        decomposeJob = null
+        _decomposeLive.value = null
+    }
 }
