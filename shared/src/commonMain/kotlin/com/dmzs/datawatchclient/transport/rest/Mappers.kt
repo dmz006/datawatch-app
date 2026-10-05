@@ -56,10 +56,15 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
 private fun SessionDto.extractHostnamePrefix(): String? {
     // If the server sent full_id (hostname-shortid), extract the hostname prefix.
     // Otherwise fall back to the hostname field.
-    return if (fullId != null && fullId.contains("-")) {
-        fullId.substringBefore("-")
-    } else {
-        hostname
+    // Hostnames may contain '-' (e.g. "build-box-2"), so strip the "-<id>"
+    // suffix rather than cutting at the first hyphen — fullId keys every
+    // mutation endpoint, and a wrong prefix makes kill/rename/delete miss.
+    val fid = fullId
+    return when {
+        fid == null -> hostname
+        id.isNotEmpty() && fid.endsWith("-$id") -> fid.removeSuffix("-$id")
+        fid.contains("-") -> fid.substringBeforeLast("-")
+        else -> hostname
     }
 }
 
