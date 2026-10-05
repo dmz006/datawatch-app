@@ -54,6 +54,7 @@ struct AutomataView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
     @State private var section: AutomataSection = .prds
+    @State private var showIdentityWizard = false
 
     // D22a/D25a: Automata | Templates. The type registry moved to
     // Settings › Automata › Type Registry (SettingsAutomataTypesView).
@@ -91,12 +92,24 @@ struct AutomataView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
+                    // PWA #headerIdentityBtn: 🤖 opens the Identity Wizard (Automata view only).
+                    if selectedProfile != nil {
+                        Button { showIdentityWizard = true } label: {
+                            Text("🤖").font(.system(size: 18))
+                        }
+                        .accessibilityLabel("Identity wizard")
+                    }
                     DocsLinkButton(profile: selectedProfile, anchor: "automata")
                     AlertsBellButton()
                     if !store.isAllServers {
                         ReachabilityDotView(profile: selectedProfile)
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $showIdentityWizard) {
+            if let profile = selectedProfile {
+                IdentityWizardSheet(profile: profile)
             }
         }
         .onChange(of: store.activeProfileId) { id in
