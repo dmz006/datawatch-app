@@ -279,7 +279,7 @@
     <string name="scan_verdict_fail">FAIL</string>
     <string name="scan_run">Run scan</string>
     <string name="scan_findings_count">%1$d finding(s)</string>
-    <string name="scan_fix_prd">Fix PRD</string>
+    <string name="scan_fix_prd">Fix Automaton</string>
     <string name="scan_propose_rules">Propose rules</string>
     <string name="scan_config_title">Scan configuration</string>
     <string name="scan_config_enabled">Enable security scan</string>
@@ -329,7 +329,7 @@
     <string name="prd_tab_decisions">Decisions</string>
     <string name="prd_tab_decisions_empty">No decisions logged yet.</string>
     <string name="prd_tab_graph">Graph</string>
-    <string name="prd_tab_graph_empty">No dependency graph available for this PRD.</string>
+    <string name="prd_tab_graph_empty">No dependency graph available for this Automaton.</string>
     <string name="prd_tab_graph_loading">Loading graph…</string>
     <string name="prd_tab_scan">Scan</string>
     <string name="prd_detail_reject_title">Reject Automaton?</string>
@@ -350,8 +350,8 @@
     <string name="prd_detail_description_label">Description</string>
     <string name="prd_detail_files_label">Files</string>
     <string name="prd_detail_files_hint">One path per line, max 50.</string>
-    <string name="prd_detail_delete_title">Delete PRD?</string>
-    <string name="prd_detail_delete_body">Permanently removes \"%1$s\" and all child PRDs. This cannot be undone.</string>
+    <string name="prd_detail_delete_title">Delete Automaton?</string>
+    <string name="prd_detail_delete_body">Permanently removes \"%1$s\" and all child Automata. This cannot be undone.</string>
     <string name="prd_detail_edit_files">✎ files</string>
     <string name="prd_detail_stories_header">Stories (%1$d)</string>
 
@@ -541,7 +541,7 @@
     <string name="chat_role_system">System</string>
     <string name="chat_role_thinking">Thinking</string>
     <string name="chat_role_user">You</string>
-    <string name="fab_launch_auto">Launch Automation</string>
+    <string name="fab_launch_auto">Launch Automaton</string>
     <string name="fab_new_session">Start a new session</string>
     <string name="input_ph_command">Send command or input…</string>
     <string name="input_ph_message">Send message…</string>
@@ -592,10 +592,10 @@
     <string name="prd_btn_repair_depends_on">Repair Dependencies</string>
     <string name="prd_btn_clone_template_title">Save this automaton as a reusable template</string>
     <string name="prd_btn_delete">Delete</string>
-    <string name="prd_btn_delete_title">Hard-delete the PRD and any descendants</string>
+    <string name="prd_btn_delete_title">Hard-delete the Automaton and any descendants</string>
     <string name="prd_btn_edit_spec">Edit Spec</string>
     <string name="prd_btn_request_revision">Request Revision</string>
-    <string name="prd_btn_request_revision_title">Send the PRD back for revision with a note</string>
+    <string name="prd_btn_request_revision_title">Send the Automaton back for revision with a note</string>
     <string name="prd_btn_settings">Settings</string>
     <string name="prd_decision_detail">Detail</string>
     <string name="prd_decisions_count">decisions</string>
@@ -606,25 +606,25 @@
     <string name="prd_edit_story_title_prefix">Edit story</string>
     <string name="prd_edit_task_files_title">Edit task files</string>
     <string name="prd_edit_task_title_prefix">Edit task</string>
-    <string name="prd_list_empty">No PRDs match.</string>
+    <string name="prd_list_empty">No Automata match.</string>
     <string name="prd_more_actions">More actions</string>
     <string name="prd_new_backend_label">Backend</string>
     <string name="prd_new_effort_label">Effort</string>
     <string name="prd_new_model_label">Model (optional)</string>
     <string name="prd_new_spec_label">Spec — describe the feature in plain English</string>
     <string name="prd_new_spec_ph">Add a CACHE column to /api/stats…</string>
-    <string name="prd_new_title">New PRD</string>
+    <string name="prd_new_title">New Automaton</string>
     <string name="prd_new_title_label">Title (optional)</string>
     <string name="prd_new_title_ph">Short headline</string>
     <string name="prd_no_decisions">No decisions recorded yet.</string>
     <string name="prd_no_stories">No stories yet.</string>
     <string name="prd_no_tasks">No tasks.</string>
     <string name="prd_revision_prompt">What needs revision?</string>
-    <string name="prd_scan_help">Static analysis (SAST, secrets, dependencies, LLM grader) over the PRD spec and any associated files. Runs the configured scanners and reports a verdict and findings.</string>
-    <string name="prd_scan_run_title">Run all configured scanners against this PRD</string>
+    <string name="prd_scan_help">Static analysis (SAST, secrets, dependencies, LLM grader) over the Automaton spec and any associated files. Runs the configured scanners and reports a verdict and findings.</string>
+    <string name="prd_scan_run_title">Run all configured scanners against this Automaton</string>
     <string name="prd_set_llm_hint">Tasks without a per-task override inherit these values. Empty = fall back to the global session.llm_backend default.</string>
-    <string name="prd_set_llm_title">PRD-level worker LLM</string>
-    <string name="prd_set_story_profile_hint">Empty = inherit the PRD\'s default execution profile (PRD.project_profile). A name overrides for this story only.</string>
+    <string name="prd_set_llm_title">Automaton-level worker LLM</string>
+    <string name="prd_set_story_profile_hint">Empty = inherit the Automaton\'s default execution profile (project_profile). A name overrides for this story only.</string>
     <string name="prd_set_story_profile_title">Override execution profile</string>
     <string name="prd_settings_guided_label">Guided mode — pause for operator after each story for review</string>
     <string name="prd_settings_modal_title">Automaton settings</string>
@@ -650,7 +650,7 @@
     <string name="prd_stories_tasks">Stories &amp; tasks</string>
     <string name="prd_story_desc_label">Description</string>
     <string name="prd_story_title_label">Title</string>
-    <string name="prd_task_llm_hint">Per-task LLM override — empty inherits PRD then global.</string>
+    <string name="prd_task_llm_hint">Per-task LLM override — empty inherits the Automaton then global.</string>
     <string name="prd_view_spec">View spec</string>
     <string name="prd_view_sessions">→ View sessions</string>
     <string name="profile_agent_settings_section">Agent Settings</string>
@@ -1460,7 +1460,7 @@
     <!-- ── BL385–387 Memory lifecycle / scope model (#174 #175 #176 #183) ── -->
     <!-- Memory stats tile on PRD detail -->
     <string name="prd_memory_stats">Memory</string>
-    <string name="memory_scope_prd_shared">PRD-shared</string>
+    <string name="memory_scope_prd_shared">Automaton-shared</string>
     <string name="memory_scope_story_shared">Story-shared</string>
     <string name="memory_scope_session_local">Session</string>
     <!-- Memory report section on PRD detail -->
@@ -1479,13 +1479,13 @@
     <string name="new_prd_memory_seed">Seed from prior memory</string>
     <string name="new_prd_memory_seed_hint">Inject relevant memories at task start</string>
     <string name="new_prd_memory_harvest">Harvest learnings on completion</string>
-    <string name="new_prd_memory_harvest_hint">Promote memories when PRD finishes</string>
+    <string name="new_prd_memory_harvest_hint">Promote memories when the Automaton finishes</string>
     <string name="new_prd_memory_promote_to">Promote to scope</string>
-    <string name="new_prd_memory_from_prds">Seed from prior PRDs</string>
-    <string name="new_prd_memory_from_prds_hint">Inherit learnings from selected PRDs at task start</string>
+    <string name="new_prd_memory_from_prds">Seed from prior Automata</string>
+    <string name="new_prd_memory_from_prds_hint">Inherit learnings from selected Automata at task start</string>
     <!-- Memory recall search card on PRD detail -->
     <string name="prd_memory_recall">Memory Recall</string>
-    <string name="prd_memory_recall_hint">Search PRD memories…</string>
+    <string name="prd_memory_recall_hint">Search Automaton memories…</string>
     <string name="prd_memory_recall_empty">No results</string>
     <string name="prd_memory_recall_search">Search</string>
     <!-- #191 scope dirs + scope warnings (#191) -->

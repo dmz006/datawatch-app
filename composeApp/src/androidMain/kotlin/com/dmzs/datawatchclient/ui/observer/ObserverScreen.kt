@@ -14,8 +14,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +23,7 @@ import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
-import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
+import com.dmzs.datawatchclient.ui.common.ServerPickerBar
 
 /**
  * Observer tab — aggregates monitoring cards: system stats, eBPF, cluster,
@@ -42,24 +40,11 @@ public fun ObserverScreen(
     val reachable by vm.reachable.collectAsState()
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
-    var pickerOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    SingleServerPickerTitle(
-                        active = state.activeProfile,
-                        open = pickerOpen,
-                        onToggle = { pickerOpen = !pickerOpen },
-                        onDismiss = { pickerOpen = false },
-                        profiles = state.allProfiles,
-                        onSelect = {
-                            vm.selectProfile(it)
-                            pickerOpen = false
-                        },
-                    )
-                },
+                title = { androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.nav_observer)) },
                 actions = {
                     DocsLinkAction("datawatch-definitions.md#observer")
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
@@ -89,30 +74,57 @@ public fun ObserverScreen(
                         .padding(innerPadding)
                         .verticalScroll(rememberScrollState()),
             ) {
-                com.dmzs.datawatchclient.ui.monitoring.SystemStatsGridCard()
-                com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
-                com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
-                com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()
-                com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
-                com.dmzs.datawatchclient.ui.monitoring.PeerResourcesCard()
-                com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
-                com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
-                com.dmzs.datawatchclient.ui.about.McpChannelCard()
-                CommBackendsCard()
-                MatrixStatusCard()
+                ServerPickerBar(
+                    profiles = state.allProfiles,
+                    activeId = state.activeProfile?.id,
+                    allMode = false,
+                    onSelect = vm::selectProfile,
+                )
+                // Parity D28a — PWA Observer order: one "System Statistics"
+                // block (grid + stats panel + eBPF + plugins + peers + cluster +
+                // channel + comm sub-blocks), then the standalone cards, with
+                // Federated Peers last. Pipelines and Identity live in Settings
+                // only (PWA has no Observer copy).
+                ObserverStatsBlock()
                 com.dmzs.datawatchclient.ui.memory.MemoryCard()
                 com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
                 com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                 com.dmzs.datawatchclient.ui.monitoring.CooldownCard()
                 com.dmzs.datawatchclient.ui.monitoring.SessionAnalyticsCard()
                 com.dmzs.datawatchclient.ui.monitoring.AuditLogCard()
-                // PWA renders the live pipelines block under the audit log (8 s).
-                com.dmzs.datawatchclient.ui.automata.PipelineManagerCard(liveRefreshMs = 8_000L)
                 KnowledgeGraphCard()
-                // PWA identity panel (/api/identity) sits under the KG browser.
-                com.dmzs.datawatchclient.ui.settings.IdentityCard()
                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
             }
         }
     }
+}
+
+/**
+ * Parity D28a — the PWA "System Statistics" section is one collapsible block
+ * holding every stats sub-panel; collapsing it hides them all (key `stats`).
+ */
+@Composable
+private fun ObserverStatsBlock() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val collapsed = com.dmzs.datawatchclient.ui.theme.PwaCardCollapseStore.isCollapsed(context, "stats")
+    com.dmzs.datawatchclient.ui.theme.PwaCardHeader(
+        title = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.observer_system_statistics),
+        collapsed = collapsed,
+        onToggle = { com.dmzs.datawatchclient.ui.theme.PwaCardCollapseStore.toggle(context, "stats") },
+        docsAnchor = "system-statistics",
+        headerActions = null,
+    )
+    if (collapsed) return
+    com.dmzs.datawatchclient.ui.monitoring.SystemStatsGridCard()
+    com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
+    com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
+    com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()
+    com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
+    com.dmzs.datawatchclient.ui.monitoring.PeerResourcesCard()
+    com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
+    com.dmzs.datawatchclient.ui.about.McpChannelCard()
+    ChannelDiagnosticsCard()
+    CommBackendsCard()
+    MatrixStatusCard()
 }

@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -59,22 +58,8 @@ public class SchedulesViewModel : ViewModel() {
             .distinctUntilChanged { a, b -> a.id == b.id }
             .onEach { refresh() }
             .launchIn(viewModelScope)
-
-        // 15-second poll so Scheduled Events stays live without the
-        // user hitting a Refresh button — matches PWA's ticking
-        // behaviour (B16). Invisible to the UI; refreshing flag is
-        // only flipped inside [refresh] while the HTTP call is in
-        // flight, so there's no visible loading flicker every tick.
-        viewModelScope.launch {
-            while (isActive) {
-                kotlinx.coroutines.delay(SCHEDULES_POLL_MS)
-                refresh()
-            }
-        }
-    }
-
-    private companion object {
-        const val SCHEDULES_POLL_MS: Long = 15_000L
+        // Parity D54b — PWA loads Scheduled Events one-shot on render (and
+        // after each mutation); no timed re-poll.
     }
 
     public fun refresh() {
@@ -151,6 +136,50 @@ public class SchedulesViewModel : ViewModel() {
                         )
                 },
             )
+        }
+    }
+
+    /**
+     * Parity D56b — PWA `editSchedulePrompt`: PUT /api/schedules with the new
+     * command (blank keeps the current one) and, when given, a new run_at.
+     */
+    public fun update(
+        id: String,
+        currentCommand: String,
+        newCommand: String,
+        newRunAt: String,
+    ) {
+        viewModelScope.launch {
+            val profile = resolveActiveProfile() ?: return@launch
+            ServiceLocator.transportFor(profile).updateSchedule(
+                id = id,
+                command = newCommand.ifBlank { currentCommand },
+                runAt = newRunAt.trim().ifBlank { null },
+            ).fold(
+                onSuccess = {
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Schedule updated")
+                    refresh()
+                },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Update failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
+    /** PWA `deleteSelectedSchedules`: delete every checked schedule, then reload. */
+    public fun deleteMany(ids: Collection<String>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val profile = resolveActiveProfile() ?: return@launch
+            val transport = ServiceLocator.transportFor(profile)
+            val failures = ids.map { transport.deleteSchedule(it) }.count { it.isFailure }
+            if (failures > 0) {
+                _state.value = _state.value.copy(banner = "Delete failed for $failures of ${ids.size}")
+            } else {
+                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Deleted ${ids.size} events")
+            }
+            refresh()
         }
     }
 

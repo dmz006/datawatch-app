@@ -32,23 +32,26 @@ Ordered by user impact within each platform. Refs: `SS` section file › row Fea
 
 ### Android
 
-1. **Server picker bar** (PWA chip + bar, not title dropdown) on Sessions/Observer (D2a). `02` › Server / profile switcher · `01` › Server-picker placement · `06` › Header title, Server picker
-2. **Current status inline in card**, not a bottom sheet (D14a). `02` › Running: ▶ What's it doing?, Current-status result
-3. **Observer to PWA rules** — card order with nested stats block (D28a); 📊 peer snapshot modal (D55a); memory maintenance dry-run only, no "Sweep now" (D89b); thresholds verbatim (D29a); one-shot + WS refresh, 8 s grid (D54b). `06` › Card order, 📊 Snapshot button, 2×2 maintenance grid, thresholds rows, REST fallback cadence · `08` › Observer peer snapshot modal
-4. **Automata detail tabs** — add Rules + Scan, Graph/Progress as cards (D24a); progress bar on list cards; PWA sort. `05` › Detail tabs, Card: progress bar, List sort
-5. **Fresh-fetch response viewer + 🤖 Summary** (D43a). `02`, `03` › Response viewer
-6. **Shell** — `dwclient://` → `datawatch://` (D84b); restore last tab + session (D40a); status-dot long-press reconnect (D38a); drop Onboarding for minimal first run (D86c). `01`
-7. **Alerts quick reply** = saved-commands select sending `alertSendCmd`; group order by state rank. `04` › Quick reply, Group ordering
-8. **Session detail** — inline process-stats bar (D45a); terminal search UI (D69a); agent ⬡ + Chrome badges (D66a); connect watchdog; JetBrains Mono terminal (D8a); 5-state override list; composer placeholder copy. `03`
-9. **Observer extras** — schedule edit via two prompts (D56b) + select-all; channel diagnostics, Matrix Test, web-search history; memory role/since filters; RTK update badge; remove duplicate Pipelines/Identity cards. `06`
-10. **Settings** — installed-plugin enable/disable/reload/test; missing config keys (`session.backend_family`, `whisper.backend`, `web_search.cache_*`, `vision.*`, `orchestrator.guardrail_model`, autonomous planning keys); vault status inside Secrets card (D33a); inline restart link instead of banner (D57b); mount `McpToolsCard`. `07`
-11. **Dashboard stat strip** (sessions/tasks/guardrails/burn rate) (D34a); flat OpenCode model list (D58b). `08`
-12. **Low** — accent2 alert-pill border (D3a), accent #7C3AED compute badge (D6b), splash fade-out, 99+ cap, LLM/worker badge copy, copy/wording drift in 02/03/06.
+Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where noted; see the per-row
+"Android done 2026-10-04" notes in the section files.
+
+1. ~~**Server picker bar** (PWA chip + bar, not title dropdown) on Sessions/Observer (D2a).~~ Done — `ServerPickerBar` on Sessions/Automata (+All), Observer, Dashboard; title dropdowns removed.
+2. ~~**Current status inline in card**, not a bottom sheet (D14a).~~ Done.
+3. ~~**Observer to PWA rules** — card order with nested stats block (D28a); 📊 peer snapshot modal (D55a); memory maintenance dry-run only (D89b); thresholds verbatim (D29a); one-shot + WS refresh, 8 s grid (D54b).~~ Done.
+4. ~~**Automata detail tabs** — Rules + Scan, Graph/Progress as cards (D24a); progress bar on list cards; PWA sort.~~ Done (Scan/Rules tabs always shown — `PrdDto` has no scan/rules flags).
+5. ~~**Fresh-fetch response viewer + 🤖 Summary** (D43a).~~ Done.
+6. ~~**Shell** — `datawatch://` (D84b, `dwclient://` alias for one release); restore last tab + session (D40a); status-dot long-press reconnect (D38a); minimal first run (D86c).~~ Done (D38a update-check half n/a: app updates are store-managed).
+7. ~~**Alerts quick reply** = saved-commands select; group order by state rank.~~ Done (sent via the session-reply endpoint).
+8. **Session detail** — ~~inline process-stats bar (D45a); terminal search UI (D69a); agent ⬡ + Chrome badges (D66a); connect watchdog; 5-state override list; composer placeholder copy.~~ Done. **Open:** JetBrains Mono terminal (D8a) — needs the OFL font asset bundled (not in repo; adding an asset/dependency needs approval).
+9. ~~**Observer extras** — schedule edit via two prompts (D56b) + select-all; channel diagnostics, Matrix Test, web-search history; memory role/since filters; RTK update badge; duplicate Pipelines/Identity cards removed.~~ Done.
+10. ~~**Settings** — installed-plugin enable/disable/reload; missing config keys; vault status inside Secrets card (D33a); inline restart link (D57b); mount `McpToolsCard`.~~ Done (plugin "test" omitted — the PWA Plugin Manager has no test action). `goose`/`opencode` config-card drift (07 › row 81) still open.
+11. ~~**Dashboard stat strip** (D34a); flat OpenCode model list (D58b).~~ Done.
+12. **Low** — ~~accent2 alert-pill border (D3a)~~, ~~99+ cap~~ done; open: accent #7C3AED compute badge (D6b), splash fade-out, LLM/worker badge copy, copy/wording drift in 02/03/06.
 
 ### Both apps
 
-- "Approve" on blocked guardrail verdicts + "Run guardrail" action. `08` › Guardrail verdicts inline · `03` › Guardrail verdicts card
-- Backend setup hint ⚠ "not installed or configured". `08`
+- "Approve" on blocked guardrail verdicts + "Run guardrail" action. `08` › Guardrail verdicts inline · `03` › Guardrail verdicts card — **Android done 2026-10-04**; iOS open.
+- Backend setup hint ⚠ "not installed or configured". `08` — **Android done 2026-10-04**; iOS open.
 
 ### PWA (server repo)
 
@@ -60,15 +63,15 @@ Ordered by user impact within each platform. Refs: `SS` section file › row Fea
 
 | # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a |
 |---|---|---|---|---|---|---|---|---|
-| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 39 | 14 | 1 | 8 | 14 | 4 |
-| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 42 | 8 | 0 | 7 | 19 | 7 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 52 | 16 | 1 | 12 | 33 | 4 |
-| 04 | [Alerts](sections/04-alerts.md) | 65 | 30 | 11 | 1 | 2 | 13 | 8 |
-| 05 | [Automata](sections/05-automata.md) | 99 | 47 | 15 | 1 | 8 | 28 | 0 |
-| 06 | [Observer](sections/06-observer.md) | 93 | 55 | 2 | 8 | 4 | 23 | 1 |
-| 07 | [Settings](sections/07-settings.md) | 97 | 53 | 4 | 1 | 5 | 33 | 1 |
-| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 43 | 15 | 2 | 4 | 2 | 5 |
-| | **Total** | **706** | **361** | **85** | **15** | **50** | **165** | **30** |
+| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 40 | 16 | 0 | 8 | 12 | 4 |
+| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 45 | 9 | 0 | 7 | 15 | 7 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 53 | 21 | 0 | 12 | 28 | 4 |
+| 04 | [Alerts](sections/04-alerts.md) | 65 | 32 | 11 | 0 | 2 | 12 | 8 |
+| 05 | [Automata](sections/05-automata.md) | 99 | 48 | 17 | 0 | 8 | 26 | 0 |
+| 06 | [Observer](sections/06-observer.md) | 93 | 77 | 3 | 0 | 4 | 8 | 1 |
+| 07 | [Settings](sections/07-settings.md) | 97 | 59 | 6 | 0 | 5 | 26 | 1 |
+| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 46 | 16 | 0 | 4 | 0 | 5 |
+| | **Total** | **706** | **400** | **99** | **0** | **50** | **127** | **30** |
 
 Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
 means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");
@@ -81,7 +84,11 @@ Before → after (table counts): aligned 287 → **361** · ios-missing 90 → *
 rose because decisions (D2a, D14a, D24a, D28a, D55a, D89b …) now prescribe PWA behaviour Android
 does not yet follow; several iOS rows moved from `misaligned` to `ios-missing` for the same reason.
 
-**51 %** of feature rows are aligned; **12 %** are missing on iOS; **23 %** still differ.
+**Android remaining-work sweep (2026-10-04, later):** aligned 361 → **400** · ios-missing 85 →
+**99** · android-missing 15 → **0** · misaligned 165 → **127**. ios-missing rose because rows
+where Android now follows the decided PWA behaviour and iOS does not moved out of `misaligned`.
+
+**57 %** of feature rows are aligned; **14 %** are missing on iOS; **18 %** still differ.
 
 ## 2. Decisions (resolved 2026-10-04)
 

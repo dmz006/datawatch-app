@@ -40,6 +40,10 @@ public data class DashboardState(
     val error: String? = null,
     val activeProfile: ServerProfile? = null,
     val allProfiles: List<ServerProfile> = emptyList(),
+    /** Parity D34a — status boards of active sessions (telemetry tasks + verdicts). */
+    val boards: List<kotlinx.serialization.json.JsonObject> = emptyList(),
+    /** Parity D34a — today's cost from GET /api/cost (0 when unknown). */
+    val costTodayUsd: Double = 0.0,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -140,6 +144,15 @@ public class DashboardViewModel : ViewModel() {
                         _state.value = _state.value.copy(prds = list.prds.filter { it.status in ACTIVE_PRD_STATUSES })
                     }
                     t.getAnalytics(30).onSuccess { a -> _state.value = _state.value.copy(analytics = a) }
+                    // Parity D34a stat strip inputs: cost + active-session boards.
+                    t.fetchCostSummaryJson().onSuccess { c -> _state.value = _state.value.copy(costTodayUsd = costTotalUsd(c)) }
+                    val active =
+                        _state.value.sessions.filter {
+                            it.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
+                                it.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
+                        }.take(MAX_BOARDS)
+                    val boards = active.mapNotNull { s -> t.fetchSessionStatusJson(s.fullId ?: s.id).getOrNull() }
+                    _state.value = _state.value.copy(boards = boards)
                 }
             }
             slowPollTick++
@@ -148,7 +161,58 @@ public class DashboardViewModel : ViewModel() {
     }
 
     private companion object {
+        const val MAX_BOARDS = 12
         const val POLL_MS = 10_000L
         val ACTIVE_PRD_STATUSES = setOf("running", "decomposing", "planning", "approved")
     }
+}
+
+/** PWA `_dashUpdateStatBar` aggregate for the Dashboard header strip (D34a). */
+public data class DashStatStrip(
+    val sessions: Int,
+    val active: Int,
+    val tasksDone: Int,
+    val tasksTotal: Int,
+    val verdictBlock: Int,
+    val verdictWarn: Int,
+    val costUsd: Double,
+    val automata: Int,
+)
+
+private fun kotlinx.serialization.json.JsonObject.arr(key: String): List<kotlinx.serialization.json.JsonObject> =
+    (this[key] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+
+private fun kotlinx.serialization.json.JsonObject.str(key: String): String? =
+    (this[key] as? kotlinx.serialization.json.JsonPrimitive)?.content
+
+/** `total_cost_usd`, else the sum of `sessions[].est_cost_usd` (PWA). */
+internal fun costTotalUsd(c: kotlinx.serialization.json.JsonObject): Double =
+    c.str("total_cost_usd")?.toDoubleOrNull()
+        ?: c.arr("sessions").sumOf { it.str("est_cost_usd")?.toDoubleOrNull() ?: 0.0 }
+
+internal fun dashStatStrip(
+    sessions: List<Session>,
+    boards: List<kotlinx.serialization.json.JsonObject>,
+    costUsd: Double,
+    automata: Int,
+): DashStatStrip {
+    var done = 0
+    var total = 0
+    var block = 0
+    var warn = 0
+    boards.forEach { b ->
+        val tel = b["telemetry"] as? kotlinx.serialization.json.JsonObject ?: return@forEach
+        val tasks = tel.arr("tasks")
+        total += tasks.size
+        done += tasks.count { it.str("status") == "completed" }
+        val gv = tel.arr("guardrail_verdicts")
+        block += gv.count { it.str("outcome") == "block" }
+        warn += gv.count { it.str("outcome") == "warn" }
+    }
+    val active =
+        sessions.count {
+            it.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
+                it.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
+        }
+    return DashStatStrip(sessions.size, active, done, total, block, warn, costUsd, automata)
 }

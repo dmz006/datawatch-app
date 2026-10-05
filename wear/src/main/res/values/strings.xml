@@ -136,8 +136,8 @@
     <string name="wear_automata_action_instantiate">▶ Instantiate</string>
 
     <!-- PRD review notifications -->
-    <string name="wear_notification_prd_review_channel">PRD Review</string>
-    <string name="wear_notification_prd_review_title">PRD Needs Review</string>
+    <string name="wear_notification_prd_review_channel">Automaton Review</string>
+    <string name="wear_notification_prd_review_title">Automaton Needs Review</string>
     <string name="wear_notification_prd_action_approve">Approve</string>
     <string name="wear_notification_prd_action_reject">Reject</string>
 

@@ -166,6 +166,18 @@ internal fun PrdDetailDialog(
     onRepairDependsOn: (() -> Unit)? = null,
     /** PWA overflow "Archive" — completed / rejected / cancelled automata. */
     onArchive: (() -> Unit)? = null,
+    // Parity D24a — Scan / Rules tabs.
+    scanResult: com.dmzs.datawatchclient.transport.dto.ScanResultDto? = null,
+    scanLoading: Boolean = false,
+    onLoadScan: (() -> Unit)? = null,
+    onTriggerScan: (() -> Unit)? = null,
+    onCreateFixPrd: (() -> Unit)? = null,
+    onProposeRules: (() -> Unit)? = null,
+    proposedRules: com.dmzs.datawatchclient.transport.dto.RuleProposalDto? = null,
+    onDismissProposedRules: (() -> Unit)? = null,
+    rulesResult: String? = null,
+    rulesLoading: Boolean = false,
+    onRunRules: (() -> Unit)? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -199,14 +211,16 @@ internal fun PrdDetailDialog(
     var recallQuery by remember { mutableStateOf("") }
 
     val showProgressTab = status == "running" || status == "decomposing"
+    // Parity D24a — PWA tab set: Overview · Stories · Decisions · Scan · Rules.
+    // Graph and Progress are cards on Overview.
     val tabs =
-        buildList {
-            add(stringResource(R.string.prd_tab_overview))
-            add(stringResource(R.string.prd_tab_stories))
-            add(stringResource(R.string.prd_tab_decisions))
-            add(stringResource(R.string.prd_tab_graph))
-            if (showProgressTab) add(stringResource(R.string.automata_sg_progress))
-        }
+        listOf(
+            stringResource(R.string.prd_tab_overview),
+            stringResource(R.string.prd_tab_stories),
+            stringResource(R.string.prd_tab_decisions),
+            stringResource(R.string.prd_tab_scan),
+            stringResource(R.string.prd_tab_rules),
+        )
 
     Scaffold(
         topBar = {
@@ -544,8 +558,8 @@ internal fun PrdDetailDialog(
                             .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    when (selectedTab) {
-                        0 -> {
+                    // Parity D24a — PWA five tabs; Graph + Progress render as cards on Overview.
+                        if (selectedTab == 0) {
                             // #191 scope_warnings banner
                             if (prd.scopeWarnings) {
                                 Surface(
@@ -619,7 +633,7 @@ internal fun PrdDetailDialog(
                                 Text(stringResource(R.string.prd_view_sessions))
                             }
                         }
-                        1 -> {
+                        if (selectedTab == 1) {
                             val conflicts =
                                 buildMap<String, List<String>> {
                                     val byPath = mutableMapOf<String, MutableList<String>>()
@@ -684,7 +698,7 @@ internal fun PrdDetailDialog(
                                 }
                             }
                         }
-                        2 -> {
+                        if (selectedTab == 2) {
                             val decisions = prd.decisions
                             if (decisions.isNullOrEmpty()) {
                                 Text(
@@ -708,7 +722,8 @@ internal fun PrdDetailDialog(
                                 }
                             }
                         }
-                        3 -> {
+                        if (selectedTab == 0 && (prdGraphLoading || (prdGraph != null && prdGraph.nodes.isNotEmpty()))) {
+                            PrdOverviewCardTitle(stringResource(R.string.prd_tab_graph))
                             // Graph tab — orchestrator DAG (#184)
                             when {
                                 prdGraphLoading -> {
@@ -740,7 +755,8 @@ internal fun PrdDetailDialog(
                                 }
                             }
                         }
-                        4 -> {
+                        if (selectedTab == 0 && showProgressTab) {
+                            PrdOverviewCardTitle(stringResource(R.string.automata_sg_progress))
                             // Progress tab — per-story task completion bars with CPU/RSS annotation
                             // and compute node resource section (mirrors PWA _renderStatusGraphs).
                             val totalStories = prd.stories.size
@@ -860,6 +876,27 @@ internal fun PrdDetailDialog(
                             }
 
                         }
+                    if (selectedTab == 3) {
+                        // Parity D24a — PWA Scan tab: help, ▶ Run Scan, verdict + findings.
+                        Text(
+                            stringResource(R.string.prd_scan_help),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        androidx.compose.runtime.LaunchedEffect(prd.id) { onLoadScan?.invoke() }
+                        ScanResultCard(
+                            scanResult = scanResult,
+                            scanLoading = scanLoading,
+                            onTriggerScan = onTriggerScan,
+                            onCreateFixPrd = onCreateFixPrd,
+                            onProposeRules = onProposeRules,
+                            proposedRules = proposedRules,
+                            onDismissProposedRules = onDismissProposedRules,
+                        )
+                    }
+                    if (selectedTab == 4) {
+                        // Parity D24a — PWA Rules tab: AGENT.md / project-rules check.
+                        PrdRulesTab(rulesResult = rulesResult, rulesLoading = rulesLoading, onRunRules = onRunRules)
                     }
                 }
             } // end tab content item
@@ -2766,7 +2803,7 @@ private fun PrdActiveSessionsCard(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
-                        Text("Decomposing PRD…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Decomposing Automaton…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (computeNodeDetail != null) {
                         Spacer(Modifier.height(8.dp))
@@ -3117,7 +3154,7 @@ private fun PrdActiveComputeCard(
                 CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
                 Text(
                     when (status) {
-                        "planning", "decomposing" -> "Decomposing PRD..."
+                        "planning", "decomposing" -> "Decomposing Automaton..."
                         "running" -> "Running..."
                         else -> status
                     },
@@ -3211,5 +3248,60 @@ private fun PrdResourceBar(
             color = color,
             trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
         )
+    }
+}
+
+/** Section title for the Graph / Progress cards on the Overview tab (D24a). */
+@Composable
+private fun PrdOverviewCardTitle(title: String) {
+    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+    Text(
+        title.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp),
+    )
+}
+
+/**
+ * Parity D24a — PWA `_renderDetailRulesTab`: help text, ▶ Run Rules Check
+ * (POST /api/autonomous/prds/{id}/scan/rules) and the last result.
+ */
+@Composable
+private fun PrdRulesTab(
+    rulesResult: String?,
+    rulesLoading: Boolean,
+    onRunRules: (() -> Unit)?,
+) {
+    Text(
+        stringResource(R.string.prd_rules_help),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (onRunRules != null) {
+        androidx.compose.material3.OutlinedButton(onClick = onRunRules, enabled = !rulesLoading) {
+            Text("▶ " + stringResource(R.string.rules_run), style = MaterialTheme.typography.labelSmall)
+        }
+    }
+    when {
+        rulesLoading -> Text("…", style = MaterialTheme.typography.bodySmall)
+        rulesResult.isNullOrBlank() ->
+            Text(
+                stringResource(R.string.rules_no_results),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+        else ->
+            Surface(
+                color = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.bg2,
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    rulesResult,
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                    modifier = Modifier.padding(8.dp),
+                )
+            }
     }
 }

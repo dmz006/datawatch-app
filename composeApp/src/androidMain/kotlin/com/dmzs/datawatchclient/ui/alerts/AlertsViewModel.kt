@@ -340,7 +340,12 @@ public class AlertsViewModel : ViewModel() {
             val (active, historical) = sessionGroups.partition { it.isActive }
             // Return a partial UiState; chip/sort/search applied in outer combine.
             UiState(
-                active = active.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
+                // PWA app.js stateRank: waiting_input → running → others, then recency.
+                active =
+                    active.sortedWith(
+                        compareBy<AlertGroup> { alertGroupStateRank(it.state) }
+                            .thenByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
+                    ),
                 historical = historical.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
                 system = sysGroups.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
                 selectedTab = tab,
@@ -628,6 +633,48 @@ public class AlertsViewModel : ViewModel() {
         ServiceLocator.activeServerStore.set(ActiveServerStore.SENTINEL_ALL_SERVERS)
     }
 
+    private val _savedCommands = MutableStateFlow<List<com.dmzs.datawatchclient.domain.SavedCommand>>(emptyList())
+
+    /** Saved commands (GET /api/commands) for the PWA quick-reply select. */
+    public val savedCommands: StateFlow<List<com.dmzs.datawatchclient.domain.SavedCommand>> = _savedCommands
+
+    /** Load the saved-commands list for the quick-reply select (PWA js:19171). */
+    public fun loadSavedCommands() {
+        viewModelScope.launch {
+            val profile = targetProfiles().firstOrNull() ?: return@launch
+            ServiceLocator.transportFor(profile).listCommands().onSuccess { _savedCommands.value = it }
+        }
+    }
+
+    /**
+     * PWA `alertSendCmd` — send a saved command to the alert's session, then
+     * confirm in the dock ("Sent: <cmd>"). Routed through the session-reply
+     * endpoint, the same path the app uses for every other session input.
+     */
+    public fun sendQuickReply(
+        sessionId: String,
+        profileId: String?,
+        command: String,
+    ) {
+        if (command.isBlank()) return
+        viewModelScope.launch {
+            val profiles = targetProfiles()
+            val profile = profiles.firstOrNull { it.id == profileId } ?: profiles.firstOrNull() ?: return@launch
+            ServiceLocator.transportFor(profile).replyToSession(sessionId, command).fold(
+                onSuccess = {
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Sent: $command")
+                    refresh()
+                },
+                onFailure = { e ->
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        "Error: ${e.message ?: e::class.simpleName}",
+                        com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                    )
+                },
+            )
+        }
+    }
+
     /** Trigger an immediate poll (e.g. after tapping the reachability-dot retry button). */
     public fun refresh() {
         viewModelScope.launch { _refreshing.value = true }
@@ -638,3 +685,11 @@ public class AlertsViewModel : ViewModel() {
         const val PREF_ACTIVE_TAB = "alerts_active_tab"
     }
 }
+
+/** PWA alerts `stateRank` (app.js): waiting_input 0, running 1, everything else 2. */
+internal fun alertGroupStateRank(state: SessionState?): Int =
+    when (state) {
+        SessionState.Waiting -> 0
+        SessionState.Running -> 1
+        else -> 2
+    }

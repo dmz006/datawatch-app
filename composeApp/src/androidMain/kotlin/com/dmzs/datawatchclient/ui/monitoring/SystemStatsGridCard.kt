@@ -52,7 +52,8 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
     LaunchedEffect(Unit) {
         vm.refresh()
         while (true) {
-            delay(10_000)
+            // Parity D54b — PWA per-system grid refreshes every 8 s.
+            delay(8_000)
             vm.refresh()
         }
     }
@@ -303,9 +304,10 @@ private fun StatBar(label: String, pct: Float, valueLabel: String, color: Color)
     }
 }
 
+// Parity D29a — PWA grid uses strict `>` (app.js cpuPct > 80 / > 50).
 private fun cpuBarColor(pct: Double): Color = when {
-    pct >= 80 -> Color(0xFFEF4444)
-    pct >= 50 -> Color(0xFFF59E0B)
+    pct > 80 -> Color(0xFFEF4444)
+    pct > 50 -> Color(0xFFF59E0B)
     else -> Color(0xFF10B981)
 }
 

@@ -1,11 +1,6 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -36,9 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -62,12 +55,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -92,7 +83,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -153,7 +143,6 @@ public fun SessionsScreen(
     val state by vm.state.collectAsState()
     val watchedIds by vm.watchedIds.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
-    var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     // Parity D15a — PWA select mode: entered with the ☑ toolbar button (only
     // while History is on), checkboxes on inactive cards, fixed bottom bar.
@@ -197,29 +186,11 @@ public fun SessionsScreen(
             run {
                 TopAppBar(
                     title = {
-                        ServerPickerTitle(
+                        // Parity D2a: brand title + server chip; switching
+                        // moved to the PWA picker bar under the header.
+                        SessionsHeaderTitle(
                             active = state.activeProfile,
                             allMode = state.allServersMode,
-                            open = pickerOpen,
-                            onToggle = { pickerOpen = !pickerOpen },
-                            onDismiss = { pickerOpen = false },
-                            profiles = state.allProfiles,
-                            onSelectAll = {
-                                vm.selectAllServers()
-                                pickerOpen = false
-                            },
-                            onSelect = {
-                                vm.selectProfile(it)
-                                pickerOpen = false
-                            },
-                            onEdit = {
-                                pickerOpen = false
-                                onEditServer(it)
-                            },
-                            onAdd = {
-                                pickerOpen = false
-                                onAddServer()
-                            },
                         )
                     },
                     actions = {
@@ -313,6 +284,14 @@ public fun SessionsScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            com.dmzs.datawatchclient.ui.common.ServerPickerBar(
+                profiles = state.allProfiles,
+                activeId = state.activeProfile?.id,
+                allMode = state.allServersMode,
+                onSelect = vm::selectProfile,
+                showAll = true,
+                onSelectAll = vm::selectAllServers,
+            )
             state.banner?.let {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Text(
@@ -354,7 +333,11 @@ public fun SessionsScreen(
                 if (state.refreshing) {
                     SessionSkeletonList()
                 } else {
-                    EmptyState(showHint = state.activeProfile != null)
+                    EmptyState(
+                        showHint = state.activeProfile != null,
+                        noServer = state.allProfiles.none { it.enabled },
+                        onAddServer = onAddServer,
+                    )
                 }
             } else {
                 // v0.33.15 (B9): datawatch eye watermark behind the
@@ -459,7 +442,10 @@ public fun SessionsScreen(
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                                 fetchSystemCommands = { vm.fetchSystemQuickCommands(session.id) },
                                 fetchCurrentStatus = { vm.fetchCurrentStatus(session.id) },
-                                onResummarize = { vm.resummmarizeSession(session.id) },
+                                fetchFreshResponse = { vm.fetchFreshResponse(session.id) },
+                                summarizerEnabled = state.summarizerEnabled,
+                                summarizing = session.id in state.summarizingIds,
+                                onManualSummarize = { vm.manualSummarize(session.id) },
                                 whisperConfigured = state.whisperConfigured,
                                 deleteSupported = state.deleteSupported,
                                 selectionMode = selectionMode,
@@ -962,8 +948,18 @@ private fun SessionSkeletonList() {
 
 /** Parity D35a — PWA empty state: 💬 "No active sessions" + hint. */
 @Composable
-private fun EmptyState(showHint: Boolean = true) {
+private fun EmptyState(
+    showHint: Boolean = true,
+    noServer: Boolean = false,
+    onAddServer: () -> Unit = {},
+) {
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+        if (noServer) {
+            // Parity D86c — minimal first run: no onboarding screen; the
+            // Sessions tab itself says no server is connected and offers Add.
+            NoServerEmptyState(onAddServer)
+            return@Box
+        }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 "💬",
@@ -985,6 +981,33 @@ private fun EmptyState(showHint: Boolean = true) {
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun NoServerEmptyState(onAddServer: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "🖥",
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        )
+        Text(
+            stringResource(R.string.first_run_no_server),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Text(
+            stringResource(R.string.first_run_no_server_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        androidx.compose.material3.Button(onClick = onAddServer, modifier = Modifier.padding(top = 16.dp)) {
+            Text(stringResource(R.string.sessions_add_server))
         }
     }
 }
@@ -1011,7 +1034,10 @@ private fun SessionRow(
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     fetchCurrentStatus: suspend () -> CurrentStatusDto? = { null },
-    onResummarize: suspend () -> CurrentStatusDto? = { null },
+    fetchFreshResponse: (suspend () -> Result<String>)? = null,
+    summarizerEnabled: Boolean = false,
+    summarizing: Boolean = false,
+    onManualSummarize: () -> Unit = {},
     whisperConfigured: Boolean = false,
     reorderMode: Boolean = false,
     showHostname: Boolean = false,
@@ -1027,13 +1053,17 @@ private fun SessionRow(
 ) {
     var quickCmdsOpen by remember { mutableStateOf(false) }
     var responseOpen by remember { mutableStateOf(false) }
-    var currentStatusOpen by remember { mutableStateOf(false) }
+    // Parity D14a — current status renders inline in the card (PWA
+    // `state.currentStatus[fullId]`), not in a bottom sheet.
     var currentStatusText by remember { mutableStateOf<String?>(null) }
     var currentStatusLongText by remember { mutableStateOf<String?>(null) }
+    var currentStatusAtMs by remember { mutableStateOf<Long?>(null) }
+    var currentStatusLongExpanded by remember { mutableStateOf(false) }
     var currentStatusLoading by remember { mutableStateOf(false) }
     var summaryExpanded by remember { mutableStateOf(false) }
     val currentStatusScope = rememberCoroutineScope()
     val noChangeStr = stringResource(R.string.no_change_since_last_refresh)
+    val unavailableStr = stringResource(R.string.current_status_unavailable)
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
     var restartConfirmOpen by remember { mutableStateOf(false) }
@@ -1406,18 +1436,22 @@ private fun SessionRow(
                             Text(stringResource(R.string.action_stop), color = MaterialTheme.colorScheme.error)
                         }
                         Spacer(modifier = Modifier.width(4.dp))
-                        OutlinedButton(
+                        if (currentStatusText == null && !currentStatusLoading) OutlinedButton(
                             onClick = {
                                 if (!currentStatusLoading) {
                                     currentStatusLoading = true
                                     currentStatusScope.launch {
                                         try {
                                             val dto = fetchCurrentStatus()
-                                            if (dto != null) {
-                                                currentStatusText = if (dto.noChange) noChangeStr else dto.currentStatus
-                                                currentStatusLongText = dto.currentStatusLong.takeIf { it.isNotBlank() }
-                                                currentStatusOpen = true
-                                            }
+                                            currentStatusText =
+                                                when {
+                                                    dto == null -> "($unavailableStr)"
+                                                    dto.noChange -> "($noChangeStr)"
+                                                    else -> dto.currentStatus
+                                                }
+                                            currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
+                                            currentStatusAtMs = System.currentTimeMillis()
+                                            currentStatusLongExpanded = false
                                         } finally {
                                             currentStatusLoading = false
                                         }
@@ -1441,17 +1475,6 @@ private fun SessionRow(
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(stringResource(R.string.sessions_current_status_btn))
-                        }
-                        if (currentStatusOpen && currentStatusText != null) {
-                            CurrentStatusSheet(
-                                status = currentStatusText!!,
-                                statusLong = currentStatusLongText,
-                                onDismiss = {
-                                    currentStatusOpen = false
-                                    currentStatusLongText = null
-                                },
-                                onResummarize = onResummarize,
-                            )
                         }
                     }
                     SessionState.Waiting -> {
@@ -1538,6 +1561,85 @@ private fun SessionRow(
                     }
                     else -> Unit
                 }
+                // Parity D43a — PWA `🤖 Summary` (only when session.summarizer
+                // is enabled). Running sessions take the current-status path.
+                if (summarizerEnabled) {
+                    val busy = summarizing || (session.state == SessionState.Running && currentStatusLoading)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    OutlinedButton(
+                        onClick = {
+                            if (session.state == SessionState.Running) {
+                                if (!currentStatusLoading) {
+                                    currentStatusLoading = true
+                                    currentStatusScope.launch {
+                                        try {
+                                            val dto = fetchCurrentStatus()
+                                            currentStatusText =
+                                                when {
+                                                    dto == null -> "($unavailableStr)"
+                                                    dto.noChange -> "($noChangeStr)"
+                                                    else -> dto.currentStatus
+                                                }
+                                            currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
+                                            currentStatusAtMs = System.currentTimeMillis()
+                                            currentStatusLongExpanded = false
+                                        } finally {
+                                            currentStatusLoading = false
+                                        }
+                                    }
+                                }
+                            } else {
+                                onManualSummarize()
+                            }
+                        },
+                        enabled = !busy,
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 4.dp,
+                            ),
+                    ) {
+                        Text(
+                            if (busy) {
+                                "⏳ " + stringResource(R.string.current_status_summarizing)
+                            } else {
+                                "🤖 " + stringResource(R.string.session_summary_btn)
+                            },
+                            fontSize = 11.sp,
+                        )
+                    }
+                }
+            }
+            if (session.state == SessionState.Running && (currentStatusLoading || currentStatusText != null)) {
+                InlineCurrentStatus(
+                    loading = currentStatusLoading,
+                    text = currentStatusText.orEmpty(),
+                    longText = currentStatusLongText,
+                    generatedAtMs = currentStatusAtMs,
+                    longExpanded = currentStatusLongExpanded,
+                    onToggleLong = { currentStatusLongExpanded = !currentStatusLongExpanded },
+                    onRefresh = {
+                        if (!currentStatusLoading) {
+                            currentStatusLoading = true
+                            currentStatusScope.launch {
+                                try {
+                                    val dto = fetchCurrentStatus()
+                                    currentStatusText =
+                                        when {
+                                            dto == null -> "($unavailableStr)"
+                                            dto.noChange -> "($noChangeStr)"
+                                            else -> dto.currentStatus
+                                        }
+                                    currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
+                                    currentStatusAtMs = System.currentTimeMillis()
+                                    currentStatusLongExpanded = false
+                                } finally {
+                                    currentStatusLoading = false
+                                }
+                            }
+                        }
+                    },
+                )
             }
         }
     }
@@ -1546,6 +1648,8 @@ private fun SessionRow(
         LastResponseSheet(
             response = session.lastResponse.orEmpty(),
             onDismiss = { responseOpen = false },
+            fetchFresh = fetchFreshResponse,
+            title = session.name ?: session.id,
         )
     }
     if (quickCmdsOpen) {
@@ -1665,117 +1769,25 @@ private fun ConfirmDialog(
 }
 
 @Composable
-private fun ServerPickerTitle(
+private fun SessionsHeaderTitle(
     active: ServerProfile?,
     allMode: Boolean,
-    open: Boolean,
-    onToggle: () -> Unit,
-    onDismiss: () -> Unit,
-    profiles: List<ServerProfile>,
-    onSelectAll: () -> Unit,
-    onSelect: (String) -> Unit,
-    onEdit: (String) -> Unit,
-    onAdd: () -> Unit,
 ) {
-    Box {
-        // User 2026-04-24: "top header has space above host name" —
-        // drop the title Row's vertical padding; the TopAppBar already
-        // centre-aligns the title within its own fixed height, so any
-        // extra vertical padding here just pushes the server-name down
-        // from the visible centre line and makes the header feel like
-        // it has a dead strip above the label.
-        Row(
-            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Parity D1a/D9a: the Sessions header title is the brand
-            // "datawatch" (PWA `nav_home`). The active server stays visible
-            // as a muted sub-line so the picker affordance isn't lost —
-            // picker placement itself is a separate decision (D2).
-            Column {
-                Text(stringResource(R.string.nav_home))
-                Text(
-                    if (allMode) {
-                        stringResource(
-                            R.string.sessions_all_servers,
-                        )
-                    } else {
-                        (active?.displayName ?: stringResource(R.string.sessions_no_server))
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = stringResource(R.string.sessions_switch_server),
-                modifier = Modifier.padding(start = 4.dp),
-            )
-        }
-        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-            if (profiles.size > 1) {
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                stringResource(R.string.sessions_all_servers),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (allMode) {
-                                Icon(
-                                    Icons.Filled.Check,
-                                    "Active",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
-                    },
-                    onClick = onSelectAll,
-                )
-                HorizontalDivider()
-            }
-            if (profiles.isEmpty()) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.sessions_no_servers)) },
-                    onClick = onDismiss,
-                    enabled = false,
-                )
+    // Parity D1a/D9a + D2a: brand title "datawatch" (PWA `nav_home`) with the
+    // active server as a muted sub-line (the PWA's server-indicator chip).
+    // Switching lives in the ServerPickerBar under the header.
+    Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+        Text(stringResource(R.string.nav_home))
+        Text(
+            if (allMode) {
+                stringResource(R.string.sessions_all_servers)
             } else {
-                profiles.forEach { p ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                StatusDot(enabled = p.enabled)
-                                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                                    Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Text(
-                                        p.baseUrl,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                if (p.id == active?.id) {
-                                    Icon(
-                                        Icons.Filled.Check,
-                                        contentDescription = "Active",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                TextButton(onClick = { onEdit(p.id) }) { Text("Edit") }
-                            }
-                        },
-                        onClick = { onSelect(p.id) },
-                    )
-                }
-            }
-            HorizontalDivider()
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.sessions_add_server)) },
-                onClick = onAdd,
-            )
-        }
+                (active?.displayName ?: stringResource(R.string.sessions_no_server))
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 
@@ -1789,7 +1801,7 @@ private fun ServerPickerTitle(
  *
  * Tap opens a bottom sheet with the last-probe timestamp plus a retry button.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ReachabilityDot(
     reachable: Boolean?,
@@ -1797,6 +1809,7 @@ private fun ReachabilityDot(
     onRetry: () -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
+    val reconnectMsg = stringResource(R.string.status_dot_reconnecting)
     val color =
         when (reachable) {
             true -> Color(0xFF10B981)
@@ -1826,7 +1839,12 @@ private fun ReachabilityDot(
             Modifier
                 .padding(start = 8.dp)
                 .size(24.dp)
-                .clickable(onClick = { sheetOpen = true }),
+                // Parity D38a: tap opens the status sheet; long-press
+                // force-refreshes the connection (PWA forceRefreshConnection).
+                .combinedClickable(
+                    onClick = { sheetOpen = true },
+                    onLongClick = { com.dmzs.datawatchclient.ui.common.forceRefreshConnection(reconnectMsg, onRetry) },
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -1893,15 +1911,33 @@ private fun relativeTimeLabel(epochMs: Long): String {
 internal fun LastResponseSheet(
     response: String,
     onDismiss: () -> Unit,
+    fetchFresh: (suspend () -> Result<String>)? = null,
+    title: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Parity D43a — PWA `showResponseViewer`: paint the cached copy, then
+    // always re-fetch GET /api/sessions/response and replace it; "(updating…)"
+    // marks the cached copy while the fetch is in flight.
+    var live by remember { mutableStateOf(response) }
+    var updating by remember { mutableStateOf(fetchFresh != null) }
+    val noResponse = stringResource(R.string.response_viewer_none)
+    val loadFailed = stringResource(R.string.response_viewer_failed)
+    LaunchedEffect(fetchFresh) {
+        val fetch = fetchFresh ?: return@LaunchedEffect
+        fetch()
+            .onSuccess { live = it.ifBlank { noResponse } }
+            .onFailure { if (response.isBlank()) live = loadFailed }
+        updating = false
+    }
     // v0.36.1 (issue #15) — apply the same noise filter the PWA's
     // 💾 Response viewer landed in v5.26.31 so spinners, status
     // timers, footer hints, and box-drawing borders don't bury the
     // actual LLM prose.
     val cleaned =
-        com.dmzs.datawatchclient.util.ResponseNoiseFilter.strip(response)
-            .ifBlank { response }
+        com.dmzs.datawatchclient.util.ResponseNoiseFilter.strip(live)
+            .ifBlank { live }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val copiedMsg = stringResource(R.string.response_viewer_copied)
     val context = androidx.compose.ui.platform.LocalContext.current
     var isSpeaking by remember { mutableStateOf(false) }
     val tts =
@@ -1935,10 +1971,25 @@ internal fun LastResponseSheet(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(R.string.sessions_last_response_sheet),
+                    stringResource(R.string.sessions_last_response_sheet) + (title?.let { " — $it" } ?: ""),
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                if (updating) {
+                    Text(
+                        stringResource(R.string.response_viewer_updating),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(onClick = {
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(cleaned))
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(copiedMsg)
+                }) { Text("📋") }
                 IconButton(onClick = {
                     if (isSpeaking) {
                         tts?.stop()
@@ -1954,116 +2005,74 @@ internal fun LastResponseSheet(
                     )
                 }
             }
-            Text(
-                cleaned,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            com.dmzs.datawatchclient.ui.autonomous.MarkdownView(
+                text = cleaned,
                 modifier = Modifier.padding(top = 12.dp),
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Parity D14a — PWA inline current-status row (app.js:2476-2497): "Summarizing…"
+ * while loading, then the short status with ▼/▲ for the long form and a
+ * `↻ <age>` refresh button. The long form opens in a bg3 box with an accent2
+ * left rule and a ✕ collapse.
+ */
 @Composable
-internal fun CurrentStatusSheet(
-    status: String,
-    statusLong: String? = null,
-    onDismiss: () -> Unit,
-    onResummarize: suspend () -> CurrentStatusDto? = { null },
+private fun InlineCurrentStatus(
+    loading: Boolean,
+    text: String,
+    longText: String?,
+    generatedAtMs: Long?,
+    longExpanded: Boolean,
+    onToggleLong: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var expanded by remember { mutableStateOf(false) }
-    var isSpeaking by remember { mutableStateOf(false) }
-    var isResummarizing by remember { mutableStateOf(false) }
-    var displayStatus by remember { mutableStateOf(status) }
-    var displayLong by remember { mutableStateOf(statusLong) }
-    val scope = rememberCoroutineScope()
-    val tts =
-        remember {
-            var instance: android.speech.tts.TextToSpeech? = null
-            instance =
-                android.speech.tts.TextToSpeech(context) { s ->
-                    if (s == android.speech.tts.TextToSpeech.SUCCESS) instance?.language = java.util.Locale.getDefault()
-                }
-            instance
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    val small = MaterialTheme.typography.labelSmall
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        if (loading) {
+            Text(stringResource(R.string.current_status_summarizing), style = small, color = dim)
+            return@Column
         }
-    DisposableEffect(Unit) {
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
-    }
-
-    ModalBottomSheet(onDismissRequest = {
-        tts?.stop()
-        onDismiss()
-    }, sheetState = sheetState) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState())) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text, style = small, color = dim, modifier = Modifier.weight(1f, fill = false))
+            if (longText != null) {
                 Text(
-                    stringResource(R.string.sessions_current_status_sheet),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
+                    if (longExpanded) "▲" else "▼",
+                    style = small,
+                    color = dim,
+                    modifier = Modifier.clickable(onClick = onToggleLong).padding(horizontal = 4.dp),
                 )
-                if (isResummarizing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    IconButton(onClick = {
-                        scope.launch {
-                            isResummarizing = true
-                            val dto = onResummarize()
-                            if (dto != null) {
-                                displayStatus = dto.currentStatus
-                                displayLong = dto.currentStatusLong.takeIf { it.isNotBlank() }
-                            }
-                            isResummarizing = false
-                        }
-                    }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Re-summarize")
-                    }
-                }
-                IconButton(onClick = {
-                    val text = if (expanded && displayLong != null) displayLong!! else displayStatus
-                    if (isSpeaking) {
-                        tts?.stop()
-                        isSpeaking = false
-                    } else {
-                        isSpeaking = true
-                        tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cs")
-                    }
-                }) {
-                    Icon(
-                        if (isSpeaking) Icons.Filled.Stop else Icons.Filled.VolumeUp,
-                        contentDescription = if (isSpeaking) "Stop" else "Play",
-                    )
-                }
             }
-            Text(displayStatus, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
-            if (displayLong != null) {
-                TextButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(top = 4.dp)) {
-                    Text(if (expanded) "▲ Less" else "▼ More detail")
-                }
-                if (expanded) {
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Text(
-                            displayLong!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                        IconButton(
-                            onClick = { expanded = false },
-                            modifier = Modifier.size(24.dp),
-                        ) {
-                            Icon(Icons.Filled.Close, contentDescription = "Collapse", modifier = Modifier.size(14.dp))
+            Text(
+                "↻ " + (generatedAtMs?.let { com.dmzs.datawatchclient.ui.common.relativeTimeLabel(it) } ?: ""),
+                style = small,
+                color = dim,
+                modifier = Modifier.clickable(onClick = onRefresh).padding(start = 4.dp),
+            )
+        }
+        if (longText != null && longExpanded) {
+            val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+            Box(
+                modifier =
+                    Modifier
+                        .padding(top = 6.dp)
+                        .fillMaxWidth()
+                        .background(dw.bg3, RoundedCornerShape(4.dp))
+                        .drawBehind {
+                            drawRect(color = dw.accent2, size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height))
                         }
-                    }
-                }
+                        .padding(start = 8.dp, top = 6.dp, bottom = 6.dp, end = 22.dp),
+            ) {
+                Text(longText, style = small, color = dim)
+                Text(
+                    "✕",
+                    style = small,
+                    color = dim,
+                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 18.dp).clickable(onClick = onToggleLong),
+                )
             }
         }
     }
@@ -2380,20 +2389,6 @@ private fun WorkerPill(agentId: String) {
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun StatusDot(enabled: Boolean) {
-    val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-    Box(
-        modifier =
-            Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .padding(0.dp),
-    ) {
-        Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
     }
 }
 

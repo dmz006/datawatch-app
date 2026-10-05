@@ -44,6 +44,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 
 /**
@@ -74,7 +75,9 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
     if (state.peers.isEmpty() && !state.loading) return
     var crossHostOpen by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<String?>(null) }
+    var snapshotTarget by remember { mutableStateOf<String?>(null) }
     if (crossHostOpen) CrossHostDialog(onDismiss = { crossHostOpen = false })
+    snapshotTarget?.let { name -> PeerSnapshotDialog(name = name, onDismiss = { snapshotTarget = null }) }
     removeTarget?.let { name ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { removeTarget = null },
@@ -149,7 +152,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(vertical = 4.dp),
                             )
-                            peers.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }) }
+                            peers.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }, onSnapshot = { snapshotTarget = peer.name }) }
                         }
                         if (state.unbound.isNotEmpty()) {
                             Text(
@@ -158,7 +161,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 4.dp),
                             )
-                            state.unbound.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }) }
+                            state.unbound.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }, onSnapshot = { snapshotTarget = peer.name }) }
                         }
                     }
                 } else {
@@ -167,29 +170,22 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
+                        // PWA pill order + counts: All / Agents / Standalone / Cluster.
                         listOf(
                             FederatedPeersViewModel.Filter.All to "All",
+                            FederatedPeersViewModel.Filter.Agent to "Agents",
                             FederatedPeersViewModel.Filter.Standalone to "Standalone",
                             FederatedPeersViewModel.Filter.Cluster to "Cluster",
-                            FederatedPeersViewModel.Filter.Agent to "Agents",
                         ).forEach { (f, label) ->
+                            val count = state.peers.count { peerMatchesFilter(it, f) }
                             FilterChip(
                                 selected = state.filter == f,
                                 onClick = { vm.setFilter(f) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("$label ($count)", style = MaterialTheme.typography.labelSmall) },
                             )
                         }
                     }
-                    val visible =
-                        state.peers.filter { peer ->
-                            when (state.filter) {
-                                FederatedPeersViewModel.Filter.All -> true
-                                FederatedPeersViewModel.Filter.Standalone -> peer.shape == "standalone"
-                                FederatedPeersViewModel.Filter.Cluster -> peer.shape == "cluster"
-                                FederatedPeersViewModel.Filter.Agent ->
-                                    peer.shape == "agent" || peer.hostInfo?.shape == "agent"
-                            }
-                        }
+                    val visible = state.peers.filter { peer -> peerMatchesFilter(peer, state.filter) }
                     if (visible.isEmpty()) {
                         Text(
                             "No peers in this group.",
@@ -197,7 +193,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
-                        visible.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }) }
+                        visible.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }, onSnapshot = { snapshotTarget = peer.name }) }
                     }
                 }
             }
@@ -209,6 +205,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
 private fun PeerRow(
     peer: ObserverPeerDto,
     onRemove: () -> Unit = {},
+    onSnapshot: () -> Unit = {},
 ) {
     val staleDotColor = staleDotColor(peer.lastPushAt)
 
@@ -274,11 +271,148 @@ private fun PeerRow(
             Spacer(Modifier.size(4.dp))
         }
         ShapeBadge(peer.hostInfo?.shape ?: peer.shape)
+        // Parity D55a — PWA 📊 opens the peer snapshot modal.
+        androidx.compose.material3.IconButton(onClick = onSnapshot, modifier = Modifier.size(28.dp)) {
+            Text("📊", style = MaterialTheme.typography.bodyMedium)
+        }
         // PWA × — remove peer (rotates token; peer auto-re-registers).
         androidx.compose.material3.IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
             Text("×", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/** PWA observer peer filter pills (`cs_peer_filter`). */
+internal fun peerMatchesFilter(
+    peer: ObserverPeerDto,
+    filter: FederatedPeersViewModel.Filter,
+): Boolean =
+    when (filter) {
+        FederatedPeersViewModel.Filter.All -> true
+        FederatedPeersViewModel.Filter.Standalone -> peer.shape == "standalone"
+        FederatedPeersViewModel.Filter.Cluster -> peer.shape == "cluster"
+        FederatedPeersViewModel.Filter.Agent -> peer.shape == "agent" || peer.hostInfo?.shape == "agent"
+    }
+
+/** One envelope row in the peer snapshot (PWA `renderObserverSnapshot`). */
+internal data class SnapshotEnvelope(
+    val kind: String,
+    val id: String,
+    val cpuPct: Double,
+    val rssMb: Long,
+    val procs: Int,
+    val fds: Int,
+)
+
+private fun kotlinx.serialization.json.JsonObject.num(key: String): Double =
+    (this[key] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
+
+private fun kotlinx.serialization.json.JsonObject.txt(key: String): String? =
+    (this[key] as? kotlinx.serialization.json.JsonPrimitive)?.content?.takeIf { it.isNotBlank() && it != "null" }
+
+/** Header line `name · host · os arch · uptime Ns` (PWA observerSnapPeerLine). */
+internal fun snapshotHeaderLine(
+    name: String,
+    snap: kotlinx.serialization.json.JsonObject,
+): String {
+    val host = snap["host"] as? kotlinx.serialization.json.JsonObject
+    val hostName = host?.txt("name") ?: "?"
+    val os = host?.txt("os") ?: "?"
+    val arch = host?.txt("arch").orEmpty()
+    val uptime = host?.num("uptime_seconds")?.toLong() ?: 0L
+    return "$name · $hostName · $os $arch · uptime ${uptime}s"
+}
+
+/** Envelopes sorted by CPU desc, as the PWA renders them. */
+internal fun snapshotEnvelopes(snap: kotlinx.serialization.json.JsonObject): List<SnapshotEnvelope> =
+    (snap["envelopes"] as? kotlinx.serialization.json.JsonArray).orEmpty()
+        .mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        .map { e ->
+            SnapshotEnvelope(
+                kind = e.txt("kind") ?: "?",
+                id = e.txt("id") ?: "?",
+                cpuPct = e.num("cpu_pct"),
+                rssMb = Math.round(e.num("rss_bytes") / 1e6),
+                procs = e.num("process_count").toInt(),
+                fds = e.num("open_fds").toInt(),
+            )
+        }
+        .sortedByDescending { it.cpuPct }
+
+/**
+ * Parity D55a — PWA `showObserverPeerSnapshot`: "Peer snapshot" modal fed by
+ * GET /api/observer/peers/{name}/stats — header line, then envelopes sorted by
+ * CPU with cpu / rss / procs / fds.
+ */
+@Composable
+private fun PeerSnapshotDialog(
+    name: String,
+    onDismiss: () -> Unit,
+) {
+    var snap by remember { mutableStateOf<kotlinx.serialization.json.JsonObject?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(name) {
+        val (_, transport) = com.dmzs.datawatchclient.ui.common.ProfileResolver.Default.resolve() ?: return@LaunchedEffect
+        transport.fetchObserverPeerSnapshot(name).fold(
+            onSuccess = { snap = it },
+            onFailure = { error = it.message ?: it::class.simpleName },
+        )
+    }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(stringResource(R.string.observer_peer_snapshot_title))
+                Text(
+                    snap?.let { snapshotHeaderLine(name, it) } ?: "$name — loading…",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                val s = snap
+                when {
+                    error != null ->
+                        Text(
+                            stringResource(R.string.observer_peer_snapshot_unavailable, error.orEmpty()),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    s == null ->
+                        Text(
+                            "Fetching /api/observer/peers/$name/stats …",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    else -> {
+                        val envs = snapshotEnvelopes(s)
+                        if (envs.isEmpty()) {
+                            Text(
+                                stringResource(R.string.observer_peer_snapshot_empty),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        envs.forEach { e ->
+                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                Text("${e.kind} · ${e.id}", style = MaterialTheme.typography.bodySmall, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                                Text(
+                                    "cpu ${"%.1f".format(e.cpuPct)}% · rss ${e.rssMb} MB · ${e.procs} procs · ${e.fds} fds",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
+        },
+    )
 }
 
 /** PWA `showCrossHostView`: envelopes grouped by peer with 🔗 cross-host caller tags. */
