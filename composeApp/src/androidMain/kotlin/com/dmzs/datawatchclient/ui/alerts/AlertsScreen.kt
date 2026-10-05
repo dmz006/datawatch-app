@@ -87,6 +87,8 @@ public fun AlertsScreen(
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     // Parity D49a — opening the Alerts page acks every alert (PWA rule).
     LaunchedEffect(Unit) { vm.ackAllOnOpen() }
+    val savedCommands by vm.savedCommands.collectAsState()
+    LaunchedEffect(Unit) { vm.loadSavedCommands() }
 
     Scaffold(
         topBar = {
@@ -316,10 +318,15 @@ public fun AlertsScreen(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         items(flatChrono, key = { it.id }) { alert ->
+                            // PWA chrono view: quick-reply select on prompt alerts.
                             AlertCard(
                                 alert = alert,
                                 showQuickReply = false,
-                                onQuickReply = { alert.sessionId?.let { onOpenSession(it) } },
+                                quickReplyOnPrompt = true,
+                                commands = savedCommands,
+                                onSendCommand = { cmd ->
+                                    alert.sessionId?.let { vm.sendQuickReply(it, null, cmd) }
+                                },
                             )
                         }
                     }
@@ -355,6 +362,10 @@ public fun AlertsScreen(
                                 onToggleExpand = { vm.toggleExpanded(group.sessionId) },
                                 onOpenSession = {
                                     group.session?.let { onOpenSession(it.id) }
+                                },
+                                commands = savedCommands,
+                                onSendCommand = { cmd ->
+                                    vm.sendQuickReply(group.sessionId, group.session?.serverProfileId, cmd)
                                 },
                             )
                         }
@@ -497,6 +508,8 @@ private fun AlertGroupCard(
     serverName: String? = null,
     onToggleExpand: () -> Unit,
     onOpenSession: () -> Unit,
+    commands: List<com.dmzs.datawatchclient.domain.SavedCommand> = emptyList(),
+    onSendCommand: (String) -> Unit = {},
 ) {
     val stateColor = stateAccentColor(group.state)
     val dwBorder = Color(0xFF2D3148)
@@ -588,7 +601,8 @@ private fun AlertGroupCard(
                         AlertCard(
                             alert = alert,
                             showQuickReply = canQuickReply && idx == 0,
-                            onQuickReply = { onOpenSession() },
+                            commands = commands,
+                            onSendCommand = onSendCommand,
                             sessionState = group.state,
                         )
                     }
@@ -606,8 +620,10 @@ private fun AlertGroupCard(
 private fun AlertCard(
     alert: Alert,
     showQuickReply: Boolean,
-    onQuickReply: () -> Unit,
     sessionState: SessionState? = null,
+    quickReplyOnPrompt: Boolean = false,
+    commands: List<com.dmzs.datawatchclient.domain.SavedCommand> = emptyList(),
+    onSendCommand: (String) -> Unit = {},
 ) {
     // Prompt: waiting_input session OR type contains "input" OR title matches PWA regex.
     val isPromptType =
@@ -709,18 +725,37 @@ private fun AlertCard(
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            // Quick reply — for waiting sessions, first alert only
-            if (showQuickReply) {
-                OutlinedButton(
-                    onClick = onQuickReply,
-                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 2.dp,
-                        ),
-                ) {
-                    Text(stringResource(R.string.alerts_quick_reply_ph), fontSize = 11.sp)
+            // PWA quick reply: a "Quick reply…" select of saved commands →
+            // alertSendCmd. Grouped view: latest alert of a waiting session;
+            // chrono view: any prompt alert. Hidden with no saved commands.
+            val quickReplyVisible =
+                (showQuickReply || (quickReplyOnPrompt && isPromptType)) &&
+                    commands.isNotEmpty() && alert.sessionId != null
+            if (quickReplyVisible) {
+                var menuOpen by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.padding(top = 4.dp).fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { menuOpen = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 2.dp,
+                            ),
+                    ) {
+                        Text(stringResource(R.string.alerts_quick_reply_ph) + " ▾", fontSize = 11.sp)
+                    }
+                    androidx.compose.material3.DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        commands.forEach { c ->
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text(c.name.ifBlank { c.command }, fontSize = 13.sp) },
+                                onClick = {
+                                    menuOpen = false
+                                    onSendCommand(c.command)
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
