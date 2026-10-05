@@ -130,13 +130,11 @@ public class NotificationPoster(private val context: Context) {
 
     private fun deepLinkIntent(sessionId: String): PendingIntent {
         val uri = Uri.parse(com.dmzs.datawatchclient.ui.DeepLinks.sessionUri(sessionId))
+        // Explicit at construction (action + data + component): the deep-link `data` URI
+        // carries the routing, the component pins delivery to our own MainActivity.
         val intent =
-            Intent(Intent.ACTION_VIEW, uri).apply {
-                setPackage(context.packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                // Ensure the app opens to MainActivity; the deep-link `data` URI carries the routing.
-                setClass(context, MainActivity::class.java)
-            }
+            Intent(Intent.ACTION_VIEW, uri, context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         return PendingIntent.getActivity(
             context,
             sessionId.hashCode(),
@@ -156,11 +154,12 @@ public class NotificationPoster(private val context: Context) {
             PendingIntent.getActivity(
                 context,
                 sessionId.hashCode() xor PLAY_LONG_REQUEST_CODE_SALT,
-                Intent(Intent.ACTION_VIEW, Uri.parse(com.dmzs.datawatchclient.ui.DeepLinks.sessionUri(sessionId))).apply {
-                    setPackage(context.packageName)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    setClass(context, MainActivity::class.java)
-                },
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(com.dmzs.datawatchclient.ui.DeepLinks.sessionUri(sessionId)),
+                    context,
+                    MainActivity::class.java,
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
         return NotificationCompat.Action.Builder(R.drawable.ic_notif_play, "Play", pi).build()
@@ -239,17 +238,19 @@ public class NotificationPoster(private val context: Context) {
             requestCodeSalt: Int,
             vararg extras: Pair<String, Boolean>,
         ): android.app.PendingIntent {
+            // Explicit component (by name — the car service lives in the :auto module,
+            // which composeApp doesn't reference at compile time in every flavor).
             val intent =
-                android.content.Intent().apply {
-                    setClassName(
-                        context.packageName,
-                        "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
+                Intent(android.content.Intent.ACTION_VIEW)
+                    .setComponent(
+                        android.content.ComponentName(
+                            context.packageName,
+                            "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
+                        ),
                     )
-                    action = android.content.Intent.ACTION_VIEW
-                    putExtra(EXTRA_CAR_SESSION_ID, event.sessionId)
-                    putExtra(EXTRA_CAR_SESSION_TITLE, event.title)
-                    extras.forEach { (k, v) -> putExtra(k, v) }
-                }
+                    .putExtra(EXTRA_CAR_SESSION_ID, event.sessionId)
+                    .putExtra(EXTRA_CAR_SESSION_TITLE, event.title)
+            extras.forEach { (k, v) -> intent.putExtra(k, v) }
             return android.app.PendingIntent.getService(
                 context,
                 event.sessionId.hashCode() xor requestCodeSalt,
