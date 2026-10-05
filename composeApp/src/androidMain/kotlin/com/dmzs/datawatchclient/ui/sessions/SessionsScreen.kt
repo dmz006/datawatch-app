@@ -279,6 +279,9 @@ public fun SessionsScreen(
                         Modifier
                             .offset(y = 36.dp)
                             .padding(end = 4.dp),
+                    // PWA `.fab` fill = accent2 (D4a: M3 shape, PWA colour).
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.sessions_fab_new))
                 }

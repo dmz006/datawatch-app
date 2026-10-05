@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.shell
 
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
@@ -26,9 +27,10 @@ internal fun BottomNavBar(
     alertsBadge: Int = 0,
     prdsSupported: Boolean = true,
     dashboardEnabled: Boolean = false,
-    /** S6-2 (#74): show red dot on Settings icon when any federated peer is >6h stale. */
-    anyPeerStale: Boolean = false,
-    /** Sprint 22 (#115): when true the alerts badge dims and shows 🔕 instead of a count. */
+    /** PWA `#peerStaleBadge`: red count of stale federated peers on the Settings tab. */
+    stalePeerCount: Int = 0,
+    /** PWA `navigateToStalePeer`: tapping the badge opens Observer › Federated Peers. */
+    onStalePeerBadgeClick: () -> Unit = {},
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.hierarchy?.firstOrNull()?.route
@@ -106,9 +108,18 @@ internal fun BottomNavBar(
                             ) {
                                 NavGlyph(item)
                             }
-                        // S6-2 (#74): red dot on Settings when any peer is >6h stale.
-                        item.route == Destinations.Tabs.Settings && anyPeerStale ->
-                            BadgedBox(badge = { Badge() }) {
+                        // PWA #peerStaleBadge: red count (99+ cap); tap → stale peers.
+                        item.route == Destinations.Tabs.Settings && stalePeerCount > 0 ->
+                            BadgedBox(
+                                badge = {
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.clickable(onClick = onStalePeerBadgeClick),
+                                    ) {
+                                        Text(alertBadgeLabel(stalePeerCount), style = MaterialTheme.typography.labelSmall)
+                                    }
+                                },
+                            ) {
                                 NavGlyph(item)
                             }
                         else ->
