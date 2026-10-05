@@ -641,7 +641,7 @@ struct SessionsView: View {
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 56, height: 56)
-                .background(DatawatchColors.primary, in: Circle())
+                .background(DatawatchColors.secondary, in: Circle()) // PWA .fab: accent2
                 .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
         }
         .accessibilityLabel("New session")
