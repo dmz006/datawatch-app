@@ -282,11 +282,17 @@ private struct CouncilReplyView: View {
             }
             .font(DatawatchFonts.labelSmall)
             if !reply.text.isEmpty {
-                Text(verbatim: reply.text)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(reply.status == "error" ? CouncilPalette.red : DatawatchColors.onSurface)
-                    .textSelection(.enabled)
-                    .padding(.leading, 18)
+                if reply.status == "error" {
+                    Text(verbatim: reply.text)
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(CouncilPalette.red)
+                        .textSelection(.enabled)
+                        .padding(.leading, 18)
+                } else {
+                    // Persona replies are markdown (operator 2026-10-05: render on all three).
+                    PrdMarkdownView(source: reply.text)
+                        .padding(.leading, 18)
+                }
             }
         }
     }
@@ -314,10 +320,7 @@ private struct CouncilVerdictView: View {
                     .font(DatawatchFonts.labelSmall)
                     .fontWeight(.semibold)
                     .foregroundStyle(CouncilPalette.green)
-                Text(verbatim: consensus)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .textSelection(.enabled)
+                PrdMarkdownView(source: consensus)
             }
             if !dissent.isEmpty {
                 Text("Dissent")
@@ -325,10 +328,7 @@ private struct CouncilVerdictView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(CouncilPalette.amber)
                     .padding(.top, 4)
-                Text(verbatim: dissent)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .textSelection(.enabled)
+                PrdMarkdownView(source: dissent)
             }
         }
     }

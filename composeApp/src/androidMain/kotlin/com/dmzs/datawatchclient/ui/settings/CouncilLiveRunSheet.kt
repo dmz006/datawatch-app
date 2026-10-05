@@ -271,12 +271,20 @@ private fun CouncilLiveReplyRow(reply: CouncilLiveReply) {
             }
         }
         if (reply.text.isNotBlank()) {
-            Text(
-                reply.text,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (reply.status == CouncilReplyStatus.ERROR) CouncilRed else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 18.dp, top = 2.dp),
-            )
+            if (reply.status == CouncilReplyStatus.ERROR) {
+                Text(
+                    reply.text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = CouncilRed,
+                    modifier = Modifier.padding(start = 18.dp, top = 2.dp),
+                )
+            } else {
+                // Persona replies are markdown (operator 2026-10-05: render on all three).
+                com.dmzs.datawatchclient.ui.autonomous.MarkdownView(
+                    text = reply.text,
+                    modifier = Modifier.padding(start = 18.dp, top = 2.dp),
+                )
+            }
         }
     }
 }
@@ -312,7 +320,7 @@ private fun CouncilLiveFooter(state: CouncilLiveState) {
                 fontWeight = FontWeight.SemiBold,
                 color = CouncilGreen,
             )
-            Text(state.consensus, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+            com.dmzs.datawatchclient.ui.autonomous.MarkdownView(text = state.consensus, modifier = Modifier.padding(top = 2.dp))
         }
         if (state.dissent.isNotBlank()) {
             Text(
@@ -322,7 +330,7 @@ private fun CouncilLiveFooter(state: CouncilLiveState) {
                 color = CouncilAmber,
                 modifier = Modifier.padding(top = 8.dp),
             )
-            Text(state.dissent, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+            com.dmzs.datawatchclient.ui.autonomous.MarkdownView(text = state.dissent, modifier = Modifier.padding(top = 2.dp))
         }
         if (state.phase == CouncilLivePhase.ERROR) {
             Text(
