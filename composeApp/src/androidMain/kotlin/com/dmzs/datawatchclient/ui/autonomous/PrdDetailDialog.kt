@@ -2766,7 +2766,7 @@ private fun PrdActiveSessionsCard(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
-                        Text("Decomposing PRD…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Decomposing Automaton…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (computeNodeDetail != null) {
                         Spacer(Modifier.height(8.dp))
@@ -3117,7 +3117,7 @@ private fun PrdActiveComputeCard(
                 CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
                 Text(
                     when (status) {
-                        "planning", "decomposing" -> "Decomposing PRD..."
+                        "planning", "decomposing" -> "Decomposing Automaton..."
                         "running" -> "Running..."
                         else -> status
                     },

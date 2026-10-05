@@ -218,8 +218,8 @@
     <string name="prd_detail_description_label">説明</string>
     <string name="prd_detail_files_label">ファイル</string>
     <string name="prd_detail_files_hint">1 行に 1 パス、最大 50 件。</string>
-    <string name="prd_detail_delete_title">PRD を削除しますか？</string>
-    <string name="prd_detail_delete_body">「%1$s」とすべての子 PRD を完全に削除します。この操作は取り消せません。</string>
+    <string name="prd_detail_delete_title">Automaton を削除しますか？</string>
+    <string name="prd_detail_delete_body">「%1$s」とすべての子 Automata を完全に削除します。この操作は取り消せません。</string>
     <string name="prd_detail_edit_files">✎ ファイル</string>
 
     <!-- ── Monitor ── -->
@@ -442,10 +442,10 @@
     <string name="prd_btn_clone_template">テンプレートに複製</string>
     <string name="prd_btn_clone_template_title">この automaton を再利用可能なテンプレートとして保存</string>
     <string name="prd_btn_delete">削除</string>
-    <string name="prd_btn_delete_title">PRD とすべての子孫を完全に削除</string>
+    <string name="prd_btn_delete_title">Automaton とすべての子孫を完全に削除</string>
     <string name="prd_btn_edit_spec">仕様を編集</string>
     <string name="prd_btn_request_revision">修正をリクエスト</string>
-    <string name="prd_btn_request_revision_title">メモを添えて PRD を修正のために差し戻す</string>
+    <string name="prd_btn_request_revision_title">メモを添えて Automaton を修正のために差し戻す</string>
     <string name="prd_btn_settings">設定</string>
     <string name="prd_decision_detail">詳細</string>
     <string name="prd_decisions_count">決定</string>
@@ -470,8 +470,8 @@
     <string name="prd_no_stories">まだストーリーがありません。</string>
     <string name="prd_no_tasks">タスクがありません。</string>
     <string name="prd_revision_prompt">何を修正する必要がありますか？</string>
-    <string name="prd_scan_help">PRD 仕様および関連ファイルに対する静的解析（SAST、秘密、依存関係、LLM グレーダー）。設定されたスキャナーを実行し、判定と発見を報告します。</string>
-    <string name="prd_scan_run_title">設定されたすべてのスキャナーをこの PRD に対して実行</string>
+    <string name="prd_scan_help">Automaton 仕様および関連ファイルに対する静的解析（SAST、秘密、依存関係、LLM グレーダー）。設定されたスキャナーを実行し、判定と発見を報告します。</string>
+    <string name="prd_scan_run_title">設定されたすべてのスキャナーをこの Automaton に対して実行</string>
     <string name="prd_set_llm_hint">タスク別オーバーライドがないタスクはこれらの値を継承。空 = グローバルsession.llm_backendデフォルト。</string>
     <string name="prd_set_llm_title">PRDレベルのワーカーLLM</string>
     <string name="prd_set_story_profile_hint">空 = PRDのデフォルト実行プロファイルを継承。名前を指定するとこのストーリーのみ上書き。</string>

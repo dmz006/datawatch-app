@@ -218,8 +218,8 @@
     <string name="prd_detail_description_label">Description</string>
     <string name="prd_detail_files_label">Fichiers</string>
     <string name="prd_detail_files_hint">Un chemin par ligne, max. 50.</string>
-    <string name="prd_detail_delete_title">Supprimer le PRD ?</string>
-    <string name="prd_detail_delete_body">Supprime définitivement « %1$s » et tous les PRDs enfants. Cette action est irréversible.</string>
+    <string name="prd_detail_delete_title">Supprimer l\'Automate ?</string>
+    <string name="prd_detail_delete_body">Supprime définitivement « %1$s » et tous les Automates enfants. Cette action est irréversible.</string>
     <string name="prd_detail_edit_files">✎ fichiers</string>
 
     <!-- ── Monitor ── -->
@@ -442,10 +442,10 @@
     <string name="prd_btn_clone_template">Cloner vers Modèle</string>
     <string name="prd_btn_clone_template_title">Sauvegarder cet automaton comme modèle réutilisable</string>
     <string name="prd_btn_delete">Supprimer</string>
-    <string name="prd_btn_delete_title">Supprimer définitivement le PRD et tous ses descendants</string>
+    <string name="prd_btn_delete_title">Supprimer définitivement l\'Automate et tous ses descendants</string>
     <string name="prd_btn_edit_spec">Modifier le Spec</string>
     <string name="prd_btn_request_revision">Demander une Révision</string>
-    <string name="prd_btn_request_revision_title">Renvoyer le PRD pour révision avec une note</string>
+    <string name="prd_btn_request_revision_title">Renvoyer l\'Automate pour révision avec une note</string>
     <string name="prd_btn_settings">Paramètres</string>
     <string name="prd_decision_detail">Détail</string>
     <string name="prd_decisions_count">décisions</string>
@@ -456,25 +456,25 @@
     <string name="prd_edit_story_title_prefix">Modifier l\'histoire</string>
     <string name="prd_edit_task_files_title">Modifier les fichiers de la tâche</string>
     <string name="prd_edit_task_title_prefix">Modifier la tâche</string>
-    <string name="prd_list_empty">Aucun PRD ne correspond.</string>
+    <string name="prd_list_empty">Aucun Automate ne correspond.</string>
     <string name="prd_more_actions">Plus d\'actions</string>
     <string name="prd_new_backend_label">Backend</string>
     <string name="prd_new_effort_label">Effort</string>
     <string name="prd_new_model_label">Modèle (optionnel)</string>
     <string name="prd_new_spec_label">Spec — décrivez la fonctionnalité en anglais courant</string>
     <string name="prd_new_spec_ph">Ajouter une colonne CACHE à /api/stats…</string>
-    <string name="prd_new_title">Nouveau PRD</string>
+    <string name="prd_new_title">Nouvel Automate</string>
     <string name="prd_new_title_label">Titre (optionnel)</string>
     <string name="prd_new_title_ph">Titre court</string>
     <string name="prd_no_decisions">Aucune décision enregistrée pour le moment.</string>
     <string name="prd_no_stories">Aucune histoire pour l\'instant.</string>
     <string name="prd_no_tasks">Aucune tâche.</string>
     <string name="prd_revision_prompt">Que faut-il réviser ?</string>
-    <string name="prd_scan_help">Analyse statique (SAST, secrets, dépendances, LLM grader) sur le spec du PRD et les fichiers associés. Exécute les scanners configurés et rapporte un verdict et des trouvailles.</string>
-    <string name="prd_scan_run_title">Exécuter tous les scanners configurés contre ce PRD</string>
+    <string name="prd_scan_help">Analyse statique (SAST, secrets, dépendances, LLM grader) sur le spec de l\'Automate et les fichiers associés. Exécute les scanners configurés et rapporte un verdict et des trouvailles.</string>
+    <string name="prd_scan_run_title">Exécuter tous les scanners configurés contre cet Automate</string>
     <string name="prd_set_llm_hint">Les tâches sans override par tâche héritent de ces valeurs. Vide = défaut global session.llm_backend.</string>
-    <string name="prd_set_llm_title">LLM de travail au niveau PRD</string>
-    <string name="prd_set_story_profile_hint">Vide = hériter du profil d\'exécution par défaut du PRD. Un nom remplace uniquement cette histoire.</string>
+    <string name="prd_set_llm_title">LLM de travail au niveau Automate</string>
+    <string name="prd_set_story_profile_hint">Vide = hériter du profil d\'exécution par défaut de l\'Automate. Un nom remplace uniquement cette histoire.</string>
     <string name="prd_set_story_profile_title">Remplacer le profil d\'exécution</string>
     <string name="prd_settings_guided_label">Mode guidé — pause pour l\'opérateur après chaque story</string>
     <string name="prd_settings_modal_title">Paramètres de l\'automaton</string>
@@ -500,7 +500,7 @@
     <string name="prd_stories_tasks">Histoires &amp; tâches</string>
     <string name="prd_story_desc_label">Description</string>
     <string name="prd_story_title_label">Titre</string>
-    <string name="prd_task_llm_hint">Override LLM par tâche — vide hérite du PRD puis du global.</string>
+    <string name="prd_task_llm_hint">Override LLM par tâche — vide hérite de l\'Automate puis du global.</string>
     <string name="prd_view_spec">Voir le spec</string>
     <string name="profile_agent_settings_section">Paramètres d\'agent</string>
     <string name="profile_claude_key_secret_label">Secret de clé auth Claude</string>

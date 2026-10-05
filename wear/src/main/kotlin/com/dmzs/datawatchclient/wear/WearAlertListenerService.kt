@@ -220,7 +220,7 @@ public class WearAlertListenerService : WearableListenerService() {
         nm.createNotificationChannel(
             NotificationChannel(
                 PRD_REVIEW_CHANNEL_ID,
-                "PRD Review",
+                "Automaton Review",
                 NotificationManager.IMPORTANCE_HIGH,
             ),
         )
@@ -266,7 +266,7 @@ public class WearAlertListenerService : WearableListenerService() {
 
         val notif = NotificationCompat.Builder(this, PRD_REVIEW_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dw_eye)
-            .setContentTitle("PRD Needs Review")
+            .setContentTitle("Automaton Needs Review")
             .setContentText(prdTitle.take(60))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openAppIntent())
