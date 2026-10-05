@@ -79,6 +79,9 @@ public class AutonomousViewModel(
         /** Latest scan result for the open PRD (v0.62.0). */
         val scanResult: ScanResultDto? = null,
         val scanLoading: Boolean = false,
+        /** Parity D24a — last rules-check result (pretty JSON) for the Rules tab. */
+        val rulesResult: String? = null,
+        val rulesLoading: Boolean = false,
         /** Proposed rules from proposeRules (v0.62.0). */
         val proposedRules: RuleProposalDto? = null,
         /** Type registry (v0.63.0). */
@@ -880,6 +883,31 @@ public class AutonomousViewModel(
 
     public fun clearProposedRules() {
         _state.value = _state.value.copy(proposedRules = null)
+    }
+
+    /** Parity D24a — PWA Rules tab ▶ Run Rules Check. */
+    public fun runRulesCheck(prdId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            _state.value = _state.value.copy(rulesLoading = true)
+            transport.runPrdRulesCheck(prdId).fold(
+                onSuccess = { obj ->
+                    val pretty = kotlinx.serialization.json.Json { prettyPrint = true }
+                    _state.value =
+                        _state.value.copy(
+                            rulesLoading = false,
+                            rulesResult = pretty.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), obj),
+                        )
+                },
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            rulesLoading = false,
+                            banner = "Rules check failed — ${err.message ?: err::class.simpleName}",
+                        )
+                },
+            )
+        }
     }
 
     public fun clearScan() {

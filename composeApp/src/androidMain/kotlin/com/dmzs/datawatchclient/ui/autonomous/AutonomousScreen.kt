@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -485,6 +486,17 @@ public fun AutonomousScreen(
                     vm.hardDeletePrdWithMemory(id, strategy, roleFilter, archiveToScope)
                 },
                 onArchive = { vm.archivePrd(id) },
+                scanResult = state.scanResult,
+                scanLoading = state.scanLoading,
+                onLoadScan = { vm.loadScanResult(id) },
+                onTriggerScan = { vm.triggerScan(id) },
+                onCreateFixPrd = { vm.createFixPrd(id) { newId -> openPrdId = newId } },
+                onProposeRules = { vm.proposeRules(id) },
+                proposedRules = state.proposedRules,
+                onDismissProposedRules = { vm.clearProposedRules() },
+                rulesResult = state.rulesResult,
+                rulesLoading = state.rulesLoading,
+                onRunRules = { vm.runRulesCheck(id) },
                 prdEnvelopes = state.prdEnvelopes,
                 prdComputeNodeDetail = state.prdComputeNodeDetail,
                 prdComputeNodeRef = state.prdComputeNodeRef,
@@ -692,7 +704,7 @@ private fun PrdsBody(
                 compareBy(
                     { if (it.id in pinnedIds) 0 else 1 },
                     { prdStateRank(it.status) },
-                    { -(it.createdAt?.hashCode() ?: 0) },
+                    { -prdActivityKey(it) },
                 ),
             )
     Box(modifier = Modifier.fillMaxSize()) {
@@ -914,6 +926,36 @@ private fun PrdRow(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                         )
                     }
+                }
+                // PWA renderProgressBar: 4dp bar (accent; success at 100%) +
+                // "done/total tasks · pct%".
+                prdTaskProgress(prd)?.let { (done, total) ->
+                    val pct = Math.round(done * 100f / total)
+                    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+                    Box(
+                        modifier =
+                            Modifier
+                                .padding(top = 6.dp, bottom = 2.dp)
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .background(dw.bg, RoundedCornerShape(2.dp)),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(pct / 100f)
+                                    .height(4.dp)
+                                    .background(
+                                        if (pct == 100) dw.success else MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(2.dp),
+                                    ),
+                        )
+                    }
+                    Text(
+                        "$done/$total tasks · $pct%",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 // PWA renderCurrentPosition: "▶ Story i: … · Task j: … (verifying/testing)".
                 currentPositionLine(prd)?.let { line ->
@@ -1426,18 +1468,32 @@ private fun isApprovalState(statusLower: String) =
     statusLower in setOf("needs_review", "awaiting_approval", "revisions_asked")
 
 /** Sort rank: action-needed statuses first, then active, then terminal. */
+/** PWA `_AUTOMATA_STATE_RANK` verbatim (alpha.31 #272) — lower sorts first; unknown = 9. */
 internal fun prdStateRank(status: String): Int =
     when (status.lowercase()) {
-        "needs_review", "revisions_asked", "awaiting_approval" -> 0
-        "running" -> 1
-        "decomposing", "planning" -> 2
-        "approved" -> 3
-        "draft" -> 4
-        // completed shown by default (v8.33.29 / #180) — sorted after active, before terminal
-        "completed", "complete" -> 6
-        "cancelled", "canceled", "rejected", "archived" -> 10
-        else -> 5
+        "waiting_input", "needs_review", "revisions_asked", "awaiting_approval" -> 0
+        "blocked" -> 1
+        "running", "decomposing" -> 2
+        "approved", "planning" -> 3
+        "draft", "" -> 4
+        "completed", "complete", "rejected", "cancelled", "canceled" -> 5
+        "archived" -> 6
+        else -> 9
     }
+
+/** PWA list tiebreak: last activity (`updated_at` else `created_at`) descending. */
+internal fun prdActivityKey(prd: com.dmzs.datawatchclient.transport.dto.PrdDto): Long {
+    val ts = prd.updatedAt?.takeIf { it.isNotBlank() } ?: prd.createdAt
+    return ts?.let { runCatching { kotlinx.datetime.Instant.parse(it).toEpochMilliseconds() }.getOrNull() } ?: 0L
+}
+
+/** PWA card `renderProgressBar`: done/total tasks (status == completed); null when no tasks. */
+internal fun prdTaskProgress(prd: com.dmzs.datawatchclient.transport.dto.PrdDto): Pair<Int, Int>? {
+    val total = prd.stories.sumOf { it.tasks.size }
+    if (total == 0) return null
+    val done = prd.stories.sumOf { s -> s.tasks.count { it.status == "completed" } }
+    return done to total
+}
 
 internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {

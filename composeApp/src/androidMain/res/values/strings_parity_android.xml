@@ -33,4 +33,8 @@
     <string name="schedules_edit">Edit schedule</string>
     <string name="schedules_edit_command_prompt">Edit command:</string>
     <string name="schedules_edit_time_prompt">New time (ISO, or empty to keep):</string>
+    <string name="prd_tab_rules">Rules</string>
+    <string name="prd_rules_help">AGENT.md / project-rules check. Verifies the Automaton spec and any produced files comply with the operator-defined rules.</string>
+    <string name="rules_run">Run Rules Check</string>
+    <string name="rules_no_results">No rules check results yet</string>
 </resources>
