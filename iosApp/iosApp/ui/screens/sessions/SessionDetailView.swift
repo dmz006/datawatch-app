@@ -62,6 +62,9 @@ struct SessionDetailView: View {
     @State private var imageBanner: String? = nil
     /// PWA dismissConnBanner — "use tmux only".
     @State private var connBannerDismissed = false
+    /// PWA state.channelReady[full_id]: WS `channel_ready` frame / output-marker scan.
+    @State private var hubChannelReady = false
+    @State private var channelReadySub: IosSubscription? = nil
     /// PWA tabStatusBadge: hook-health dot + board state, fetched on mount.
     @State private var boardHook: String = ""
     @State private var boardState: String = ""
@@ -134,6 +137,8 @@ struct SessionDetailView: View {
             if scrollMode {
                 IosScrollMode.shared.command(profile: profile, session: session, enter: false) { _ in }
             }
+            channelReadySub?.cancel()
+            channelReadySub = nil
             LocalAlertWatcher.shared.foregroundSessionId = nil
             ShellRestore.setOpenSession(profileId: nil, sessionId: nil)
         }
@@ -180,6 +185,17 @@ struct SessionDetailView: View {
         LocalAlertWatcher.shared.foregroundSessionId = session.id
         ShellRestore.setOpenSession(profileId: profile.id, sessionId: session.id)
         loadStatusBadge()
+        watchChannelReady()
+    }
+
+    /// Live channel/ACP readiness from the shared hub (clears the conn banner).
+    private func watchChannelReady() {
+        guard channelReadySub == nil else { return }
+        let ids: [String] = [session.fullId, session.id]
+        channelReadySub = IosChannelReady.shared.watch(sessionIds: ids) { ready in
+            let value: Bool = ready.boolValue
+            DispatchQueue.main.async { hubChannelReady = value }
+        }
     }
 
     private func loadStatusBadge() {
@@ -364,7 +380,8 @@ struct SessionDetailView: View {
     }
 
     private var showConnBanner: Bool {
-        !isDone && !connBannerDismissed && !cur.channelReady && (sessionMode == "channel" || sessionMode == "acp")
+        !isDone && !connBannerDismissed && !cur.channelReady && !hubChannelReady
+            && (sessionMode == "channel" || sessionMode == "acp")
     }
 
     /// PWA output tabs: Tmux · Channel (channel mode only) · Status. Chat-only
