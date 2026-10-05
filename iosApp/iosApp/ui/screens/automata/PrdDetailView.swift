@@ -356,6 +356,8 @@ struct PrdDetailView: View {
             if prd.scopeWarnings { scopeWarningsBanner }
             PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
             statusGraphs
+            // Android Graph card — Automaton DAG (#184 / PWA #182).
+            PrdDagCard(profile: vm.profile, prdId: prd.id)
             // Android progress (per-story CPU/RSS) + compute-node GPU card.
             PrdResourceCards(profile: vm.profile, prd: prd)
             capacityCard
