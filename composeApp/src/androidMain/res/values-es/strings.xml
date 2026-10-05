@@ -829,10 +829,10 @@
     <string name="council_config_max_parallel">Máx. paralelo</string>
     <string name="council_config_draft_retention">Retención de borrador (días)</string>
     <string name="council_run_proposal">Propuesta</string>
-    <string name="council_mode_debate">Debate</string>
-    <string name="council_mode_quick">Rápido</string>
+    <string name="council_mode_debate">Debate (3 rondas)</string>
+    <string name="council_mode_quick">Rápido (1 ronda)</string>
     <string name="council_run_btn">Ejecutar Council</string>
-    <string name="council_results_title">Resultados</string>
+    <string name="council_results_title">Ejecuciones recientes</string>
     <string name="council_round_label">Ronda</string>
     <string name="council_consensus">Consenso</string>
 
@@ -1271,4 +1271,25 @@
     <string name="daemon_log_newest">Más recientes</string>
     <string name="daemon_log_older">Más antiguos</string>
     <string name="daemon_log_info">Mostrando %1$d de %2$d líneas (desplazamiento %3$d)</string>
+
+    <!-- Council live runs (PWA councilOpenLiveWatch) -->
+    <string name="council_btn_detail">detalle</string>
+    <string name="council_runs_summary">%1$d personas × %2$d rondas</string>
+    <string name="council_live_title">Ejecución del consejo</string>
+    <string name="council_cancel_confirm">¿Cancelar la ejecución del consejo %1$s?</string>
+    <string name="council_phase_connecting">conectando</string>
+    <string name="council_phase_running">en curso</string>
+    <string name="council_phase_synthesizing">sintetizando</string>
+    <string name="council_phase_completed">completado</string>
+    <string name="council_phase_cancelled">cancelado</string>
+    <string name="council_phase_error">error</string>
+    <string name="council_live_round">Ronda %1$d de %2$d</string>
+    <string name="council_live_responding">respondiendo…</string>
+    <string name="council_live_waiting">en espera</string>
+    <string name="council_live_synthesizing">Sintetizando…</string>
+    <string name="council_live_lost">Se perdió la conexión con la ejecución del consejo.</string>
+    <string name="council_start_failed">No se pudo iniciar el consejo</string>
+    <string name="council_cancel_btn_label">cancelar</string>
+    <string name="council_running_label">Ejecutando consejo…</string>
+    <string name="council_personas_count">personas</string>
 </resources>

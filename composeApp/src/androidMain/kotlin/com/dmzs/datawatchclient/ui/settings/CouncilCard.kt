@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -47,9 +46,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.transport.CouncilLivePhase
+import com.dmzs.datawatchclient.transport.CouncilLiveReducer
+import com.dmzs.datawatchclient.transport.CouncilLiveState
+import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.CouncilConfigDto
 import com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto
 import com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto
@@ -70,14 +74,17 @@ internal fun CouncilCard() {
     var configMaxParallel by remember(config) { mutableStateOf(config.maxParallel?.toString() ?: "") }
     var configDraftRetention by remember(config) { mutableStateOf(config.draftRetentionDays?.toString() ?: "") }
     var proposal by remember { mutableStateOf("") }
-    var mode by remember { mutableStateOf("debate") }
+    var mode by remember { mutableStateOf("quick") }
     var selectedPersonas by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var expandedRunId by remember { mutableStateOf<String?>(null) }
     var showPersonasSheet by remember { mutableStateOf(false) }
     var showAddWizard by remember { mutableStateOf(false) }
     var editingPersona by remember { mutableStateOf<CouncilPersonaForEdit?>(null) }
     var personaToDelete by remember { mutableStateOf<CouncilPersonaDto?>(null) }
     var whisperConfigured by remember { mutableStateOf(false) }
+    var activeTransport by remember { mutableStateOf<TransportClient?>(null) }
+    var liveRun by remember { mutableStateOf<CouncilLiveState?>(null) }
+    var liveRunIsLive by remember { mutableStateOf(false) }
+    var startError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     suspend fun loadAll() {
@@ -93,7 +100,12 @@ internal fun CouncilCard() {
                     }
                 } ?: return
         val t = ServiceLocator.transportFor(sp)
-        t.councilListPersonas().onSuccess { personas = it }
+        activeTransport = t
+        t.councilListPersonas().onSuccess { list ->
+            personas = list
+            // PWA renders every persona checkbox pre-checked.
+            if (selectedPersonas.isEmpty()) selectedPersonas = list.filter { it.enabled }.map { it.name }.toSet()
+        }
         t.councilListRuns().onSuccess { runs = it }
         t.councilGetConfig().onSuccess { config = it }
         t.fetchInfo().onSuccess { info -> whisperConfigured = info.whisperConfigured }
@@ -478,14 +490,14 @@ internal fun CouncilCard() {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FilterChip(
-                selected = mode == "debate",
-                onClick = { mode = "debate" },
-                label = { Text(stringResource(R.string.council_mode_debate)) },
-            )
-            FilterChip(
                 selected = mode == "quick",
                 onClick = { mode = "quick" },
                 label = { Text(stringResource(R.string.council_mode_quick)) },
+            )
+            FilterChip(
+                selected = mode == "debate",
+                onClick = { mode = "debate" },
+                label = { Text(stringResource(R.string.council_mode_debate)) },
             )
         }
         FilledTonalButton(
@@ -504,17 +516,30 @@ internal fun CouncilCard() {
                                             list.firstOrNull { it.id == activeId && it.enabled }
                                         }
                                     } ?: return@runCatching
+                            val chosen = personas.map { it.name }.filter { it in selectedPersonas }
                             val req =
                                 StartCouncilRunRequest(
                                     proposal = proposal.trim(),
                                     mode = mode,
-                                    personas = selectedPersonas.toList(),
+                                    personas = chosen,
                                 )
+                            startError = null
                             ServiceLocator.transportFor(sp).councilStartRun(req)
                                 .onSuccess { run ->
-                                    runs = runs + run
+                                    // Async-first server: ack is {id, status, events_path} —
+                                    // open the live watch (PWA councilOpenLiveWatch).
+                                    liveRun =
+                                        CouncilLiveState(
+                                            runId = run.id,
+                                            proposal = req.proposal,
+                                            mode = mode,
+                                            personas = chosen,
+                                            roundsTotal = CouncilLiveReducer.roundsForMode(mode),
+                                        )
+                                    liveRunIsLive = true
                                     proposal = ""
                                 }
+                                .onFailure { e -> startError = e.message ?: e::class.simpleName }
                         }
                     }
                 }
@@ -523,7 +548,16 @@ internal fun CouncilCard() {
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.council_run_btn)) }
 
-        // ── ACTIVE RUNS section ───────────────────────────────────────────
+        startError?.let { err ->
+            Text(
+                stringResource(R.string.council_start_failed) + ": " + err,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+
+        // ── RECENT RUNS (PWA council_recent, limit 5) ──────────────────────
         if (runs.isNotEmpty()) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Text(
@@ -532,161 +566,70 @@ internal fun CouncilCard() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
-            runs.forEachIndexed { idx, run ->
-                if (idx > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+            runs.take(5).forEachIndexed { idx, run ->
+                if (idx > 0) HorizontalDivider()
                 CouncilRunRow(
                     run = run,
-                    expanded = expandedRunId == run.id,
-                    onToggle = { expandedRunId = if (expandedRunId == run.id) null else run.id },
-                    onCancel = {
-                        scope.launch {
-                            runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get()
-                                val sp =
-                                    ServiceLocator.profileRepository.observeAll()
-                                        .first { list -> list.any { it.enabled } }
-                                        .let { list ->
-                                            if (activeId == null) {
-                                                list.filter { it.enabled }.firstOrNull()
-                                            } else {
-                                                list.firstOrNull { it.id == activeId && it.enabled }
-                                            }
-                                        } ?: return@runCatching
-                                ServiceLocator.transportFor(sp).councilStopRun(run.id)
-                                    .onSuccess { runs = runs.filter { it.id != run.id } }
-                            }
-                        }
+                    onOpen = {
+                        liveRun = CouncilLiveReducer.fromRun(run)
+                        liveRunIsLive = !run.isFinished
                     },
                 )
             }
         }
     }
+
+    val sheetRun = liveRun
+    val sheetTransport = activeTransport
+    if (sheetRun != null && sheetTransport != null) {
+        CouncilLiveRunSheet(
+            transport = sheetTransport,
+            initial = sheetRun,
+            live = liveRunIsLive,
+            onDismiss = { liveRun = null },
+            onFinished = { scope.launch { runCatching { loadAll() } } },
+        )
+    }
 }
 
+/** PWA recent-run line: mode chip · "N personas × M rounds" · short id · detail. */
 @Composable
 private fun CouncilRunRow(
     run: CouncilRunDto,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    onCancel: () -> Unit,
+    onOpen: () -> Unit,
 ) {
-    val isActive = run.status in listOf("running", "pending", "deliberating")
-
-    Column(
+    Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onToggle() }
+                .clickable { onOpen() }
                 .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Box(
+            modifier =
+                Modifier
+                    .background(Color(0xFF6366F1).copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 5.dp, vertical = 1.dp),
         ) {
-            Text(
-                run.proposal.take(60),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f),
-            )
-            CouncilStatusBadge(run.status)
-            Text(
-                stringResource(R.string.council_round_label) + " ${run.round}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(run.mode, style = MaterialTheme.typography.labelSmall, color = Color(0xFF6366F1))
         }
-
-        if (expanded) {
-            Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                // Milestone timeline: started / round / consensus / cancel
-                run.startedAt?.let { t ->
-                    MilestoneEntry(label = "Started", value = t)
-                }
-                if (run.round > 0) {
-                    MilestoneEntry(label = stringResource(R.string.council_round_label), value = run.round.toString())
-                }
-                // BL295-296 (alpha.41): per-persona answers from InferenceFn
-                if (run.answers.isNotEmpty()) {
-                    Text(
-                        stringResource(R.string.council_persona_answers_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp),
-                    )
-                    run.answers.forEach { ans ->
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
-                            Text(
-                                if (ans.role.isNotBlank()) "${ans.persona} (${ans.role})" else ans.persona,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF3B82F6),
-                            )
-                            Text(ans.answer, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-                run.consensus?.let { c ->
-                    Text(
-                        stringResource(R.string.council_consensus),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF10B981),
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                    Text(c, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
-                }
-                run.dissent?.let { d ->
-                    Text(
-                        stringResource(R.string.council_dissent_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFF59E0B),
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                    Text(d, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
-                }
-                if (isActive) {
-                    OutlinedButton(
-                        onClick = onCancel,
-                        modifier = Modifier.padding(top = 8.dp),
-                        colors =
-                            ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error,
-                            ),
-                    ) { Text(stringResource(R.string.action_cancel)) }
-                }
-            }
+        Text(
+            stringResource(R.string.council_runs_summary, run.personas.size, run.rounds.size),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            run.id.take(8),
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        if (!run.isFinished) CouncilPhaseChip(CouncilLivePhase.RUNNING)
+        TextButton(onClick = onOpen) {
+            Text(stringResource(R.string.council_btn_detail), style = MaterialTheme.typography.labelSmall)
         }
-    }
-}
-
-@Composable
-private fun CouncilStatusBadge(status: String) {
-    val color =
-        when (status) {
-            "running", "deliberating" -> Color(0xFF3B82F6)
-            "completed" -> Color(0xFF10B981)
-            "cancelled", "aborted" -> MaterialTheme.colorScheme.error
-            else -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
-    Box(
-        modifier =
-            Modifier
-                .background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp),
-    ) {
-        Text(status, style = MaterialTheme.typography.labelSmall, color = color)
-    }
-}
-
-@Composable
-private fun MilestoneEntry(
-    label: String,
-    value: String,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.labelSmall)
     }
 }
