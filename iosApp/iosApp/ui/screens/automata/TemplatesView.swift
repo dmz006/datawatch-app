@@ -283,7 +283,7 @@ struct InstantiateTemplateView: View {
                 }
                 if let createdId {
                     Section {
-                        Label("Automaton created (\(createdId)). Find it in the PRDs tab.", systemImage: "checkmark.circle")
+                        Label("Automaton created (\(createdId)). Find it in the Automata tab.", systemImage: "checkmark.circle")
                             .foregroundStyle(DatawatchColors.success)
                     }
                 }

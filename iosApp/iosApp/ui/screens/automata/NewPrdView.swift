@@ -268,7 +268,7 @@ struct NewPrdView: View {
             Toggle(isOn: $memoryHarvest) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Harvest learnings on completion")
-                    Text("Promote memories when PRD finishes")
+                    Text("Promote memories when the automaton finishes")
                         .font(DatawatchFonts.labelSmall)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }

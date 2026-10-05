@@ -24,7 +24,7 @@ struct PrdMemorySection: View {
         let prdShared: Int = prd.prdSharedCount.map { Int(truncating: $0) } ?? 0
         let storyShared: Int = prd.storySharedCount.map { Int(truncating: $0) } ?? 0
         let sessionLocal: Int = prd.sessionLocalCount.map { Int(truncating: $0) } ?? 0
-        if prdShared > 0 { out.append(("PRD-shared", prdShared)) }
+        if prdShared > 0 { out.append(("Automaton-shared", prdShared)) }
         if storyShared > 0 { out.append(("Story-shared", storyShared)) }
         if sessionLocal > 0 { out.append(("Session", sessionLocal)) }
         return out
@@ -129,7 +129,7 @@ struct PrdMemorySection: View {
                 .font(DatawatchFonts.labelSmall.weight(.semibold))
                 .foregroundStyle(DatawatchColors.onSurface)
             HStack(spacing: 8) {
-                TextField("Search PRD memories…", text: $query)
+                TextField("Search automaton memories…", text: $query)
                     .font(DatawatchFonts.bodyMedium)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()

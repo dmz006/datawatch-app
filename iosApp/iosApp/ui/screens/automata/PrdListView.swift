@@ -418,7 +418,7 @@ struct PrdListView: View {
     private var listContent: some View {
         Group {
             if vm.isLoading && vm.prds.isEmpty {
-                LoadingIndicator(message: "Loading PRDs…")
+                LoadingIndicator(message: "Loading automata…")
             } else if let err = vm.error, vm.prds.isEmpty {
                 ErrorCard(message: err) { vm.start(profile: profile) }
             } else if vm.prds.isEmpty {
@@ -580,10 +580,10 @@ struct PrdListView: View {
                 .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
-            Text("No PRDs")
+            Text("No automata")
                 .font(DatawatchFonts.titleMedium)
                 .foregroundStyle(DatawatchColors.onSurface)
-            Text("PRDs created on the server or in the PWA appear here.")
+            Text("No automata. Launch one with ⚡.")
                 .font(DatawatchFonts.bodyMedium)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .multilineTextAlignment(.center)

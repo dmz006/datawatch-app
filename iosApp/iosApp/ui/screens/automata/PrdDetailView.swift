@@ -249,7 +249,7 @@ struct PrdDetailView: View {
         .prdReviewDialogs($review) { _, action, body in
             Task { await vm.perform(action, body: body) }
         }
-        .alert("Reject PRD", isPresented: $showReject) {
+        .alert("Reject automaton", isPresented: $showReject) {
             TextField("Reason", text: $rejectReason)
             Button("Reject", role: .destructive) {
                 let reason = rejectReason
@@ -258,7 +258,7 @@ struct PrdDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The PRD moves to rejected. The reason is recorded with the PRD.")
+            Text("The automaton moves to rejected. The reason is recorded with it.")
         }
         .alert("Request revision", isPresented: $showRevision) {
             TextField("What should change?", text: $revisionNote)
@@ -269,11 +269,11 @@ struct PrdDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
-        .alert("Cancel PRD?", isPresented: $showCancel) {
-            Button("Cancel PRD", role: .destructive) { Task { await vm.cancel() } }
+        .alert("Cancel automaton?", isPresented: $showCancel) {
+            Button("Cancel automaton", role: .destructive) { Task { await vm.cancel() } }
             Button("Keep running", role: .cancel) {}
         } message: {
-            Text("Running tasks are stopped. The PRD and its history are kept.")
+            Text("Running tasks are stopped. The automaton and its history are kept.")
         }
         .alert(
             itemConfirm?.title ?? "",
@@ -426,17 +426,17 @@ struct PrdDetailView: View {
                     actionButton("Pause", systemImage: "pause.fill", tint: DatawatchColors.warning) {
                         Task { await vm.perform("pause") }
                     }
-                    actionButton("Cancel PRD", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
+                    actionButton("Cancel automaton", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
                 }
             case "paused":
                 HStack(spacing: 10) {
                     actionButton("Resume", systemImage: "play.fill", tint: DatawatchColors.primary) {
                         Task { await vm.perform("resume") }
                     }
-                    actionButton("Cancel PRD", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
+                    actionButton("Cancel automaton", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
                 }
             case "decomposing", "planning", "blocked":
-                actionButton("Cancel PRD", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
+                actionButton("Cancel automaton", systemImage: "stop.circle", tint: DatawatchColors.error) { showCancel = true }
             case "completed", "rejected", "cancelled":
                 // PWA lifecycle 📦 Archive (terminal, not yet archived).
                 actionButton("Archive", systemImage: "archivebox", tint: DatawatchColors.onSurface) {

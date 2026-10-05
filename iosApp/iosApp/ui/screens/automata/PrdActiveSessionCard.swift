@@ -5,7 +5,7 @@ import DatawatchShared
 /// Android PrdActiveSessionsCard). Polls every 5 s while visible:
 /// - live sessions → state pill, id, name, hook dot, tests, story · task,
 ///   last event, CPU/RAM/GPU bars; tap opens the session;
-/// - planning with no session → "Decomposing PRD..." spinner;
+/// - planning with no session → "Decomposing automaton…" spinner;
 /// - running/decomposing with no session → stuck warning + Unstick + Cancel.
 struct PrdActiveSessionCard: View {
     let profile: ServerProfile
@@ -43,7 +43,7 @@ struct PrdActiveSessionCard: View {
         } else if rows != nil, status == "planning" {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
-                Text("Decomposing PRD...").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Text("Decomposing automaton…").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
                 Spacer()
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
