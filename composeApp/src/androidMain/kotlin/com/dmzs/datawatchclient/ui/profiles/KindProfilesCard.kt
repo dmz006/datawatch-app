@@ -10,7 +10,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,27 +21,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
-import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.ui.compute.resolveActiveTransport
 import com.dmzs.datawatchclient.ui.theme.PwaCard
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * Shared list-plus-delete-plus-smoke card for F10 profile kinds
- * (`project` or `cluster`). Create / edit happens on the PWA —
- * the profile config shape is rich (nested image_pair, git,
- * memory, kubernetes context) and a dialog for it would be an
- * ADR-0019 violation. Mobile owns list → smoke → delete, which
- * is the common operational path.
- *
- * Matches PWA `loadProfiles(kind)` → `renderProfilesPanel`.
+ * Project / cluster profile card (PWA `loadProfiles(kind)` → `renderProfilesPanel`):
+ * list with Smoke / Edit / Delete, "+ Add", and the full form editor with a
+ * "YAML view" toggle ([ProfileEditorDialog]). Create = POST, edit = PUT.
  */
 @Composable
 public fun KindProfilesCard(
@@ -50,29 +43,27 @@ public fun KindProfilesCard(
     title: String,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var profiles by remember { mutableStateOf<List<JsonObject>>(emptyList()) }
-    var banner by remember { mutableStateOf<String?>(null) }
+    var banner by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var editing by remember { mutableStateOf<JsonObject?>(null) }
     var creating by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<String?>(null) }
+
+    fun err(t: Throwable): String = t.message ?: t::class.simpleName.orEmpty()
 
     suspend fun refresh() {
-        val profilesList = ServiceLocator.profileRepository.observeAll().first()
-        val activeId = ServiceLocator.activeServerStore.get()
-        val profile =
-            profilesList.firstOrNull {
-                it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-            } ?: profilesList.firstOrNull { it.enabled } ?: run {
-                banner = "No enabled server."
+        val tr =
+            resolveActiveTransport() ?: run {
+                banner = context.getString(R.string.pfe_no_server) to false
                 return
             }
-        ServiceLocator.transportFor(profile).listKindProfiles(kind).fold(
+        tr.listKindProfiles(kind).fold(
             onSuccess = {
                 profiles = it
-                banner = null
+                if (banner?.second == false) banner = null
             },
-            onFailure = {
-                banner = "$title unavailable — ${it.message ?: it::class.simpleName}"
-            },
+            onFailure = { banner = context.getString(R.string.pfe_load_failed, title, err(it)) to false },
         )
     }
 
@@ -84,26 +75,21 @@ public fun KindProfilesCard(
         docsAnchor = "$kind-profiles",
         headerActions = {
             TextButton(onClick = { creating = true }) {
-                Text("+ Add", style = MaterialTheme.typography.labelSmall)
+                Text(stringResource(R.string.pfe_add), style = MaterialTheme.typography.labelSmall)
             }
         },
     ) {
-        banner?.let {
+        banner?.let { (msg, ok) ->
             Text(
-                it,
+                msg,
                 modifier = Modifier.padding(horizontal = 12.dp),
                 style = MaterialTheme.typography.bodySmall,
-                color =
-                    if (it.startsWith("Smoke OK") || it.startsWith("Deleted")) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
+                color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
         }
-        if (profiles.isEmpty() && banner == null) {
+        if (profiles.isEmpty() && banner?.second != false) {
             Text(
-                "No $kind profiles. Create on the PWA → they'll appear here.",
+                stringResource(R.string.pfe_empty),
                 modifier = Modifier.padding(12.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -111,292 +97,139 @@ public fun KindProfilesCard(
         }
         profiles.forEach { p ->
             val name = p.stringField("name") ?: "(unnamed)"
-            val summary =
-                when (kind) {
-                    "project" -> {
-                        val ip = p["image_pair"] as? JsonObject
-                        val agent = ip?.stringField("agent") ?: "?"
-                        val sidecar = ip?.stringField("sidecar") ?: "(solo)"
-                        val git = (p["git"] as? JsonObject)?.stringField("url").orEmpty()
-                        "$agent + $sidecar  —  $git"
+            ProfileRow(
+                name = name,
+                summary = summaryOf(kind, p),
+                onSmoke = {
+                    scope.launch {
+                        val tr = resolveActiveTransport() ?: return@launch
+                        tr.smokeKindProfile(kind, name).fold(
+                            onSuccess = { banner = "Smoke OK: $name" to true },
+                            onFailure = { banner = "Smoke failed — ${err(it)}" to false },
+                        )
                     }
-                    "cluster" -> {
-                        val k = p.stringField("kind") ?: "?"
-                        val ctx = p.stringField("context") ?: "-"
-                        val ns = p.stringField("namespace") ?: "default"
-                        "kind=$k  ctx=$ctx  ns=$ns"
-                    }
-                    else -> ""
-                }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(name, style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        summary,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            val profile =
-                                ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.enabled } ?: return@launch
-                            ServiceLocator.transportFor(profile)
-                                .smokeKindProfile(kind, name).fold(
-                                    onSuccess = { banner = "Smoke OK: $name" },
-                                    onFailure = {
-                                        banner = "Smoke failed — ${it.message ?: it::class.simpleName}"
-                                    },
-                                )
-                        }
-                    },
-                    modifier = Modifier.width(80.dp),
-                ) { Text("Smoke", style = MaterialTheme.typography.labelSmall) }
-                Spacer(modifier = Modifier.width(6.dp))
-                TextButton(onClick = { editing = p }) {
-                    Text("Edit", style = MaterialTheme.typography.labelSmall)
-                }
-                TextButton(
-                    onClick = {
-                        scope.launch {
-                            val profile =
-                                ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.enabled } ?: return@launch
-                            ServiceLocator.transportFor(profile)
-                                .deleteKindProfile(kind, name).fold(
-                                    onSuccess = {
-                                        banner = "Deleted $name"
-                                        refresh()
-                                    },
-                                    onFailure = {
-                                        banner = "Delete failed — ${it.message ?: it::class.simpleName}"
-                                    },
-                                )
-                        }
-                    },
-                ) {
-                    Text(
-                        "Delete",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
+                },
+                onEdit = { editing = p },
+                onDelete = { pendingDelete = name },
+            )
             HorizontalDivider()
         }
     }
 
+    pendingDelete?.let { name ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            text = {
+                Text(
+                    stringResource(
+                        if (kind == "cluster") R.string.pfe_delete_cluster_confirm else R.string.pfe_delete_project_confirm,
+                        name,
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingDelete = null
+                        scope.launch {
+                            val tr = resolveActiveTransport() ?: return@launch
+                            tr.deleteKindProfile(kind, name).fold(
+                                onSuccess = {
+                                    banner = context.getString(R.string.pfe_deleted, name) to true
+                                    refresh()
+                                },
+                                onFailure = { banner = context.getString(R.string.pfe_delete_failed, err(it)) to false },
+                            )
+                        }
+                    },
+                ) { Text(stringResource(R.string.pfe_delete), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
     if (creating || editing != null) {
-        ProfileEditDialog(
+        val stored = editing
+        ProfileEditorDialog(
             kind = kind,
-            existing = editing,
+            stored = stored,
             onDismiss = {
                 creating = false
                 editing = null
             },
-            onSave = { name, body ->
+            save = { name, body ->
+                val tr = resolveActiveTransport()
+                when {
+                    tr == null -> Result.failure(IllegalStateException(context.getString(R.string.pfe_no_server)))
+                    stored == null -> tr.createKindProfile(kind, body)
+                    else -> tr.putKindProfile(kind, name, body)
+                }
+            },
+            onSaved = { name ->
                 creating = false
                 editing = null
-                scope.launch {
-                    val profile =
-                        ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.enabled } ?: return@launch
-                    ServiceLocator.transportFor(profile)
-                        .putKindProfile(kind, name, body).fold(
-                            onSuccess = {
-                                banner = "Saved $name"
-                                refresh()
-                            },
-                            onFailure = {
-                                banner = "Save failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                }
+                banner = context.getString(R.string.pfe_saved, name) to true
+                scope.launch { refresh() }
             },
         )
     }
 }
 
-private fun JsonObject.stringField(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
-
-/**
- * Minimal profile-edit dialog. Mobile exposes the most-common
- * top-level fields — name + description + any primitive
- * string/number fields the server already emits — and preserves
- * nested objects (image_pair, git, memory, kubernetes) verbatim.
- * Users needing deep edits still go through the PWA or raw YAML.
- */
-@androidx.compose.runtime.Composable
-internal fun ProfileEditDialog(
-    kind: String,
-    existing: JsonObject?,
-    onDismiss: () -> Unit,
-    onSave: (String, JsonObject) -> Unit,
+@Composable
+private fun ProfileRow(
+    name: String,
+    summary: String,
+    onSmoke: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
-    var nameInput by remember { mutableStateOf(existing?.stringField("name").orEmpty()) }
-    var description by remember { mutableStateOf(existing?.stringField("description").orEmpty()) }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                summary,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        OutlinedButton(onClick = onSmoke, modifier = Modifier.width(80.dp)) {
+            Text(stringResource(R.string.pfe_smoke), style = MaterialTheme.typography.labelSmall)
+        }
+        Spacer(modifier = Modifier.width(6.dp))
+        TextButton(onClick = onEdit) {
+            Text(stringResource(R.string.pfe_edit), style = MaterialTheme.typography.labelSmall)
+        }
+        TextButton(onClick = onDelete) {
+            Text(
+                stringResource(R.string.pfe_delete),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
+    }
+}
 
-    // Agent settings — project-kind only (BL251 / alpha.28 #243)
-    val existingAs = existing?.get("agent_settings") as? JsonObject
-    var claudeKeySecret by remember { mutableStateOf(existingAs?.stringField("claude_auth_key_secret").orEmpty()) }
-    var opencodeUrl by remember { mutableStateOf(existingAs?.stringField("opencode_ollama_url").orEmpty()) }
-    var opencodeModel by remember { mutableStateOf(existingAs?.stringField("opencode_model").orEmpty()) }
-    var opencodeModels by remember {
-        mutableStateOf(
-            (existingAs?.get("opencode_models") as? JsonArray)
-                ?.joinToString(", ") { (it as? JsonPrimitive)?.content.orEmpty() }
-                .orEmpty(),
-        )
+/** PWA `renderProfileRow` summary line. */
+private fun summaryOf(
+    kind: String,
+    p: JsonObject,
+): String =
+    if (kind == "project") {
+        val ip = p["image_pair"] as? JsonObject
+        val agent = ip?.stringField("agent") ?: "?"
+        val sidecar = ip?.stringField("sidecar")?.ifEmpty { null } ?: "(solo)"
+        val repo = (p["git"] as? JsonObject)?.stringField("url").orEmpty()
+        "$agent + $sidecar  —  $repo"
+    } else {
+        val k = p.stringField("kind") ?: "?"
+        val ctx = p.stringField("context")?.ifEmpty { null } ?: "-"
+        val ns = p.stringField("namespace")?.ifEmpty { null } ?: "default"
+        "kind=$k  ctx=$ctx  ns=$ns"
     }
 
-    val isCreating = existing == null
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(if (isCreating) "New $kind profile" else "Edit ${existing?.stringField("name") ?: kind}")
-        },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = nameInput,
-                    onValueChange = { nameInput = it },
-                    label = { Text("Name") },
-                    singleLine = true,
-                    enabled = isCreating,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    singleLine = false,
-                    maxLines = 3,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
-                if (kind == "project") {
-                    Text(
-                        stringResource(R.string.profile_agent_settings_section),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-                    )
-                    OutlinedTextField(
-                        value = claudeKeySecret,
-                        onValueChange = { claudeKeySecret = it },
-                        label = { Text(stringResource(R.string.profile_claude_key_secret_label)) },
-                        placeholder = {
-                            Text(
-                                stringResource(R.string.profile_claude_key_secret_ph),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = opencodeUrl,
-                        onValueChange = { opencodeUrl = it },
-                        label = { Text(stringResource(R.string.profile_ollama_url_label)) },
-                        placeholder = {
-                            Text(
-                                stringResource(R.string.profile_ollama_url_ph),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    )
-                    OutlinedTextField(
-                        value = opencodeModel,
-                        onValueChange = { opencodeModel = it },
-                        label = { Text(stringResource(R.string.profile_ollama_model_label)) },
-                        placeholder = {
-                            Text(
-                                stringResource(R.string.profile_ollama_model_ph),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    )
-                    OutlinedTextField(
-                        value = opencodeModels,
-                        onValueChange = { opencodeModels = it },
-                        label = { Text(stringResource(R.string.profile_ollama_models_label)) },
-                        placeholder = {
-                            Text(
-                                stringResource(R.string.profile_ollama_models_ph),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    )
-                }
-                Text(
-                    "Nested fields (image_pair / git / memory / " +
-                        "kubernetes context) aren't editable on mobile — " +
-                        "they're preserved from the existing profile on " +
-                        "Save. Edit those on the PWA.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val n = nameInput.trim()
-                    if (n.isBlank()) return@TextButton
-                    val modelsList =
-                        opencodeModels.split(",")
-                            .map { it.trim() }.filter { it.isNotBlank() }
-                    val agentSettingsObj =
-                        kotlinx.serialization.json.buildJsonObject {
-                            if (claudeKeySecret.isNotBlank()) {
-                                put(
-                                    "claude_auth_key_secret",
-                                    JsonPrimitive(claudeKeySecret.trim()),
-                                )
-                            }
-                            if (opencodeUrl.isNotBlank()) put("opencode_ollama_url", JsonPrimitive(opencodeUrl.trim()))
-                            if (opencodeModel.isNotBlank()) put("opencode_model", JsonPrimitive(opencodeModel.trim()))
-                            if (modelsList.isNotEmpty()) {
-                                put(
-                                    "opencode_models",
-                                    JsonArray(modelsList.map { JsonPrimitive(it) }),
-                                )
-                            }
-                        }
-                    val body =
-                        kotlinx.serialization.json.buildJsonObject {
-                            existing?.forEach { (k, v) ->
-                                when (k) {
-                                    "name" -> put(k, JsonPrimitive(n))
-                                    "description" -> put(k, JsonPrimitive(description.trim()))
-                                    "agent_settings" -> if (kind == "project") put(k, agentSettingsObj) else put(k, v)
-                                    else -> put(k, v)
-                                }
-                            }
-                            if (existing == null || !existing.containsKey("name")) put("name", JsonPrimitive(n))
-                            if (existing == null || !existing.containsKey("description")) {
-                                if (description.isNotBlank()) put("description", JsonPrimitive(description.trim()))
-                            }
-                            if (kind == "project" && (existing == null || !existing.containsKey("agent_settings"))) {
-                                if (agentSettingsObj.isNotEmpty()) put("agent_settings", agentSettingsObj)
-                            }
-                        }
-                    onSave(n, body)
-                },
-                enabled = nameInput.isNotBlank(),
-            ) { Text(if (isCreating) "Create" else "Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
+private fun JsonObject.stringField(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
