@@ -541,7 +541,7 @@
     <string name="chat_role_system">System</string>
     <string name="chat_role_thinking">Thinking</string>
     <string name="chat_role_user">You</string>
-    <string name="fab_launch_auto">Launch Automation</string>
+    <string name="fab_launch_auto">Launch Automaton</string>
     <string name="fab_new_session">Start a new session</string>
     <string name="input_ph_command">Send command or input…</string>
     <string name="input_ph_message">Send message…</string>

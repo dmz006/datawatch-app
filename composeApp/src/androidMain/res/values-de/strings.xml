@@ -294,7 +294,7 @@
     <string name="automata_batch_cancel">Alle abbrechen</string>
     <string name="automata_batch_delete">Löschen</string>
     <string name="automata_batch_run">Alle ausführen</string>
-    <string name="automata_btn_launch">Automaton starten</string>
+    <string name="automata_btn_launch">Automat starten</string>
     <string name="automata_detail_back">Automaten</string>
     <string name="automata_detail_backend">Backend</string>
     <string name="automata_detail_created">Erstellt</string>
@@ -393,7 +393,7 @@
     <string name="chat_role_system">System</string>
     <string name="chat_role_thinking">Denkend</string>
     <string name="chat_role_user">Sie</string>
-    <string name="fab_launch_auto">Automatisierung starten</string>
+    <string name="fab_launch_auto">Automat starten</string>
     <string name="fab_new_session">Neue Sitzung starten</string>
     <string name="input_ph_command">Befehl oder Eingabe senden…</string>
     <string name="input_ph_message">Nachricht senden…</string>
@@ -440,7 +440,7 @@
     <string name="prd_action_reject">Ablehnen</string>
     <string name="prd_action_request_revision">Revision anfordern</string>
     <string name="prd_btn_clone_template">Als Vorlage klonen</string>
-    <string name="prd_btn_clone_template_title">Diese Automation als wiederverwendbare Vorlage speichern</string>
+    <string name="prd_btn_clone_template_title">Diesen Automaten als wiederverwendbare Vorlage speichern</string>
     <string name="prd_btn_delete">Löschen</string>
     <string name="prd_btn_delete_title">Automat und alle Nachkommen endgültig löschen</string>
     <string name="prd_btn_edit_spec">Spec bearbeiten</string>
@@ -477,7 +477,7 @@
     <string name="prd_set_story_profile_hint">Leer = Standardausführungsprofil des Automaten erben. Ein Name überschreibt nur diese Story.</string>
     <string name="prd_set_story_profile_title">Ausführungsprofil überschreiben</string>
     <string name="prd_settings_guided_label">Geführter Modus — nach jeder Story für Review pausieren</string>
-    <string name="prd_settings_modal_title">Automaton-Einstellungen</string>
+    <string name="prd_settings_modal_title">Automat-Einstellungen</string>
     <string name="prd_settings_save_failed">Speichern fehlgeschlagen</string>
     <string name="prd_settings_saved">Einstellungen gespeichert</string>
     <string name="prd_settings_skills_hint">Skill-IDs aus /api/skills, die an jede Task-Session übergeben werden.</string>
@@ -724,8 +724,8 @@
     <string name="memory_similarity_label">Ähnlichkeit</string>
 
     <!-- ── v0.70.0 Automata/Theme strings ── -->
-    <string name="toggle_automata_filters">Automata-Filter umschalten</string>
-    <string name="automata_orchestrator">Automata-Orchestrator</string>
+    <string name="toggle_automata_filters">Automaten-Filter umschalten</string>
+    <string name="automata_orchestrator">Automaten-Orchestrator</string>
     <string name="prd_terminal_state_hint">Dieser Automat hat einen Endzustand erreicht. Erstellen Sie einen neuen Lauf, um fortzufahren.</string>
     <string name="identity_wizard_open">Identity Wizard öffnen</string>
     <string name="identity_wizard_title_hint">Identity Wizard</string>
@@ -901,7 +901,7 @@
     <string name="pipeline_status_done">Fertig</string>
     <string name="pipeline_no_pipelines">Keine Pipelines aktiv</string>
     <string name="pipeline_cancel">Abbrechen</string>
-    <string name="orchestrator_graphs_title">Automata-Orchestrator</string>
+    <string name="orchestrator_graphs_title">Automaten-Orchestrator</string>
     <string name="orchestrator_create_graph">Graph erstellen</string>
     <string name="orchestrator_graph_title_hint">Titel (erforderlich)</string>
     <string name="orchestrator_graph_dir_hint">Projektverzeichnis (optional)</string>
@@ -1020,7 +1020,7 @@
     <string name="wear_notification_council_title">Council-Konsens erreicht</string>
     <string name="wear_notification_error_channel">Fehlerbenachrichtigungen</string>
     <string name="wear_notification_error_title">Sitzungsfehler</string>
-    <string name="complication_automata_label">Automata</string>
+    <string name="complication_automata_label">Automaten</string>
     <string name="wear_health_good">System funktioniert</string>
     <string name="wear_health_waiting">Eingabe erforderlich</string>
     <string name="wear_health_error">Sitzungsfehler</string>

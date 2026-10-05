@@ -51,7 +51,7 @@
     <string name="wear_notification_council_title">Consensus du conseil atteint</string>
     <string name="wear_notification_error_channel">Notifications d\'erreur</string>
     <string name="wear_notification_error_title">Erreur de session</string>
-    <string name="complication_automata_label">Automata</string>
+    <string name="complication_automata_label">Automates</string>
     <string name="tile_alerts_label">datawatch Alertes</string>
     <string name="complication_alerts_label">Alertes</string>
     <string name="wear_health_good">Système en bonne santé</string>
