@@ -61,7 +61,7 @@ internal fun TemplatesTab(
         if (state.templates.isEmpty() && !state.loading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    stringResource(R.string.tmpl_empty),
+                    stringResource(R.string.automata_empty_templates),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

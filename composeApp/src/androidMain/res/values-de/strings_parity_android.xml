@@ -59,4 +59,6 @@
     <string name="plugins_disable">Deaktivieren</string>
     <string name="restart_required_hint">Neustart erforderlich, um Änderungen zu übernehmen.</string>
     <string name="restart_now_link">Jetzt neu starten</string>
+    <string name="automata_confirm_cancel_planning">⚠️ Die Planung läuft auf dem Server.\n\nDas Abbrechen beendet den gesamten Automaten — der gerade erstellte Plan wird verworfen. Der serverseitige Planungsjob kann kurz weiterlaufen, bevor er stoppt.\n\nAutomaten abbrechen?</string>
+    <string name="observer_no_server">In den Einstellungen einen Server hinzufügen, um Metriken zu überwachen.</string>
 </resources>

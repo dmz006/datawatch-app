@@ -413,6 +413,13 @@ private fun HomeShell(
     // S6-2 (#74): observe federated peer stale state for Settings nav badge.
     val federatedPeersVm: FederatedPeersViewModel = viewModel()
     val federatedPeersState by federatedPeersVm.state.collectAsState()
+    // PWA updatePeerStaleBadge: polled every 30 s independently of the Observer tab.
+    LaunchedEffect(federatedPeersVm) {
+        while (true) {
+            federatedPeersVm.refresh()
+            kotlinx.coroutines.delay(30_000)
+        }
+    }
 
     // BL7 — foldable / large-screen two-pane. On MEDIUM+ width (≥600 dp,
     // covers unfolded foldables and tablets), sessions list and session detail
@@ -543,7 +550,16 @@ private fun HomeShell(
                     alertsBadge = alertsState.watchedAlertCount,
                     prdsSupported = prdsSupported,
                     dashboardEnabled = dashboardEnabled,
-                    anyPeerStale = federatedPeersState.anyPeerStale,
+                    stalePeerCount = federatedPeersState.stalePeerCount,
+                    onStalePeerBadgeClick = {
+                        // PWA navigateToStalePeer: Observer → scroll to Federated Peers + flash.
+                        com.dmzs.datawatchclient.ui.shell.ObserverNavChannel.requestStalePeers()
+                        tabNav.navigate(Destinations.Tabs.Observer) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(Destinations.Home) { saveState = true }
+                        }
+                    },
                 )
             },
         ) { inner ->

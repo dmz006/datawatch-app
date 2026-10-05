@@ -24,7 +24,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -136,7 +138,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
 
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
                 if (state.loading && state.peers.isEmpty()) {
-                    DatawatchLoadingContent(verticalPadding = 16.dp)
+                    com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                 } else if (state.groupByNode) {
                     // Bucketed view: one section per ComputeNode + unbound
                     if (state.byNode.isEmpty() && state.unbound.isEmpty()) {
@@ -208,9 +210,25 @@ private fun PeerRow(
     onSnapshot: () -> Unit = {},
 ) {
     val staleDotColor = staleDotColor(peer.lastPushAt)
+    // PWA navigateToStalePeer: red-dot rows flash rgba(239,68,68,.18) for 2.6 s (0.4 s ease).
+    val flashToken by com.dmzs.datawatchclient.ui.shell.ObserverNavChannel.staleFlash.collectAsState()
+    var flashing by remember { mutableStateOf(false) }
+    LaunchedEffect(flashToken) {
+        if (flashToken != null && isPeerRowFlashable(peer.lastPushAt, System.currentTimeMillis())) {
+            delay(600)
+            flashing = true
+            delay(2_600)
+            flashing = false
+        }
+    }
+    val flashBg by androidx.compose.animation.animateColorAsState(
+        targetValue = if (flashing) Color(0xFFEF4444).copy(alpha = 0.18f) else Color.Transparent,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 400),
+        label = "peerFlash",
+    )
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().background(flashBg).padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -280,6 +298,35 @@ private fun PeerRow(
             Text("×", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/**
+ * PWA `updatePeerStaleBadge` (BL172): a peer is stale when it has never pushed
+ * or its last push is older than 60 s. Unparseable timestamps are not counted
+ * (PWA `new Date(bad)` → NaN comparisons are false).
+ */
+internal fun countStalePeers(
+    peers: List<ObserverPeerDto>,
+    nowMs: Long,
+): Int =
+    peers.count { peer ->
+        val ts = peer.lastPushAt
+        if (ts.isNullOrBlank()) {
+            true
+        } else {
+            runCatching { nowMs - kotlinx.datetime.Instant.parse(ts).toEpochMilliseconds() > 60_000L }
+                .getOrDefault(false)
+        }
+    }
+
+/** PWA `navigateToStalePeer` row highlight: rows whose health dot is red (last push > 60 s). */
+internal fun isPeerRowFlashable(
+    lastPushAt: String?,
+    nowMs: Long,
+): Boolean {
+    if (lastPushAt.isNullOrBlank()) return false
+    return runCatching { nowMs - kotlinx.datetime.Instant.parse(lastPushAt).toEpochMilliseconds() > 60_000L }
+        .getOrDefault(false)
 }
 
 /** PWA observer peer filter pills (`cs_peer_filter`). */
@@ -507,23 +554,30 @@ private fun CrossHostEnvelopeRow(e: kotlinx.serialization.json.JsonObject) {
 /** PWA: a caller is cross-host when it has at least three `:`-separated parts (`peer:kind:id`). */
 internal fun isCrossHostCaller(caller: String): Boolean = caller.contains(':') && caller.split(':').size >= 3
 
+/** PWA S13 shape labels: A/B/C → agent/standalone/cluster; anything else "shape X". */
+internal fun shapeBadgeLabel(shape: String): String =
+    when (shape.trim().lowercase()) {
+        "a", "agent" -> "agent"
+        "b", "standalone" -> "standalone"
+        "c", "cluster" -> "cluster"
+        else -> "shape " + shape.ifBlank { "?" }
+    }
+
+/**
+ * PWA `shapeTag` (app.js renderObserverPeers): neutral word tag — opacity .55,
+ * 11px, 1px `--text2` outline, radius 3, padding 0 4. No per-shape colour.
+ */
 @Composable
 private fun ShapeBadge(shape: String) {
-    val s = shape.lowercase()
-    val (label, color) =
-        when (s) {
-            "agent" -> "agent" to Color(0xFF8B5CF6)
-            "cluster" -> "cluster" to Color(0xFF10B981)
-            "standalone" -> "standalone" to Color(0xFF3B82F6)
-            else -> (s.ifBlank { "—" }) to MaterialTheme.colorScheme.onSurfaceVariant
-        }
+    val outline = MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         modifier =
             Modifier
-                .background(color = color.copy(alpha = 0.18f), shape = RoundedCornerShape(8.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+                .alpha(0.55f)
+                .border(width = 1.dp, color = outline, shape = RoundedCornerShape(3.dp))
+                .padding(horizontal = 4.dp),
     ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+        Text(shapeBadgeLabel(shape), fontSize = 11.sp, color = outline)
     }
 }
 
@@ -567,7 +621,8 @@ public class FederatedPeersViewModel(
         val peers: List<ObserverPeerDto> = emptyList(),
         val filter: Filter = Filter.All,
         val error: String? = null,
-        val anyPeerStale: Boolean = false,
+        /** PWA `updatePeerStaleBadge`: peers never pushed or last push > 60 s ago. */
+        val stalePeerCount: Int = 0,
         /** alpha.24 #231: group-by-node toggle + bucketed data */
         val groupByNode: Boolean = false,
         val byNode: Map<String, List<ObserverPeerDto>> = emptyMap(),
@@ -582,20 +637,13 @@ public class FederatedPeersViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.observerPeers().fold(
                 onSuccess = { dto ->
-                    val stale =
-                        dto.peers.any { peer ->
-                            runCatching {
-                                val parsed = kotlinx.datetime.Instant.parse(peer.lastPushAt ?: return@any false)
-                                val ageMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()
-                                ageMs >= 6 * 3_600_000L
-                            }.getOrDefault(false)
-                        }
+                    val stale = countStalePeers(dto.peers, kotlinx.datetime.Clock.System.now().toEpochMilliseconds())
                     _state.value =
                         _state.value.copy(
                             loading = false,
                             peers = dto.peers,
                             error = null,
-                            anyPeerStale = stale,
+                            stalePeerCount = stale,
                         )
                 },
                 onFailure = { err ->
