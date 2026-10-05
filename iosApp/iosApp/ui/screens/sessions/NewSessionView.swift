@@ -41,6 +41,8 @@ struct NewSessionView: View {
     @State private var restartingId: String? = nil
     /// PWA openDirBrowser (08 › Directory browser).
     @State private var showDirBrowser = false
+    /// PWA #backendWarn — installed backends per server.
+    @ObservedObject private var backendHints = BackendHintStore.shared
 
     private var pickedLlm: IosLlmChoice? {
         options?.llms.first { $0.name == llmName }
@@ -104,6 +106,11 @@ struct NewSessionView: View {
                         Picker("LLM", selection: $llmName) {
                             Text("Server default").tag("")
                             ForEach(o.llms, id: \.name) { l in Text("\(l.name) · \(l.kind)").tag(l.name) }
+                        }
+                        .onAppear { backendHints.load(profile) }
+                        // PWA #backendWarn (08 › Backend setup hint).
+                        if let l = pickedLlm, backendHints.needsSetup(profile, kind: l.kind) {
+                            BackendSetupHint(kind: l.kind)
                         }
                         if let l = pickedLlm, l.computeNodes.count >= 2 {
                             Picker("Compute node", selection: $computeNode) {

@@ -60,7 +60,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | element | Chat-only sessions: no tab bar, `#chatArea` | ✓ 2897 | ✓ SDS serverChatMode + CTP | ✓ SDV hides the output tab bar when `outputMode == chat` | aligned | | |
 | string | Tab labels "Tmux"/"Chat"/"Channel"/"Status" | ✓ t() keys | ~ session_detail_tab_tmux/_channel = "tmux"/"channel" (lowercase) | ✓ SDV `detailTabs` "Tmux"/"Chat"/"Channel"/"Status" | misaligned | | Case differs on Android |
 | element | Status tab badge dot (`tabStatusBadge`, from /api/sessions/{id}/status on mount) | ✓ 2870, 3109, updateSessionStatusBadge 4221 | ✓ SDS Status tab hook-health ● + `statusTabBadge` | ✓ SDV `statusTabBadge` (● hook health + 🟢/🟠/⚪), fetched on mount + every 10 s | aligned | | |
-| element | `?` channel help popup ("Channel Commands") when Channel tab active | ✓ 2873 showChannelHelp 4525 | ✓ SDS `?` → `ChannelHelpDialog` while Channel tab active | ✗ | ios-missing | | |
+| element | `?` channel help popup ("Channel Commands") when Channel tab active | ✓ 2873 showChannelHelp 4525 | ✓ SDS `?` → `ChannelHelpDialog` while Channel tab active | ✓ SDV `?` (questionmark.circle) in the tab bar while Channel is active → `ChannelHelpSheet` (PWA copy) | aligned | | iOS done 2026-10-04 |
 | element | Font control `Aa ▾` dropdown (A−, size, A+, Fit) in tab bar right | ✓ 2839–2855 | ✓ TT `Aa▾` DropdownMenu | ✓ `TerminalFontMenu` Aa▾ (Fit + 5–20 px) in the tab bar right | aligned | decided D20a | iOS still on the permanent row · D20a done on iOS |
 | element | Scroll-mode button `⤒` (U+2912 18px bold) / `⏹` exit | ✓ 2854 toggleScrollMode 3238 | ✓ TT:160 | ✓ SDV `terminalFontBar` ⤒ / ⏹ 18pt bold → `toggleScrollMode` | aligned | | |
 | nav | Mode preference persisted (Terminal default, Chat remembered) | ✗ (per render) | ✓ SDS modePrefs chat_mode | ✓ SDV `savedDetailTab` (`dw.session.detail.tab`) | pwa-missing | decided D67a | iOS remembers the output tab (no Terminal/Chat toggle) · → #172 |
@@ -78,9 +78,9 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | element | Sprint / PRD tree card (JSON pre) → live "Live Task Tree" / "Sprint / Automata" | ✓ 4312, 4339–4342 | ✓ SStP:233 SprintCard + 361 Task Tree + 450 breadcrumb | ✓ SessionStatusView `sprintBody` (breadcrumb, Live Task Tree / Sprint / Automata) | aligned | | |
 | element | Tests card pass/fail(/skip) | ✓ 4317 | ✓ SStP:273 | ✓ SessionStatusView `testsBody` | aligned | | |
 | element | Git card branch + dirty (+ahead) | ✓ 4324 | ✓ SStP:293 | ✓ SessionStatusView `gitBody` | aligned | | |
-| element | Guardrail verdicts card (+ run guardrail POST /guardrail, "Approved") | ✓ 4281, 4431–4440 | ✓ GuardrailVerdictsCard: approve on blocked + ▶ sast/secrets/deps run chips | ~ SessionStatusView `verdictsBody` read-only | ios-missing | | Both apps lack the "run guardrail" action · Android done (2026-10-04) |
+| element | Guardrail verdicts card (+ run guardrail POST /guardrail, "Approved") | ✓ 4281, 4431–4440 | ✓ GuardrailVerdictsCard: approve on blocked + ▶ sast/secrets/deps run chips | ✓ `GuardrailVerdictsBody`: approve on blocked (✓ once approved) + ▶ sast/secrets/deps run chips, results to the dock | aligned | | Android done (2026-10-04) · iOS done 2026-10-04 |
 | element | Parent session link (telemetry) | ✓ renderParentSessionLink 4328 | ✓ SStP status_parent_session link → opens parent | ✗ | ios-missing | | |
-| string | "Last 5 events before failure" | ✓ 4458 | ✓ SStP `FailedDrilldown` (last 5 of `failed_task_buf`) | ✗ | ios-missing | | |
+| string | "Last 5 events before failure" | ✓ 4458 | ✓ SStP `FailedDrilldown` (last 5 of `failed_task_buf`) | ✓ SessionStatusView `FailedDrilldownView` under failed tasks (last 5 of `failed_task_buf`) | aligned | | iOS done 2026-10-04 |
 
 ## 3.5 Stats sub-tab (cards)
 
@@ -108,7 +108,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | element | Chat empty state 💬 + "Send a message to begin…" + memory hint | ✓ 3057–3061 | ~ "No messages yet. Waiting for session output…" + Yes/No/Stop chips | ✓ ChatTranscriptView 💬 "Send a message to begin the conversation" + memory hint | misaligned | decided D68b | Android empty copy differs; chips tracked below |
 | element | Chat quick-cmd bar: 📚 memories · 🔍 recall · 🔗 kg query · 🔬 research | ✓ 3050–3055 chatQuickCmd 25201 | ✓ 📚/🔍/🔗/🔬 bar prefills composer | ✓ SDX `ChatMemoryCmdBar` above keys strip (chat mode) | aligned | decided D68b | |
 | element | Chat markdown (code blocks, inline code, thinking `<details>`, images, mermaid), streaming bubble | ✓ renderChatMarkdown 1245; css 3249–3331 | ~ CTP streaming bubble, plain text (no markdown) | ~ ChatTranscriptView inline-only AttributedString markdown + streaming bubble; no code blocks / thinking / images / mermaid | misaligned | | |
-| element | Log mode lines with acp-status/processing/ready/error classes | ✓ 3072–3085 | ✓ SDS `LogModeView` for output_mode=log, PWA class colours | ✗ | ios-missing | | |
+| element | Log mode lines with acp-status/processing/ready/error classes | ✓ 3072–3085 | ✓ SDS `LogModeView` for output_mode=log, PWA class colours | ✓ SDV `SessionLogView` for output_mode=log (ANSI-stripped, blank lines dropped, PWA class colours; input over the session socket) | aligned | | iOS done 2026-10-04 |
 
 ## 3.7 Terminal (xterm)
 
@@ -124,7 +124,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | interaction | Configured min cols/rows (claude 120) honoured; Settings "Terminal dimensions" card | ✓ 3496–3498 configCols | ✓ TV setMinSize + TerminalDimensionsCard | ~ `TerminalController.defaultMinCols(backend)` (claude 120 / 80); Settings has `session.console_cols` but the terminal doesn't read it | misaligned | | |
 | motion | Keyboard-open refit: explicit height + rAF, second pass 350 ms | ✓ 3542–3579 | ✓ HH:357 350 ms; onSizeChanged → dwExplicitSize; safeFit 50/200/600/1200/2500 ms | ✓ iTV onLayout → dwExplicitSize | aligned | | |
 | interaction | Scroll mode: tmux-copy-mode, 700 ms pending-refresh window, Esc exits, button swaps to exit | ✓ 3238–3345 | ✓ TT + HH dwSetScrollMode/dwScrollPendingRefresh | ✓ SDV `toggleScrollMode` (tmux-copy-mode, 700 ms dwScrollPendingRefresh, ⏹ exit) | aligned | | |
-| element | Scroll-mode strip: Page Up/Down, Line Up/Down, ESC | ✓ `.scroll-bar-active` 3261; css 3146–3212 | ✓ TT TerminalScrollModeStrip (Page/Line Up/Down, ESC) | ~ SDV `scrollStrip` Page Up / Page Down / ESC — no Line Up/Down | misaligned | | |
+| element | Scroll-mode strip: Page Up/Down, ESC | ✓ `.scroll-bar-active` app.js:3280–3282 (▲ Page Up · ▼ Page Down · ESC — Exit Scroll) | ✓ TT TerminalScrollModeStrip (Page Up · Page Down · ESC / Exit) | ✓ SDV `scrollStrip` ▲ Page Up / ▼ Page Down / ESC — Exit Scroll | aligned | | Re-checked 2026-10-04: no client has Line Up/Down (PWA strip is Page Up/Down + ESC; TT's "Line Up/Down" was only a stale doc comment) — nothing to add on iOS |
 | interaction | Interactive keyboard: xterm onData → sendkey/send_input | ✓ 3545 | ✓ HH onData → DwBridge.onInput | ✓ iTV onInput | aligned | | |
 | interaction | Samsung/IME spurious-Enter suppression (150 ms window), composing-text tracking | n/a | ✓ TV:129–232 | n/a | n/a | | Android-specific IME |
 | interaction | Pinch-zoom WebView as escape hatch for 80-col TUIs | n/a | ✓ TV:558 | ✗ | n/a | | iOS scrollView zoom disabled |
@@ -152,7 +152,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | interaction | Hold-to-repeat arrows (250 ms delay, 80 ms interval) | ✓ startArrowRepeat 4440 | ✓ `RepeatArrowButton` 250 ms / 80 ms | ✓ `KeyGlyphButton` 250 ms / 80 ms | aligned | | |
 | element | Saved commands: dropdown `<select>` with system set (approve/reject/enter/continue/skip/abort/ESC/Ctrl-b/quit) + user `/api/commands`, custom command input | ✓ loadSavedCmdsQuick 5259, sendCustomCmd 5361 | ✓ "Commands…" dropdown (System · Saved · Custom…) + inline custom row; Guardrails group omitted | ✓ `SavedCommandsRow` "Commands…" Menu (System · Saved · Custom…) + inline custom row; Guardrails group omitted (as Android) | aligned | decided D21b | D21b done on iOS |
 | interaction | Quick inputs Enter / C-c / Escape / C-b via `sendkey` | ✓ 4509–4520, 5376–5390 | ✓ sendCommand sendkey | ✓ System set sends Enter / C-c / Escape / C-b via sendkey | aligned | | |
-| element | Quick-reply chips Yes / No / Stop | ✗ | ✓ SDS QuickReplyChip Yes/No/Stop (chat empty state) | ✗ (memory bar only) | pwa-missing | decided D68b | D68b keeps chips + bar; iOS also missing chips · → #172 |
+| element | Quick-reply chips Yes / No / Stop | ✗ | ✓ SDS QuickReplyChip Yes/No/Stop (chat empty state) | ✓ SDV `QuickReplyChips` Yes / No / Stop above the composer while the session waits on a prompt (sends `yes`/`no`/`stop` + Enter) | pwa-missing | decided D68b | D68b keeps chips + bar · iOS done 2026-10-04 · → #172 |
 | element | Pending-image / transcribing composer banners | ✓ _composerBanner | ✓ | ✓ SDV `imageBanner` + "Transcribing voice message…" banner | aligned | | |
 
 ## 3.9 Timeline & response viewer
