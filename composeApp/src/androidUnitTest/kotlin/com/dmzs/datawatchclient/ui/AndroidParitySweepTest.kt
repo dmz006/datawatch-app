@@ -49,6 +49,42 @@ class AndroidParitySweepTest {
     }
 
     @Test
+    fun `goose and opencode config cards carry exactly the PWA keys`() {
+        val s = com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas
+        assertEquals(
+            listOf(
+                "goose.enabled", "goose.binary", "goose.provider", "goose.model",
+                "goose.api_key_ref", "goose.channel_enabled",
+            ),
+            s.Goose.fields.map { it.key },
+        )
+        assertEquals(listOf("opencode.default_model"), s.OpenCode.fields.map { it.key })
+    }
+
+    @Test
+    fun `automata state rank is the PWA table (unknown 9, empty is draft)`() {
+        val r: (String) -> Int = { com.dmzs.datawatchclient.ui.autonomous.prdStateRank(it) }
+        assertEquals(0, r("waiting_input"))
+        assertEquals(0, r("revisions_asked"))
+        assertEquals(1, r("blocked"))
+        assertEquals(2, r("decomposing"))
+        assertEquals(3, r("planning"))
+        assertEquals(4, r(""))
+        assertEquals(5, r("cancelled"))
+        assertEquals(6, r("archived"))
+        assertEquals(9, r("awaiting_approval"))
+    }
+
+    @Test
+    fun `done-card dimming matches PWA state opacities`() {
+        val a: (com.dmzs.datawatchclient.domain.SessionState) -> Float = { com.dmzs.datawatchclient.ui.sessions.sessionCardAlpha(it) }
+        assertEquals(0.7f, a(com.dmzs.datawatchclient.domain.SessionState.Completed))
+        assertEquals(0.5f, a(com.dmzs.datawatchclient.domain.SessionState.Killed))
+        assertEquals(1.0f, a(com.dmzs.datawatchclient.domain.SessionState.Error))
+        assertEquals(1.0f, a(com.dmzs.datawatchclient.domain.SessionState.Running))
+    }
+
+    @Test
     fun `comm backends keep PWA order and capitalised labels`() {
         val cfg =
             Json.parseToJsonElement(
