@@ -13,7 +13,7 @@ Verification was code-level (grep/read), not visual. `~ unverified` = present in
 | element | Task description (expandable textarea) | ✓ `<details>` textarea | ✓ :368–431 + mic (`MicAttachableTextField`) | ✓ NewSessionView | aligned | | |
 | element | Saved-command library picker inside task field | ✗ (0 hits `savedCmd\|saved_command` in modal) | ✓ `SavedCommandLibraryDropdown` :379 | ✓ NewSessionView "From library ▾" menu (`/api/commands`) | pwa-missing | decided D81a | → #172 · iOS done 2026-10-04 |
 | element | Project directory input | ✓ `#sessDirRow` :5560 | ✓ `new_session_working_dir` :714–726 | ✓ NewSessionView | aligned | | |
-| interaction | Directory browser (breadcrumb, mkdir, click-to-navigate) | ✓ `#dirBrowser` :5558 | ✓ NewSessionScreen.kt:903 `FilePickerDialog(FolderOnly)` (parent nav + New folder) | ✗ NewSessionView plain TextField only | ios-missing | | |
+| interaction | Directory browser (breadcrumb, mkdir, click-to-navigate) | ✓ `#dirBrowser` :5558 | ✓ NewSessionScreen.kt:903 `FilePickerDialog(FolderOnly)` (parent nav + New folder) | ✓ `DirectoryBrowserSheet` (path, ⬆ parent, folders, Use This Folder, + New folder) via GET/POST `/api/files` | aligned | |  |
 | element | Profile select (project profiles, "— project directory —" first) | ✓ `#sessProfile` :5615 | ✓ `new_session_profile_label` :590 | ✓ NewSessionView | aligned | | |
 | element | Cluster select (hidden until profile picked) | ✓ `#sessClusterRow` :5620 | ✓ `new_session_cluster_label` :608–629 | ✓ NewSessionView | aligned | | |
 | element | LLM picker (v7 registry) + compute-node sub-select + hint | ✓ `#sessLLMSelect` :5648, `#sessComputeSelect` :5655, `#sessV7Hint` :5659 | ✓ `llmEntries`/`pickedComputeNode` :136–154 | ✓ NewSessionView | aligned | | |
@@ -93,7 +93,7 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | interaction | Batch select mode, FAB, Channel tab, Kind migration (spec items spot-checked) | ✓ (`selectMode\|bulkDelete` ×28, `fab` ×16, channel ×17, :7920) | — | — | aligned | | spec items confirmed still live; no removals found besides §1.6 and `rate_limited` |
 
 ## Coverage
-rows: 71 · aligned: 43 · ios-missing: 15 · android-missing: 2 · pwa-missing: 4 · misaligned: 2 · n/a: 5
+rows: 71 · aligned: 44 · ios-missing: 14 · android-missing: 2 · pwa-missing: 4 · misaligned: 2 · n/a: 5
 
 Re-audited against code 2026-10-04.
 
