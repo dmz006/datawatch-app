@@ -925,7 +925,7 @@ public fun SessionDetailScreen(
                         vm.restartStream()
                     }
                 }
-                val reconnectingLabel = stringResource(R.string.term_reconnecting, watchdogAttempt, TERM_CONNECT_MAX_RETRIES)
+                val reconnectingLabel = stringResource(R.string.term_reconnecting_attempt, watchdogAttempt, TERM_CONNECT_MAX_RETRIES)
                 val connectStatus = when {
                     watchdogAttempt > 0 -> reconnectingLabel
                     state.reachable == null -> "connecting…"
@@ -3162,14 +3162,14 @@ private fun TermConnectFailedPanel(
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
             Text(stringResource(R.string.term_connect_failed), style = MaterialTheme.typography.titleSmall)
             Text(
-                stringResource(R.string.term_connect_retries_failed, TERM_CONNECT_MAX_RETRIES),
+                stringResource(R.string.term_connect_retries_failed_n, TERM_CONNECT_MAX_RETRIES),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = 6.dp),
             )
             Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.term_retry)) }
-                OutlinedButton(onClick = onUseWithout) { Text(stringResource(R.string.term_use_without)) }
+                androidx.compose.material3.OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.term_retry)) }
+                androidx.compose.material3.OutlinedButton(onClick = onUseWithout) { Text(stringResource(R.string.term_use_without)) }
             }
         }
     }

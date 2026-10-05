@@ -85,4 +85,18 @@ class ObserverParityTest {
         assertFalse(summarizerEnabledIn(obj("""{"session":{"summarizer":{"enabled":false}}}""")))
         assertFalse(summarizerEnabledIn(obj("""{}""")))
     }
+
+    @Test
+    fun `memory since filter maps days to ISO and blank to null`() {
+        assertEquals("1970-01-08T00:00:00Z", com.dmzs.datawatchclient.ui.memory.memorySinceIso("7", 14 * 86_400_000L))
+        assertEquals(null, com.dmzs.datawatchclient.ui.memory.memorySinceIso("", 0L))
+    }
+
+    @Test
+    fun `web search history tags error cache live`() {
+        val e = com.dmzs.datawatchclient.transport.dto.WebSearchHistoryEntryDto()
+        assertEquals("live", com.dmzs.datawatchclient.ui.stats.webSearchHistoryTag(e))
+        assertEquals("cache", com.dmzs.datawatchclient.ui.stats.webSearchHistoryTag(e.copy(cacheHit = true)))
+        assertEquals("error", com.dmzs.datawatchclient.ui.stats.webSearchHistoryTag(e.copy(success = false, cacheHit = true)))
+    }
 }

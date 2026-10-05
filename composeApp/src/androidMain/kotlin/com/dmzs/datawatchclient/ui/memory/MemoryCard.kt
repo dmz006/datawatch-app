@@ -72,6 +72,9 @@ public fun MemoryCard() {
     var enabled by remember { mutableStateOf<Boolean?>(null) }
     var memories by remember { mutableStateOf<List<JsonObject>>(emptyList()) }
     var searchText by remember { mutableStateOf("") }
+    // PWA Memory Browser role + since filters (memoryRoleFilter / memorySinceFilter).
+    var roleFilter by remember { mutableStateOf("") }
+    var sinceDays by remember { mutableStateOf("") }
     var banner by remember { mutableStateOf<String?>(null) }
     var activeTab by remember { mutableStateOf(MemoryTab.List) }
     var addOpen by remember { mutableStateOf(false) }
@@ -106,7 +109,11 @@ public fun MemoryCard() {
         val profile = resolveProfile() ?: return
         val result =
             if (q.isBlank()) {
-                ServiceLocator.transportFor(profile).memoryList()
+                ServiceLocator.transportFor(profile).memoryList(
+                    limit = 50,
+                    role = roleFilter.ifBlank { null },
+                    sinceIso = memorySinceIso(sinceDays, System.currentTimeMillis()),
+                )
             } else {
                 ServiceLocator.transportFor(profile).memorySearch(q)
             }
@@ -269,7 +276,19 @@ public fun MemoryCard() {
         }
 
         when (activeTab) {
-            MemoryTab.List ->
+            MemoryTab.List -> {
+                MemoryFilterRow(
+                    role = roleFilter,
+                    since = sinceDays,
+                    onRole = {
+                        roleFilter = it
+                        scope.launch { refreshList(searchText) }
+                    },
+                    onSince = {
+                        sinceDays = it
+                        scope.launch { refreshList(searchText) }
+                    },
+                )
                 ListTab(
                     memories = memories,
                     searchText = searchText,
@@ -304,6 +323,7 @@ public fun MemoryCard() {
                         }
                     },
                 )
+            }
 
             MemoryTab.Timeline ->
                 TimelineTab(
@@ -860,3 +880,64 @@ private fun formatBytes(b: Long): String =
         b < 1024L * 1024 * 1024 -> "${"%.1f".format(b / (1024.0 * 1024))} MB"
         else -> "${"%.1f".format(b / (1024.0 * 1024 * 1024))} GB"
     }
+
+/** PWA role options: value → label. */
+internal val MEMORY_ROLE_OPTIONS: List<Pair<String, String>> =
+    listOf("" to "All roles", "manual" to "Manual", "session" to "Session", "learning" to "Learning", "output_chunk" to "Chunks")
+
+/** PWA since options (days): value → label. */
+internal val MEMORY_SINCE_OPTIONS: List<Pair<String, String>> =
+    listOf("" to "All time", "7" to "Last 7 days", "30" to "Last 30 days", "90" to "Last 90 days")
+
+/** PWA `since` = now − N days as ISO-8601; null for "All time" / invalid. */
+internal fun memorySinceIso(
+    days: String,
+    nowMs: Long,
+): String? {
+    val n = days.toIntOrNull() ?: return null
+    return kotlinx.datetime.Instant.fromEpochMilliseconds(nowMs - n * 86_400_000L).toString()
+}
+
+@Composable
+private fun MemoryFilterRow(
+    role: String,
+    since: String,
+    onRole: (String) -> Unit,
+    onSince: (String) -> Unit,
+) {
+    androidx.compose.foundation.layout.Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+    ) {
+        MemoryFilterMenu(MEMORY_ROLE_OPTIONS, role, onRole)
+        MemoryFilterMenu(MEMORY_SINCE_OPTIONS, since, onSince)
+    }
+}
+
+@Composable
+private fun MemoryFilterMenu(
+    options: List<Pair<String, String>>,
+    selected: String,
+    onPick: (String) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    androidx.compose.foundation.layout.Box {
+        androidx.compose.material3.OutlinedButton(
+            onClick = { open = true },
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+        ) {
+            Text((options.firstOrNull { it.first == selected }?.second ?: options.first().second) + " ▾", style = MaterialTheme.typography.labelSmall)
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { (v, label) ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(label, style = MaterialTheme.typography.bodySmall) },
+                    onClick = {
+                        open = false
+                        onPick(v)
+                    },
+                )
+            }
+        }
+    }
+}
