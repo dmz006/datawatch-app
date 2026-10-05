@@ -20,6 +20,16 @@ class ShellParityTest {
     }
 
     @Test
+    fun `alert deep links resolve to an alert target`() {
+        assertEquals("a1", DeepLinks.alertTargetFor("alert", listOf("a1")))
+        assertEquals("a1", DeepLinks.alertTargetFor("Alerts", listOf("a1")))
+        assertEquals("", DeepLinks.alertTargetFor("alert", emptyList()))
+        assertEquals(null, DeepLinks.alertTargetFor("session", listOf("a1")))
+        assertEquals(null, DeepLinks.alertTargetFor(null, emptyList()))
+        assertEquals("datawatch://alert/a1", DeepLinks.alertUri("a1"))
+    }
+
+    @Test
     fun `unknown or missing last tab falls back to sessions`() {
         assertEquals(Destinations.Tabs.Sessions, LastViewStore.sanitizeTab(null))
         assertEquals(Destinations.Tabs.Sessions, LastViewStore.sanitizeTab("home/channels"))

@@ -13,7 +13,7 @@ import com.dmzs.datawatchclient.ui.DeepLinks
 /**
  * Launch Activity. Hands off to the Compose navigation root — see
  * [com.dmzs.datawatchclient.ui.AppRoot]. Also extracts session-deep-link
- * targets from the intent (`datawatch://session/<id>`) and surfaces them via
+ * targets from the intent (`datawatch://session/<id>`, `datawatch://alert/<id>`) and surfaces them via
  * [DeepLinks] for AppRoot to consume.
  */
 public class MainActivity : FragmentActivity() {
@@ -62,6 +62,11 @@ public class MainActivity : FragmentActivity() {
             // datawatch://session/<id>  → path "/<id>"
             val id = uri.pathSegments.firstOrNull() ?: return
             DeepLinks.pendingSessionTarget.tryEmit(id)
+            return
+        }
+        // datawatch://alert/<id> → Alerts tab focused on that alert (iOS AppRouter parity).
+        DeepLinks.alertTargetFor(uri.host, uri.pathSegments)?.let { target ->
+            DeepLinks.pendingAlertTarget.value = target
         }
     }
 }

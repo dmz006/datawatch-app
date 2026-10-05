@@ -1,11 +1,14 @@
 package com.dmzs.datawatchclient.ui
 
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Process-scoped channel for deep-link targets that should be handled by AppRoot's
  * navigation graph as soon as it composes. Emits the *session id* component of a
  * `datawatch://session/<id>` URI (`dwclient://` accepted as a one-release alias, D84b).
+ * Alert links (`datawatch://alert/<id>`, iOS AppRouter parity) go through
+ * [pendingAlertTarget] instead.
  *
  * Using a SharedFlow with replay = 1 so a deep link delivered before AppRoot
  * subscribes is still received once the collector starts.
@@ -23,4 +26,32 @@ public object DeepLinks {
     public fun isAppScheme(scheme: String?): Boolean = scheme == SCHEME || scheme == LEGACY_SCHEME
 
     public fun sessionUri(sessionId: String): String = "$SCHEME://session/$sessionId"
+
+    /**
+     * Pending `datawatch://alert/<id>` target — the alert id, or "" for a bare
+     * `datawatch://alert(s)` link (open the Alerts tab only). A StateFlow that
+     * the Home shell clears with [consumeAlertTarget], so a recomposition never
+     * re-delivers a link that was already handled.
+     */
+    public val pendingAlertTarget: MutableStateFlow<String?> = MutableStateFlow(null)
+
+    public fun alertUri(alertId: String): String = "$SCHEME://alert/$alertId"
+
+    /**
+     * Alert target for a parsed app-scheme URI (host = first segment for a custom
+     * scheme): the alert id, "" when there is no id, or null when [host] is not an
+     * alert link. Mirrors iOS `AppRouter.parse` ("alert" / "alerts").
+     */
+    public fun alertTargetFor(
+        host: String?,
+        pathSegments: List<String>,
+    ): String? {
+        val h = host?.lowercase() ?: return null
+        if (h != "alert" && h != "alerts") return null
+        return pathSegments.firstOrNull()?.trim().orEmpty()
+    }
+
+    public fun consumeAlertTarget() {
+        pendingAlertTarget.value = null
+    }
 }

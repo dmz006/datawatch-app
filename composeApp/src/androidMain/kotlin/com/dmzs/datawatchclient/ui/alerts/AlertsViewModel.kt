@@ -513,6 +513,57 @@ public class AlertsViewModel : ViewModel() {
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
+    // ---- Alert deep link focus (datawatch://alert/<id>, iOS AppRouter parity) ----
+
+    /** Alert id requested by a deep link, waiting for the alert to appear in a poll. */
+    private val _pendingFocusId = MutableStateFlow<String?>(null)
+
+    /** Resolved focus target (sessionId bucket + alert id); the screen scrolls to it once. */
+    public data class FocusTarget(val groupSessionId: String, val alertId: String)
+
+    private val _focusTarget = MutableStateFlow<FocusTarget?>(null)
+    public val focusTarget: StateFlow<FocusTarget?> = _focusTarget
+
+    init {
+        viewModelScope.launch {
+            combine(_pendingFocusId, innerState) { id, inner -> Pair(id, inner) }
+                .collect { (id, inner) ->
+                    if (id.isNullOrBlank()) return@collect
+                    val hit: Pair<Tab, AlertGroup>? =
+                        locateAlert(id, inner.active, Tab.Active)
+                            ?: locateAlert(id, inner.historical, Tab.Historical)
+                            ?: locateAlert(id, inner.system, Tab.System)
+                    if (hit == null) return@collect
+                    val (tab, group) = hit
+                    _pendingFocusId.value = null
+                    if (inner.selectedTab != tab) selectTab(tab)
+                    // Clear the per-tab chip + search so the focused alert is visible.
+                    _chipFilter.value = ChipFilter.All
+                    _search.value = ""
+                    if (tab != Tab.Active) {
+                        _expanded.value = _expanded.value + group.sessionId
+                    }
+                    _focusTarget.value = FocusTarget(groupSessionId = group.sessionId, alertId = id)
+                }
+        }
+    }
+
+    private fun locateAlert(
+        alertId: String,
+        groups: List<AlertGroup>,
+        tab: Tab,
+    ): Pair<Tab, AlertGroup>? = groups.firstOrNull { g -> g.alerts.any { it.id == alertId } }?.let { Pair(tab, it) }
+
+    /** Open the Alerts page focused on [alertId] (applied once the alert is loaded). */
+    public fun focusAlert(alertId: String) {
+        _focusTarget.value = null
+        _pendingFocusId.value = alertId
+    }
+
+    public fun consumeFocus() {
+        _focusTarget.value = null
+    }
+
     public fun selectTab(tab: Tab) {
         saveTabState(_selectedTab.value)
         _selectedTab.value = tab

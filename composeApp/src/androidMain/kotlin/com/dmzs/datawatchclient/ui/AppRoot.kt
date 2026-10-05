@@ -152,6 +152,17 @@ public fun AppRoot() {
             }
         }
 
+        // Alert deep link (datawatch://alert/<id>): surface the Home shell (pop any
+        // full-screen destination such as session detail); HomeShell then switches
+        // to the Alerts tab and consumes the target.
+        val pendingAlert by DeepLinks.pendingAlertTarget.collectAsState()
+        LaunchedEffect(pendingAlert) {
+            if (pendingAlert == null) return@LaunchedEffect
+            if (navController.currentDestination?.route != Destinations.Home) {
+                navController.popBackStack(Destinations.Home, inclusive = false)
+            }
+        }
+
         // Activity-scoped so the Home shell, the root alert dock and the live
         // WS alert feed share one poller.
         val alertsVm: AlertsViewModel = viewModel()
@@ -262,7 +273,8 @@ private fun Nav(
                 // (PWA `cs_active_session`), unless a deep link is pending.
                 val lastSession = LastViewStore.lastSession(splashContext)
                 if (lastSession != null && resolved?.isNotEmpty() == true &&
-                    DeepLinks.pendingSessionTarget.replayCache.isEmpty()
+                    DeepLinks.pendingSessionTarget.replayCache.isEmpty() &&
+                    DeepLinks.pendingAlertTarget.value == null
                 ) {
                     navController.navigate(Destinations.sessionDetail(lastSession))
                 }
@@ -522,6 +534,21 @@ private fun HomeShell(
             launchSingleTop = true
         }
         // filter text is consumed by SessionsScreen itself via SessionsNavChannel
+    }
+
+    // Alert deep link (datawatch://alert/<id>) → Alerts tab focused on that alert.
+    val pendingAlertTarget by DeepLinks.pendingAlertTarget.collectAsState()
+    LaunchedEffect(pendingAlertTarget) {
+        val target = pendingAlertTarget ?: return@LaunchedEffect
+        // Cold start: wait for the tab NavHost to set its graph before navigating.
+        tabNav.currentBackStackEntryFlow.first()
+        tabNav.navigate(Destinations.Tabs.Alerts) {
+            popUpTo(tabNav.graph.startDestinationId) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+        if (target.isNotBlank()) alertsVm.focusAlert(target)
+        DeepLinks.consumeAlertTarget()
     }
 
     val pendingSettingsTab by SettingsNavChannel.pendingTab.collectAsState()
