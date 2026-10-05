@@ -14,6 +14,7 @@ private func orchestratorStatusColor(_ status: String) -> Color {
 
 /// "● live" marker (PWA live-dot: auto-refreshing every 8 s).
 private struct LiveDot: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulse = false
     var body: some View {
         HStack(spacing: 4) {
@@ -24,7 +25,7 @@ private struct LiveDot: View {
                 .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: pulse)
             Text("live").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
         }
-        .onAppear { pulse = true }
+        .onAppear { pulse = !reduceMotion }
         .accessibilityLabel("Auto-refreshing every 8 seconds")
     }
 }
