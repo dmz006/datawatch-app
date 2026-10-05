@@ -2,7 +2,6 @@ package com.dmzs.datawatchclient.ui.ops
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -29,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
@@ -97,12 +97,6 @@ public fun DaemonLogCard() {
         }
         val v = view
         if (v != null) {
-            Text(
-                "Showing ${v.lines.size} of ${v.total} lines (offset $offset)",
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             Column(
                 modifier =
                     Modifier
@@ -133,24 +127,28 @@ public fun DaemonLogCard() {
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // PWA Daemon Log card: [Newest] [Older] + "Showing N of T lines (offset O)".
                 OutlinedButton(
-                    onClick = { offset = maxOf(0, offset - 50) },
-                    enabled = offset > 0,
-                ) { Text("Newer") }
+                    onClick = {
+                        offset = 0
+                        scope.launch {
+                            val profile = resolveActiveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile)
+                                .fetchLogs(lines = 50, offset = 0)
+                                .onSuccess { view = it }
+                        }
+                    },
+                ) { Text(stringResource(R.string.daemon_log_newest)) }
                 OutlinedButton(
                     onClick = { offset += 50 },
                     enabled = (offset + v.lines.size) < v.total,
-                ) { Text("Older") }
-                Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = {
-                    offset = 0
-                    scope.launch {
-                        val profile = resolveActiveProfile() ?: return@launch
-                        ServiceLocator.transportFor(profile)
-                            .fetchLogs(lines = 50, offset = 0)
-                            .onSuccess { view = it }
-                    }
-                }) { Text("Refresh") }
+                ) { Text(stringResource(R.string.daemon_log_older)) }
+                Text(
+                    stringResource(R.string.daemon_log_info, v.lines.size, v.total, offset),
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

@@ -46,7 +46,7 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 9. ~~**Observer extras** — schedule edit via two prompts (D56b) + select-all; channel diagnostics, Matrix Test, web-search history; memory role/since filters; RTK update badge; duplicate Pipelines/Identity cards removed.~~ Done.
 10. ~~**Settings** — installed-plugin enable/disable/reload; missing config keys; vault status inside Secrets card (D33a); inline restart link (D57b); mount `McpToolsCard`.~~ Done (plugin "test" omitted — the PWA Plugin Manager has no test action). `goose`/`opencode` config-card drift (07 › row 81) still open.
 11. ~~**Dashboard stat strip** (D34a); flat OpenCode model list (D58b).~~ Done.
-12. **Low** — ~~accent2 alert-pill border (D3a)~~, ~~99+ cap~~ done; ~~accent #7C3AED compute badge (D6b)~~, ~~splash fade-out~~, ~~LLM badge (llm_ref + border)~~ done 2026-10-04; open: copy/wording drift in 02/03/06. (iOS compute badge still accent2 → primary per D6b.)
+12. **Low** — ~~accent2 alert-pill border (D3a)~~, ~~99+ cap~~ done; ~~accent #7C3AED compute badge (D6b)~~, ~~splash fade-out~~, ~~LLM badge (llm_ref + border)~~ done 2026-10-04; ~~copy/wording drift in 02/03/06~~ done 2026-10-04 (LLM short-label badges + >1 rule, uppercase state badge, "⬡ worker", "Input needed" + inline short summary ▼/▲; Tmux/Channel, hooks copy, focus empty, Process Stats, no-envelope, chat empty, timeline copy; "No eBPF data available", "no peers registered" + deploy hint, Newest/Older + offset counter — all locales). (iOS compute badge still accent2 → primary per D6b.)
 
 ### Both apps
 

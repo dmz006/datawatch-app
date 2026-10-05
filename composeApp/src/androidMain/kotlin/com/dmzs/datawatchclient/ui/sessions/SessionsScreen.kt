@@ -88,6 +88,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -647,6 +649,7 @@ private fun SessionsToolbar(
             // BL-SL-3: PWA layout — text input + LLM button on same row; state chips always visible.
             var llmExpanded by remember { mutableStateOf(false) }
             var stateExpanded by remember { mutableStateOf(false) }
+            val showLlmFilter = backendCounts.size > 1 || activeBackendFilter != null
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -680,23 +683,28 @@ private fun SessionsToolbar(
                     },
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedButton(
-                    onClick = { llmExpanded = !llmExpanded },
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 8.dp,
-                            vertical = 4.dp,
-                        ),
-                ) {
-                    Text(
-                        stringResource(R.string.llm_filter_btn_tip, backendCounts.size + 1),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                    Icon(
-                        if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                    )
+                // PWA parity: the LLM button only renders when the session
+                // pool spans more than one backend (app.js `backendTypes.length > 1`);
+                // kept visible while a backend filter is active so it can be cleared.
+                if (showLlmFilter) {
+                    OutlinedButton(
+                        onClick = { llmExpanded = !llmExpanded },
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 4.dp,
+                            ),
+                    ) {
+                        Text(
+                            stringResource(R.string.llm_filter_btn_tip, backendCounts.size),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                        Icon(
+                            if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                        )
+                    }
                 }
             }
             // Parity D12a — PWA `State (N) ▸` button; chips for every real
@@ -750,7 +758,7 @@ private fun SessionsToolbar(
                     }
                 }
             }
-            AnimatedVisibility(visible = llmExpanded) {
+            AnimatedVisibility(visible = llmExpanded && showLlmFilter) {
                 val councilLabel = stringResource(R.string.council_session_filter)
                 LazyRow(
                     modifier = Modifier.padding(top = 4.dp),
@@ -760,7 +768,12 @@ private fun SessionsToolbar(
                         FilterChip(
                             selected = activeBackendFilter == backend,
                             onClick = { onToggleBackend(backend) },
-                            label = { Text("$backend · $count", style = MaterialTheme.typography.labelSmall) },
+                            label = {
+                                Text(
+                                    "${backendShortLabel(backend)} $count",
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
                             colors = FilterChipDefaults.filterChipColors(),
                         )
                     }
@@ -1334,7 +1347,11 @@ private fun SessionRow(
                     listOf(session.lastPrompt!!.trim())
                 else -> emptyList()
             }
-        if (session.state == SessionState.Waiting && ctxLines.isNotEmpty()) {
+        if (session.state == SessionState.Waiting) {
+            // PWA `card-waiting-label`: last 4 context lines, or "Input needed".
+            val shownLines =
+                ctxLines.takeLast(4).map { if (it.length > 100) it.take(100) + "…" else it }
+                    .ifEmpty { listOf(stringResource(R.string.sessions_input_needed)) }
             Row(
                 modifier = Modifier.padding(top = 4.dp),
             ) {
@@ -1351,9 +1368,9 @@ private fun SessionRow(
                     ) {}
                 }
                 Column {
-                    ctxLines.takeLast(4).forEach { line ->
+                    shownLines.forEach { line ->
                         Text(
-                            if (line.length > 100) line.take(100) + "…" else line,
+                            line,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -1361,52 +1378,69 @@ private fun SessionRow(
                     }
                 }
             }
-        }
 
-        // Waiting-input long summary — expandable panel mirrors PWA v8.9.7 ▼/✕ behaviour.
-        // Shows AI narrative for the current waiting prompt when lastSummaryLong is available.
-        if (session.state == SessionState.Waiting && !session.lastSummaryLong.isNullOrBlank()) {
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(
-                    onClick = { summaryExpanded = !summaryExpanded },
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 4.dp,
-                            vertical = 0.dp,
-                        ),
-                    modifier = Modifier.height(24.dp),
-                ) {
-                    Icon(
-                        if (summaryExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        if (summaryExpanded) "Less" else "Full summary",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
-            if (summaryExpanded) {
+            // PWA waiting row: short summary (`last_response`, italic, ≤180
+            // chars) with a ▼/▲ toggle for `last_summary_long` and a ✕ panel.
+            val shortSummary = session.lastResponse?.takeIf { it.isNotBlank() }
+            val longSummary = session.lastSummaryLong?.takeIf { it.isNotBlank() }
+            if (shortSummary != null) {
                 Row(
                     modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        session.lastSummaryLong!!,
-                        style = MaterialTheme.typography.bodySmall,
+                        if (shortSummary.length > 180) shortSummary.take(180) + "…" else shortSummary,
+                        fontSize = 10.sp,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f, fill = false),
                     )
-                    IconButton(
-                        onClick = { summaryExpanded = false },
-                        modifier = Modifier.size(24.dp),
+                    if (longSummary != null) {
+                        val toggleDesc =
+                            stringResource(
+                                if (summaryExpanded) R.string.sessions_summary_collapse else R.string.sessions_summary_show,
+                            )
+                        TextButton(
+                            onClick = { summaryExpanded = !summaryExpanded },
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 2.dp,
+                                    vertical = 0.dp,
+                                ),
+                            modifier =
+                                Modifier
+                                    .height(20.dp)
+                                    .semantics { contentDescription = toggleDesc },
+                        ) {
+                            Text(
+                                if (summaryExpanded) "▲" else "▼",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                if (longSummary != null && summaryExpanded) {
+                    Row(
+                        modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Collapse", modifier = Modifier.size(14.dp))
+                        Text(
+                            longSummary,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(
+                            onClick = { summaryExpanded = false },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.sessions_summary_collapse),
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -2380,27 +2414,46 @@ private fun PwaMetaBadge(text: String) {
 
 /**
  * v0.42.6 — Container Workers provenance pill (PWA v5.26.58 parity).
- * Purple ⬡ glyph + worker id when the session was spawned by a worker
- * agent. The agentId is shown in full because PWA does too — workers
- * are user-named and short.
+ * PWA `agent-badge` (app.js renderSessionCard): fixed "⬡ worker" label,
+ * 1px purple border, .15 purple tint; the agent id is only in the
+ * tooltip, so here it's the accessibility description.
  */
 @Composable
 private fun WorkerPill(agentId: String) {
     val purple = Color(0xFFA855F7)
+    val desc = stringResource(R.string.sessions_worker_badge_desc, agentId)
     Surface(
         color = purple.copy(alpha = 0.15f),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, purple),
+        modifier = Modifier.semantics { contentDescription = desc },
     ) {
         Text(
-            "⬡ $agentId",
+            "⬡ " + stringResource(R.string.sessions_worker_badge),
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
             color = purple,
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
     }
 }
+
+/**
+ * PWA `backendShort` map (app.js renderSessionsView) — compact labels for
+ * the LLM filter badges; unknown backends fall through unchanged.
+ */
+private fun backendShortLabel(backend: String): String =
+    when (backend) {
+        "claude-code" -> "claude"
+        "opencode" -> "oc"
+        "opencode-acp" -> "acp"
+        "opencode-prompt" -> "oc-p"
+        "openwebui" -> "owui"
+        "ollama" -> "olla"
+        "gemini" -> "gem"
+        "shell" -> "sh"
+        else -> backend
+    }
 
 @Composable
 private fun SessionState.labelColor(): Color =

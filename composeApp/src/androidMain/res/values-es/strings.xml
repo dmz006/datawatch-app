@@ -101,15 +101,14 @@
     <string name="dialog_delete_session_body">El historial de sesión se eliminará del servidor. Esta acción no se puede deshacer.</string>
 
     <!-- ── Session detail ── -->
-    <string name="session_detail_tab_tmux">tmux</string>
-    <string name="session_detail_tab_channel">canal</string>
+    <string name="session_detail_tab_tmux">Tmux</string>
+    <string name="session_detail_tab_channel">Canal</string>
     <string name="session_detail_input_required">Entrada requerida</string>
     <string name="session_detail_waiting_reply">La sesión espera una respuesta.</string>
     <string name="session_detail_timeline">Cronología</string>
     <string name="session_detail_schedule_reply">Programar respuesta</string>
     <string name="session_detail_generating">generando</string>
     <string name="session_detail_no_messages">Aún no hay mensajes. Esperando salida de sesión…</string>
-    <string name="session_detail_no_events">Sin eventos aún — abre una sesión con salida para ver transiciones de estado, prompts y finalizaciones.</string>
     <string name="session_detail_kill_title">¿Detener sesión?</string>
     <string name="session_detail_kill_body">Esto detiene la sesión tmux en el servidor. La sesión no puede reanudarse.</string>
     <string name="session_detail_delete_title">¿Eliminar sesión?</string>
@@ -1043,7 +1042,7 @@
     <string name="automata_confirm_cancel_body">¿Cancelar \"%1$s\"? La ejecución se detendrá y el autómata pasará al estado cancelado.</string>
     <string name="state_filter_btn_tip">Estado (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
-    <string name="stats_card_host">Host</string>
+    <string name="stats_card_host">Estadísticas de proceso</string>
     <string name="stats_card_container">Contenedor</string>
     <string name="stats_card_compute_node">Nodo de cómputo</string>
     <string name="stats_card_llm">LLM</string>
@@ -1067,22 +1066,22 @@
     <string name="status_card_sprint">Sprint</string>
     <string name="status_card_tests">Pruebas</string>
     <string name="status_card_git">Git</string>
-    <string name="status_no_focus">Sin enfoque activo</string>
+    <string name="status_no_focus">Aún no hay eventos de hook. Los hooks se instalan automáticamente al iniciar la sesión para claude-code; para otros backends consulta el howto.</string>
     <string name="status_no_sprint">Sin datos de sprint</string>
     <string name="status_no_tests">Sin datos de prueba</string>
     <string name="status_tests_no_signal">Sin señal de tests · payload de hook tests=… esperado</string>
     <string name="status_no_git">Sin datos de git</string>
     <string name="status_git_no_state">Sin estado git · payload de hook git=… esperado</string>
-    <string name="stats_card_host_with_backend">Stats de backend — %1$s</string>
+    <string name="stats_card_host_with_backend">Estadísticas de backend — %1$s</string>
     <string name="voice_cmd_confirm_title">¿Enviar a datawatch?</string>
     <string name="voice_cmd_confirm_send">Enviar</string>
     <string name="voice_cmd_confirm_cancel">Cancelar</string>
     <string name="voice_cmd_session_label">Sesión: %1$s</string>
     <string name="voice_cmd_no_session">No se encontró sesión activa</string>
     <string name="voice_cmd_sent">Enviado</string>
-    <string name="status_hooks_alive">Hooks activos</string>
-    <string name="status_hooks_stale">Hooks desactualizados</string>
-    <string name="status_hooks_missing">Hooks faltantes</string>
+    <string name="status_hooks_alive">hooks activos</string>
+    <string name="status_hooks_stale">hooks desactualizados</string>
+    <string name="status_hooks_missing">hooks no instalados</string>
     <string name="status_idle_since">Inactivo desde %1$s</string>
     <string name="status_hook_docs_link">Docs ↗</string>
     <string name="status_llm_more_soon">Tasa de tokens · latencia · estado del modelo en la próxima actualización</string>
@@ -1256,4 +1255,18 @@
     <string name="work_queue_delete_title">¿Eliminar el elemento de la cola %1$s?</string>
     <string name="card_collapse">Contraer sección</string>
     <string name="card_expand">Expandir sección</string>
+    <!-- Parity copy drift (02/03/06 sections, 2026-10-04) -->
+    <string name="session_detail_stats_no_data">El observer no ha atribuido un árbol de procesos a esta sesión. Causas más comunes: (1) SessionAttribution está desactivado en la configuración del observer, o (2) el LLM se ejecuta dentro de un contenedor al que el observer no puede entrar. Recurriendo a estadísticas a nivel de backend cuando estén disponibles.</string>
+    <string name="sessions_input_needed">Se requiere entrada</string>
+    <string name="sessions_summary_show">Mostrar detalles</string>
+    <string name="sessions_summary_collapse">Contraer detalles</string>
+    <string name="sessions_worker_badge">trabajador</string>
+    <string name="sessions_worker_badge_desc">Trabajador de contenedor (agente %1$s)</string>
+    <string name="ebpf_no_data">No hay datos eBPF disponibles</string>
+    <string name="obs_peer_no_peers">no hay peers registrados</string>
+    <string name="obs_peer_deploy_hint">ejecuta datawatch-stats --datawatch &lt;url&gt; --name &lt;peer&gt; en un host remoto, o lanza un trabajador autónomo (se registra como peer automáticamente).</string>
+    <string name="obs_peer_no_match">ningún peer coincide con el filtro «%1$s»</string>
+    <string name="daemon_log_newest">Más recientes</string>
+    <string name="daemon_log_older">Más antiguos</string>
+    <string name="daemon_log_info">Mostrando %1$d de %2$d líneas (desplazamiento %3$d)</string>
 </resources>
