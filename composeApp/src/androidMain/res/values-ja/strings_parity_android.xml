@@ -60,4 +60,5 @@
     <string name="restart_required_hint">変更を反映するには再起動が必要です。</string>
     <string name="restart_now_link">今すぐ再起動</string>
     <string name="automata_confirm_cancel_planning">⚠️ サーバーで計画を実行中です。\n\nキャンセルするとオートマトン全体が中止され、生成中の計画は破棄されます。サーバー側の計画ジョブは停止するまで少しの間続く場合があります。\n\nオートマトンをキャンセルしますか？</string>
+    <string name="observer_no_server">メトリクスを監視するには設定でサーバーを追加してください。</string>
 </resources>
