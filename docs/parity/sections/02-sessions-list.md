@@ -93,7 +93,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Refresh-in-progress spinner in header | ✗ | ✓ A:229 | ✓ I:151 | n/a | | PWA uses header daemon light (§01); no decision |
 
 ## Coverage
-rows: 83 · aligned: 55 · ios-missing: 6 · android-missing: 0 · pwa-missing: 7 · misaligned: 8 · n/a: 7
+rows: 82 · aligned: 63 · ios-missing: 0 · android-missing: 0 · pwa-missing: 7 · misaligned: 5 · n/a: 7
 
 Re-audited 2026-10-04 against current code (iOS commits cdc228c7, 3e04d88e, c682851e, d52892a2; Android 3e6197eb, 85d42058). Two former pwa-missing rows with no decision (REST fallback poll, header refresh spinner) are now n/a.
 

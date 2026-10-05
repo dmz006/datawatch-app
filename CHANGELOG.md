@@ -8,6 +8,34 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.26.0] — 2026-10-05
+
+### Added (Android + iOS — operator-approved web UI features)
+- **Council live runs**: start a Quick or Debate run from Settings › Council and watch each round and persona reply arrive live, then the consensus / dissent; cancel a running council; open recent runs to replay them.
+- **Automata**:
+  - **Stories:** profile and LLM pills, with ⚙ profile and 🤖 LLM overrides.
+  - **Tasks:** LLM / ↳ spawn / → child badges, and one ✎ editor for spec + LLM.
+  - **Templates:** built-in badge and "Used N×"; the lifecycle strip has an "Instantiate" step.
+  - **Header:** 🔍 search toggle.
+  - **Planning:** stories appear live while an automaton is being planned.
+  - **iOS resource cards:** iOS now has the per-story CPU/RAM and GPU compute-node cards (web UI: dmz006/datawatch#177).
+- **Sessions**: an always-visible ⋮⋮ drag handle on cards; a live waveform while recording a voice reply.
+- **Settings**: "</> YAML" editing in the LLM form; Docs Search "Export YAML"; Discussion Scopes "Recall".
+
+### Changed
+- **Status dot** is red / green only, like the web UI. The amber "probing" state is gone.
+- **Docs Search**: the Android-only "Add source" button is removed; sources are trusted from the pending list.
+- **Many smaller alignments with the web UI on both apps**, for example:
+  - **iOS:** accent-coloured active tab and FABs; uppercase state pills; short LLM filter labels; 🤖 Summary on cards; inline waiting summary with ▼/▲; done-card dimming; connect retry with "Use without terminal"; "N earlier messages" in chat; Process Stats wording; alert chips and badges as on the web; Automata id / last activity, planning-cancel warning, task error and verification rows, skills in the settings panel; Whisper Test, docs trust queue, File Service upload, Observer quick link, eval run history, release-linked version in About; two-line alert group headers.
+  - **Android:** a stale-peer count on the Settings tab, opening the stale peers; Goose / OpenCode config cards; Matrix status inside the comms card; per-card "Loading…"; neutral shape badges; PWA chat bubble colours with markdown; Automata sort order, empty states and planning-cancel copy; schedule labels with a cron badge; release-linked version in About.
+
+### Fixed
+- **Council personas** (Android + iOS): prompts loaded blank and creating or editing a persona failed ("system_prompt required"). The app now uses the server's `role` / `system_prompt` fields. Persona and run lists failed to load, and Stop used the wrong method.
+- **Docs Search trust queue** (Android + iOS) never matched the server's responses, so pending and trusted sources didn't load and Trust / Dismiss did nothing.
+- **Guardrail Library** type badges were always blank, and **schedule cron badges** never showed (wrong field names).
+- **iOS session cards**: the state pill and buttons no longer wrap mid-word.
+
+
 ## [1.25.1] — 2026-10-05
 
 ### Removed (Android + iOS)
