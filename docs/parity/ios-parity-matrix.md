@@ -63,15 +63,15 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 
 | # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a |
 |---|---|---|---|---|---|---|---|---|
-| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 58 | 4 | 0 | 7 | 6 | 5 |
-| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 63 | 0 | 0 | 7 | 6 | 7 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 96 | 0 | 0 | 12 | 6 | 4 |
-| 04 | [Alerts](sections/04-alerts.md) | 65 | 54 | 0 | 0 | 2 | 1 | 8 |
-| 05 | [Automata](sections/05-automata.md) | 99 | 80 | 0 | 0 | 9 | 10 | 0 |
+| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 63 | 1 | 0 | 7 | 4 | 5 |
+| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 65 | 0 | 0 | 7 | 4 | 7 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 99 | 0 | 0 | 12 | 3 | 4 |
+| 04 | [Alerts](sections/04-alerts.md) | 65 | 55 | 0 | 0 | 2 | 0 | 8 |
+| 05 | [Automata](sections/05-automata.md) | 99 | 86 | 0 | 0 | 9 | 4 | 0 |
 | 06 | [Observer](sections/06-observer.md) | 93 | 88 | 0 | 0 | 4 | 0 | 1 |
-| 07 | [Settings](sections/07-settings.md) | 97 | 78 | 0 | 0 | 4 | 13 | 2 |
-| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 58 | 3 | 0 | 4 | 1 | 5 |
-| | **Total** | **706** | **575** | **7** | **0** | **49** | **43** | **32** |
+| 07 | [Settings](sections/07-settings.md) | 97 | 86 | 0 | 0 | 4 | 5 | 2 |
+| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 62 | 0 | 0 | 4 | 0 | 5 |
+| | **Total** | **706** | **604** | **1** | **0** | **49** | **20** | **32** |
 
 Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
 means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");

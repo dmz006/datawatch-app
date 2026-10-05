@@ -107,7 +107,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | string | i18n coverage | ✓ en/de/es/fr/ja `locales/*.json` | ✓ 262 keys, 4 extra locales | ✓ L() + Resources/{de,es,fr,ja}.lproj (automata strings incl.) | aligned |  | iOS localized 2026-10-04 |
 
 ## Coverage
-rows: 99 · aligned: 80 · ios-missing: 0 · android-missing: 0 · pwa-missing: 9 · misaligned: 10 · n/a: 0
+rows: 99 · aligned: 86 · ios-missing: 0 · android-missing: 0 · pwa-missing: 9 · misaligned: 4 · n/a: 0
 
 ## Decisions (resolved 2026-10-04)
 1. Terminology/tab label → **D22a** "Automata | Templates" everywhere (iOS still "PRDs").

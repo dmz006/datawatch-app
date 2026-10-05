@@ -93,7 +93,7 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | interaction | Batch select mode, FAB, Channel tab, Kind migration (spec items spot-checked) | ✓ (`selectMode\|bulkDelete` ×28, `fab` ×16, channel ×17, :7920) | — | — | aligned | | spec items confirmed still live; no removals found besides §1.6 and `rate_limited` |
 
 ## Coverage
-rows: 71 · aligned: 58 · ios-missing: 3 · android-missing: 0 · pwa-missing: 4 · misaligned: 1 · n/a: 5
+rows: 71 · aligned: 62 · ios-missing: 0 · android-missing: 0 · pwa-missing: 4 · misaligned: 0 · n/a: 5
 
 Re-audited against code 2026-10-04.
 
