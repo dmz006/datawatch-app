@@ -148,7 +148,7 @@ public fun AppRoot() {
         // navigate when the nav graph is ready (Home destination present).
         LaunchedEffect(Unit) {
             DeepLinks.pendingSessionTarget.collect { sessionId ->
-                navController.navigate(Destinations.sessionDetail(sessionId))
+                navController.navigate(Destinations.sessionDetail(DeepLinks.shortSessionId(sessionId)))
             }
         }
 
@@ -276,7 +276,7 @@ private fun Nav(
                     DeepLinks.pendingSessionTarget.replayCache.isEmpty() &&
                     DeepLinks.pendingAlertTarget.value == null
                 ) {
-                    navController.navigate(Destinations.sessionDetail(lastSession))
+                    navController.navigate(Destinations.sessionDetail(DeepLinks.shortSessionId(lastSession)))
                 }
             }
         }
