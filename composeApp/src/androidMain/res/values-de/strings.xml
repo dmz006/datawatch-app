@@ -1379,4 +1379,14 @@
     <string name="pfe_pull_secret_ph">k8s-Secret-Name (optional)</string>
     <string name="pfe_parent_cb">Eltern-Callback-URL</string>
     <string name="pfe_parent_cb_ph">automatisch, wenn leer</string>
+    <!-- Parity extras 2026-10-05: chat thinking, story verdicts, compute 📡 detail, LLM auto -->
+    <string name="chat_thinking_summary">🧠 Denkt nach...</string>
+    <string name="prd_verdict_no_issues">keine Probleme</string>
+    <string name="llm_auto">auto</string>
+    <string name="compute_detail_btn_title">Live-Monitoring-Detail</string>
+    <string name="compute_detail_title">Live-Detail</string>
+    <string name="compute_detail_polling">Live-Polling alle 1s während Modal offen. Schließen zum Stoppen.</string>
+    <string name="compute_detail_unavailable">Detail nicht verfügbar</string>
+    <string name="compute_detail_fix_label">Lösung:</string>
+    <string name="compute_detail_fix_hint">Bearbeite diesen Compute-Node und setze monitoring_endpoint auf die URL eines datawatch-stats --listen Sidecars auf dem Node. Ohne ihn kann der Daemon keine Live-Details abfragen.</string>
 </resources>

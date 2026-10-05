@@ -26,6 +26,8 @@ struct SettingsListCardView: View {
     @State private var browseRegistry: SettingsFormEditItem?
     /// LLM "In use…" → paged sessions routed through that LLM.
     @State private var llmInUse: SettingsFormEditItem?
+    /// Compute node 📡 → live monitoring detail (PWA computeShowDetail).
+    @State private var computeDetail: SettingsFormEditItem?
     /// Evals card "Recent Runs" (PWA _renderEvalsPanel).
     @State private var evalRuns: [IosEvalRun] = []
 
@@ -95,6 +97,9 @@ struct SettingsListCardView: View {
         }
         .sheet(item: $llmInUse) { item in
             LlmInUseSheet(profile: profile, name: item.id)
+        }
+        .sheet(item: $computeDetail) { item in
+            ComputeNodeLiveDetailSheet(profile: profile, name: item.id)
         }
         .confirmationDialog(
             deleteTitle,
@@ -280,6 +285,10 @@ struct SettingsListCardView: View {
         }
         if kind == "llms" && index < row.actions.count && row.actions[index] == "In use…" {
             llmInUse = SettingsFormEditItem(id: row.id)
+            return
+        }
+        if kind == "compute_nodes" && index < row.actions.count && row.actions[index].hasPrefix("📡") {
+            computeDetail = SettingsFormEditItem(id: row.id)
             return
         }
         if kind == "discussions" && index < row.actions.count && row.actions[index] == "Recall" {

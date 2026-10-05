@@ -578,6 +578,8 @@ struct PrdDetailView: View {
         }()
         return DisclosureGroup(isExpanded: binding(for: story.id)) {
             VStack(alignment: .leading, spacing: 6) {
+                // PWA 5(a): story verdicts on a dedicated row, first in the body.
+                PrdStoryVerdictsRow(verdicts: story.verdicts)
                 storyPills(story)
                 storyActions(story)
                 storyEditRow(story)

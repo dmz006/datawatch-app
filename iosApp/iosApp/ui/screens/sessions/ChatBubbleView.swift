@@ -4,7 +4,7 @@ import SwiftUI
 /// bubble (22 pt avatar U/AI/S · uppercase 10 pt role · 9 pt HH:MM), PWA chat
 /// palette (user #3b82f6, assistant #10b981, system #64748b), radius 12 with a
 /// 2 pt tail corner (system radius 8), 13 pt body. Completed assistant
-/// messages render markdown (PWA `renderChatMarkdown`).
+/// messages render markdown, thinking sections and images (PWA `renderChatMarkdown`).
 struct ChatBubbleView: View {
     let role: String
     let content: String
@@ -106,8 +106,8 @@ struct ChatBubbleView: View {
     @ViewBuilder
     private var bodyText: some View {
         if role == "assistant" && !streaming {
-            PrdMarkdownView(source: content)
-                .textSelection(.enabled)
+            // Markdown + collapsible thinking + inline images (ChatSegmentViews).
+            ChatAssistantContentView(content: content)
         } else {
             Text(content)
                 .font(.system(size: isSystem ? 12 : 13))
