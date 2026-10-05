@@ -273,7 +273,7 @@ struct PrdDetailView: View {
             Button("Cancel automaton", role: .destructive) { Task { await vm.cancel() } }
             Button("Keep running", role: .cancel) {}
         } message: {
-            Text("Running tasks are stopped. The automaton and its history are kept.")
+            Text(PrdReviewDialogs.cancelMessage(status: prd.status))
         }
         .alert(
             itemConfirm?.title ?? "",
@@ -332,9 +332,7 @@ struct PrdDetailView: View {
             PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
             statusGraphs
             capacityCard
-            if let spec = prd.spec, !spec.isEmpty {
-                specSection(spec)
-            }
+            PrdOverviewMeta(prd: prd)
             PrdMemorySection(profile: vm.profile, prd: prd)
             Button { SessionsNav.shared.jumpTo(prd.name) } label: {
                 Text("→ View sessions").font(DatawatchFonts.bodyMedium)
@@ -363,7 +361,13 @@ struct PrdDetailView: View {
                 Spacer(minLength: 8)
                 PrdStatusChip(status: prd.status)
             }
+            // PWA prd-detail-row2: id + last activity.
+            PrdIdMetaRow(prd: prd)
             metaRow
+            // PWA prd-detail-spec-row (280 chars, show full / collapse).
+            if let spec = prd.spec, !spec.isEmpty {
+                PrdSpecSnippet(spec: spec)
+            }
             if let dir = prd.projectDir, !dir.isEmpty {
                 Text(dir)
                     .font(DatawatchFonts.terminalSmall)
@@ -464,21 +468,6 @@ struct PrdDetailView: View {
         .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private func specSection(_ spec: String) -> some View {
-        DisclosureGroup {
-            // D53b: native markdown + GFM tables; Mermaid via CDN in a WKWebView.
-            PrdMarkdownView(source: spec)
-                .padding(.top, 6)
-        } label: {
-            Text("Spec")
-                .font(DatawatchFonts.titleMedium)
-                .foregroundStyle(DatawatchColors.onSurface)
-        }
-        .tint(DatawatchColors.primary)
-        .padding(14)
-        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
-    }
-
     private var storiesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Stories & tasks (\(prd.stories.count))")
@@ -562,6 +551,7 @@ struct PrdDetailView: View {
                     .foregroundStyle(DatawatchColors.onSurface)
                     .lineLimit(2)
                 Spacer(minLength: 6)
+                if !story.status.isEmpty { PrdStoryStatusPill(status: story.status) }
                 Text("\(done)/\(total)")
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -789,10 +779,15 @@ struct PrdTaskRow: View {
                     .foregroundStyle(color)
             }
             if let err = task.error, !err.isEmpty {
-                Text(err)
+                // PWA prd-task-error: "⚠ Error: <msg>".
+                Text(verbatim: "⚠ " + L("Error") + ": " + err)
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.error)
                     .lineLimit(3)
+                    .padding(.leading, 24)
+            }
+            if let v = task.verification {
+                PrdTaskVerificationRow(verification: v)
                     .padding(.leading, 24)
             }
             if let wait = task.waitReason, !wait.isEmpty {

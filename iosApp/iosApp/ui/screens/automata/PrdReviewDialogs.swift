@@ -9,6 +9,8 @@ struct PrdReviewRequest: Identifiable, Equatable {
     let prdId: String
     let title: String
     let action: String
+    /// PRD status when raised — "planning" switches the cancel copy (PWA automataCancel).
+    var status: String = ""
 }
 
 /// Approve-with-note (D74a; Android PrdDetailDialog approve dialog), Reject with
@@ -48,8 +50,17 @@ struct PrdReviewDialogs: ViewModifier {
                 }
                 Button("Keep running", role: .cancel) { clear() }
             } message: {
-                Text("Running tasks are stopped. The automaton and its history are kept.")
+                Text(PrdReviewDialogs.cancelMessage(status: request?.status ?? ""))
             }
+    }
+
+    /// PWA `automataCancel`: planning gets the abort warning; otherwise the
+    /// standard cancel copy.
+    static func cancelMessage(status: String) -> String {
+        if status.lowercased() == "planning" {
+            return L("⚠️ Planning is running on the server.\n\nCancelling will abort the entire automaton — the plan being generated will be discarded. The server-side planning job may continue briefly before stopping.\n\nCancel the automaton?")
+        }
+        return L("Running tasks are stopped. The automaton and its history are kept.")
     }
 
     private func shown(_ action: String) -> Binding<Bool> {

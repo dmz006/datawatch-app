@@ -573,6 +573,8 @@ struct PrdSettingsView: View {
     @State private var priority = 3
     @State private var readDirs = ""
     @State private var writeDirs = ""
+    /// PWA prdSettings skills / Android PrdSkillsRow (comma-separated).
+    @State private var skills = ""
     @State private var saving = false
     @State private var errorMessage: String? = nil
 
@@ -605,6 +607,14 @@ struct PrdSettingsView: View {
                 } header: {
                     Text("Scope")
                 }
+                Section {
+                    TextField("Skills (comma-separated)", text: $skills, axis: .vertical)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(DatawatchFonts.terminalSmall)
+                } header: {
+                    Text("Skills")
+                }
                 if let errorMessage {
                     Section { Text(errorMessage).foregroundStyle(DatawatchColors.error).font(DatawatchFonts.bodyMedium) }
                 }
@@ -626,6 +636,7 @@ struct PrdSettingsView: View {
                 priority = Int(prd.priority)
                 readDirs = prd.readDirs.joined(separator: ", ")
                 writeDirs = prd.writeDirs.joined(separator: ", ")
+                skills = prd.skills.joined(separator: ", ")
             }
         }
         .dwThemed()
@@ -638,6 +649,26 @@ struct PrdSettingsView: View {
             profile: profile, prd: prd, type: type, guidedMode: guided, continueOnFailure: continueOnFailure,
             priority: Int32(priority), readDirs: readDirs, writeDirs: writeDirs
         ) { err in
+            DispatchQueue.main.async {
+                if let err {
+                    saving = false
+                    errorMessage = err
+                } else {
+                    saveSkills()
+                }
+            }
+        }
+    }
+
+    private func saveSkills() {
+        let wanted: [String] = skills.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        if wanted == prd.skills {
+            saving = false
+            onSaved()
+            dismiss()
+            return
+        }
+        IosPrdSkills.shared.set(profile: profile, prdId: prd.id, skills: skills) { err in
             DispatchQueue.main.async {
                 saving = false
                 if let err { errorMessage = err } else { onSaved(); dismiss() }

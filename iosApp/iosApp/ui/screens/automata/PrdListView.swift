@@ -448,7 +448,7 @@ struct PrdListView: View {
     private func cardAction(_ prd: PrdDto, _ action: String) {
         switch action {
         case "approve", "reject", "request_revision", "cancel":
-            review = PrdReviewRequest(prdId: prd.id, title: prd.displayTitle, action: action)
+            review = PrdReviewRequest(prdId: prd.id, title: prd.displayTitle, action: action, status: prd.status)
         default:
             Task { await vm.act(prdId: prd.id, action: action, body: nil) }
         }
@@ -560,16 +560,12 @@ struct PrdListView: View {
                 chip("⊞ Filter", on: vm.filterOpen) { vm.filterOpen.toggle() }
                 chip("History", on: vm.historyOn) { vm.historyOn.toggle() }
                 chip("☑ Select", on: vm.selectMode) { vm.selectMode.toggle() }
-                HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass").foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    TextField("Search automata…", text: $vm.search)
-                        .font(DatawatchFonts.bodyMedium)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 6))
+                Spacer(minLength: 0)
+            }
+            // PWA filter row (search + chips) is toggled, not always shown;
+            // Android keeps the search behind ⊞ the same way.
+            if vm.filterOpen || !vm.search.isEmpty {
+                searchField
             }
             if vm.filterOpen {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -589,6 +585,26 @@ struct PrdListView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "magnifyingglass").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            TextField("Search automata…", text: $vm.search)
+                .font(DatawatchFonts.bodyMedium)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            if !vm.search.isEmpty {
+                Button { vm.search = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.sm))
     }
 
     private func chip(_ title: String, on: Bool, tint: Color = DatawatchColors.primary, action: @escaping () -> Void) -> some View {
@@ -706,6 +722,8 @@ struct PrdRow: View {
                 if let onWatchToggle { watchButton(onWatchToggle) }
                 PrdStatusChip(status: prd.status)
             }
+            // PWA card meta row: id + last activity, mono, right-justified.
+            PrdIdMetaRow(prd: prd)
             HStack(spacing: 6) {
                 if let serverName { serverChip(serverName) }
                 if let pid = prd.parentPrdId, !pid.isEmpty { parentChip(pid) }
