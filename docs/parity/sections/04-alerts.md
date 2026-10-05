@@ -73,7 +73,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Car head-unit notification actions (CarAppExtender Play/Reply) | n/a | ✓ A:NotificationPoster.kt:235 | n/a | n/a | | |
 
 ## Coverage
-rows: 65 · aligned: 42 · ios-missing: 4 · android-missing: 0 · pwa-missing: 2 · misaligned: 9 · n/a: 8
+rows: 65 · aligned: 44 · ios-missing: 3 · android-missing: 0 · pwa-missing: 2 · misaligned: 8 · n/a: 8
 
 ## Decisions (resolved 2026-10-04)
 1. 🔕 semantics → **D47a** apps implement a real dock mute (Android done; iOS pending, needs dock).
