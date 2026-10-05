@@ -5,15 +5,50 @@ import DatawatchShared
 /// Self-contained: manages its own 30s probe timer given a ServerProfile.
 /// Tap opens a sheet with last-probe time and a retry button.
 /// Matches Android's `ReachabilityDot` in HeaderComponents.kt.
+/// Last probe result per server, shared by every dot. Toolbars re-create their
+/// items often (spinners, badge counts); without a shared cache each new dot
+/// started at "probing" (amber) and never settled on busy screens.
+@MainActor
+final class ReachabilityCache: ObservableObject {
+    static let shared = ReachabilityCache()
+    struct Entry { let reachable: Bool; let at: Date }
+    @Published private(set) var entries: [String: Entry] = [:]
+    private var inFlight: Set<String> = []
+    private init() {}
+
+    func entry(_ id: String?) -> Entry? { id.flatMap { entries[$0] } }
+
+    /// Probe unless a result newer than `maxAge` exists (or `force`).
+    func probe(_ profile: ServerProfile, maxAge: TimeInterval, force: Bool = false) {
+        let id = profile.id
+        if !force, let e = entries[id], Date().timeIntervalSince(e.at) < maxAge { return }
+        guard !inFlight.contains(id) else { return }
+        inFlight.insert(id)
+        IosServiceLocator.shared.probeProfile(
+            profile: profile,
+            tokenValue: nil,
+            onSuccess: { DispatchQueue.main.async { self.finish(id, true) } },
+            onError: { _ in DispatchQueue.main.async { self.finish(id, false) } }
+        )
+    }
+
+    private func finish(_ id: String, _ ok: Bool) {
+        inFlight.remove(id)
+        entries[id] = Entry(reachable: ok, at: Date())
+    }
+}
+
 struct ReachabilityDotView: View {
     let profile: ServerProfile?
 
-    @State private var reachable: Bool? = nil
-    @State private var lastProbeDate: Date? = nil
+    @ObservedObject private var cache = ReachabilityCache.shared
     @State private var sheetOpen = false
     @State private var probeTimer: Timer? = nil
 
     private static let probeInterval: TimeInterval = 30
+
+    private var reachable: Bool? { cache.entry(profile?.id)?.reachable }
+    private var lastProbeDate: Date? { cache.entry(profile?.id)?.at }
 
     private var dotColor: Color {
         switch reachable {
@@ -45,50 +80,30 @@ struct ReachabilityDotView: View {
                 lastProbeDate: lastProbeDate,
                 onRetry: {
                     sheetOpen = false
-                    probe()
+                    if let profile { cache.probe(profile, maxAge: 0, force: true) }
                 },
                 onDismiss: { sheetOpen = false }
             )
             .presentationDetents([.medium])
         }
         .onAppear {
-            probe()
+            if let profile { cache.probe(profile, maxAge: Self.probeInterval) }
             startTimer()
         }
         .onDisappear {
             stopTimer()
         }
         .onChange(of: profile?.id) { _ in
-            reachable = nil
-            lastProbeDate = nil
-            probe()
+            if let profile { cache.probe(profile, maxAge: Self.probeInterval) }
         }
-    }
-
-    private func probe() {
-        guard let profile else { return }
-        reachable = nil
-        IosServiceLocator.shared.probeProfile(
-            profile: profile,
-            tokenValue: nil,
-            onSuccess: {
-                DispatchQueue.main.async {
-                    reachable = true
-                    lastProbeDate = Date()
-                }
-            },
-            onError: { _ in
-                DispatchQueue.main.async {
-                    reachable = false
-                }
-            }
-        )
     }
 
     private func startTimer() {
         stopTimer()
         probeTimer = Timer.scheduledTimer(withTimeInterval: Self.probeInterval, repeats: true) { _ in
-            Task { @MainActor in probe() }
+            Task { @MainActor in
+                if let profile { ReachabilityCache.shared.probe(profile, maxAge: Self.probeInterval - 1) }
+            }
         }
     }
 

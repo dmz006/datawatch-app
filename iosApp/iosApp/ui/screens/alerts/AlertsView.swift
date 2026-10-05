@@ -246,6 +246,8 @@ final class AlertsViewModel: ObservableObject {
             alerts = result.alerts
             unreadCount = result.unreadCount
             error = nil
+            // D49a (PWA renderAlertsView): opening the page acknowledges everything.
+            if unreadCount > 0 && !alerts.isEmpty { acknowledgeAll(profile) }
         } catch {
             self.error = error.localizedDescription
         }
@@ -269,10 +271,15 @@ final class AlertsViewModel: ObservableObject {
         )
     }
 
-    /// Dismiss all alerts (clear locally and on server).
+    private func acknowledgeAll(_ profile: ServerProfile) {
+        unreadCount = 0
+        IosServiceLocator.shared.markAllAlertsRead(profile: profile, onSuccess: {}, onError: { _ in })
+    }
+
+    /// Dismiss all alerts — D48a: deletes on the server like the PWA ✕.
     func dismissAll() {
         guard let profile else { return }
-        IosServiceLocator.shared.markAllAlertsRead(
+        IosServiceLocator.shared.deleteAllAlerts(
             profile: profile,
             onSuccess: { [weak self] in
                 DispatchQueue.main.async {
