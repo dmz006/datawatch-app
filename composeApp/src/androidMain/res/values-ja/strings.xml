@@ -1126,7 +1126,7 @@
     <string name="llm_in_use_tab">使用中</string>
     <string name="llm_models_node_col">ノード</string>
     <string name="llm_models_model_col">モデル</string>
-    <string name="llm_models_add_row">行を追加</string>
+    <string name="llm_models_add_row">+ モデルを追加</string>
     <string name="llm_models_auto_badge">自動</string>
     <string name="llm_models_none">モデルが設定されていません</string>
     <string name="llm_in_use_none">アクティブなセッションなし</string>
@@ -1137,24 +1137,24 @@
     <string name="llm_force_delete">強制削除（再割り当てなし）</string>
     <string name="llm_force_confirm">このLLMを強制削除し、アクティブなセッションを放棄しますか?</string>
     <!-- alpha.41 LLMフィールド (Sprint 34) -->
-    <string name="llm_field_api_key_ref">APIキー参照</string>
-    <string name="llm_field_timeout">タイムアウト (秒)</string>
-    <string name="llm_field_tags">タグを追加</string>
+    <string name="llm_field_api_key_ref">API キー参照 (リテラルまたはシークレット参照; クラウド種類)</string>
+    <string name="llm_field_timeout">タイムアウト秒（0 = アダプタのデフォルト）</string>
+    <string name="llm_field_tags">タグ（カンマ区切り）</string>
     <string name="llm_section_session_backend">セッションバックエンド</string>
     <string name="llm_field_binary">バイナリパス</string>
-    <string name="llm_field_console_cols">列数</string>
-    <string name="llm_field_console_rows">行数</string>
+    <string name="llm_field_console_cols">コンソール幅（列）</string>
+    <string name="llm_field_console_rows">コンソール高（行）</string>
     <string name="llm_field_output_mode">出力モード</string>
     <string name="llm_field_input_mode">入力モード</string>
-    <string name="llm_field_auto_git_init">Auto git init</string>
-    <string name="llm_field_auto_git_commit">Auto git commit</string>
+    <string name="llm_field_auto_git_init">Git自動初期化（プロジェクトディレクトリにリポジトリ作成）</string>
+    <string name="llm_field_auto_git_commit">Git自動コミット（セッション前後）</string>
     <string name="llm_section_claude">Claude Code</string>
-    <string name="llm_field_skip_permissions">権限をスキップ</string>
-    <string name="llm_field_channel_enabled">チャンネル有効</string>
-    <string name="llm_field_auto_accept">免責事項を自動承認</string>
+    <string name="llm_field_skip_permissions">権限スキップ（--dangerously-skip-permissions）</string>
+    <string name="llm_field_channel_enabled">チャンネルモード（MCPブリッジ）</string>
+    <string name="llm_field_auto_accept">起動時の免責事項を自動承認</string>
     <string name="llm_field_permission_mode">権限モード</string>
-    <string name="llm_field_default_effort">デフォルト努力量</string>
-    <string name="llm_field_fallback_chain">フォールバックLLMを追加</string>
+    <string name="llm_field_default_effort">デフォルト努力レベル</string>
+    <string name="llm_field_fallback_chain">フォールバックチェーン（カンマ区切りのプロファイル名）</string>
     <string name="automata_confirm_batch_cancel">選択した%1$d件のオートマトンをキャンセルしますか?</string>
     <string name="automata_confirm_batch_delete_title">オートマトンを削除</string>
     <string name="automata_confirm_batch_delete">選択した%1$d件のオートマトンを完全に削除しますか?</string>

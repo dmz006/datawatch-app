@@ -1126,7 +1126,7 @@
     <string name="llm_in_use_tab">En cours</string>
     <string name="llm_models_node_col">Nœud</string>
     <string name="llm_models_model_col">Modèle</string>
-    <string name="llm_models_add_row">Ajouter une ligne</string>
+    <string name="llm_models_add_row">+ Ajouter un modèle</string>
     <string name="llm_models_auto_badge">Auto</string>
     <string name="llm_models_none">Aucun modèle configuré</string>
     <string name="llm_in_use_none">Aucune session active</string>
@@ -1137,24 +1137,24 @@
     <string name="llm_force_delete">Supprimer de force (sans réassignation)</string>
     <string name="llm_force_confirm">Forcer la suppression de ce LLM et abandonner ses sessions actives ?</string>
     <!-- Champs LLM alpha.41 (Sprint 34) -->
-    <string name="llm_field_api_key_ref">Référence clé API</string>
-    <string name="llm_field_timeout">Délai d\'attente (s)</string>
-    <string name="llm_field_tags">Ajouter une étiquette</string>
+    <string name="llm_field_api_key_ref">Référence de clé API (littérale ou référence secrète ; types cloud)</string>
+    <string name="llm_field_timeout">Délai d\'attente en secondes (0 = défaut adaptateur)</string>
+    <string name="llm_field_tags">Étiquettes (séparées par virgule)</string>
     <string name="llm_section_session_backend">Backend de session</string>
-    <string name="llm_field_binary">Chemin binaire</string>
-    <string name="llm_field_console_cols">Colonnes</string>
-    <string name="llm_field_console_rows">Lignes</string>
+    <string name="llm_field_binary">Chemin du binaire</string>
+    <string name="llm_field_console_cols">Largeur de console (colonnes)</string>
+    <string name="llm_field_console_rows">Hauteur de console (lignes)</string>
     <string name="llm_field_output_mode">Mode de sortie</string>
     <string name="llm_field_input_mode">Mode d\'entrée</string>
-    <string name="llm_field_auto_git_init">Auto git init</string>
-    <string name="llm_field_auto_git_commit">Auto git commit</string>
+    <string name="llm_field_auto_git_init">Git init automatique (créer le dépôt dans le répertoire du projet si absent)</string>
+    <string name="llm_field_auto_git_commit">Commit git automatique (avant/après la session)</string>
     <string name="llm_section_claude">Claude Code</string>
-    <string name="llm_field_skip_permissions">Ignorer les permissions</string>
-    <string name="llm_field_channel_enabled">Canal activé</string>
-    <string name="llm_field_auto_accept">Accepter automatiquement la clause</string>
+    <string name="llm_field_skip_permissions">Ignorer les permissions (--dangerously-skip-permissions)</string>
+    <string name="llm_field_channel_enabled">Mode canal (pont MCP)</string>
+    <string name="llm_field_auto_accept">Accepter automatiquement les avertissements au démarrage</string>
     <string name="llm_field_permission_mode">Mode de permission</string>
     <string name="llm_field_default_effort">Effort par défaut</string>
-    <string name="llm_field_fallback_chain">Ajouter LLM de secours</string>
+    <string name="llm_field_fallback_chain">Chaîne de repli (noms de profils séparés par virgule)</string>
     <string name="automata_confirm_batch_cancel">Annuler %1$d automates sélectionnés ?</string>
     <string name="automata_confirm_batch_delete_title">Supprimer les automates</string>
     <string name="automata_confirm_batch_delete">Supprimer définitivement %1$d automates sélectionnés ?</string>

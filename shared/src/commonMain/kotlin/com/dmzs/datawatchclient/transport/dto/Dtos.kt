@@ -1295,7 +1295,14 @@ public data class FreeObserverPeerDto(
 /** Sprint 30 — per-node model assignment in the LLM registry. */
 @Serializable
 public data class LlmModelPairDto(
-    @SerialName("compute_node") val computeNode: String = "",
+    /**
+     * Server `EnabledModel.node` (PWA `models[].node`); empty for SaaS kinds. The
+     * legacy `compute_node` key is still accepted when decoding.
+     */
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    @SerialName("node")
+    @kotlinx.serialization.json.JsonNames("compute_node")
+    val computeNode: String = "",
     val model: String = "",
 )
 
@@ -1320,7 +1327,13 @@ public data class LlmRegistryEntryDto(
     @SerialName("auto_add_models") val autoAddModels: Boolean = false,
     // alpha.41 core fields
     @SerialName("api_key_ref") val apiKeyRef: String? = null,
-    val timeout: Int? = null,
+    /** Server `timeout_seconds` (PWA "Timeout (seconds, 0 = adapter default)"); legacy `timeout` accepted. */
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    @SerialName("timeout_seconds")
+    @kotlinx.serialization.json.JsonNames("timeout")
+    val timeoutSeconds: Int? = null,
+    /** Server `max_inflight` — autonomous sessions in flight on this LLM (0 = unlimited). */
+    @SerialName("max_inflight") val maxInflight: Int? = null,
     val tags: List<String>? = null,
     // alpha.41 session-backend section (visible for session-backend kinds)
     val binary: String? = null,

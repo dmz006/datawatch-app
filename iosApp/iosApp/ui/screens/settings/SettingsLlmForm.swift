@@ -121,8 +121,9 @@ struct LlmFormSheet: View {
             }
             Picker(selection: $testModel) {
                 Text("(first enabled)").tag("")
-                ForEach(models.map { $0.model }, id: \.self) { m in
-                    Text(verbatim: m).tag(m)
+                // PWA llmTestModelSel option label: "node / model" (model alone when no node).
+                ForEach(Array(models.enumerated()), id: \.offset) { pair in
+                    Text(verbatim: testModelLabel(pair.element)).tag(pair.element.model)
                 }
             } label: {
                 Text("Test model:").foregroundStyle(DatawatchColors.onSurface)
@@ -146,6 +147,10 @@ struct LlmFormSheet: View {
 
     private func binding(_ key: String) -> Binding<String> {
         Binding(get: { v[key] ?? "" }, set: { v[key] = $0 })
+    }
+
+    private func testModelLabel(_ m: IosLlmModel) -> String {
+        m.node.isEmpty ? m.model : m.node + " / " + m.model
     }
 
     // MARK: actions
@@ -432,7 +437,7 @@ private struct LlmModelsSection: View {
         } header: {
             Text("Enabled Models")
         } footer: {
-            Text("One model per row. For local kinds, pick the node then select or type the model.")
+            Text("Per-node model list. Each row enables a specific model on a specific Compute Node.")
         }
         .listRowBackground(DatawatchColors.surface)
         .onChange(of: newNode) { _ in probe() }
@@ -467,7 +472,7 @@ private struct LlmModelsSection: View {
                 }
                 .accessibilityLabel("Available models")
             }
-            Button(L("+ Add")) { addModel() }
+            Button(L("+ Add model")) { addModel() }
                 .buttonStyle(.borderless)
                 .foregroundStyle(DatawatchColors.primary)
                 .disabled(newModel.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -509,17 +514,17 @@ private struct LlmCoreSection: View {
     var body: some View {
         Section {
             if !isSaas {
-                Toggle("Auto-enable new models discovered on these Compute Nodes", isOn: flag("auto_add_models"))
+                Toggle("Auto-enable new models", isOn: flag("auto_add_models"))
                     .tint(DatawatchColors.primary)
             }
             FormTextField(
-                label: "API key reference (literal or ${secret:name}; cloud kinds)",
+                label: "API key reference (literal or secret reference; cloud kinds)",
                 text: binding("api_key_ref"),
                 placeholder: keyPlaceholder
             )
             FormTextField(label: "Timeout (seconds, 0 = adapter default)", text: binding("timeout_seconds"), placeholder: "0", numeric: true)
             FormTextField(label: "Max in-flight autonomous sessions (0 = unlimited)", text: binding("max_inflight"), placeholder: "0", numeric: true)
-            FormTextField(label: "Tags", text: binding("tags"), placeholder: "fast, coding…")
+            FormTextField(label: "Tags (comma-separated)", text: binding("tags"), placeholder: "fast, coding…")
         }
         .listRowBackground(DatawatchColors.surface)
     }
@@ -580,7 +585,7 @@ private struct LlmClaudeSection: View {
                 emptyLabel: "(none)"
             )
             FormChoiceRow(label: "Default effort", value: binding("default_effort"), options: ["quick", "normal", "thorough"], emptyLabel: "(default)")
-            FormTextField(label: "Fallback chain", text: binding("fallback_chain"), placeholder: "claude-personal, gemini-backup…", hint: "Comma-separated, in failover order.")
+            FormTextField(label: "Fallback chain (comma-separated profile names)", text: binding("fallback_chain"), placeholder: "claude-personal, gemini-backup…")
         }
         .listRowBackground(DatawatchColors.surface)
     }

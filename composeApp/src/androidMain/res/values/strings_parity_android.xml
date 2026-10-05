@@ -70,4 +70,19 @@
     <string name="prd_settings_concurrency_hint">0 or 1 = sequential · 2+ = fan out independent tasks in parallel</string>
     <string name="automata_detail_concurrency">Concurrency</string>
     <string name="automata_detail_concurrency_value">%1$d tasks</string>
+    <string name="llm_field_name">Name</string>
+    <string name="llm_field_compute_nodes">ComputeNodes (multi-select; ordered failover)</string>
+    <string name="llm_field_compute_nodes_hint">Order = failover order.</string>
+    <string name="llm_field_enabled_models">Enabled Models</string>
+    <string name="llm_field_enabled_models_hint">Per-node model list. Each row enables a specific model on a specific Compute Node.</string>
+    <string name="llm_field_auto_add_models">Auto-enable new models</string>
+    <string name="llm_field_max_inflight">Max in-flight autonomous sessions (0 = unlimited)</string>
+    <string name="llm_test_model_label">Test model:</string>
+    <string name="llm_test_model_first">(first enabled)</string>
+    <string name="llm_test_btn">Test</string>
+    <string name="llm_add_btn">Add</string>
+    <string name="llm_test_save_first">Save first, then Test</string>
+    <string name="llm_test_running">Testing…</string>
+    <string name="llm_option_default">(default)</string>
+    <string name="llm_option_none">(none)</string>
 </resources>
