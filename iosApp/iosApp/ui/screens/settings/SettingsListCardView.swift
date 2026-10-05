@@ -24,6 +24,10 @@ struct SettingsListCardView: View {
     @State private var templateUse: TemplateUseItem?
     /// Skill registry "Browse" → available skills with sync / unsync.
     @State private var browseRegistry: SettingsFormEditItem?
+    /// LLM "In use…" → paged sessions routed through that LLM.
+    @State private var llmInUse: SettingsFormEditItem?
+    /// Evals card "Recent Runs" (PWA _renderEvalsPanel).
+    @State private var evalRuns: [IosEvalRun] = []
 
     /// LLMs + Compute Nodes use the full PWA add/edit forms instead of the generic add sheet.
     private var hasForm: Bool { kind == "llms" || kind == "compute_nodes" }
@@ -48,6 +52,9 @@ struct SettingsListCardView: View {
                 }
             }
             rowsSection
+            if kind == "evals" {
+                EvalRunsSection(runs: evalRuns)
+            }
             if let err = error {
                 Section {
                     Text(err)
@@ -85,6 +92,9 @@ struct SettingsListCardView: View {
         }
         .sheet(item: $browseRegistry) { item in
             SkillBrowseSheet(profile: profile, registry: item.id)
+        }
+        .sheet(item: $llmInUse) { item in
+            LlmInUseSheet(profile: profile, name: item.id)
         }
         .confirmationDialog(
             deleteTitle,
@@ -213,6 +223,11 @@ struct SettingsListCardView: View {
     // MARK: Actions
 
     private func load() {
+        if kind == "evals" {
+            IosSettingsH.shared.evalRuns(profile: profile, onSuccess: { list in
+                DispatchQueue.main.async { evalRuns = list }
+            }, onError: { _ in })
+        }
         IosSettingsLists.shared.load(profile: profile, kind: kind, onSuccess: { list in
             DispatchQueue.main.async {
                 rows = list
@@ -261,6 +276,10 @@ struct SettingsListCardView: View {
         }
         if kind == "skill_registries" && index < row.actions.count && row.actions[index] == "Browse" {
             browseRegistry = SettingsFormEditItem(id: row.id)
+            return
+        }
+        if kind == "llms" && index < row.actions.count && row.actions[index] == "In use…" {
+            llmInUse = SettingsFormEditItem(id: row.id)
             return
         }
         message = L("Working…")

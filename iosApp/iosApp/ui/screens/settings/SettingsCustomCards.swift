@@ -20,6 +20,8 @@ struct SettingsCustomCardView: View {
             if let p = profile { SettingsPushCard(profile: p) } else { SettingsNoServerView() }
         case .about:
             SettingsAboutCard(profile: profile)
+        case .observerQuicklink:
+            SettingsObserverQuicklinkCard()
         default:
             serverCard
         }
@@ -60,6 +62,7 @@ private struct SettingsServerCustomCard: View {
         case .encryption: SettingsEncryptionCard(profile: profile)
         case .exitHooks: SettingsExitHooksCard(profile: profile)
         case .workQueue: SettingsWorkQueueCard(profile: profile)
+        case .fileService: SettingsFileServiceCard(profile: profile)
         default: EmptyView()
         }
     }

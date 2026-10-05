@@ -115,12 +115,16 @@ internal fun ScheduleDto.toDomain(serverProfileId: String): Schedule =
         serverProfileId = serverProfileId,
         // Prefer `command` (newer server) then fall back to `task` (older spec).
         task = command ?: task ?: "",
-        cron = cron,
+        cron = cron?.takeIf { it.isNotBlank() } ?: cronExpr?.takeIf { it.isNotBlank() },
         runAt = runAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
         enabled = enabled,
         state = state,
         sessionId = sessionId,
         createdAt = createdAt.toInstantOrEpoch(),
+        sessionName = sessionName?.takeIf { it.isNotBlank() },
+        scheduleName = scheduleName?.takeIf { it.isNotBlank() },
+        type = type,
+        deferredSessionName = deferredSession?.name?.takeIf { it.isNotBlank() },
     )
 
 internal fun FileEntryDto.toDomain(): FileEntry =

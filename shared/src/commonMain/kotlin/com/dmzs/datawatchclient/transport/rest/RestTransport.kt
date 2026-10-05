@@ -4248,6 +4248,62 @@ public class RestTransport(
             (obj["result"] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
         }
 
+    // ---- iOS-H: docs trust queue (PWA loadDocsTrustPanel wire shape) ----
+
+    override suspend fun docsTrustPendingEntries(): Result<List<com.dmzs.datawatchclient.transport.DocsTrustEntry>> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/docs/trust/pending") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            iosHTrustEntries(obj, "pending", "detail")
+        }
+
+    override suspend fun docsTrustedEntries(): Result<List<com.dmzs.datawatchclient.transport.DocsTrustEntry>> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/docs/trust") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            iosHTrustEntries(obj, "trusted", "granted_by")
+        }
+
+    override suspend fun docsTrustDecide(
+        sources: List<String>,
+        accept: Boolean,
+    ): Result<Unit> =
+        request {
+            val verb: String = if (accept) "accept" else "dismiss"
+            client.post("${profile.baseUrl}/api/docs/trust/$verb") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put(
+                            "sources",
+                            kotlinx.serialization.json.JsonArray(sources.map { kotlinx.serialization.json.JsonPrimitive(it) }),
+                        )
+                    },
+                )
+            }
+            Unit
+        }
+
+    private fun iosHTrustEntries(
+        obj: kotlinx.serialization.json.JsonObject,
+        listKey: String,
+        detailKey: String,
+    ): List<com.dmzs.datawatchclient.transport.DocsTrustEntry> {
+        val arr = obj[listKey] as? kotlinx.serialization.json.JsonArray ?: return emptyList()
+        return arr.mapNotNull { el ->
+            val o = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+            val src = (o["source"] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+            if (src.isEmpty()) return@mapNotNull null
+            val detail = (o[detailKey] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+            com.dmzs.datawatchclient.transport.DocsTrustEntry(source = src, detail = detail)
+        }
+    }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

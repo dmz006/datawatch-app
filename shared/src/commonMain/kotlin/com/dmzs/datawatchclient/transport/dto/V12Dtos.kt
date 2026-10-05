@@ -33,6 +33,18 @@ public data class ScheduleDto(
     val state: String? = null,
     @SerialName("session_id") val sessionId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
+    /** BL353 — the server emits the cron expression as `cron_expr`. */
+    @SerialName("cron_expr") val cronExpr: String? = null,
+    @SerialName("session_name") val sessionName: String? = null,
+    @SerialName("schedule_name") val scheduleName: String? = null,
+    val type: String? = null,
+    @SerialName("deferred_session") val deferredSession: ScheduleDeferredSessionDto? = null,
+)
+
+/** `deferred_session` of a `new_session` schedule — only the name is read. */
+@Serializable
+public data class ScheduleDeferredSessionDto(
+    val name: String? = null,
 )
 
 @Serializable

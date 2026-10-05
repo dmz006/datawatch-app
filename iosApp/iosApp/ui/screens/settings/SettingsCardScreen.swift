@@ -171,6 +171,8 @@ struct SettingsConfigCardView: View {
             EmptyView()
         case .summarizerTest:
             Section { SummarizerTestRow(profile: profile) }
+        case .whisperTest:
+            Section { WhisperTestRow(profile: profile) }
         case .scanDefaults:
             ScanDefaultsSection(profile: profile)
         }
