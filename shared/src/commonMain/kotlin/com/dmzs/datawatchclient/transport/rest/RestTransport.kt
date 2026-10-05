@@ -58,6 +58,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.prepareGet
@@ -2189,7 +2190,8 @@ public class RestTransport(
             client.post("${profile.baseUrl}/api/llms") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
-                setBody(dto)
+                // auto_created is server-owned (read-only) — never written back.
+                setBody(com.dmzs.datawatchclient.transport.LlmSaveBody.of(dto))
             }.body()
         }
 
@@ -2201,7 +2203,8 @@ public class RestTransport(
             client.put("${profile.baseUrl}/api/llms/$name") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
-                setBody(dto)
+                // auto_created is server-owned (read-only) — never written back.
+                setBody(com.dmzs.datawatchclient.transport.LlmSaveBody.of(dto))
             }.body()
         }
 
@@ -3809,17 +3812,19 @@ public class RestTransport(
         body: kotlinx.serialization.json.JsonObject,
     ): Result<Unit> =
         request {
+            // auto_created is server-owned (read-only) — never written back.
+            val sendBody: kotlinx.serialization.json.JsonObject = com.dmzs.datawatchclient.transport.LlmSaveBody.strip(body)
             if (name.isNullOrBlank()) {
                 client.post("${profile.baseUrl}/api/llms") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                     contentType(ContentType.Application.Json)
-                    setBody(body)
+                    setBody(sendBody)
                 }
             } else {
                 client.put("${profile.baseUrl}/api/llms/${iosPathPart(name)}") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                     contentType(ContentType.Application.Json)
-                    setBody(body)
+                    setBody(sendBody)
                 }
             }
             Unit
@@ -4417,6 +4422,27 @@ public class RestTransport(
         return fetchConfig().map { cfg ->
             val auto = cfg.raw["autonomous"] as? kotlinx.serialization.json.JsonObject
             (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)?.content?.lowercase() == "true"
+        }
+    }
+
+    // ---- Parity extras: compute-node 📡 live detail (2026-10-05) ----
+
+    override suspend fun getComputeNodeDetailJson(name: String): Result<JsonElement> {
+        val raw: Result<Pair<Int, String>> =
+            request {
+                val resp: HttpResponse =
+                    client.get("${profile.baseUrl}/api/compute/nodes/${name.encodeURLPathPart()}/detail") {
+                        bearer()?.let { header(HttpHeaders.Authorization, it) }
+                        expectSuccess = false
+                    }
+                resp.status.value to resp.bodyAsText()
+            }
+        return raw.mapCatching { (status, text) ->
+            if (status in 200..299) {
+                DefaultJson.parseToJsonElement(text)
+            } else {
+                throw TransportError.ServerError(status, text.trim().take(500))
+            }
         }
     }
 

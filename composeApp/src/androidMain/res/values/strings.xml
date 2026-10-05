@@ -1693,4 +1693,14 @@
     <string name="pfe_git_url_ph" translatable="false">https://github.com/user/repo</string>
     <string name="pfe_registry_ph" translatable="false">registry.example.com/datawatch</string>
     <string name="pfe_namespace_ph" translatable="false">default</string>
+    <!-- Parity extras 2026-10-05: chat thinking, story verdicts, compute 📡 detail, LLM auto -->
+    <string name="chat_thinking_summary">🧠 Thinking...</string>
+    <string name="prd_verdict_no_issues">no issues</string>
+    <string name="llm_auto">auto</string>
+    <string name="compute_detail_btn_title">Live monitoring detail</string>
+    <string name="compute_detail_title">live detail</string>
+    <string name="compute_detail_polling">Live polling every 1s while modal is open. Close to stop.</string>
+    <string name="compute_detail_unavailable">detail unavailable</string>
+    <string name="compute_detail_fix_label">Fix:</string>
+    <string name="compute_detail_fix_hint">Edit this Compute Node and set monitoring_endpoint to the URL of a datawatch-stats --listen sidecar running on the node. Without it, the daemon has nothing to poll for live detail.</string>
 </resources>

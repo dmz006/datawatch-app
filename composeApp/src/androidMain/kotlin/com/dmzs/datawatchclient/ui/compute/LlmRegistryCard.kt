@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.compute
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -502,6 +503,20 @@ private fun LlmRegistryRow(
                     fontWeight = FontWeight.Medium,
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                // PWA `llm_auto` pill (auto_created LLMs) — same style as the compute-node pill.
+                if (llm.autoCreated) {
+                    Text(
+                        stringResource(R.string.llm_auto),
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier =
+                            Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                ).padding(horizontal = 5.dp, vertical = 1.dp),
+                    )
+                }
                 AssistChip(
                     onClick = {},
                     label = { Text(llm.kind, style = MaterialTheme.typography.labelSmall, maxLines = 1) },

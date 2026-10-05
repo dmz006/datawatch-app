@@ -55,6 +55,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
@@ -102,6 +104,8 @@ public fun ComputeNodesCard(
     var selectedNode by remember { mutableStateOf<ComputeNodeDto?>(null) }
     var nodeToDelete by remember { mutableStateOf<ComputeNodeDto?>(null) }
     var refreshTick by remember { mutableStateOf(0) }
+    // PWA 📡 live-detail modal (computeShowDetail) — node name while open.
+    var detailNode by remember { mutableStateOf<String?>(null) }
 
     // Sprint 15 migration state
     var migrationData by remember { mutableStateOf<MigrationComputeKindsDto?>(null) }
@@ -198,6 +202,7 @@ public fun ComputeNodesCard(
                         showAddDialog = true
                     },
                     onDelete = { nodeToDelete = node },
+                    onDetail = { detailNode = node.name },
                     onToggleEnabled = { enabled ->
                         scope.launch {
                             val transport = resolveTransport() ?: return@launch
@@ -207,6 +212,14 @@ public fun ComputeNodesCard(
                 )
             }
         }
+    }
+
+    detailNode?.let { name ->
+        ComputeNodeLiveDetailDialog(
+            name = name,
+            resolveTransport = { resolveTransport() },
+            onDismiss = { detailNode = null },
+        )
     }
 
     // Add / Edit dialog
@@ -300,6 +313,7 @@ private fun ComputeNodeRow(
     node: ComputeNodeDto,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onDetail: () -> Unit,
     onToggleEnabled: (Boolean) -> Unit,
 ) {
     // PWA dims a disabled node's whole row (opacity .55).
@@ -392,6 +406,15 @@ private fun ComputeNodeRow(
                 contentDescription = stringResource(R.string.compute_node_edit),
                 tint = MaterialTheme.colorScheme.primary,
             )
+        }
+        // PWA ✏️ / 📡 / × — 📡 opens the live monitoring detail.
+        val detailDesc = stringResource(R.string.compute_detail_btn_title)
+        IconButton(
+            onClick = onDetail,
+            modifier =
+                Modifier.semantics { contentDescription = detailDesc },
+        ) {
+            Text("📡", fontSize = 15.sp)
         }
         IconButton(onClick = onDelete) {
             Icon(
