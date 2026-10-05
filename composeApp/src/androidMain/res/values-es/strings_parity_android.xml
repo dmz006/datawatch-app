@@ -48,4 +48,8 @@
     <string name="term_connect_retries_failed">La conexión falló tras %1$d reintentos.</string>
     <string name="term_retry">Reintentar</string>
     <string name="term_use_without">Usar sin terminal</string>
+    <string name="rtk_update_available">actualización disponible (toca para copiar el comando)</string>
+    <string name="ws_history_btn">Historial</string>
+    <string name="ws_history_title">Historial de búsqueda web</string>
+    <string name="ws_history_empty">Aún no hay búsquedas.</string>
 </resources>

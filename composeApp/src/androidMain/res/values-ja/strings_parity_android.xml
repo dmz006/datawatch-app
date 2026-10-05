@@ -48,4 +48,8 @@
     <string name="term_connect_retries_failed">%1$d 回再試行しましたが接続できませんでした。</string>
     <string name="term_retry">再試行</string>
     <string name="term_use_without">ターミナルなしで使用</string>
+    <string name="rtk_update_available">アップデートあり（タップでアップグレードコマンドをコピー）</string>
+    <string name="ws_history_btn">履歴</string>
+    <string name="ws_history_title">Web 検索履歴</string>
+    <string name="ws_history_empty">まだ検索はありません。</string>
 </resources>

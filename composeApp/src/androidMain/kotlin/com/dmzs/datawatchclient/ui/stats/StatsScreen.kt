@@ -232,6 +232,22 @@ private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     StatsCard(id = "rtk", title = stringResource(R.string.stats_section_rtk)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow(stringResource(R.string.stats_row_version), s.rtkVersion ?: "?")
+            // PWA BL223 RTK update badge: tap copies the upstream upgrade one-liner.
+            if (s.rtkUpdateAvailable) {
+                val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+                val copied = stringResource(R.string.response_viewer_copied)
+                Text(
+                    "→ " + stringResource(R.string.rtk_update_available),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier =
+                        Modifier.clickable {
+                            clipboard.setText(androidx.compose.ui.text.AnnotatedString(RTK_INSTALL_CMD))
+                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(copied)
+                        },
+                )
+            }
             val hooksColor =
                 if (s.rtkHooksActive) {
                     LocalDatawatchColors.current.success
@@ -960,6 +976,12 @@ private fun WebSearchCardV2(ws: WebSearchStatsV2Dto) {
                 androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
                 WebSearchSparkline(ws.dailySeries)
             }
+            // PWA webSearchOpenHistoryView — last 50 searches.
+            var historyOpen by remember { mutableStateOf(false) }
+            androidx.compose.material3.TextButton(onClick = { historyOpen = true }) {
+                Text(stringResource(R.string.ws_history_btn), style = MaterialTheme.typography.labelSmall)
+            }
+            if (historyOpen) WebSearchHistoryDialog(onDismiss = { historyOpen = false })
         }
     }
 }
@@ -1038,4 +1060,72 @@ private fun GpuProbeFailedCard(error: String) {
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
+}
+
+/** PWA RTK install/upgrade one-liner (upstream rtk-ai/rtk install.sh), copied verbatim. */
+private const val RTK_INSTALL_CMD: String =
+    "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"
+
+/** PWA history row tag: error → "error", cache hit → "cache", else "live". */
+internal fun webSearchHistoryTag(e: com.dmzs.datawatchclient.transport.dto.WebSearchHistoryEntryDto): String =
+    when {
+        !e.success -> "error"
+        e.cacheHit -> "cache"
+        else -> "live"
+    }
+
+/** PWA web-search history view: last 50 searches with live / cache / error tags. */
+@Composable
+private fun WebSearchHistoryDialog(onDismiss: () -> Unit) {
+    var rows by remember { mutableStateOf<List<com.dmzs.datawatchclient.transport.dto.WebSearchHistoryEntryDto>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val (_, transport) = com.dmzs.datawatchclient.ui.common.ProfileResolver.Default.resolve() ?: return@LaunchedEffect
+        transport.fetchWebSearchHistory(limit = 50).fold(
+            onSuccess = { rows = it.history },
+            onFailure = { failed = true },
+        )
+    }
+    val dw = LocalDatawatchColors.current
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ws_history_title)) },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
+                val list = rows
+                when {
+                    failed -> Text(stringResource(R.string.channel_diag_unavailable), style = MaterialTheme.typography.bodySmall)
+                    list == null -> Text(stringResource(R.string.loading_ellipsis_short), style = MaterialTheme.typography.bodySmall)
+                    list.isEmpty() -> Text(stringResource(R.string.ws_history_empty), style = MaterialTheme.typography.bodySmall)
+                    else ->
+                        list.forEach { e ->
+                            val tag = webSearchHistoryTag(e)
+                            val tagColor =
+                                when (tag) {
+                                    "error" -> MaterialTheme.colorScheme.error
+                                    "cache" -> dw.accent2
+                                    else -> dw.success
+                                }
+                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(tag, style = MaterialTheme.typography.labelSmall, color = tagColor)
+                                    Text(
+                                        "  ${e.providerName} · ${e.time.take(19).replace('T', ' ')}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Text(e.query, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                Text(
+                                    if (e.success) "${e.resultCount} results · ${e.latencyMs} ms" else e.error,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (e.success) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+    )
 }
