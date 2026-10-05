@@ -7,10 +7,6 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 
 /**
  * Ktor HttpClient with the WebSockets plugin installed — used by
@@ -18,15 +14,16 @@ import javax.net.ssl.X509TrustManager
  * the REST-only client because WebSockets requires the plugin and a
  * slightly different timeout profile (long-lived connections).
  *
- * @param trustAll when true, installs an accept-anything X509TrustManager
- *   + hostname verifier bypass. Only used when the user-owned server
- *   profile has `trustAnchorSha256 == TRUST_ALL_SENTINEL`.
- * @param pinSha256 when non-null (and [trustAll] is false), accept exactly the
+ * @param trustAllHost when non-null, certificate + hostname validation are
+ *   skipped for exactly this host (every other host keeps platform
+ *   validation). Only passed when the user-owned server profile opted in
+ *   (`trustAnchorSha256 == TRUST_ALL_SENTINEL`). See AndroidTrustAll.kt.
+ * @param pinSha256 when non-null (and [trustAllHost] is null), accept exactly the
  *   leaf certificate with this SHA-256 (parity D91a); hostname verification
  *   stays at OkHttp's default.
  */
 public fun createHttpClientWithWebSockets(
-    trustAll: Boolean = false,
+    trustAllHost: String? = null,
     pinSha256: String? = null,
 ): HttpClient =
     HttpClient(OkHttp) {
@@ -39,27 +36,10 @@ public fun createHttpClientWithWebSockets(
                 // keep-alive for the WS client so a stale route after a first
                 // connect doesn't get reused on reconnect attempts.
                 retryOnConnectionFailure(true)
-                if (trustAll) {
-                    val tm =
-                        object : X509TrustManager {
-                            override fun checkClientTrusted(
-                                chain: Array<X509Certificate>,
-                                authType: String,
-                            ) = Unit
-
-                            override fun checkServerTrusted(
-                                chain: Array<X509Certificate>,
-                                authType: String,
-                            ) = Unit
-
-                            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-                        }
-                    val ctx =
-                        SSLContext.getInstance("TLS").apply {
-                            init(null, arrayOf(tm), SecureRandom())
-                        }
-                    sslSocketFactory(ctx.socketFactory, tm)
-                    hostnameVerifier { _, _ -> true }
+                if (trustAllHost != null) {
+                    val tm = HostScopedTrustAllManager(trustAllHost)
+                    sslSocketFactory(hostScopedTrustAllContext(tm).socketFactory, tm)
+                    hostnameVerifier(hostScopedHostnameVerifier(trustAllHost, okhttp3.internal.tls.OkHostnameVerifier))
                 } else if (pinSha256 != null) {
                     val tm = PinnedTrustManager(pinSha256)
                     sslSocketFactory(pinnedSslContext(tm).socketFactory, tm)

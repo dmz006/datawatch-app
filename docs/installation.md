@@ -95,9 +95,11 @@ If your datawatch server uses a self-signed cert (typical for LAN or
 Tailscale deployments), you have two paths:
 
 1. **"Self-signed certificate" toggle** during add-server — bypasses
-   Android's system trust store entirely for that profile. Simplest,
-   works immediately. Stored as the `ALLOW_ALL_INSECURE` trust-anchor
-   sentinel in the profile record.
+   Android's system trust store for that profile's server host only
+   (any other host — a redirect target, a third-party resource in the
+   docs viewer — is still fully validated). Simplest, works
+   immediately, but insecure on untrusted networks. Stored as the
+   `ALLOW_ALL_INSECURE` trust-anchor sentinel in the profile record.
 
 2. **Install the server's CA cert** into your device's user trust
    store — stricter, survives roaming between networks. In v0.11+:
