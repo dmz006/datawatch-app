@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -182,6 +183,7 @@ public fun DashboardScreen(
                 allMode = false,
                 onSelect = vm::selectProfile,
             )
+            DashboardStatStrip(dashStatStrip(state.sessions, state.boards, state.costTodayUsd, state.prds.size))
             // tree and orbital are synonyms for the same constellation view.
             val rendered = mutableSetOf<String>()
             cardIds.forEach { id ->
@@ -929,5 +931,49 @@ private fun relativeTime(instant: Instant): String {
         diff < 60.minutes -> "${diff.inWholeMinutes}m ago"
         diff.inWholeHours < 24 -> "${diff.inWholeHours}h ago"
         else -> "${diff.inWholeDays}d ago"
+    }
+}
+
+/**
+ * Parity D34a — PWA dashboard header strip: "N sess · M active · $x" ·
+ * "done/total tasks" · "⚠ n blk / n warn" · burn rate ("$x today · n running ·
+ * n automata").
+ */
+@Composable
+private fun DashboardStatStrip(s: DashStatStrip) {
+    val dw = LocalDatawatchColors.current
+    val small = MaterialTheme.typography.labelSmall
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "${s.sessions} sess · ${s.active} active" + if (s.costUsd > 0) " · $" + "%.2f".format(s.costUsd) else "",
+            style = small,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (s.tasksTotal > 0) {
+            Text("${s.tasksDone}/${s.tasksTotal} tasks", style = small, color = dw.success)
+        }
+        if (s.verdictBlock > 0) {
+            Text("⚠ ${s.verdictBlock} blk", style = small, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+        }
+        if (s.verdictWarn > 0) {
+            Text("${s.verdictWarn} warn", style = small, color = dw.warning)
+        }
+        if (s.costUsd > 0 || s.active > 0 || s.automata > 0) {
+            val parts =
+                buildList {
+                    if (s.costUsd > 0) add("$" + "%.2f".format(s.costUsd) + " today")
+                    add("${s.active} running")
+                    if (s.automata > 0) add("${s.automata} automata")
+                }
+            Text(parts.joinToString(" · "), style = small, color = MaterialTheme.colorScheme.primary)
+        }
     }
 }
