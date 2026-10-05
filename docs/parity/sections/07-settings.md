@@ -137,7 +137,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | MCP channel card + MCP tools card | ✗ | ✓ McpChannelCard + McpToolsCard mounted in About | ✓ SettingsMcpChannelCard + SettingsMcpToolsCard | pwa-missing | decided D80a | → #172; Android: mount McpToolsCard in About · Android done (D80a) (2026-10-04) |
 
 ## Coverage
-rows: 97 · aligned: 78 · ios-missing: 0 · android-missing: 0 · pwa-missing: 4 · misaligned: 13 · n/a: 2
+rows: 97 · aligned: 86 · ios-missing: 0 · android-missing: 0 · pwa-missing: 4 · misaligned: 5 · n/a: 2
 
 Re-audited 2026-10-04 against current code (after B26–B32, 16ed1a85 iOS theme, e19306e2 iOS i18n, d4a142ec Android exit hooks / work queue / pinned badge, 5a209324 Android collapsible cards + docs links). iOS settings depth pass (2026-10-04): Exit Hooks, Work Queue and list-card CRUD landed. Remaining iOS gaps: Observer quicklink, in-app jump into a Settings group, biometric lock not enforced, and the `~` list cards (templates Use, council live SSE / wizard, remote-server test, skill browse / sync, LLM In-use/YAML, compute 📡 detail). Remaining Android gaps: Plugin Manager, D33a vault placement, D57b inline restart link, config-key drift (backend_family, whisper.backend, web_search cache_*, vision.*, orchestrator.guardrail_model, autonomous planning/capacity/guardrail keys), unmounted McpToolsCard.
 

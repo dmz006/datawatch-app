@@ -8,6 +8,36 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.27.0] — 2026-10-05
+
+### Added (Android + iOS)
+- **Project and cluster profile editor**: a full form with every web-UI field, defaults and validation, plus a Home Assistant-style "YAML view" / "Form view" toggle on the same editor. Edits round-trip without losing unknown keys, and invalid YAML shows a line-numbered error without discarding your text. Literal secrets stay masked. New profiles are created with POST (Android used PUT, which the server rejects).
+- **Council**: persona replies, consensus and dissent render as markdown (web UI: dmz006/datawatch#181).
+- **iOS**:
+  - **Automata:** 🗑 remove story, a story progress row with a link to the worker session, and "All" select in the filter bar.
+  - **Settings:** stale-peer count on the Settings tab; installed-model management for ollama compute nodes.
+  - **Sessions:** camera option when attaching an image; a background watermark.
+  - **Chat:** bubbles use the web UI's palette and render markdown.
+
+### Changed
+- **Automata tab** appears whenever the server's live Automata setting is on (it read a config value that can lag behind).
+- **Alerts quick reply** on iOS lists saved commands only, like the web UI.
+- **Android:**
+  - Schedule rows show their state (pending / done).
+  - The `AI <age>` label sits in the waiting row.
+  - Compute nodes show `cap=N`, an "auto" pill and a legacy-kind ⚠.
+
+### Security
+- **Literal API keys are never shown** in the LLM form or the raw editors. They appear as a placeholder and are kept on save.
+- **Trust-all certificates** (the per-server insecure opt-in) now applies to that server's host only. The docs viewer no longer trusts every host it loads. Both apps.
+- **Android biometric unlock** is bound to a Keystore key that needs a strong biometric. If the device can't provide one, it falls back to the system biometric / device-PIN prompt rather than locking you out.
+- **Android notification PendingIntents** are explicit.
+- **CI:** least-privilege workflow permissions; PR dependency review; a Swift CodeQL workflow.
+
+### Testing
+- **Sandbox tests run against real LLM compute nodes**, listed in a local env file and never committed (`scripts/sandbox-seed-llms.sh`). Council runs and automaton planning were verified with real replies.
+
+
 ## [1.26.0] — 2026-10-05
 
 ### Added (Android + iOS — operator-approved web UI features)
