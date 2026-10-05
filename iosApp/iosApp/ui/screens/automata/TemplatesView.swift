@@ -15,6 +15,14 @@ struct TemplatesView: View {
     @State private var deleting: TemplateDto? = nil
 
     var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            content
+            // Android Templates-tab FAB (＋ → create template); operator 2026-10-05, PWA #182.
+            TemplatesFab { creating = true }
+        }
+    }
+
+    private var content: some View {
         Group {
             if let templates {
                 List {
@@ -171,6 +179,26 @@ enum TemplateVars {
             if !seen.contains(name) { seen.append(name) }
         }
         return seen
+    }
+}
+
+/// Android Templates FAB: accent2 (`secondary`) circle with ＋, same chrome as
+/// the Automata ⚡ FAB in PrdListView.
+private struct TemplatesFab: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(.title2).weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(DatawatchColors.secondary, in: Circle())
+                .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+        }
+        .padding(.trailing, 20)
+        .padding(.bottom, 20)
+        .accessibilityLabel("New template")
     }
 }
 
