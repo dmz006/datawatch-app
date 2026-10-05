@@ -10,6 +10,9 @@ struct NewSessionView: View {
     let profile: ServerProfile
     /// Called with the new session id after a successful start.
     var onStarted: (String) -> Void = { _ in }
+    /// Session template "Use" (Settings › Session Templates): keys `backend`,
+    /// `project_dir`, `effort` prefill the form once options load.
+    var template: [String: String]? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -271,12 +274,30 @@ struct NewSessionView: View {
 
     // MARK: Actions
 
+    /// Prefill from a session template. `llmName` change resets effort, so the
+    /// effort is applied on the next main-queue turn.
+    private func applyTemplate(_ o: IosNewSessionOptions) {
+        guard let t = template else { return }
+        let dir: String = t["project_dir"] ?? ""
+        if !dir.isEmpty { workingDir = dir }
+        let backend: String = t["backend"] ?? ""
+        if !backend.isEmpty {
+            let match: IosLlmChoice? = o.llms.first(where: { $0.name == backend }) ?? o.llms.first(where: { $0.kind == backend })
+            if let match { llmName = match.name }
+        }
+        let wantEffort: String = t["effort"] ?? ""
+        if !wantEffort.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { effort = wantEffort }
+        }
+    }
+
     private func load() {
         guard options == nil else { return }
         IosNewSession.shared.loadOptions(profile: profile) { o in
             DispatchQueue.main.async {
                 options = o
                 loading = false
+                applyTemplate(o)
             }
         }
         IosQuickCommands.shared.loadSaved(profile: profile) { list in

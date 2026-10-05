@@ -9,6 +9,8 @@ import DatawatchShared
 struct SettingsView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @AppStorage("settingsCollapsedGroups") private var collapsedRaw: String = ""
+    /// Card opened by an in-app deep link (`SettingsDeepLink`).
+    @State private var deepCard: SettingsCard? = nil
 
     private var profile: ServerProfile? {
         store.activeProfile
@@ -37,7 +39,25 @@ struct SettingsView: View {
                     }
                 }
             }
+            .navigationDestination(isPresented: deepCardShown) {
+                if let card = deepCard {
+                    SettingsCardScreen(card: card)
+                        .environmentObject(store)
+                }
+            }
+            .onAppear { consumeDeepLink() }
+            .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToSettings)) { _ in
+                consumeDeepLink()
+            }
         }
+    }
+
+    private var deepCardShown: Binding<Bool> {
+        Binding(get: { deepCard != nil }, set: { if !$0 { deepCard = nil } })
+    }
+
+    private func consumeDeepLink() {
+        if let card = SettingsDeepLink.take() { deepCard = card }
     }
 
     // MARK: Sections

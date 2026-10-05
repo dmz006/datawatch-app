@@ -54,6 +54,7 @@ struct AutomataView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
     @State private var section: AutomataSection = .prds
+    @State private var showIdentityWizard = false
 
     // D22a/D25a: Automata | Templates. The type registry moved to
     // Settings › Automata › Type Registry (SettingsAutomataTypesView).
@@ -63,7 +64,8 @@ struct AutomataView: View {
     }
 
     private var selectedProfile: ServerProfile? {
-        // D2a: picker-bar "All" (Sessions-only) falls back to the active profile.
+        // D2a: under "All" the list aggregates every server; the wizard and
+        // Templates use the active (first enabled) profile.
         if let id = selectedProfileId, let p = store.profiles.first(where: { $0.id == id }) {
             return p
         }
@@ -85,15 +87,29 @@ struct AutomataView: View {
             ToolbarItem(placement: .principal) {
                 HeaderView(
                     title: "Automata",
-                    serverName: selectedProfile?.displayName
+                    serverName: store.isAllServers ? L("All servers") : selectedProfile?.displayName
                 )
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
+                    // PWA #headerIdentityBtn: 🤖 opens the Identity Wizard (Automata view only).
+                    if selectedProfile != nil {
+                        Button { showIdentityWizard = true } label: {
+                            Text("🤖").font(.system(size: 18))
+                        }
+                        .accessibilityLabel("Identity wizard")
+                    }
                     DocsLinkButton(profile: selectedProfile, anchor: "automata")
                     AlertsBellButton()
-                    ReachabilityDotView(profile: selectedProfile)
+                    if !store.isAllServers {
+                        ReachabilityDotView(profile: selectedProfile)
+                    }
                 }
+            }
+        }
+        .sheet(isPresented: $showIdentityWizard) {
+            if let profile = selectedProfile {
+                IdentityWizardSheet(profile: profile)
             }
         }
         .onChange(of: store.activeProfileId) { id in
@@ -113,7 +129,7 @@ struct AutomataView: View {
     private var profileContent: some View {
         VStack(spacing: 0) {
             // D2a: shared PWA "Server:" chip bar (hidden with one server).
-            ServerPickerBar()
+            ServerPickerBar(showsAll: true)
 
             Picker("Section", selection: $section) {
                 ForEach(AutomataSection.allCases, id: \.self) { s in
@@ -128,7 +144,11 @@ struct AutomataView: View {
             switch section {
             case .prds:
                 if let profile = selectedProfile {
-                    PrdListView(profile: profile, onBrowseTemplates: { section = .templates })
+                    PrdListView(
+                        profile: profile,
+                        allProfiles: store.isAllServers ? store.enabledProfiles : [],
+                        onBrowseTemplates: { section = .templates }
+                    )
                 }
             case .templates:
                 if let profile = selectedProfile {
