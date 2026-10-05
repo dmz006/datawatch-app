@@ -31,3 +31,15 @@ class CouncilPersonaDtoTest {
         assertTrue(body.contains("\"role\":\"Advocate\""), body)
     }
 }
+
+class PrdScopeWarningsDtoTest {
+    @Test
+    fun `scope_warnings decodes as a list of strings`() {
+        val prd =
+            com.dmzs.datawatchclient.transport.rest.RestTransport.DefaultJson.decodeFromString(
+                PrdDto.serializer(),
+                """{"id":"a1","name":"x","status":"needs_review","scope_warnings":["story 1 writes /etc"]}""",
+            )
+        assertEquals(listOf("story 1 writes /etc"), prd.scopeWarnings)
+    }
+}

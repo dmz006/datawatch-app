@@ -588,7 +588,7 @@ internal fun PrdDetailDialog(
                     // Parity D24a — PWA five tabs; Graph + Progress render as cards on Overview.
                         if (selectedTab == 0) {
                             // #191 scope_warnings banner
-                            if (prd.scopeWarnings) {
+                            if (prd.scopeWarnings.isNotEmpty()) {
                                 Surface(
                                     color = MaterialTheme.colorScheme.errorContainer,
                                     shape = RoundedCornerShape(6.dp),
@@ -606,6 +606,13 @@ internal fun PrdDetailDialog(
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onErrorContainer,
                                         )
+                                        prd.scopeWarnings.forEach { w ->
+                                            Text(
+                                                "• $w",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                            )
+                                        }
                                     }
                                 }
                             }

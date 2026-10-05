@@ -705,7 +705,8 @@ public data class PrdDto(
      */
     @SerialName("max_concurrent_tasks") val maxConcurrentTasks: Int = 0,
     /** #191 scope warnings: true when the plan references paths outside allowed directories. */
-    @SerialName("scope_warnings") val scopeWarnings: Boolean = false,
+    /** Server `[]string` (plan entries referencing paths outside the allowed dirs); was mis-typed as Boolean. */
+    @SerialName("scope_warnings") val scopeWarnings: List<String> = emptyList(),
 )
 
 @Serializable
