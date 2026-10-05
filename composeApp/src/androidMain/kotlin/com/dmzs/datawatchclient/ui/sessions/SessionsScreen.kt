@@ -433,7 +433,9 @@ public fun SessionsScreen(
                             SessionRow(
                                 session = session,
                                 onExpand = { onExpandSession(session.id) },
-                                backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
+                                // PWA llmDisplay = llm_ref || backend_family.
+                                backend = session.llmRef?.takeIf { it.isNotBlank() }
+                                    ?: session.backend ?: state.backendByProfileId[session.serverProfileId],
                                 reorderMode = state.reorderMode,
                                 showHostname = state.allServersMode,
                                 onMoveUp = { vm.moveUp(session.id) },
@@ -2356,13 +2358,21 @@ internal fun QuickCommandsSheet(
 private fun PwaMetaBadge(text: String) {
     val colors = LocalDatawatchColors.current
     Surface(
+        // PWA .backend-badge on the card: accent2 .12 fill + 1px accent2 border,
+        // radius 8, monospace 10px/600, label shown as-is (not uppercased).
         color = colors.accent2.copy(alpha = 0.12f),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, colors.accent2),
     ) {
         Text(
-            text.uppercase(),
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall,
+            text,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    fontSize = 10.sp,
+                ),
             color = colors.accent2,
         )
     }

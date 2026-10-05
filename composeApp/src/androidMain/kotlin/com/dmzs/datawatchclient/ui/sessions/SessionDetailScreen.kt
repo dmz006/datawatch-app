@@ -1226,7 +1226,7 @@ private fun SessionInfoBar(
                 InfoBadge(text = "⚡ $llmRef", color = Color(0xFF10B981))
             }
             if (!computeNodeRef.isNullOrBlank()) {
-                InfoBadge(text = "⚙ $computeNodeRef", color = Color(0xFF8B5CF6))
+                InfoBadge(text = "⚙ $computeNodeRef", color = com.dmzs.datawatchclient.ui.theme.DwAccent) // PWA var(--accent), D6b
             }
             // Parity D17a — PWA rule: the mode badge shows only for plain
             // tmux sessions (channel/acp/chat modes are conveyed by the tab
