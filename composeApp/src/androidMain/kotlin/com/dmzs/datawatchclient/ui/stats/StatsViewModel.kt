@@ -109,7 +109,8 @@ public class StatsViewModel : ViewModel() {
                 _state.value.copy(
                     stats = null,
                     refreshing = false,
-                    banner = "No enabled server. Add or enable one in Settings.",
+                    // Observer empty copy unified with iOS (no PWA string).
+                    banner = ServiceLocator.context().getString(com.dmzs.datawatchclient.R.string.observer_no_server),
                     serverName = null,
                 )
             return
