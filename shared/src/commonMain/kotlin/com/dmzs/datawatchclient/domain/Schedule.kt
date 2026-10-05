@@ -40,4 +40,12 @@ public data class Schedule(
      */
     val sessionId: String? = null,
     val createdAt: Instant,
+    /** BL353 `session_name` — the PWA row label prefers it over [sessionId]. */
+    val sessionName: String? = null,
+    /** BL353 `schedule_name` — optional label, shown as `[name]` in the PWA row. */
+    val scheduleName: String? = null,
+    /** Server `type` (`new_session` = deferred session launch). */
+    val type: String? = null,
+    /** `deferred_session.name` for `new_session` schedules (PWA "NEW: name"). */
+    val deferredSessionName: String? = null,
 )

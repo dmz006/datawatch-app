@@ -147,6 +147,7 @@ struct SettingsDocsSearchCard: View {
                 }
             }
             .listRowBackground(DatawatchColors.surface)
+            DocsTrustSections(profile: profile)
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)

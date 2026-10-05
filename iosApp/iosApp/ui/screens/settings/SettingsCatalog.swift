@@ -55,6 +55,8 @@ struct SettingsField: Identifiable {
 enum SettingsConfigExtra {
     case none
     case summarizerTest
+    /// PWA whisper.test_button → testWhisperBackend record-and-transcribe modal.
+    case whisperTest
     /// PWA loadAutomataSettingsPanel scan config (Autonomous Config card).
     case scanDefaults
 }
@@ -67,6 +69,7 @@ enum SettingsCustomCard {
     case identity, automataTypes, pipelineManager, orchestratorGraphs, algorithmMode
     case about, apiLinks, mcpTools, mcpChannel, subsystemReload, encryption
     case exitHooks, workQueue
+    case fileService, observerQuicklink
 }
 
 /// Add-entry form spec for list cards (keys map to `IosSettingsLists.create`).
@@ -190,7 +193,7 @@ enum SettingsCatalog {
             .text("whisper.model", "Model (tiny/base/small/medium/large; or remote model name)", "base"),
             SettingsField(key: "whisper.language", label: "Language — tracks the app language. Override via CLI/YAML if needed.", kind: .readonly),
             .text("whisper.venv_path", "Python venv path (local whisper only)", ".venv"),
-        ]),
+        ], extra: .whisperTest),
         .custom("gc_notifs", "Notifications", "bell", .notifications),
         .list("templates", "Session Templates", "doc.on.doc", kind: "session_templates", add: [
             SettingsAddField(key: "name", label: "Name"),
@@ -205,7 +208,7 @@ enum SettingsCatalog {
         ]),
         .list("tooling", "Backend Artifact Lifecycle", "shippingbox", kind: "tooling"),
         .custom("docs_search", "Docs Search", "magnifyingglass", .docsSearch),
-        .list("file_service", "File Service", "folder", kind: "file_service"),
+        .custom("file_service", "File Service", "folder", .fileService),
         .list("discussion_scopes", "Discussion Scopes", "bubble.left.and.bubble.right", kind: "discussions", add: [
             SettingsAddField(key: "id", label: "Scope ID", placeholder: "e.g. design-review"),
         ]),
@@ -386,6 +389,8 @@ enum SettingsCatalog {
             SettingsAddField(key: "description", label: "Description"),
             SettingsAddField(key: "tags", label: "Tags (comma-separated)"),
         ]),
+        // PWA alpha.25 #230 — Federated Observer quicklink (Compute, default order → DOM order after Secrets Store).
+        .custom("observer_quicklink", "Federated Observer", "binoculars", .observerQuicklink),
         .custom("alert_rules", "Alert Rules", "bell.badge", .alertRules),
         .custom("cmds", "Saved Commands", "text.badge.star", .savedCommands),
         .config("detection", "Detection Filters", "eye.trianglebadge.exclamationmark", [
