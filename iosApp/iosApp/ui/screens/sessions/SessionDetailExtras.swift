@@ -138,20 +138,3 @@ struct ChatMemoryCmdBar: View {
         }
     }
 }
-
-/// Transient top toast (Android snackbar stand-in), e.g. the D67a hooks-installed notice.
-struct SessionToast: View {
-    let text: String
-
-    var body: some View {
-        Text(text)
-            .font(DatawatchFonts.labelSmall)
-            .foregroundStyle(DatawatchColors.onSurface)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(DatawatchColors.surface2, in: Capsule())
-            .overlay(Capsule().stroke(DatawatchColors.border, lineWidth: 1))
-            .padding(.top, 8)
-            .transition(.move(edge: .top).combined(with: .opacity))
-    }
-}

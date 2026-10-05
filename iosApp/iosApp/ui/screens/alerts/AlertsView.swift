@@ -101,8 +101,21 @@ final class AlertsViewModel: ObservableObject {
     /// Alerts for the currently selected tab (before severity/text filtering).
     var tabAlerts: [DatawatchShared.Alert] { alerts.filter { belongs($0, to: selectedTab) } }
 
+    /// PWA `catOf` (app.js renderAlertsView): an alert is a prompt when its
+    /// session is `waiting_input` or its title mentions needs input / prompt /
+    /// waiting; otherwise its level decides. Categories are exclusive.
     func isPrompt(_ a: DatawatchShared.Alert) -> Bool {
-        a.type.contains("input") || a.type.contains("prompt")
+        if session(for: a)?.state == .waiting { return true }
+        return a.title.range(of: #"\b(needs input|prompt|waiting)\b"#, options: [.regularExpression, .caseInsensitive]) != nil
+    }
+
+    func category(_ a: DatawatchShared.Alert) -> AlertSeverityFilter {
+        if isPrompt(a) { return .prompt }
+        switch a.severity {
+        case .error: return .error
+        case .warning: return .warning
+        default: return .info
+        }
     }
 
     var filteredAlerts: [DatawatchShared.Alert] {
@@ -114,12 +127,9 @@ final class AlertsViewModel: ObservableObject {
                 $0.message.lowercased().contains(q)
             }
         }
-        switch severityFilter {
-        case .all: break
-        case .prompt:  result = result.filter { isPrompt($0) }
-        case .error:   result = result.filter { $0.severity == .error }
-        case .warning: result = result.filter { $0.severity == .warning }
-        case .info:    result = result.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }
+        if severityFilter != .all {
+            let wanted = severityFilter
+            result = result.filter { category($0) == wanted }
         }
         return result.sorted { $0.createdAt.toEpochMilliseconds() > $1.createdAt.toEpochMilliseconds() }
     }
@@ -158,13 +168,8 @@ final class AlertsViewModel: ObservableObject {
 
     func chipCount(for filter: AlertSeverityFilter) -> Int {
         let base = tabAlerts
-        switch filter {
-        case .all:     return base.count
-        case .prompt:  return base.filter { isPrompt($0) }.count
-        case .error:   return base.filter { $0.severity == .error }.count
-        case .warning: return base.filter { $0.severity == .warning }.count
-        case .info:    return base.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }.count
-        }
+        if filter == .all { return base.count }
+        return base.filter { category($0) == filter }.count
     }
 
     // ── Per-tab persisted filter state (PWA cs_alerts_tab_state_<tab>) ──
@@ -254,21 +259,6 @@ final class AlertsViewModel: ObservableObject {
         if let live = try? await sessionsResult { sessions = live }
         publishBadge()
         isLoading = false
-    }
-
-    /// Mark an alert as read on server and remove it locally.
-    func dismiss(alert: DatawatchShared.Alert) {
-        alerts.removeAll { $0.id == alert.id }
-        if !alert.read, unreadCount > 0 {
-            unreadCount -= 1
-        }
-        guard let profile else { return }
-        IosServiceLocator.shared.markAlertRead(
-            profile: profile,
-            alertId: alert.id,
-            onSuccess: {},
-            onError: { _ in }
-        )
     }
 
     private func acknowledgeAll(_ profile: ServerProfile) {
@@ -434,8 +424,9 @@ struct AlertsView: View {
                 .accessibilityLabel("Toggle sort: by session or chronological")
                 controlBtn("✕") { vm.dismissAll() }
                     .accessibilityLabel("Dismiss all")
-                controlBtn("🔕") { vm.dismissAll() }
-                    .accessibilityLabel("Mute all")
+                // D47a: 🔕 mutes the alert dock for this app session (PWA muteAlertDock).
+                controlBtn("🔕") { AlertDock.shared.mute() }
+                    .accessibilityLabel("Mute alerts for this session")
                 controlBtn("↻") { vm.refresh() }
                     .accessibilityLabel("Refresh")
             }
@@ -587,16 +578,10 @@ struct AlertsView: View {
         }
     }
 
+    /// D49a/D50d: no per-alert read state or swipe — opening the page acks all,
+    /// ✕ in the filter bar dismisses all (PWA).
     private func alertRow(_ alert: DatawatchShared.Alert) -> some View {
-        AlertRow(alert: alert)
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
-                    vm.dismiss(alert: alert)
-                } label: {
-                    Label("Dismiss", systemImage: "xmark.circle")
-                }
-                .tint(DatawatchColors.error)
-            }
+        AlertRow(alert: alert, isPrompt: vm.isPrompt(alert))
     }
 
     // ── By-session card header (PWA renderSessionCard) ─────────────────────
@@ -738,6 +723,7 @@ struct AlertsView: View {
 
 private struct AlertRow: View {
     let alert: DatawatchShared.Alert
+    let isPrompt: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -754,18 +740,12 @@ private struct AlertRow: View {
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
                     Spacer()
-                    if !alert.read {
-                        Circle()
-                            .fill(DatawatchColors.primary)
-                            .frame(width: 7, height: 7)
-                            .accessibilityLabel("Unread")
-                    }
                 }
 
                 // Title
                 Text(alert.title.isEmpty ? alert.type : alert.title)
                     .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(alert.read ? DatawatchColors.onSurfaceMuted : DatawatchColors.onSurface)
+                    .foregroundStyle(DatawatchColors.onSurface)
                     .lineLimit(2)
 
                 // Message
@@ -781,10 +761,6 @@ private struct AlertRow: View {
             .background(alertBackground)
         }
         .accessibilityElement(children: .combine)
-    }
-
-    private var isPrompt: Bool {
-        alert.type.contains("input") || alert.type.contains("prompt") || alert.type.contains("waiting")
     }
 
     private var borderColor: Color {

@@ -52,22 +52,47 @@ final class NotificationService: NSObject, ObservableObject {
         switch type {
         case "session_waiting", "input_needed":
             if let sessionId = userInfo["session_id"] as? String {
-                NotificationCenter.default.post(
-                    name: .deepLinkSession,
-                    object: nil,
-                    userInfo: ["sessionId": sessionId]
-                )
+                var info: [String: String] = ["id": sessionId]
+                let pid = userInfo["profile_id"] as? String
+                if let pid { info["profileId"] = pid }
+                // A tap that cold-starts the app arrives before RootView listens:
+                // the D40a restore slot reopens it once the root appears.
+                ShellRestore.setOpenSession(profileId: pid ?? "", sessionId: sessionId)
+                NotificationCenter.default.post(name: .deepLinkSession, object: nil, userInfo: info)
             }
         case "alert":
-            if let alertId = userInfo["alert_id"] as? String {
-                NotificationCenter.default.post(
-                    name: .deepLinkAlert,
-                    object: nil,
-                    userInfo: ["alertId": alertId]
-                )
-            }
+            NotificationCenter.default.post(name: .deepLinkAlert, object: nil, userInfo: nil)
         default:
             break
+        }
+    }
+}
+
+/// UNUserNotificationCenter delegate (set at launch, before any notification
+/// response can be delivered):
+/// - shows the D87b interim local notifications as banners while the app is in
+///   the foreground (iOS hides them otherwise);
+/// - routes a tap to the session / Alerts tab via `NotificationService`.
+final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationRouter()
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let info = response.notification.request.content.userInfo
+        Task { @MainActor in
+            NotificationService.shared.handleNotification(info)
+            completionHandler()
         }
     }
 }
