@@ -1550,7 +1550,8 @@ public data class PersonaAnswerDto(
 @Serializable
 public data class CouncilRunDto(
     val id: String,
-    val proposal: String,
+    /** Absent on the async POST /api/council/run ack (`{id, status, events_path…}`). */
+    val proposal: String = "",
     val personas: List<String> = emptyList(),
     val mode: String = "debate",
     val status: String = "pending",
@@ -1561,7 +1562,30 @@ public data class CouncilRunDto(
     val answers: List<PersonaAnswerDto> = emptyList(),
     @SerialName("started_at") val startedAt: String? = null,
     @SerialName("finished_at") val finishedAt: String? = null,
-)
+    /** Server `council.Run.rounds` — per-round persona → response map (run detail / list). */
+    val rounds: List<CouncilRoundDto> = emptyList(),
+    /** Server `council.Run.cancelled` (v7.0.0 S3). */
+    val cancelled: Boolean = false,
+) {
+    /**
+     * True once the server stamped a real `finished_at` (Go zero time
+     * `0001-01-01T00:00:00Z` means the run is still in flight).
+     */
+    val isFinished: Boolean
+        get() = cancelled || (!finishedAt.isNullOrBlank() && !finishedAt.startsWith("0001-"))
+
+    /**
+     * Status for display: the server's run JSON has no `status` field (only the
+     * async start ack does), so derive it from `cancelled` / `finished_at`.
+     */
+    val effectiveStatus: String
+        get() =
+            when {
+                cancelled -> "cancelled"
+                isFinished -> "completed"
+                else -> "running"
+            }
+}
 
 /** GET/PUT /api/council/config — council configuration. */
 @Serializable
