@@ -69,9 +69,9 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 | 04 | [Alerts](sections/04-alerts.md) | 65 | 55 | 0 | 0 | 2 | 0 | 8 |
 | 05 | [Automata](sections/05-automata.md) | 99 | 90 | 0 | 0 | 9 | 0 | 0 |
 | 06 | [Observer](sections/06-observer.md) | 93 | 88 | 0 | 0 | 4 | 0 | 1 |
-| 07 | [Settings](sections/07-settings.md) | 96 | 89 | 0 | 0 | 4 | 1 | 2 |
+| 07 | [Settings](sections/07-settings.md) | 97 | 90 | 0 | 0 | 4 | 1 | 2 |
 | 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 62 | 0 | 0 | 4 | 0 | 5 |
-| | **Total** | **705** | **615** | **1** | **0** | **53** | **4** | **32** |
+| | **Total** | **706** | **616** | **1** | **0** | **53** | **4** | **32** |
 
 Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
 means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");
