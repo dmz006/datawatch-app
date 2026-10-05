@@ -353,7 +353,7 @@ struct PrdDetailView: View {
     /// active session, spec, memory, then the sessions link.
     private var overviewTab: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if prd.scopeWarnings { scopeWarningsBanner }
+            if !prd.scopeWarnings.isEmpty { scopeWarningsBanner }
             PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
             statusGraphs
             // Android Graph card — Automaton DAG (#184 / PWA #182).
@@ -672,6 +672,11 @@ struct PrdDetailView: View {
             Text("The plan references paths outside this Automaton's allowed directories; tasks that do will not start until fixed.")
                 .font(DatawatchFonts.labelSmall)
                 .foregroundStyle(DatawatchColors.onSurface)
+            ForEach(prd.scopeWarnings, id: \.self) { w in
+                Text(verbatim: "• " + w)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurface)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
