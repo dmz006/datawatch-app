@@ -903,7 +903,31 @@ public fun SessionDetailScreen(
                 // Connecting overlay — datawatch splash covers the black terminal until both
                 // the WS connects (reachable != null) AND the first pane_capture arrives.
                 // Stays up through the full "WS handshake → resize_term → first frame" sequence.
+                // PWA connect watchdog (startTermConnectWatchdog): every 5 s
+                // without a first frame, re-subscribe, up to 3 times; then show
+                // "Unable to connect…" with Retry / Use without terminal.
+                var watchdogEpoch by remember { mutableStateOf(0) }
+                var watchdogAttempt by remember { mutableStateOf(0) }
+                var watchdogFailed by remember { mutableStateOf(false) }
+                var withoutTerminal by remember { mutableStateOf(false) }
+                androidx.compose.runtime.LaunchedEffect(watchdogEpoch, hadContent) {
+                    if (hadContent) return@LaunchedEffect
+                    watchdogAttempt = 0
+                    watchdogFailed = false
+                    while (!hadContent) {
+                        kotlinx.coroutines.delay(TERM_CONNECT_TIMEOUT_MS)
+                        if (hadContent) break
+                        if (watchdogAttempt >= TERM_CONNECT_MAX_RETRIES) {
+                            watchdogFailed = true
+                            break
+                        }
+                        watchdogAttempt++
+                        vm.restartStream()
+                    }
+                }
+                val reconnectingLabel = stringResource(R.string.term_reconnecting, watchdogAttempt, TERM_CONNECT_MAX_RETRIES)
                 val connectStatus = when {
+                    watchdogAttempt > 0 -> reconnectingLabel
                     state.reachable == null -> "connecting…"
                     !contentReady -> "waiting for terminal…"
                     else -> "connecting…"
@@ -912,9 +936,19 @@ public fun SessionDetailScreen(
                 // overlay; the header reachability dot is the only disconnect
                 // signal (PWA minimal).
                 SessionLoadingOverlay(
-                    visible = !hadContent && (state.reachable == null || !contentReady),
+                    visible = !hadContent && !withoutTerminal && !watchdogFailed &&
+                        (state.reachable == null || !contentReady),
                     statusText = connectStatus,
                 )
+                if (watchdogFailed && !hadContent && !withoutTerminal) {
+                    TermConnectFailedPanel(
+                        onRetry = {
+                            vm.restartStream()
+                            watchdogEpoch++
+                        },
+                        onUseWithout = { withoutTerminal = true },
+                    )
+                }
                 } // close Box(weight(1f))
 
                 // Composer in its own layer responding to keyboard insets separately.
@@ -3108,5 +3142,35 @@ private fun StatsBarCell(
             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
             modifier = Modifier.padding(start = 4.dp),
         )
+    }
+}
+
+/** PWA watchdog: 5 s per attempt, 3 re-subscribes before giving up. */
+internal const val TERM_CONNECT_TIMEOUT_MS: Long = 5_000L
+internal const val TERM_CONNECT_MAX_RETRIES: Int = 3
+
+/** PWA "Unable to connect to session terminal" panel with Retry / Use without terminal. */
+@Composable
+private fun TermConnectFailedPanel(
+    onRetry: () -> Unit,
+    onUseWithout: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+            Text(stringResource(R.string.term_connect_failed), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.term_connect_retries_failed, TERM_CONNECT_MAX_RETRIES),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+            Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.term_retry)) }
+                OutlinedButton(onClick = onUseWithout) { Text(stringResource(R.string.term_use_without)) }
+            }
+        }
     }
 }

@@ -43,4 +43,9 @@
     <string name="backend_setup_warn_title">Backend nicht installiert oder konfiguriert</string>
     <string name="backend_setup_warn_detail">Dieser Server meldet „%1$s“ nicht als installiertes, aktiviertes Backend. Installiere es oder aktiviere es unter Einstellungen › LLM, bevor du startest.</string>
     <string name="terminal_search_ph">Terminal durchsuchen…</string>
+    <string name="term_reconnecting">Verbindung zur Sitzung wird wiederhergestellt… Versuch %1$d von %2$d</string>
+    <string name="term_connect_failed">Keine Verbindung zum Sitzungsterminal möglich</string>
+    <string name="term_connect_retries_failed">Verbindung nach %1$d Versuchen fehlgeschlagen.</string>
+    <string name="term_retry">Erneut versuchen</string>
+    <string name="term_use_without">Ohne Terminal verwenden</string>
 </resources>

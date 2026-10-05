@@ -257,6 +257,12 @@ public class SessionDetailViewModel(
         paneCaptureArrived = false
     }
 
+    /** PWA connect watchdog re-subscribe: drop and reopen the session stream. */
+    public fun restartStream() {
+        pauseStream()
+        resumeStream()
+    }
+
     /**
      * B60 — resume WS stream when screen comes to foreground (ON_START).
      * No-op if the stream is already running (guards against double-resume
