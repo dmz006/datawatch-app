@@ -4076,6 +4076,52 @@ public class RestTransport(
             Unit
         }
 
+    // ---- parity-android-remaining (2026-10-04) ----
+
+    override suspend fun getSessionResponse(sessionId: String): Result<String> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/sessions/response") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    url { parameters.append("id", sessionId) }
+                }.body()
+            (obj["response"] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+        }
+
+    override suspend fun runNamedSessionGuardrail(
+        sessionId: String,
+        name: String,
+    ): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/sessions/${iosPathPart(sessionId)}/guardrail") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("name", kotlinx.serialization.json.JsonPrimitive(name))
+                    },
+                )
+            }.body()
+        }
+
+    override suspend fun approveGuardrailVerdict(
+        sessionId: String,
+        guardrailName: String,
+    ): Result<Boolean> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.post(
+                    "${profile.baseUrl}/api/sessions/${iosPathPart(sessionId)}/guardrail/${iosPathPart(guardrailName)}/approve",
+                ) {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody("{}")
+                }.body()
+            (obj["session_unblocked"] as? kotlinx.serialization.json.JsonPrimitive)?.content == "true"
+        }
+
+    // @@PARITY_ANDROID_REST@@
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

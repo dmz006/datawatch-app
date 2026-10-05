@@ -466,7 +466,9 @@ public fun SessionDetailScreen(
         // — Description-glyph is the single canonical icon used
         // across SessionInfoBar + the quick-actions row below.
         var responseOpen by remember { mutableStateOf(false) }
-        val hasResponse = !state.session?.lastResponse.isNullOrBlank()
+        // Parity D43a: PWA always shows the Response button; the viewer
+        // fetches the live response itself.
+        val hasResponse = state.session != null
         val isCouncilVirtual =
             state.session?.backend == "council-virtual" ||
                 state.session?.fullId?.startsWith("council-") == true
@@ -633,6 +635,8 @@ public fun SessionDetailScreen(
                         LastResponseSheet(
                             response = state.session?.lastResponse.orEmpty(),
                             onDismiss = { responseOpen = false },
+                            fetchFresh = { vm.fetchFreshResponse() },
+                            title = state.session?.let { it.name ?: it.id },
                         )
                     }
                     // PWA conn-status-banner: channel/ACP sessions that are active

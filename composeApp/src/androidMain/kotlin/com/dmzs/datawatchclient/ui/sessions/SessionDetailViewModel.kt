@@ -547,6 +547,12 @@ public class SessionDetailViewModel(
         viewModelScope.launch { doRefreshFromServer(profile) }
     }
 
+    /** Parity D43a — live last response for the viewer (GET /api/sessions/response). */
+    public suspend fun fetchFreshResponse(): Result<String> {
+        val profile = profileCache ?: return Result.failure<String>(IllegalStateException("no server"))
+        return ServiceLocator.transportFor(profile).getSessionResponse(fullIdOrShort())
+    }
+
     public fun kill() {
         val profile = profileCache ?: return
         if (_killing.value) return

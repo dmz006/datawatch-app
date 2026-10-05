@@ -1799,6 +1799,37 @@ public interface TransportClient {
     /** DELETE /api/queue/{id}. */
     public suspend fun deleteQueueItem(id: String): Result<Unit> =
         Result.failure(UnsupportedOperationException("deleteQueueItem"))
+
+    // ---- parity-android-remaining (2026-10-04) ----
+
+    /**
+     * GET /api/sessions/response?id= — the live last response (PWA
+     * `showResponseViewer`, D43a). Returns the `response` field ("" when none).
+     */
+    public suspend fun getSessionResponse(sessionId: String): Result<String> =
+        Result.failure(UnsupportedOperationException("getSessionResponse"))
+
+    /**
+     * POST /api/sessions/{id}/guardrail `{name}` — run one named guardrail on the
+     * session (PWA quick-command "Guardrails" group). Returns the raw verdict
+     * object (`guardrail`, `outcome`, `summary`, ...).
+     */
+    public suspend fun runNamedSessionGuardrail(
+        sessionId: String,
+        name: String,
+    ): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("runNamedSessionGuardrail"))
+
+    /**
+     * POST /api/sessions/{id}/guardrail/{name}/approve with a `{}` body (PWA
+     * `approveGuardrailVerdict`). Returns the server's `session_unblocked` flag.
+     */
+    public suspend fun approveGuardrailVerdict(
+        sessionId: String,
+        guardrailName: String,
+    ): Result<Boolean> = Result.failure(UnsupportedOperationException("approveGuardrailVerdict"))
+
+    // @@PARITY_ANDROID_IFACE@@
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

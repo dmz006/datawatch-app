@@ -5,4 +5,11 @@
     <string name="first_run_no_server">サーバー未接続</string>
     <string name="first_run_no_server_hint">この端末から到達できる datawatch サーバーを追加してください（Tailscale またはローカル Wi-Fi）。</string>
     <string name="status_dot_reconnecting">サーバー接続を更新中…</string>
+    <string name="current_status_unavailable">利用不可</string>
+    <string name="current_status_summarizing">要約中…</string>
+    <string name="session_summary_btn">要約</string>
+    <string name="response_viewer_updating">（更新中…）</string>
+    <string name="response_viewer_none">（応答は記録されていません）</string>
+    <string name="response_viewer_failed">（応答を読み込めませんでした）</string>
+    <string name="response_viewer_copied">クリップボードにコピーしました</string>
 </resources>
