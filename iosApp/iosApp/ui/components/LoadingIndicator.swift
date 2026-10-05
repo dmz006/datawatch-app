@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// Circular spinner with label — shown while connecting or loading data.
+/// Animated splash eye with label — shown while connecting or loading data.
 /// Matches Android's full-screen loading composable.
 struct LoadingIndicator: View {
     var message: String = "Connecting…"
 
     var body: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .tint(DatawatchColors.primary)
-                .controlSize(.large)
-                .scaleEffect(1.5)
+            // D10a: the splash eye replaces the system spinner (Android
+            // DatawatchLoadingContent `EyeOnlyAnimated`).
+            SplashEyeView()
+                .frame(width: 40, height: 40)
 
             Text(message)
                 .font(DatawatchFonts.bodyMedium)

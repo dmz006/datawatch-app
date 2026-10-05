@@ -25,6 +25,8 @@ struct RootView: View {
     /// nil = unknown (tabs shown); false hides Automata + Dashboard.
     @State private var autonomousEnabled: Bool? = nil
     @State private var restored = false
+    /// PWA `#peerStaleBadge`: federated peers never pushed or silent > 60 s.
+    @State private var stalePeerCount: Int = 0
 
     private var visibleTabs: [AppTab] {
         AppTab.allCases.filter { tab in
@@ -38,6 +40,21 @@ struct RootView: View {
         let n: Int = alertBadgeCount
         if n <= 0 { return nil }
         return Text(verbatim: n > 99 ? "99+" : String(n))
+    }
+
+    /// PWA `updatePeerStaleBadge`: red count on the Settings tab, `99+` cap.
+    private var stalePeerBadgeText: Text? {
+        let n: Int = stalePeerCount
+        if n <= 0 { return nil }
+        return Text(verbatim: n > 99 ? "99+" : String(n))
+    }
+
+    private func badgeText(_ tab: AppTab) -> Text? {
+        switch tab {
+        case .alerts: return alertBadgeText
+        case .settings: return stalePeerBadgeText
+        default: return nil
+        }
     }
 
     var body: some View {
@@ -88,6 +105,7 @@ struct RootView: View {
             shellServices(active: true)
         }
         .task { await restoreOnce() }
+        .task(id: profileStore.activeProfileId) { await pollStalePeers() }
         #if DEBUG
         .onAppear {
             DebugLaunchHooks.applyTheme()
@@ -115,7 +133,7 @@ struct RootView: View {
                         Label(L(tab.title), systemImage: tab.iconName)
                     }
                     .tag(tab)
-                    .badge(tab == .alerts ? alertBadgeText : Text?.none)
+                    .badge(badgeText(tab))
             }
         }
         .tint(DatawatchColors.secondary)
@@ -196,6 +214,22 @@ struct RootView: View {
                     selectedTab = .sessions
                 }
             }
+        }
+    }
+
+    /// PWA polls the peer registry for the stale badge; 30 s like Android.
+    private func pollStalePeers() async {
+        stalePeerCount = 0
+        while !Task.isCancelled {
+            if scenePhase == .active, !profileStore.isAllServers, let profile = profileStore.activeProfile {
+                IosStalePeers.shared.count(profile: profile) { value in
+                    let n: Int = Int(value.int32Value)
+                    DispatchQueue.main.async {
+                        if n >= 0 { stalePeerCount = n }
+                    }
+                }
+            }
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
         }
     }
 
