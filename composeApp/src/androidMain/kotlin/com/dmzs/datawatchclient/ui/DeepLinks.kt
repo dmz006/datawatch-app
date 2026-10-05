@@ -28,6 +28,13 @@ public object DeepLinks {
     public fun sessionUri(sessionId: String): String = "$SCHEME://session/$sessionId"
 
     /**
+     * Session detail keys on the server's SHORT id (`808e`), but links and
+     * restored state can carry the full id (`<host>-808e`, hosts may contain
+     * '-'). Short ids never contain '-', so the part after the last '-' is it.
+     */
+    public fun shortSessionId(id: String): String = id.substringAfterLast('-')
+
+    /**
      * Pending `datawatch://alert/<id>` target — the alert id, or "" for a bare
      * `datawatch://alert(s)` link (open the Alerts tab only). A StateFlow that
      * the Home shell clears with [consumeAlertTarget], so a recomposition never

@@ -43,4 +43,10 @@ class ShellParityTest {
         ReconnectBus.request()
         assertEquals(before + 1, ReconnectBus.tick.value)
     }
+
+    @Test
+    fun `session links with a full id open the short id`() {
+        kotlin.test.assertEquals("808e", DeepLinks.shortSessionId("build-box-2-808e"))
+        kotlin.test.assertEquals("808e", DeepLinks.shortSessionId("808e"))
+    }
 }
