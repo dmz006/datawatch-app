@@ -43,11 +43,9 @@
     <string name="backend_setup_warn_title">Backend not installed or configured</string>
     <string name="backend_setup_warn_detail">This server doesn’t report “%1$s” as an installed, enabled backend. Install it or enable it in Settings › LLM before starting.</string>
     <string name="terminal_search_ph">Search terminal…</string>
-    <string name="term_reconnecting">Reconnecting to session… attempt %1$d of %2$d</string>
-    <string name="term_connect_failed">Unable to connect to session terminal</string>
-    <string name="term_connect_retries_failed">Connection failed after %1$d retries.</string>
+    <string name="term_reconnecting_attempt">Reconnecting to session… attempt %1$d of %2$d</string>
+    <string name="term_connect_retries_failed_n">Connection failed after %1$d retries.</string>
     <string name="term_retry">Retry</string>
-    <string name="term_use_without">Use without terminal</string>
     <string name="rtk_update_available">update available (tap to copy upgrade command)</string>
     <string name="ws_history_btn">History</string>
     <string name="ws_history_title">Web search history</string>
