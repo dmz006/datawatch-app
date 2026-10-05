@@ -42,4 +42,5 @@
     <string name="guardrail_run_label">Run guardrail</string>
     <string name="backend_setup_warn_title">Backend not installed or configured</string>
     <string name="backend_setup_warn_detail">This server doesn’t report “%1$s” as an installed, enabled backend. Install it or enable it in Settings › LLM before starting.</string>
+    <string name="terminal_search_ph">Search terminal…</string>
 </resources>

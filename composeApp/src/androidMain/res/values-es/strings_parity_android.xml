@@ -42,4 +42,5 @@
     <string name="guardrail_run_label">Ejecutar guardrail</string>
     <string name="backend_setup_warn_title">Backend no instalado o no configurado</string>
     <string name="backend_setup_warn_detail">Este servidor no informa “%1$s” como backend instalado y habilitado. Instálalo o habilítalo en Ajustes › LLM antes de empezar.</string>
+    <string name="terminal_search_ph">Buscar en la terminal…</string>
 </resources>

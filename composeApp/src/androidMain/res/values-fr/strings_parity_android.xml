@@ -42,4 +42,5 @@
     <string name="guardrail_run_label">Exécuter un garde-fou</string>
     <string name="backend_setup_warn_title">Backend non installé ou non configuré</string>
     <string name="backend_setup_warn_detail">Ce serveur ne signale pas « %1$s » comme backend installé et activé. Installez-le ou activez-le dans Réglages › LLM avant de démarrer.</string>
+    <string name="terminal_search_ph">Rechercher dans le terminal…</string>
 </resources>

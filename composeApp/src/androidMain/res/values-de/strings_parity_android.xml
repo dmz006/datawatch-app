@@ -42,4 +42,5 @@
     <string name="guardrail_run_label">Guardrail ausführen</string>
     <string name="backend_setup_warn_title">Backend nicht installiert oder konfiguriert</string>
     <string name="backend_setup_warn_detail">Dieser Server meldet „%1$s“ nicht als installiertes, aktiviertes Backend. Installiere es oder aktiviere es unter Einstellungen › LLM, bevor du startest.</string>
+    <string name="terminal_search_ph">Terminal durchsuchen…</string>
 </resources>
