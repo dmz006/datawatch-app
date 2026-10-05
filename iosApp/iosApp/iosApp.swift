@@ -42,6 +42,10 @@ struct DatawatchClientApp: App {
     @StateObject private var notificationService = NotificationService.shared
     /// D37a / D59a launch splash: first launch, app version change, or > 24 h.
     @State private var showSplash: Bool = SplashGate.consume()
+    /// Settings › Security opt-in lock: locked on cold start and whenever the
+    /// app returns from the background while the toggle is on.
+    @State private var isLocked: Bool = BiometricGate.lockRequired
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         IosServiceLocator.shared.doInit()
@@ -60,6 +64,12 @@ struct DatawatchClientApp: App {
                     .zIndex(1)
                 }
             }
+            .biometricLocked(isLocked: $isLocked)
+        }
+        .onChange(of: scenePhase) { phase in
+            // Lock on background only — `.inactive` also fires for Control
+            // Center / the Face ID sheet itself, which must not re-lock.
+            if phase == .background && BiometricGate.lockRequired { isLocked = true }
         }
     }
 
