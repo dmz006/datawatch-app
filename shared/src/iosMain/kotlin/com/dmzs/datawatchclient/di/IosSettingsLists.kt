@@ -96,6 +96,7 @@ public object IosSettingsLists {
                     "web_search_providers" -> tr.enableWebSearchProvider(id, enabled)
                     "plugins" -> tr.pluginAction(id, if (enabled) "enable" else "disable")
                     "fed_peers" -> tr.updateFederationPeer(id, JsonObject(mapOf("enabled" to JsonPrimitive(enabled))))
+                    "remote_servers" -> IosRemoteServerOps.setEnabled(tr, id, enabled)
                     else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             onDone(msg(r.exceptionOrNull(), "Update failed."))
@@ -159,7 +160,9 @@ public object IosSettingsLists {
             val r: Result<String> =
                 when (kind) {
                     "evals" -> tr.evalsRun(id).map { "Score ${fmt(it.score)} · ${it.passed} passed · ${it.failed} failed" }
+                    // Index 1 ("Browse") opens the Swift browse sheet and never reaches here.
                     "skill_registries" -> tr.connectSkillRegistry(id).map { "Status: ${it.status}" }
+                    "remote_servers" -> IosRemoteServerOps.test(tr, id)
                     "tooling" ->
                         if (index == 0) tr.toolingGitignore(id).map { "Added to .gitignore" }
                         else tr.toolingCleanup(id).map { "Cleaned up" }
@@ -355,10 +358,13 @@ public object IosSettingsLists {
             "remote_servers" ->
                 tr.listRemoteServers().getOrThrow().map { o ->
                     val name = o.s("name")
+                    val builtin: Boolean = o.b("builtin")
+                    // PWA loadServersList: on/off pill (switch here), Test, built-ins read-only.
                     row(
-                        name, name, o.s("url"),
-                        badges = listOfNotNull(if (o.b("federated")) "federated" else null, if (o.b("enabled", true)) null else "disabled"),
-                        canDelete = true, detail = redact(o),
+                        name, o.s("label").ifEmpty { name }, o.s("url"),
+                        badges = listOfNotNull(if (o.b("federated")) "federated" else null, if (builtin) "built-in" else null),
+                        hasToggle = !builtin, enabled = o.b("enabled", true),
+                        canDelete = !builtin, actions = listOf("Test"), detail = redact(o),
                     )
                 }
             "fed_peers" ->
@@ -398,7 +404,7 @@ public object IosSettingsLists {
                     row(
                         r.name, r.name, "${r.url} @ ${r.branch}",
                         badges = listOfNotNull(r.status, if (r.builtin) "built-in" else null),
-                        canDelete = !r.builtin, actions = listOf("Connect"),
+                        canDelete = !r.builtin, actions = listOf("Connect", "Browse"),
                     )
                 }
             "guardrail_profiles" ->
