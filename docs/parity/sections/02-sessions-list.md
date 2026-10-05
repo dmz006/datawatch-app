@@ -14,11 +14,11 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | data | Filter text match fields | ✓ P:1999 name·task·id·backend_family·llm_ref·compute_node_ref | ✓ AV:183–193 name·task·id·backend·llmRef·computeNodeRef | ✓ I:512–521 same six fields | aligned | | |
 | element | LLM/backend filter: `LLM (N)` collapsible → short-label badges w/ counts, only when >1 backend | ✓ P:2050–2088 short map claude/oc/acp/oc-p/owui/olla/… | ~ `LLM (N) ▸` → chips "backend · n" (full names) + Council chip; shown regardless of count | ~ I:354 `LLM (N) ▸` when >1 backend (or council) → full-name chips + 🎭 Council | misaligned | | neither app uses the PWA short-label map; Android ignores the >1 rule |
 | element | State filter: `State (N)` collapsible → 7 real-state chips w/ colour dot, count>0 only, persisted | ✓ P:2056–2075 `cs_session_state_chip` | ✓ `State (N) ▸` → real-state chips, count>0 + All + selected, persisted `cs_session_state_chip` | ✓ I:47 `stateChips`, I:441 hide 0-count, `@AppStorage dw.sessions.state_chip` | aligned | decided D12a | |
-| interaction | Picking a historical state chip auto-enables History | ✓ P:2217 | ✓ `setStateChip` (complete/failed/killed) | ✗ I:383 chip tap sets `stateChip` only; done chips filter the 5-min pool | ios-missing | | regression from the bucket rewrite |
+| interaction | Picking a historical state chip auto-enables History | ✓ P:2217 | ✓ `setStateChip` (complete/failed/killed) | ✓ `setStateChip`: complete/failed/killed (+cancelled/archived) turn History on; a persisted historical chip re-applies on appear | aligned | | regression fixed 2026-10-04 |
 | element | `History (N)` toggle: default pool = active + recent (5 min); History = all | ✓ P:2102, P:1972 | ✓ AV `RECENT_WINDOW_MINUTES=5` | ✓ I:358 `History (N)` + I:454 `visiblePool` | aligned | | |
 | element | `☑` Select button (only when History on and history>0) | ✓ P:2105 | ✓ ☑ toggles select mode, History on only | ✓ I:362 ☑ when `showHistory && historyCount > 0` | aligned | decided D15a | |
-| element | Tree view toggle (BL348): parent/child grouping, 18px indent, `⚠ orphaned` badge | ✓ P:2098, P:2242 | ✓ AV `cs_session_tree_view`, `flattenTree` 18 dp/level + orphaned note | ✗ | ios-missing | | needs `parent_id` on iOS DwSession |
-| element | Pending-schedules badge 🕒 N + dropdown with per-item cancel | ✓ P:2094, P:2160 | ✓ toolbar 🕒 N + dropdown ✕ cancel (`/api/schedules?state=pending`) | ✗ | ios-missing | | |
+| element | Tree view toggle (BL348): parent/child grouping, 18px indent, `⚠ orphaned` badge | ✓ P:2098, P:2242 | ✓ AV `cs_session_tree_view`, `flattenTree` 18 dp/level + orphaned note | ✓ Tree badge (`dw.sessions.tree_view`) + `SessionTree.flatten`, 18 pt/level + 2 pt guide, `⚠ orphaned` note | aligned | |  |
+| element | Pending-schedules badge 🕒 N + dropdown with per-item cancel | ✓ P:2094, P:2160 | ✓ toolbar 🕒 N + dropdown ✕ cancel (`/api/schedules?state=pending`) | ✓ 🕒 N Menu (pending rows from `/api/schedules`) with per-item cancel; single-server view only | aligned | |  |
 | element | Sort control (Recent / Started / Name / Custom) | ✗ (manual order only) | ✗ removed | ✗ removed (I:6 D42a, no sort menu) | aligned | decided D42a | none of the three has a Sort menu |
 | data | List ordering rule | ✓ P:2323 manual `cs_session_order` first, then `updated_at` desc | ✓ manual drag order (`cs_session_order`) then last activity desc | ✓ I:469 `sortByOrder` (`dw.sessions.order`) then lastActivityAt desc | aligned | decided D42a | |
 | motion | Toolbar / chip-row expand animation | ✗ (re-render) | ~ `AnimatedVisibility` (LLM chips only) | ~ I:159 `withAnimation` default | misaligned | | minor |
@@ -28,9 +28,9 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | No-server / no-profile state | n/a | ✓ "No server", onboarding | ✓ I:595 `emptyNoProfile` | n/a | | PWA is served by the server |
 | element | Transport error surface on list | ~ header daemon light (§01) | ✓ A:316 errorContainer banner | ✓ I:251 `ConnectionStatusBanner` + I:256 `ErrorCard` | misaligned | | minor; copy differs |
 | token | Watermark | ✓ C:344 `/favicon.svg` fixed centre, min(85vw,400px), opacity .045 | ~ A:380 launcher foreground, 85% width, alpha .10 | ✗ | misaligned | | Android alpha .10 vs .045; iOS has none |
-| token | Card surface | ✓ C:369 bg2, radius `--radius`, 4px left state border, pad 12/14, list gap 8px | ✓ `pwaCard` 12dp radius + 1dp border + 4dp `pwaStateEdge` (PwaComponents.kt:109,152) | ~ I:648 plain List row (`listRowBackground` surface), no state edge | misaligned | | iOS lacks left state edge + card radius |
+| token | Card surface | ✓ C:369 bg2, radius `--radius`, 4px left state border, pad 12/14, list gap 8px | ✓ `pwaCard` 12dp radius + 1dp border + 4dp `pwaStateEdge` (PwaComponents.kt:109,152) | ✓ `SessionRowBackground`: bg2, radius 12, 8 pt gap, 4 pt `SessionStateEdge` | aligned | |  |
 | token | Done-card dimming | ✓ C:2265 complete .7, killed .5; actions/handle stay 1.0 (C:2284) | ~ A:1054 .6 whole row | ~ IC:114 .6 whole card | misaligned | | PWA keeps actionable zones full-opacity |
-| motion | Left-border pulse: waiting_input `pulse-border` 2s ease-in-out; rate_limited 3s | ✓ C:2255–2262 | ✓ `pwaStateEdge` pulse (waiting 2 s, rate_limited 3 s), static under reduced motion | ✗ | ios-missing | | depends on the state edge (row above) |
+| motion | Left-border pulse: waiting_input `pulse-border` 2s ease-in-out; rate_limited 3s | ✓ C:2255–2262 | ✓ `pwaStateEdge` pulse (waiting 2 s, rate_limited 3 s), static under reduced motion | ✓ `SessionStateEdge` (waiting 2 s ↔ #93c5fd, rate_limited 3 s ↔ amber-300); static under Reduce Motion | aligned | |  |
 | motion | Pressed/hover feedback (`:active` bg3, .2s transitions) | ✓ C:2247, C:375 | ~ Material ripple | ~ system highlight | n/a | | platform-native |
 | interaction | Tap card → session detail | ✓ P:2490 | ✓ A:423 | ✓ I:641 NavigationLink → SessionDetailView | aligned | | |
 | interaction | Drag-to-reorder; order persisted | ✓ P:2350 HTML5 DnD, `cs_session_order` | ✓ A:1065 long-press drag + reorderMode ↑↓; order persisted | ✓ I:325 `List.onMove` + I:651 context-menu Move up/down; `dw.sessions.order` | aligned | | touch idiom on both apps; iOS long-press drag outside edit mode (unverified) |
@@ -54,8 +54,8 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Server badge (`sess.server` ≠ local) | ✓ P:2509 | ✓ outlined accent2 badge when `server` ≠ local | ✓ IC:190 server badge in "All servers" mode (profile name) | aligned | | iOS keys on the aggregating profile, not `server` |
 | element | Hostname label | ✗ (var unused) | ~ A:1196 shown only in All-servers mode | ~ IC:191 badge only with >1 profile | aligned | decided D16a | hostname only when multi-server, per D16a |
 | element | Worker badge | ✓ P:2510 "⬡ worker", accent2 border, purple .15 bg | ~ `WorkerPill` "⬡ <agentId>" purple A855F7 .15 | ✓ IC:188 "⬡ worker" accent badge | misaligned | | Android label shows agentId |
-| element | `↳ child of [xxxx]` parent badge | ✓ P:2511 | ✓ A:1216 `↳ child of [host]` | ✗ | ios-missing | | needs `parent_id` on iOS DwSession |
-| element | `⚠ zombie` badge (`claude_alive === false`) | ✓ P:2512 | ✓ A:1226 amber `⚠ zombie` | ✗ | ios-missing | | needs `claude_alive` on iOS DwSession |
+| element | `↳ child of [xxxx]` parent badge | ✓ P:2511 | ✓ A:1216 `↳ child of [host]` | ✓ `↳ child of [host]` (`parentId`, 0.7 opacity) | aligned | |  |
+| element | `⚠ zombie` badge (`claude_alive === false`) | ✓ P:2512 | ✓ A:1226 amber `⚠ zombie` | ✓ amber `⚠ zombie` (`claudeAlive == false`) | aligned | |  |
 | element | 🎭 Council badge | ✗ | ✓ A:1151 | ✓ IC:189 🎭 badge + I:375 Council chip | pwa-missing | decided D64a | → #172 |
 | element | `📄 Response` button → last-response viewer | ✓ P:2513 → modal | ✓ A:1254 "View last response" → `LastResponseSheet` | ✓ IC:207 `📄 Response` → I:710 `LastResponseSheet` | aligned | decided D43a | |
 | data | Response content freshness | ✓ P:14890 shows cache, then fetches `GET /api/sessions/response?id` (stale badge) | ✗ cached `session.lastResponse` only | ✗ I:717 cached `session.lastResponse` only | misaligned | decided D43a | D43a: both apps must re-fetch |
@@ -93,7 +93,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Refresh-in-progress spinner in header | ✗ | ✓ A:229 | ✓ I:151 | n/a | | PWA uses header daemon light (§01); no decision |
 
 ## Coverage
-rows: 83 · aligned: 42 · ios-missing: 8 · android-missing: 0 · pwa-missing: 7 · misaligned: 19 · n/a: 7
+rows: 83 · aligned: 49 · ios-missing: 2 · android-missing: 0 · pwa-missing: 7 · misaligned: 18 · n/a: 7
 
 Re-audited 2026-10-04 against current code (iOS commits cdc228c7, 3e04d88e, c682851e, d52892a2; Android 3e6197eb, 85d42058). Two former pwa-missing rows with no decision (REST fallback poll, header refresh spinner) are now n/a.
 

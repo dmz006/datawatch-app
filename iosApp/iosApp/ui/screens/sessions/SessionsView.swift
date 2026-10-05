@@ -40,6 +40,8 @@ struct SessionsView: View {
     @State private var quickCmdSession: DwSession? = nil
     /// PWA `state.showHistory`: off = active sessions + those finished in the last few minutes.
     @State private var showHistory = false
+    /// PWA `cs_session_tree_view` (BL348): parent/child lineage grouping.
+    @AppStorage("dw.sessions.tree_view") private var treeView: Bool = false
     /// PWA `recent_session_minutes` default.
     private static let recentWindowMs: Int64 = 5 * 60 * 1000
 
@@ -53,6 +55,17 @@ struct SessionsView: View {
         ("failed", "Failed", DatawatchColors.error),
         ("killed", "Killed", DatawatchColors.onSurfaceMuted),
     ]
+
+    /// PWA setSessionStateChip `historicalStates`.
+    private static let historicalChips: Set<String> = ["complete", "failed", "killed", "cancelled", "archived"]
+
+    /// PWA setSessionStateChip: picking a historical state auto-enables History,
+    /// otherwise those sessions stay hidden behind the recent-window pool.
+    private func setStateChip(_ key: String) {
+        stateChip = key
+        selected.removeAll()
+        if Self.historicalChips.contains(key) && !showHistory { showHistory = true }
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -99,6 +112,8 @@ struct SessionsView: View {
             viewModel.update(profiles: activeList)
             viewModel.startPolling()
             applyPendingFilter()
+            // A persisted historical chip would otherwise show nothing on launch.
+            if Self.historicalChips.contains(stateChip) { showHistory = true }
         }
         .onChange(of: nav.pendingFilter) { _ in applyPendingFilter() }
         .onDisappear { viewModel.stopPolling() }
@@ -319,10 +334,16 @@ struct SessionsView: View {
         } else if viewModel.sessions.isEmpty {
             emptySessionsRow
         } else {
-            ForEach(visible, id: \.id) { session in
-                sessionRow(session)
+            if treeView {
+                ForEach(SessionTree.flatten(visible), id: \.session.fullId) { row in
+                    treeRow(row)
+                }
+            } else {
+                ForEach(visible, id: \.id) { session in
+                    sessionRow(session)
+                }
+                .onMove { from, to in move(visible, from: from, to: to) }
             }
-            .onMove { from, to in move(visible, from: from, to: to) }
         }
     }
 
@@ -355,6 +376,9 @@ struct SessionsView: View {
                         toggleBadge(llmButtonLabel, active: llmFilterOpen || llmActive != nil) { llmFilterOpen.toggle() }
                     }
                     toggleBadge(stateButtonLabel, active: stateFilterOpen || stateChip != "all") { stateFilterOpen.toggle() }
+                    toggleBadge(L("Tree"), active: treeView, chevron: false) { treeView.toggle() }
+                        .accessibilityHint("Groups sessions by parent/child lineage")
+                    if !viewModel.pendingSchedules.isEmpty { schedulesMenu }
                     toggleBadge("History (\(historyCount))", active: showHistory, chevron: false) {
                         showHistory.toggle()
                         if !showHistory { selectMode = false; selected.removeAll() }
@@ -380,7 +404,7 @@ struct SessionsView: View {
             if stateFilterOpen {
                 chipRow(visibleStateChips.map { c in
                     (c.0, c.1, c.2, stateCount(c.0), stateChip == c.0)
-                }) { key in stateChip = key }
+                }) { key in setStateChip(key) }
             }
         }
         .padding(.horizontal, 12)
@@ -612,8 +636,46 @@ struct SessionsView: View {
 
     // ── Session row ───────────────────────────────────────────────────────
 
+    /// PWA `🕒 N` badge + dropdown with per-item cancel.
+    private var schedulesMenu: some View {
+        Menu {
+            Section("Pending schedules") {
+                ForEach(viewModel.pendingSchedules, id: \.id) { sc in
+                    Button(role: .destructive) {
+                        viewModel.cancelSchedule(sc.id) { msg in actionError = msg }
+                    } label: {
+                        Label(sc.label + " · " + sc.whenText, systemImage: "xmark")
+                    }
+                }
+            }
+        } label: {
+            Text("🕒 \(viewModel.pendingSchedules.count)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(DatawatchColors.onSurface)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(DatawatchColors.chipBackground, in: Capsule())
+        }
+        .accessibilityLabel(String(format: L("%lld pending schedules"), Int64(viewModel.pendingSchedules.count)))
+    }
+
+    /// BL348 tree row: 18 pt indent per level + `⚠ orphaned` note.
     @ViewBuilder
-    private func sessionRow(_ session: DwSession) -> some View {
+    private func treeRow(_ row: SessionTree.Row) -> some View {
+        let indent: CGFloat = CGFloat(row.depth) * 18
+        if row.orphaned {
+            Text("⚠ " + L("orphaned — parent no longer exists"))
+                .font(.system(size: 10))
+                .foregroundStyle(DatawatchColors.warning)
+                .listRowInsets(SessionRowBackground.insets(indent: indent))
+                .listRowBackground(DatawatchColors.background)
+                .listRowSeparator(.hidden)
+        }
+        sessionRow(row.session, indent: indent)
+    }
+
+    @ViewBuilder
+    private func sessionRow(_ session: DwSession, indent: CGFloat = 0) -> some View {
         let card = SessionCardView(
             session: session,
             showHost: store.profiles.count > 1,
@@ -645,8 +707,9 @@ struct SessionsView: View {
                 } label: { card }
             }
         }
-        .listRowBackground(DatawatchColors.surface)
-        .listRowSeparatorTint(DatawatchColors.border)
+        .listRowInsets(SessionRowBackground.insets(indent: indent))
+        .listRowBackground(SessionRowBackground(state: session.state, indent: indent))
+        .listRowSeparator(.hidden)
         .accessibilityElement(children: .contain)
         .contextMenu {
             Button { moveOne(session, by: -1) } label: { Label("Move up", systemImage: "arrow.up") }
@@ -731,5 +794,45 @@ private struct LastResponseSheet: View {
                 }
             }
         }
+    }
+}
+
+/// PWA `renderSessionsAsTree` (Android `flattenTree`): a session whose `parent_id`
+/// matches another visible session's full id nests under it (pre-order, siblings
+/// keep list order); others are roots, flagged orphaned when the parent is missing.
+enum SessionTree {
+    struct Row {
+        let session: DwSession
+        let depth: Int
+        let orphaned: Bool
+    }
+
+    static func flatten(_ sessions: [DwSession]) -> [Row] {
+        var byFullId: Set<String> = []
+        for s in sessions { byFullId.insert(s.fullId) }
+        var children: [String: [DwSession]] = [:]
+        var roots: [DwSession] = []
+        for s in sessions {
+            if let p = s.parentId, p != s.fullId, byFullId.contains(p) {
+                children[p, default: []].append(s)
+            } else {
+                roots.append(s)
+            }
+        }
+        var out: [Row] = []
+        var seen: Set<String> = []
+        func visit(_ s: DwSession, _ depth: Int) {
+            guard !seen.contains(s.fullId) else { return }
+            seen.insert(s.fullId)
+            let orphaned: Bool = s.parentId != nil && !(s.parentId ?? "").isEmpty && !byFullId.contains(s.parentId ?? "")
+            out.append(Row(session: s, depth: depth, orphaned: orphaned))
+            for c in children[s.fullId] ?? [] { visit(c, depth + 1) }
+        }
+        for r in roots { visit(r, 0) }
+        // Pure cycles have no root — append them flat so nothing disappears.
+        for s in sessions where !seen.contains(s.fullId) {
+            out.append(Row(session: s, depth: 0, orphaned: false))
+        }
+        return out
     }
 }
