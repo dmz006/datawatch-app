@@ -173,7 +173,8 @@ struct SessionCardView: View {
     }
 
     private var metaLine: some View {
-        HStack(spacing: 6) {
+        // Wraps like the PWA's flex-wrap meta row instead of truncating badges.
+        FlowLayout(spacing: 6) {
             Text(session.id)
                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 .foregroundStyle(DatawatchColors.onSurface)
@@ -204,7 +205,6 @@ struct SessionCardView: View {
                 .accessibilityLabel(watched ? "Watching" : "Not watching")
                 .accessibilityHint("Watch this session to include its alerts in your badge count")
             }
-            Spacer(minLength: 4)
             if session.lastResponse != nil {
                 Button(action: onResponse) {
                     Text("📄 Response")
