@@ -368,9 +368,9 @@ struct AlertsView: View {
             if store.profiles.isEmpty {
                 noProfilesView
             } else if vm.isLoading && vm.alerts.isEmpty {
-                LoadingIndicator(message: "Loading alerts…")
+                LoadingIndicator(message: "Loading…")
             } else if let err = vm.error, vm.alerts.isEmpty {
-                ErrorCard(message: err) { vm.refresh() }
+                ErrorCard(message: L("Failed to load alerts.")) { vm.refresh() }
             } else {
                 alertListView
             }
@@ -612,7 +612,7 @@ struct AlertsView: View {
                                 .font(.system(.title))
                                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                                 .accessibilityHidden(true)
-                            Text("No \(vm.selectedTab.rawValue.lowercased()) alerts")
+                            Text("No alerts.")
                                 .font(DatawatchFonts.bodyMedium)
                                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                         }

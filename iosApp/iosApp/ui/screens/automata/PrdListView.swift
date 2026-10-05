@@ -606,7 +606,7 @@ struct PrdListView: View {
     private var list: some View {
         List {
             if vm.visible.isEmpty {
-                Text(vm.historyOn || !vm.statusFilter.isEmpty ? "No automata match these filters." : "No active automata — turn on History to see finished ones.")
+                Text(L(vm.historyOn ? "No cancelled, rejected or archived automata." : "No automata. Launch one with ⚡."))
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .listRowBackground(Color.clear)
