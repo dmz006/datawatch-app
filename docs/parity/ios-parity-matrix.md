@@ -63,15 +63,15 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 
 | # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a |
 |---|---|---|---|---|---|---|---|---|
-| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 53 | 4 | 0 | 8 | 11 | 4 |
+| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 52 | 4 | 0 | 8 | 11 | 5 |
 | 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 55 | 6 | 0 | 7 | 8 | 7 |
 | 03 | [Session detail](sections/03-session-detail.md) | 118 | 82 | 5 | 0 | 12 | 15 | 4 |
 | 04 | [Alerts](sections/04-alerts.md) | 65 | 44 | 3 | 0 | 2 | 8 | 8 |
 | 05 | [Automata](sections/05-automata.md) | 99 | 65 | 1 | 0 | 8 | 25 | 0 |
 | 06 | [Observer](sections/06-observer.md) | 93 | 81 | 0 | 0 | 4 | 7 | 1 |
-| 07 | [Settings](sections/07-settings.md) | 97 | 68 | 2 | 0 | 5 | 21 | 1 |
+| 07 | [Settings](sections/07-settings.md) | 97 | 68 | 2 | 0 | 4 | 21 | 2 |
 | 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 51 | 11 | 0 | 4 | 0 | 5 |
-| | **Total** | **706** | **499** | **32** | **0** | **50** | **95** | **30** |
+| | **Total** | **706** | **498** | **32** | **0** | **49** | **95** | **32** |
 
 Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
 means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");

@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.25.1] — 2026-10-05
+
+### Removed (Android + iOS)
+- **"Updated to vX" badge on the splash**: never requested; it was copied from the web UI in 1.25.0. (Web UI removal: dmz006/datawatch#176.)
+- **Config Viewer in Settings › General**: the read-only per-section cards (agents, aider, autonomous … whisper) duplicated the editable Settings cards. The Raw config card (view / edit the full config) stays.
+
+### Fixed
+- **Scroll mode could leave the terminal looking hung** (Android + iOS): entering/leaving tmux scroll mode now goes over an acknowledged request and the screen only switches once the server confirms; leaving the session while scrolled back also exits scroll mode. Previously a command lost during a WebSocket reconnect left tmux in scroll mode behind the live input bar until ESC was pressed by hand.
+- **"Waiting for MCP channel…" banner** (Android + iOS) now also clears on the server's live `channel_ready` event and when the channel's ready line appears in the output, as in the web UI. The banner itself stays. If it never clears, the server isn't seeing the channel bridge: dmz006/datawatch#174.
+
 ## [1.25.0] — 2026-10-05
 
 ### Fixed (Android + iOS, 2026-10-05)
