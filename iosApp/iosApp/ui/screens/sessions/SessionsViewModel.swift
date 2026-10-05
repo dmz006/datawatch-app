@@ -16,6 +16,8 @@ final class SessionsViewModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var error: String? = nil
     @Published private(set) var activeProfile: ServerProfile? = nil
+    /// PWA `🕒 N` pending-schedules badge (single-server view only).
+    @Published private(set) var pendingSchedules: [IosScheduleRow] = []
 
     // ── Private ───────────────────────────────────────────────────────────
 
@@ -144,5 +146,40 @@ final class SessionsViewModel: ObservableObject {
         }
         self.error = firstError
         isLoading = false
+        loadPendingSchedules()
+    }
+
+    // ── Pending schedules (PWA schedBadge / Android loadPendingSchedules) ──
+
+    func loadPendingSchedules() {
+        guard profiles.count == 1, let profile = profiles.first else {
+            pendingSchedules = []
+            return
+        }
+        let pid = profile.id
+        IosObserver.shared.listSchedules(
+            profile: profile,
+            onSuccess: { [weak self] list in
+                let pending: [IosScheduleRow] = list.filter { $0.pending }
+                Task { @MainActor [weak self] in
+                    guard let self, self.profiles.first?.id == pid else { return }
+                    self.pendingSchedules = pending
+                }
+            },
+            onError: { [weak self] _ in
+                Task { @MainActor [weak self] in self?.pendingSchedules = [] }
+            }
+        )
+    }
+
+    /// Per-item cancel from the 🕒 dropdown; reports a failure message via `onError`.
+    func cancelSchedule(_ id: String, onError: @escaping (String) -> Void) {
+        guard let profile = profiles.first else { return }
+        IosObserver.shared.deleteSchedules(profile: profile, ids: [id]) { [weak self] err in
+            Task { @MainActor [weak self] in
+                if let err { onError(err) }
+                self?.loadPendingSchedules()
+            }
+        }
     }
 }

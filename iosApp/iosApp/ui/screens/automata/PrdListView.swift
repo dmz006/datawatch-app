@@ -52,17 +52,53 @@ enum PrdStatusStyle {
     }
 }
 
+/// D23a: PWA `statusPill` — session state-badge tokens (11/600, 1 px currentColor
+/// border, radius 10) with the `dw-running-pulse` (0.55↔1, 700 ms alternate) on
+/// running / planning / decomposing; static under Reduce Motion.
 struct PrdStatusChip: View {
     let status: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var dim = false
+
+    private var key: String { status.isEmpty ? "unknown" : status.lowercased() }
+    private var active: Bool { ["running", "planning", "decomposing"].contains(key) }
+    private var pulsing: Bool { active && !reduceMotion }
+
+    private var fg: Color {
+        if active { return DatawatchColors.success }
+        if key == "failed" { return DatawatchColors.error }
+        if key == "complete" || key == "completed" { return DatawatchColors.onSurfaceMuted }
+        return DatawatchColors.onSurface
+    }
+
+    private var bg: Color {
+        if active { return DatawatchColors.success.opacity(0.15) }
+        if key == "failed" { return DatawatchColors.error.opacity(0.15) }
+        if key == "complete" || key == "completed" { return DatawatchColors.onSurfaceMuted.opacity(0.10) }
+        return Color.clear
+    }
+
     var body: some View {
-        let color = PrdStatusStyle.color(status)
-        Text(PrdStatusStyle.label(status).uppercased())
-            .font(DatawatchFonts.badge)
-            .foregroundStyle(color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(color.opacity(0.18), in: Capsule())
+        Text(key)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(fg)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 1)
+            .background(bg, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(fg, lineWidth: 1))
+            .opacity(pulsing && dim ? 0.55 : 1.0)
+            .onAppear { restartPulse() }
+            .onChange(of: pulsing) { _ in restartPulse() }
             .accessibilityLabel("Status: \(PrdStatusStyle.label(status))")
+    }
+
+    private func restartPulse() {
+        if pulsing {
+            dim = false
+            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { dim = true }
+        } else {
+            withAnimation(.none) { dim = false }
+        }
     }
 }
 
@@ -272,6 +308,8 @@ final class PrdListViewModel: ObservableObject {
 
 struct PrdListView: View {
     let profile: ServerProfile
+    /// Wizard "Browse" template link → Automata › Templates.
+    var onBrowseTemplates: (() -> Void)? = nil
     @StateObject private var vm = PrdListViewModel()
     @State private var showWizard = false
     @State private var confirmBatchDelete = false
@@ -314,7 +352,7 @@ struct PrdListView: View {
             Text(vm.batchError ?? "")
         }
         .sheet(isPresented: $showWizard) {
-            NewPrdView(profile: profile) { _ in Task { await vm.refreshAsync() } }
+            NewPrdView(profile: profile, onCreated: { _ in Task { await vm.refreshAsync() } }, onBrowseTemplates: onBrowseTemplates)
         }
         .prdReviewDialogs($review) { prdId, action, body in
             Task { await vm.act(prdId: prdId, action: action, body: body) }
@@ -380,7 +418,7 @@ struct PrdListView: View {
     private var listContent: some View {
         Group {
             if vm.isLoading && vm.prds.isEmpty {
-                LoadingIndicator(message: "Loading PRDs…")
+                LoadingIndicator(message: "Loading automata…")
             } else if let err = vm.error, vm.prds.isEmpty {
                 ErrorCard(message: err) { vm.start(profile: profile) }
             } else if vm.prds.isEmpty {
@@ -514,8 +552,18 @@ struct PrdListView: View {
                 }
                 .contextMenu {
                     Button(vm.pinned.contains(prd.id) ? "Unpin" : "Pin") { vm.togglePin(prd.id) }
+                    // D52b: Pause / Resume (POST /prds/{id}/pause|resume).
+                    if prd.status.lowercased() == "running" {
+                        Button { Task { await vm.act(prdId: prd.id, action: "pause", body: nil) } } label: {
+                            Label("Pause", systemImage: "pause.fill")
+                        }
+                    } else if prd.status.lowercased() == "paused" {
+                        Button { Task { await vm.act(prdId: prd.id, action: "resume", body: nil) } } label: {
+                            Label("Resume", systemImage: "play.fill")
+                        }
+                    }
                 }
-                .listRowBackground(DatawatchColors.surface)
+                .listRowBackground(PrdRowBackground(status: prd.status))
                 .listRowSeparatorTint(DatawatchColors.border)
             }
         }
@@ -532,10 +580,10 @@ struct PrdListView: View {
                 .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
-            Text("No PRDs")
+            Text("No automata")
                 .font(DatawatchFonts.titleMedium)
                 .foregroundStyle(DatawatchColors.onSurface)
-            Text("PRDs created on the server or in the PWA appear here.")
+            Text("No automata. Launch one with ⚡.")
                 .font(DatawatchFonts.bodyMedium)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .multilineTextAlignment(.center)
@@ -564,6 +612,8 @@ struct PrdRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 if pinned { Text("📌").font(DatawatchFonts.labelSmall).accessibilityLabel("Pinned") }
+                if let t = prd.type, !t.isEmpty { PrdTypeBadge(type: t) }
+                if prd.isTemplate { PrdTemplateBadge() }
                 Text(prd.displayTitle)
                     .font(DatawatchFonts.titleMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
@@ -579,12 +629,19 @@ struct PrdRow: View {
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .lineLimit(1)
             }
+            if let pos = PrdCardStyle.positionLine(prd) {
+                Text(pos)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.success)
+                    .lineLimit(2)
+            }
             if total > 0 {
                 ProgressView(value: Double(done), total: Double(total))
                     .tint(PrdStatusStyle.color(prd.status))
                     .accessibilityLabel("\(done) of \(total) tasks complete")
             }
             PrdLifecycleStrip(prd: prd, onAction: onAction)
+            PrdStoriesTree(prd: prd)
         }
         .padding(.vertical, 6)
     }
@@ -619,7 +676,6 @@ struct PrdRow: View {
 
     private var metaLine: String {
         var parts: [String] = []
-        if let t = prd.type, !t.isEmpty { parts.append(t) }
         if let b = prd.backend, !b.isEmpty {
             parts.append((prd.model?.isEmpty == false) ? "\(b)/\(prd.model!)" : b)
         }

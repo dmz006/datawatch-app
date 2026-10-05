@@ -2,12 +2,12 @@ import SwiftUI
 import DatawatchShared
 
 /// Security scan card for a PRD (parity B16; PWA prd_btn_run_scan /
-/// prd_btn_run_rules + Scan tab, Android ScanResultCard). Shown as a card in
-/// the single-scroll detail until the detail-tabs decision (D24) lands.
+/// prd_btn_run_rules + Scan tab, Android ScanResultCard). Body of the detail
+/// view's Scan tab (D24a).
 struct PrdScanCard: View {
     let profile: ServerProfile
     let prdId: String
-    /// Called with the new PRD id after "Fix PRD" creates a child automaton.
+    /// Called with the new PRD id after "Create Fix Automaton" creates a child automaton.
     var onFixPrdCreated: (String) -> Void = { _ in }
 
     @State private var result: ScanResultDto? = nil
@@ -50,7 +50,7 @@ struct PrdScanCard: View {
                 .disabled(r.findings.isEmpty)
                 if !r.findings.isEmpty {
                     HStack(spacing: 14) {
-                        Button("Fix PRD") { createFix() }
+                        Button("Create Fix Automaton") { createFix() }
                         Button("Propose rules") { propose() }
                     }
                     .font(DatawatchFonts.labelSmall)
@@ -76,10 +76,10 @@ struct PrdScanCard: View {
         .padding(14)
         .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 10))
         .task(id: prdId) { load() }
-        .alert("Fix PRD created", isPresented: $fixCreated) {
+        .alert("Fix automaton created", isPresented: $fixCreated) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("A child automaton was created to fix the findings. Find it in the PRD list.")
+            Text("A child automaton was created to fix the findings. Find it in the Automata list.")
         }
         .sheet(isPresented: Binding(get: { proposedRules != nil }, set: { if !$0 { proposedRules = nil } })) {
             NavigationStack {

@@ -29,26 +29,26 @@ struct PrdReviewDialogs: ViewModifier {
             } message: {
                 Text(request?.title ?? "")
             }
-            .alert("Reject PRD", isPresented: shown("reject")) {
+            .alert("Reject automaton", isPresented: shown("reject")) {
                 TextField("Reason", text: $text)
                 Button("Reject", role: .destructive) { fire(key: "reason", alwaysActor: false) }
                 Button("Cancel", role: .cancel) { clear() }
             } message: {
-                Text("The PRD moves to rejected. The reason is recorded with the PRD.")
+                Text("The automaton moves to rejected. The reason is recorded with it.")
             }
             .alert("Request revision", isPresented: shown("request_revision")) {
                 TextField("What should change?", text: $text)
                 Button("Send") { fire(key: "note", alwaysActor: false) }
                 Button("Cancel", role: .cancel) { clear() }
             }
-            .alert("Cancel PRD?", isPresented: shown("cancel")) {
-                Button("Cancel PRD", role: .destructive) {
+            .alert("Cancel automaton?", isPresented: shown("cancel")) {
+                Button("Cancel automaton", role: .destructive) {
                     if let r = request { perform(r.prdId, "cancel", nil) }
                     clear()
                 }
                 Button("Keep running", role: .cancel) { clear() }
             } message: {
-                Text("Running tasks are stopped. The PRD and its history are kept.")
+                Text("Running tasks are stopped. The automaton and its history are kept.")
             }
     }
 

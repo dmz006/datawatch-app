@@ -39,6 +39,8 @@ struct NewSessionView: View {
     @State private var submitting = false
     @State private var errorMessage: String? = nil
     @State private var restartingId: String? = nil
+    /// PWA openDirBrowser (08 › Directory browser).
+    @State private var showDirBrowser = false
 
     private var pickedLlm: IosLlmChoice? {
         options?.llms.first { $0.name == llmName }
@@ -74,10 +76,15 @@ struct NewSessionView: View {
                 }
 
                 Section("Where") {
-                    TextField("Project directory", text: $workingDir, prompt: Text("/path/to/project"))
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .disabled(profileMode)
+                    HStack(spacing: 8) {
+                        TextField("Project directory", text: $workingDir, prompt: Text("/path/to/project"))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        Button("Browse…") { showDirBrowser = true }
+                            .buttonStyle(.borderless)
+                            .accessibilityHint("Browse folders on the server")
+                    }
+                    .disabled(profileMode)
                     if let o = options, !o.projectProfiles.isEmpty {
                         Picker("Profile", selection: $projectProfile) {
                             Text("— project directory (local checkout) —").tag("")
@@ -192,6 +199,9 @@ struct NewSessionView: View {
                 }
             }
             .onAppear(perform: load)
+            .sheet(isPresented: $showDirBrowser) {
+                DirectoryBrowserSheet(profile: profile, startPath: workingDir) { picked in workingDir = picked }
+            }
             .onChange(of: llmName) { _ in
                 computeNode = ""
                 model = ""
@@ -333,6 +343,124 @@ struct NewSessionView: View {
                     errorMessage = msg
                 }
             }
+        )
+    }
+}
+
+/// Server folder picker (PWA openDirBrowser / Android FilePickerDialog FolderOnly):
+/// current path, ⬆ parent, subfolders, "Use This Folder", "+ New folder".
+/// Shared by New Session and the Launch Automaton wizard.
+struct DirectoryBrowserSheet: View {
+    let profile: ServerProfile
+    var startPath: String = ""
+    var onPick: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var listing: IosDirListing? = nil
+    @State private var loading = true
+    @State private var error: String? = nil
+    @State private var showNewFolder = false
+    @State private var newFolderName = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let l = listing {
+                    Section {
+                        Text(l.path)
+                            .font(DatawatchFonts.terminalSmall)
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            .textSelection(.enabled)
+                    }
+                }
+                Section {
+                    folderRows
+                }
+                if let error {
+                    Section {
+                        Text(error).font(DatawatchFonts.bodyMedium).foregroundStyle(DatawatchColors.error)
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(DatawatchColors.background)
+            .overlay { if loading { ProgressView().tint(DatawatchColors.primary) } }
+            .navigationTitle("Choose folder")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarItems }
+            .alert("New folder", isPresented: $showNewFolder) {
+                TextField("Folder name", text: $newFolderName)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                Button("Create") { createFolder() }
+                Button("Cancel", role: .cancel) { newFolderName = "" }
+            } message: {
+                Text(listing?.path ?? "")
+            }
+            .onAppear { if listing == nil { load(startPath.isEmpty ? "~" : startPath) } }
+        }
+        .dwThemed()
+    }
+
+    @ViewBuilder
+    private var folderRows: some View {
+        if let parent = listing?.parent {
+            Button { load(parent) } label: {
+                Label("..", systemImage: "arrow.up")
+            }
+        }
+        ForEach(listing?.dirs ?? [], id: \.path) { d in
+            Button { load(d.path) } label: {
+                Label(d.name, systemImage: "folder")
+                    .foregroundStyle(DatawatchColors.onSurface)
+            }
+        }
+        if let l = listing, l.dirs.isEmpty {
+            Text("No subdirectories")
+                .font(DatawatchFonts.bodyMedium)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarItems: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") { dismiss() }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            Button("Use This Folder") {
+                if let p = listing?.path { onPick(p) }
+                dismiss()
+            }
+            .fontWeight(.semibold)
+            .disabled(listing == nil || loading)
+        }
+        ToolbarItem(placement: .bottomBar) {
+            Button { showNewFolder = true } label: {
+                Label("New folder", systemImage: "folder.badge.plus")
+            }
+            .disabled(listing == nil || loading)
+        }
+    }
+
+    private func load(_ path: String) {
+        loading = true
+        error = nil
+        IosDirBrowser.shared.list(
+            profile: profile, path: path,
+            onSuccess: { l in DispatchQueue.main.async { listing = l; loading = false } },
+            onError: { msg in DispatchQueue.main.async { error = msg; loading = false } }
+        )
+    }
+
+    private func createFolder() {
+        guard let parent = listing?.path else { return }
+        let name = newFolderName
+        newFolderName = ""
+        IosDirBrowser.shared.mkdir(
+            profile: profile, parentPath: parent, name: name,
+            onSuccess: { _ in DispatchQueue.main.async { load(parent) } },
+            onError: { msg in DispatchQueue.main.async { error = msg } }
         )
     }
 }
