@@ -1635,4 +1635,61 @@
     <string name="tmpl_used_count">Used %1$d×</string>
     <string name="prd_instantiate_vars_label">Template vars (k=v,k=v)</string>
     <string name="automata_filter_toggle">Toggle Automata filters</string>
+    <!-- Project / cluster profile editor (form + YAML view) -->
+    <string name="pfe_form_view">Form view</string>
+    <string name="pfe_yaml_view">YAML view</string>
+    <string name="pfe_new_project">New project profile</string>
+    <string name="pfe_new_cluster">New cluster profile</string>
+    <string name="pfe_yaml_hint">Edit the whole profile as YAML. Masked values (••••) are kept unchanged on save.</string>
+    <string name="pfe_none">(none)</string>
+    <string name="pfe_add">+ Add</string>
+    <string name="pfe_empty">No profiles yet. Click + Add to create one.</string>
+    <string name="pfe_smoke">Smoke</string>
+    <string name="pfe_edit">Edit</string>
+    <string name="pfe_delete">Delete</string>
+    <string name="pfe_delete_project_confirm">Delete project profile \"%1$s\"?</string>
+    <string name="pfe_delete_cluster_confirm">Delete cluster profile \"%1$s\"?</string>
+    <string name="pfe_saved">Saved %1$s</string>
+    <string name="pfe_deleted">Deleted %1$s</string>
+    <string name="pfe_save_failed">Save failed — %1$s</string>
+    <string name="pfe_delete_failed">Delete failed — %1$s</string>
+    <string name="pfe_load_failed">%1$s unavailable — %2$s</string>
+    <string name="pfe_no_server">No enabled server.</string>
+    <string name="pfe_name">Name</string>
+    <string name="pfe_name_project_ph">dns-label like: my-proj</string>
+    <string name="pfe_name_cluster_ph">dns-label like: test-k8s</string>
+    <string name="pfe_description">Description</string>
+    <string name="pfe_optional">optional</string>
+    <string name="pfe_git_url">Git URL</string>
+    <string name="pfe_git_branch">Git branch</string>
+    <string name="pfe_git_branch_ph">defaults to repo default</string>
+    <string name="pfe_git_provider">Git provider</string>
+    <string name="pfe_agent">Agent image</string>
+    <string name="pfe_sidecar">Sidecar image</string>
+    <string name="pfe_memory_mode">Memory mode</string>
+    <string name="pfe_memory_namespace">Memory namespace</string>
+    <string name="pfe_memory_namespace_ph">defaults to project-&lt;name&gt;</string>
+    <string name="pfe_memory_shared_with">Memory shared_with</string>
+    <string name="pfe_memory_shared_with_ph">peer profiles must reciprocate</string>
+    <string name="pfe_allow_spawn">Allow spawn children</string>
+    <string name="pfe_spawn_total">Spawn budget (total)</string>
+    <string name="pfe_spawn_total_ph">e.g. 10</string>
+    <string name="pfe_spawn_per_min">Spawn budget per minute</string>
+    <string name="pfe_spawn_per_min_ph">e.g. 2</string>
+    <string name="profile_skills_label">Skills</string>
+    <string name="profile_skills_ph">test-first, go-style…</string>
+    <string name="pfe_kind">Kind</string>
+    <string name="pfe_context">Context</string>
+    <string name="pfe_context_ph">kubectl context name</string>
+    <string name="pfe_endpoint">Endpoint (override)</string>
+    <string name="pfe_endpoint_ph">https://... (optional)</string>
+    <string name="pfe_namespace">Namespace</string>
+    <string name="pfe_registry">Image registry</string>
+    <string name="pfe_pull_secret">Pull secret</string>
+    <string name="pfe_pull_secret_ph">k8s secret name (optional)</string>
+    <string name="pfe_parent_cb">Parent callback URL</string>
+    <string name="pfe_parent_cb_ph">auto-detect if empty</string>
+    <string name="pfe_git_url_ph" translatable="false">https://github.com/user/repo</string>
+    <string name="pfe_registry_ph" translatable="false">registry.example.com/datawatch</string>
+    <string name="pfe_namespace_ph" translatable="false">default</string>
 </resources>
