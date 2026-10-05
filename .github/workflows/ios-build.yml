@@ -30,6 +30,10 @@ env:
 # Simulator compile check on every push/PR. Signing + TestFlight upload lives in
 # release.yml (`testflight` job, tag-triggered, behind the test gate); the
 # one-shot certificate setup is .github/workflows/ios-match-init.yml.
+# Least-privilege GITHUB_TOKEN: these jobs only read the repo.
+permissions:
+  contents: read
+
 jobs:
   build-simulator:
     name: Build (iOS Simulator)

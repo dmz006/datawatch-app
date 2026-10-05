@@ -65,8 +65,6 @@ import kotlinx.coroutines.launch
 import java.io.ByteArrayInputStream
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 
 @Composable
 internal fun DocsViewerSheet(
@@ -92,6 +90,19 @@ internal fun DocsViewerSheet(
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var canGoBack by remember { mutableStateOf(false) }
     var searchOpen by remember { mutableStateOf(false) }
+
+    // The profile's docs host. Request interception (and therefore the
+    // profile's trust-all opt-in / pin) applies to this host ONLY — third-party
+    // resources and off-host links load through the WebView's normal TLS stack.
+    val docsHost = remember(url) { com.dmzs.datawatchclient.transport.trustAllHostOf(url) }
+    val trustAllFactory =
+        remember(docsHost, allowSelfSigned) {
+            if (allowSelfSigned && docsHost != null) {
+                com.dmzs.datawatchclient.transport.hostScopedTrustAllSocketFactory(docsHost)
+            } else {
+                null
+            }
+        }
 
     // Device back button: pop the WebView's back stack first, then dismiss.
     BackHandler(enabled = true) {
@@ -228,8 +239,8 @@ internal fun DocsViewerSheet(
                                         // Always cancel — handler.proceed() is a Play Store
                                         // policy violation (Device and Network Abuse policy).
                                         // Self-signed certs are handled upstream in
-                                        // shouldInterceptRequest, which re-fetches every HTTPS
-                                        // resource via a profile-scoped trust-all context before
+                                        // shouldInterceptRequest, which re-fetches the profile
+                                        // host's HTTPS resources via a host-scoped trust-all context before
                                         // the WebView makes any native SSL connection. This
                                         // callback only fires when that fetch failed or the
                                         // profile is not marked allowSelfSigned — in either
@@ -243,6 +254,9 @@ internal fun DocsViewerSheet(
                                     ): WebResourceResponse? {
                                         val reqUrl = request?.url?.toString() ?: return null
                                         if (!reqUrl.startsWith("https://")) return null
+                                        // Only the profile's own docs host is re-fetched here.
+                                        val reqHost = request.url?.host ?: return null
+                                        if (docsHost == null || !reqHost.equals(docsHost, ignoreCase = true)) return null
                                         return runCatching {
                                             val conn =
                                                 (URL(reqUrl).openConnection() as HttpsURLConnection).apply {
@@ -250,9 +264,16 @@ internal fun DocsViewerSheet(
                                                     // profile is explicitly marked as using a
                                                     // self-signed cert. Trustworthy certs go
                                                     // through the system's normal verification.
-                                                    if (allowSelfSigned) {
-                                                        sslSocketFactory = trustAllSslContext.socketFactory
-                                                        hostnameVerifier = TrustAllHostnameVerifier
+                                                    // The trust-all bypass is additionally scoped to
+                                                    // docsHost inside the factory/verifier, so a
+                                                    // redirect to another host is fully validated.
+                                                    if (trustAllFactory != null && docsHost != null) {
+                                                        sslSocketFactory = trustAllFactory
+                                                        hostnameVerifier =
+                                                            com.dmzs.datawatchclient.transport.hostScopedHostnameVerifier(
+                                                                docsHost,
+                                                                HttpsURLConnection.getDefaultHostnameVerifier(),
+                                                            )
                                                     } else if (pinSha256 != null) {
                                                         sslSocketFactory =
                                                             com.dmzs.datawatchclient.transport.pinnedSocketFactory(pinSha256)
@@ -554,38 +575,6 @@ private fun DocsSearchDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
-}
-
-// Trust-all SSL context for the docs WebView's sub-resource fetches.
-// Required because the WebView's onReceivedSslError callback ONLY fires
-// for the main page navigation — XHR / fetch() calls inside the loaded
-// page silently fail on self-signed certs. We intercept every HTTPS
-// sub-resource and re-fetch via this trust-all stack instead.
-// Scoped to the docs viewer only — does NOT affect the main app's
-// TLS verification (OkHttp / Ktor use per-profile trust anchors).
-private val trustAllSslContext: SSLContext by lazy {
-    val tm =
-        object : X509TrustManager {
-            override fun checkClientTrusted(
-                chain: Array<out java.security.cert.X509Certificate>?,
-                authType: String?,
-            ) {}
-
-            override fun checkServerTrusted(
-                chain: Array<out java.security.cert.X509Certificate>?,
-                authType: String?,
-            ) {}
-
-            override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
-        }
-    SSLContext.getInstance("TLS").apply { init(null, arrayOf(tm), java.security.SecureRandom()) }
-}
-
-private object TrustAllHostnameVerifier : javax.net.ssl.HostnameVerifier {
-    override fun verify(
-        hostname: String?,
-        session: javax.net.ssl.SSLSession?,
-    ): Boolean = true
 }
 
 // Splice mobile docs-viewer CSS overrides into the HTML <head> before the
