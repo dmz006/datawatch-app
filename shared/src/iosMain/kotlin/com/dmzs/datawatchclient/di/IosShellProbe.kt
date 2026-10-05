@@ -27,14 +27,10 @@ public object IosShellProbe {
         onResult: (Int) -> Unit,
     ) {
         scope.launch {
-            val result = IosServiceLocator.transportFor(profile).fetchConfig()
+            val result: Result<Boolean> = IosServiceLocator.transportFor(profile).fetchAutonomousEnabled()
             val code: Int =
                 result.fold(
-                    onSuccess = { cfg ->
-                        val auto: JsonObject? = cfg.raw["autonomous"] as? JsonObject
-                        val flag: String? = (auto?.get("enabled") as? JsonPrimitive)?.content?.lowercase()
-                        if (flag == "true") 1 else 0
-                    },
+                    onSuccess = { on: Boolean -> if (on) 1 else 0 },
                     onFailure = { -1 },
                 )
             onResult(code)

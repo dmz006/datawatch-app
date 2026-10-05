@@ -1951,6 +1951,15 @@ public interface TransportClient {
      */
     public fun decomposeEvents(prdId: String): kotlinx.coroutines.flow.Flow<com.dmzs.datawatchclient.transport.sse.DecomposeStreamEvent> =
         kotlinx.coroutines.flow.emptyFlow()
+
+    // ---- Automata tab gating (2026-10-05) ----
+
+    /**
+     * PWA `navBtnAutonomous` gating: `GET /api/autonomous/config` → `enabled`.
+     * (`/api/config`'s `autonomous.enabled` can lag a runtime toggle.)
+     */
+    public suspend fun fetchAutonomousEnabled(): Result<Boolean> =
+        Result.failure(UnsupportedOperationException("fetchAutonomousEnabled"))
 }
 
 /** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */

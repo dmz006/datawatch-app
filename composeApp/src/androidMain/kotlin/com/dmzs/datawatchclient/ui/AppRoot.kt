@@ -474,12 +474,8 @@ private fun HomeShell(
                 }
             }
         profile ?: return
-        ServiceLocator.transportFor(profile).fetchConfig()
-            .onSuccess { cfg ->
-                val auto = cfg.raw["autonomous"] as? kotlinx.serialization.json.JsonObject
-                val enabled =
-                    (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)
-                        ?.content?.lowercase() == "true"
+        ServiceLocator.transportFor(profile).fetchAutonomousEnabled()
+            .onSuccess { enabled ->
                 prdsSupported = enabled
                 dashboardEnabled = enabled
             }
