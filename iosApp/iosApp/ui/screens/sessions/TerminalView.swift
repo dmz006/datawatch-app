@@ -122,7 +122,7 @@ struct TerminalView: View {
 
     private var loadingStatus: String {
         if watchdogAttempt > 0 {
-            return String(format: L("Reconnecting to session… attempt %lld of %lld"), Int64(watchdogAttempt), Int64(Self.connectMaxRetries))
+            return String(format: L("Reconnecting to session…\nattempt %lld of %lld"), Int64(watchdogAttempt), Int64(Self.connectMaxRetries))
         }
         return connected ? "waiting for terminal…" : "connecting…"
     }

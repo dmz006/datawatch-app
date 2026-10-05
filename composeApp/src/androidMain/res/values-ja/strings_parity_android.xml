@@ -43,7 +43,7 @@
     <string name="backend_setup_warn_title">バックエンドがインストールまたは設定されていません</string>
     <string name="backend_setup_warn_detail">このサーバーは「%1$s」をインストール済み・有効なバックエンドとして報告していません。開始前にインストールするか、設定 › LLM で有効にしてください。</string>
     <string name="terminal_search_ph">ターミナルを検索…</string>
-    <string name="term_reconnecting_attempt">セッションに再接続中… %2$d 回中 %1$d 回目</string>
+    <string name="term_reconnecting_attempt">セッションに再接続中…\n%2$d 回中 %1$d 回目</string>
     <string name="term_connect_retries_failed_n">%1$d 回再試行しましたが接続できませんでした。</string>
     <string name="term_retry">再試行</string>
     <string name="rtk_update_available">アップデートあり（タップでアップグレードコマンドをコピー）</string>

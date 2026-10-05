@@ -43,7 +43,7 @@
     <string name="backend_setup_warn_title">Backend nicht installiert oder konfiguriert</string>
     <string name="backend_setup_warn_detail">Dieser Server meldet „%1$s“ nicht als installiertes, aktiviertes Backend. Installiere es oder aktiviere es unter Einstellungen › LLM, bevor du startest.</string>
     <string name="terminal_search_ph">Terminal durchsuchen…</string>
-    <string name="term_reconnecting_attempt">Verbindung zur Sitzung wird wiederhergestellt… Versuch %1$d von %2$d</string>
+    <string name="term_reconnecting_attempt">Verbindung zur Sitzung wird wiederhergestellt…\nVersuch %1$d von %2$d</string>
     <string name="term_connect_retries_failed_n">Verbindung nach %1$d Versuchen fehlgeschlagen.</string>
     <string name="term_retry">Erneut versuchen</string>
     <string name="rtk_update_available">Update verfügbar (tippen, um Upgrade-Befehl zu kopieren)</string>
