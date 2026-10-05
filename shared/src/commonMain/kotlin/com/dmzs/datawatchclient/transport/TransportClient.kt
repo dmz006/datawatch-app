@@ -1910,6 +1910,20 @@ public interface TransportClient {
         sources: List<String>,
         accept: Boolean,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("docsTrustDecide"))
+
+    // ---- Council live runs (PWA councilOpenLiveWatch / councilViewRun) ----
+
+    /** GET /api/council/runs/{id} — one persisted run (404 while still in flight). */
+    public suspend fun councilGetRun(id: String): Result<com.dmzs.datawatchclient.transport.dto.CouncilRunDto> =
+        Result.failure(UnsupportedOperationException("councilGetRun"))
+
+    /**
+     * GET /api/council/runs/{id}/events (text/event-stream) — live council
+     * events. The server never closes the topic, so collectors stop after a
+     * terminal event ([com.dmzs.datawatchclient.transport.dto.CouncilRunEvent.isTerminal]).
+     */
+    public fun councilRunEvents(id: String): kotlinx.coroutines.flow.Flow<com.dmzs.datawatchclient.transport.dto.CouncilRunEvent> =
+        kotlinx.coroutines.flow.flow { throw UnsupportedOperationException("councilRunEvents") }
 }
 
 /** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */

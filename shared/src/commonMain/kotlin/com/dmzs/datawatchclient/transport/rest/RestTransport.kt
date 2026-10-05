@@ -2454,16 +2454,36 @@ public class RestTransport(
 
     override suspend fun councilListPersonas(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>> =
         request {
-            client.get("${profile.baseUrl}/api/council/personas") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body<com.dmzs.datawatchclient.transport.dto.CouncilPersonasResponseDto>().personas
+            // Server returns a bare array (#60); older builds wrapped it in {personas:[…]}.
+            val el: JsonElement =
+                client.get("${profile.baseUrl}/api/council/personas") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            val arr: kotlinx.serialization.json.JsonArray =
+                el as? kotlinx.serialization.json.JsonArray
+                    ?: ((el as? kotlinx.serialization.json.JsonObject)?.get("personas") as? kotlinx.serialization.json.JsonArray)
+                    ?: kotlinx.serialization.json.JsonArray(emptyList())
+            DefaultJson.decodeFromJsonElement(
+                kotlinx.serialization.builtins.ListSerializer(com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto.serializer()),
+                arr,
+            )
         }
 
     override suspend fun councilListRuns(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilRunDto>> =
         request {
-            client.get("${profile.baseUrl}/api/council/runs") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body<com.dmzs.datawatchclient.transport.dto.CouncilRunsResponseDto>().runs
+            // Server returns a bare array (#60); older builds wrapped it in {runs:[…]}.
+            val el: JsonElement =
+                client.get("${profile.baseUrl}/api/council/runs") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            val arr: kotlinx.serialization.json.JsonArray =
+                el as? kotlinx.serialization.json.JsonArray
+                    ?: ((el as? kotlinx.serialization.json.JsonObject)?.get("runs") as? kotlinx.serialization.json.JsonArray)
+                    ?: kotlinx.serialization.json.JsonArray(emptyList())
+            DefaultJson.decodeFromJsonElement(
+                kotlinx.serialization.builtins.ListSerializer(com.dmzs.datawatchclient.transport.dto.CouncilRunDto.serializer()),
+                arr,
+            )
         }
 
     override suspend fun councilGetConfig(): Result<com.dmzs.datawatchclient.transport.dto.CouncilConfigDto> =
@@ -2499,7 +2519,8 @@ public class RestTransport(
 
     override suspend fun councilStopRun(id: String): Result<Unit> =
         request {
-            client.delete("${profile.baseUrl}/api/council/runs/$id") {
+            // Server cancel route is POST /api/council/runs/{id}/cancel (DELETE → 405).
+            client.post("${profile.baseUrl}/api/council/runs/$id/cancel") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }
             Unit
@@ -4271,6 +4292,41 @@ public class RestTransport(
             com.dmzs.datawatchclient.transport.DocsTrustEntry(source = src, detail = detail)
         }
     }
+
+    // ---- Council live runs (PWA councilOpenLiveWatch / councilViewRun) ----
+
+    override suspend fun councilGetRun(id: String): Result<com.dmzs.datawatchclient.transport.dto.CouncilRunDto> =
+        request {
+            client.get("${profile.baseUrl}/api/council/runs/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override fun councilRunEvents(id: String): Flow<com.dmzs.datawatchclient.transport.dto.CouncilRunEvent> =
+        flow {
+            client.prepareGet("${profile.baseUrl}/api/council/runs/$id/events") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                header(HttpHeaders.Accept, "text/event-stream")
+                header(HttpHeaders.CacheControl, "no-cache")
+                timeout {
+                    // No server keepalive on this topic; a debate persona can think for minutes.
+                    requestTimeoutMillis = Long.MAX_VALUE
+                    socketTimeoutMillis = 15 * 60_000L
+                    connectTimeoutMillis = 10_000L
+                }
+            }.execute { res ->
+                val channel = res.bodyAsChannel()
+                val parser = com.dmzs.datawatchclient.transport.CouncilSseLineParser()
+                while (true) {
+                    val line = channel.readUTF8Line() ?: break
+                    val frame = parser.feed(line) ?: continue
+                    emit(com.dmzs.datawatchclient.transport.dto.CouncilRunEventParser.parse(frame.event, frame.data))
+                }
+                parser.finish()?.let { frame ->
+                    emit(com.dmzs.datawatchclient.transport.dto.CouncilRunEventParser.parse(frame.event, frame.data))
+                }
+            }
+        }
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
