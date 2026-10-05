@@ -1524,8 +1524,11 @@ public data class EvalCaseResult(
 @Serializable
 public data class CouncilPersonaDto(
     val name: String = "",
-    val description: String = "",
-    val prompt: String = "",
+    // Server council.Persona: `role` / `system_prompt` (the old `description` /
+    // `prompt` keys were never sent or accepted, so prompts loaded blank and
+    // create/update failed with "system_prompt required").
+    @SerialName("role") val description: String = "",
+    @SerialName("system_prompt") val prompt: String = "",
     val enabled: Boolean = true,
     @SerialName("assist_backend") val assistBackend: String? = null,
     /** Sprint 31 — true for the 4 platform built-in personas (cannot be deleted). */
@@ -1610,8 +1613,8 @@ public data class StartCouncilRunRequest(
 @Serializable
 public data class CouncilPersonaCreateDto(
     val name: String,
-    val prompt: String,
-    val description: String = "",
+    @SerialName("system_prompt") val prompt: String,
+    @SerialName("role") val description: String = "",
     @SerialName("assist_backend") val assistBackend: String? = null,
 )
 
