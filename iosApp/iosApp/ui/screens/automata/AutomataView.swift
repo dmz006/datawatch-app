@@ -63,10 +63,11 @@ struct AutomataView: View {
     }
 
     private var selectedProfile: ServerProfile? {
-        if let id = selectedProfileId {
-            return store.profiles.first(where: { $0.id == id })
+        // D2a: picker-bar "All" (Sessions-only) falls back to the active profile.
+        if let id = selectedProfileId, let p = store.profiles.first(where: { $0.id == id }) {
+            return p
         }
-        return store.profiles.first
+        return store.activeProfile
     }
 
     var body: some View {
@@ -111,12 +112,8 @@ struct AutomataView: View {
     @ViewBuilder
     private var profileContent: some View {
         VStack(spacing: 0) {
-            if store.profiles.count > 1 {
-                profilePicker
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(DatawatchColors.surface)
-            }
+            // D2a: shared PWA "Server:" chip bar (hidden with one server).
+            ServerPickerBar()
 
             Picker("Section", selection: $section) {
                 ForEach(AutomataSection.allCases, id: \.self) { s in
@@ -139,19 +136,6 @@ struct AutomataView: View {
                 }
             }
         }
-    }
-
-    private var profilePicker: some View {
-        Picker("Server", selection: Binding(
-            get: { selectedProfileId ?? store.profiles.first?.id ?? "" },
-            set: { selectedProfileId = $0; store.selectActive($0) }
-        )) {
-            ForEach(store.profiles, id: \.id) { profile in
-                Text(profile.displayName).tag(profile.id)
-            }
-        }
-        .pickerStyle(.segmented)
-        .accessibilityLabel("Select server profile")
     }
 
     // ── Empty states ──────────────────────────────────────────────────────

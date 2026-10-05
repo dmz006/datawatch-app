@@ -95,6 +95,7 @@ public object IosSettingsLists {
                     "compute_nodes" -> tr.toggleComputeNodeEnabled(id, enabled)
                     "web_search_providers" -> tr.enableWebSearchProvider(id, enabled)
                     "plugins" -> tr.pluginAction(id, if (enabled) "enable" else "disable")
+                    "fed_peers" -> tr.updateFederationPeer(id, JsonObject(mapOf("enabled" to JsonPrimitive(enabled))))
                     else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             onDone(msg(r.exceptionOrNull(), "Update failed."))
@@ -133,6 +134,11 @@ public object IosSettingsLists {
                             val idx = id.toIntOrNull() ?: -1
                             tr.setRoutingRules(cur.rules.filterIndexed { i, _ -> i != idx }).getOrThrow()
                         }
+                    "channel_routing" ->
+                        tr.getChannelRouting().mapCatching { cur ->
+                            val idx: Int = id.toIntOrNull() ?: -1
+                            tr.putChannelRouting(cur.rules.filterIndexed { i, _ -> i != idx }).getOrThrow()
+                        }
                     else -> Result.failure<Unit>(UnsupportedOperationException("Not supported"))
                 }
             onDone(msg(r.exceptionOrNull(), "Delete failed."))
@@ -160,6 +166,14 @@ public object IosSettingsLists {
                     "web_search_providers" ->
                         tr.testWebSearchProvider(id).map { if (it.ok) "OK · ${it.resultCount} results" else "Failed: ${it.error.orEmpty()}" }
                     "project_profiles" -> tr.smokeKindProfile("project", id).map { "Smoke test started" }
+                    "fed_peers" ->
+                        tr.testFederationPeer(id).map { o ->
+                            if (o.s("ok") == "true") {
+                                "OK — ${o.s("latency_ms")}ms (${o.s("version").ifEmpty { "unknown version" }})"
+                            } else {
+                                "FAIL: ${o.s("error").ifEmpty { "no error" }}"
+                            }
+                        }
                     else -> Result.failure<String>(UnsupportedOperationException("Not supported"))
                 }
             r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Action failed.") })
@@ -352,8 +366,9 @@ public object IosSettingsLists {
                     val name = o.s("name")
                     row(
                         name, name, o.s("url"),
-                        badges = o.list("capabilities") + listOfNotNull(if (o.b("enabled", true)) null else "disabled"),
-                        canDelete = true, detail = redact(o),
+                        badges = o.list("capabilities").ifEmpty { listOf("none") },
+                        hasToggle = true, enabled = o.b("enabled", true),
+                        canDelete = true, actions = listOf("Test"), detail = redact(o),
                     )
                 }
             "session_templates" ->
@@ -409,7 +424,7 @@ public object IosSettingsLists {
                 }
             "channel_routing" ->
                 tr.getChannelRouting().getOrThrow().rules.mapIndexed { i, r ->
-                    row(i.toString(), r.channelPattern, listOf(r.peerName, r.automataType).filter { it.isNotEmpty() }.joinToString(" · "))
+                    row(i.toString(), r.channelPattern, listOf(r.peerName, r.automataType).filter { it.isNotEmpty() }.joinToString(" · "), canDelete = true)
                 }
             "web_search_providers" ->
                 tr.listWebSearchProviders().getOrThrow().map { w ->
