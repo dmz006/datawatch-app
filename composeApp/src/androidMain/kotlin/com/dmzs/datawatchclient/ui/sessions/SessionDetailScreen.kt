@@ -655,7 +655,11 @@ public fun SessionDetailScreen(
                     val sessActive =
                         sess?.state == SessionState.Running || sess?.state == SessionState.Waiting ||
                             sess?.state == SessionState.RateLimited
-                    if (connMode != null && sessActive && sess?.channelReady != true && !connBannerDismissed) {
+                    // PWA state.channelReady[full_id]: also cleared by the WS
+                    // `channel_ready` frame and the output-marker scan.
+                    val readyIds by com.dmzs.datawatchclient.transport.ws.ChannelReadyHub.ready.collectAsState()
+                    val hubReady = sess != null && (readyIds.contains(sess.fullId) || readyIds.contains(sess.id))
+                    if (connMode != null && sessActive && sess?.channelReady != true && !hubReady && !connBannerDismissed) {
                         ConnStatusBanner(
                             modeLabel =
                                 if (connMode == "channel") {
