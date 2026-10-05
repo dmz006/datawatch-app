@@ -281,7 +281,7 @@ struct SessionDetailView: View {
             metaBadge(backend.lowercased(), color: DatawatchColors.onSurfaceMuted)
         }
         if let node = cur.computeNodeRef, !node.isEmpty {
-            metaBadge("⚙ \(node)", color: DatawatchColors.secondary)
+            metaBadge("⚙ \(node)", color: DatawatchColors.primary) // PWA var(--accent), D6b
         }
         // D17a: the mode badge shows only for plain tmux sessions (the tab strip
         // already conveys channel / acp / chat).
