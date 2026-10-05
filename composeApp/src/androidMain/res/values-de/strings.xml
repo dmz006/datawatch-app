@@ -1188,7 +1188,6 @@
     <string name="stats_row_ws_queries">Abfragen gesamt</string>
     <string name="stats_row_ws_errors">Fehler</string>
     <string name="stats_row_ws_last_query">Letzte Abfrage</string>
-    <string name="splash_updated_to">Aktualisiert auf %1$s</string>
     <string name="session_tree_btn">Baum</string>
     <string name="session_tree_orphaned">verwaist — übergeordnete Sitzung existiert nicht mehr</string>
     <string name="session_child_of">Kind von</string>

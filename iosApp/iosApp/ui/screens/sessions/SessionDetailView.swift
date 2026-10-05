@@ -54,6 +54,7 @@ struct SessionDetailView: View {
     @StateObject private var terminal = TerminalController()
     /// PWA scroll mode (tmux copy-mode): the scroll strip replaces the input bar.
     @State private var scrollMode = false
+    @State private var scrollBusy = false
     @State private var showSchedule = false
     @State private var scheduleReload = 0
     @State private var photoItem: PhotosPickerItem? = nil
@@ -129,6 +130,10 @@ struct SessionDetailView: View {
         .onChange(of: detailTab) { tab in savedDetailTab = tab }
         .onAppear(perform: onAppear)
         .onDisappear {
+            // Leaving in scroll mode would leave tmux in copy-mode (pane looks frozen next time).
+            if scrollMode {
+                IosScrollMode.shared.command(profile: profile, session: session, enter: false) { _ in }
+            }
             LocalAlertWatcher.shared.foregroundSessionId = nil
             ShellRestore.setOpenSession(profileId: nil, sessionId: nil)
         }
@@ -573,11 +578,20 @@ struct SessionDetailView: View {
 
     // ── Scroll mode (PWA toggleScrollMode / scrollPage / exitScrollMode) ─
 
+    /// The UI flips only once the server confirms (REST /api/command, WS fallback),
+    /// so a dropped command can't leave tmux in copy-mode behind a live composer.
     private func toggleScrollMode() {
         if scrollMode { exitScrollMode(); return }
-        scrollMode = true
-        terminal.setScrollMode(true)
-        _ = IosSessionOps.shared.tmuxCommand(session: session, command: "tmux-copy-mode")
+        guard !scrollBusy else { return }
+        scrollBusy = true
+        IosScrollMode.shared.command(profile: profile, session: session, enter: true) { ok in
+            DispatchQueue.main.async {
+                scrollBusy = false
+                guard ok.boolValue else { return }
+                scrollMode = true
+                terminal.setScrollMode(true)
+            }
+        }
     }
 
     private func scrollPage(up: Bool) {
@@ -586,9 +600,16 @@ struct SessionDetailView: View {
     }
 
     private func exitScrollMode() {
-        _ = IosSessionOps.shared.sendKey(session: session, key: "Escape")
-        terminal.setScrollMode(false)
-        scrollMode = false
+        guard !scrollBusy else { return }
+        scrollBusy = true
+        IosScrollMode.shared.command(profile: profile, session: session, enter: false) { ok in
+            DispatchQueue.main.async {
+                scrollBusy = false
+                guard ok.boolValue else { return }  // strip stays up; tap ESC again
+                terminal.setScrollMode(false)
+                scrollMode = false
+            }
+        }
     }
 
     private var scrollStrip: some View {

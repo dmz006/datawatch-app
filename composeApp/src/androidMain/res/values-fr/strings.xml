@@ -1188,7 +1188,6 @@
     <string name="stats_row_ws_queries">Total des requêtes</string>
     <string name="stats_row_ws_errors">Erreurs</string>
     <string name="stats_row_ws_last_query">Dernière requête</string>
-    <string name="splash_updated_to">Mis à jour vers %1$s</string>
     <string name="session_tree_btn">Arbre</string>
     <string name="session_tree_orphaned">orphelin — le parent n\'existe plus</string>
     <string name="session_child_of">enfant de</string>

@@ -4231,6 +4231,23 @@ public class RestTransport(
             Unit
         }
 
+    // ---- Scroll-mode exit (2026-10-05) ----
+
+    override suspend fun runCommand(text: String): Result<String> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.post("${profile.baseUrl}/api/command") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        kotlinx.serialization.json.buildJsonObject {
+                            put("text", kotlinx.serialization.json.JsonPrimitive(text))
+                        },
+                    )
+                }.body()
+            (obj["result"] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

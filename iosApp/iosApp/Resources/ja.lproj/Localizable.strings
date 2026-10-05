@@ -258,7 +258,6 @@
 "Compute Nodes" = "コンピュートノード";
 "Compute node" = "コンピュートノード";
 "ComputeNodes (multi-select; ordered failover)" = "コンピュートノード（複数選択・順序付きフェイルオーバー）";
-"Config Viewer" = "設定ビューアー";
 "Configure" = "設定する";
 "Connect a server in Settings to manage automata." = "オートマタを管理するには設定でサーバーに接続してください。";
 "Connected" = "接続済み";

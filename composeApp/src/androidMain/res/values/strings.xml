@@ -1504,7 +1504,6 @@
     <string name="capacity_waiting">Waiting</string>
     <string name="capacity_no_limit">no limit</string>
     <string name="prd_task_waiting_capacity">waiting for capacity</string>
-    <string name="splash_updated_to">Updated to %1$s</string>
     <string name="session_tree_btn">Tree</string>
     <string name="session_tree_orphaned">orphaned — parent no longer exists</string>
     <string name="session_child_of">child of</string>

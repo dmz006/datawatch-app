@@ -1,46 +1,6 @@
 import SwiftUI
 import DatawatchShared
 
-// MARK: - Config Viewer (D79a; read-only effective config, server-masked)
-
-struct SettingsConfigViewerCard: View {
-    let profile: ServerProfile
-    @State private var json: String?
-    @State private var error: String?
-
-    var body: some View {
-        ScrollView {
-            Group {
-                if let json {
-                    Text(verbatim: json)
-                        .font(DatawatchFonts.terminalSmall)
-                        .foregroundStyle(DatawatchColors.onSurface)
-                        .textSelection(.enabled)
-                } else if let error {
-                    Text(error).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.error)
-                } else {
-                    ProgressView()
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-        }
-        .refreshable { load() }
-        .task { load() }
-    }
-
-    private func load() {
-        IosSettingsConfig.shared.rawJson(profile: profile, onSuccess: { s in
-            DispatchQueue.main.async {
-                json = s
-                error = nil
-            }
-        }, onError: { msg in
-            DispatchQueue.main.async { error = msg }
-        })
-    }
-}
-
 // MARK: - Raw config editor (D79a)
 
 /// Edits the masked config as JSON. Save diffs against the live config and

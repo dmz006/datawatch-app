@@ -1188,7 +1188,6 @@
     <string name="stats_row_ws_queries">総クエリ数</string>
     <string name="stats_row_ws_errors">エラー</string>
     <string name="stats_row_ws_last_query">最終クエリ</string>
-    <string name="splash_updated_to">%1$s に更新</string>
     <string name="session_tree_btn">ツリー</string>
     <string name="session_tree_orphaned">孤立 — 親セッションが存在しなくなりました</string>
     <string name="session_child_of">の子セッション</string>

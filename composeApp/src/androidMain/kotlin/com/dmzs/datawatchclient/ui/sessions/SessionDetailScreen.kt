@@ -474,6 +474,12 @@ public fun SessionDetailScreen(
                 state.session?.fullId?.startsWith("council-") == true
         val terminalController = rememberTerminalController()
         val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
+        toolbarState.scrollCommand = { enter -> vm.scrollModeCommand(enter) }
+        // Leaving the session in scroll mode would otherwise leave tmux in
+        // copy-mode, so the pane looks frozen next time it's opened.
+        androidx.compose.runtime.DisposableEffect(toolbarState) {
+            onDispose { if (toolbarState.scrollMode) vm.exitScrollModeDetached() }
+        }
 
         Box(
             modifier =
