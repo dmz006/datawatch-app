@@ -715,28 +715,6 @@ public object IosServiceLocator {
         }
     }
 
-    public fun fetchSummarizerConfig(
-        profile: ServerProfile,
-        onSuccess: (enabled: Boolean, llmRef: String) -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        ioScope.launch {
-            transportFor(profile).fetchConfig().fold(
-                onSuccess = { cfg ->
-                    val sess = (cfg.raw["session"] as? kotlinx.serialization.json.JsonObject)
-                    val enabled = (sess?.get("summarizer.enabled")
-                        as? kotlinx.serialization.json.JsonPrimitive)
-                        ?.content?.toBooleanStrictOrNull() ?: false
-                    val llmRef = (sess?.get("summarizer.llm_ref")
-                        as? kotlinx.serialization.json.JsonPrimitive)
-                        ?.content ?: ""
-                    onSuccess(enabled, llmRef)
-                },
-                onFailure = { onError(it.message ?: "Failed to load config.") },
-            )
-        }
-    }
-
     /** PUT /api/config with a single boolean key/value pair. */
     public fun writeConfigBool(
         profile: ServerProfile,
