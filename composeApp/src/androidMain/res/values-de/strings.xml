@@ -1277,4 +1277,14 @@
     <string name="discussion_recall_btn">Abrufen</string>
     <string name="discussion_recall_title">%1$s — %2$d Einträge</string>
     <string name="discussion_no_entries">(keine Einträge)</string>
+    <string name="llm_yaml_btn">&lt;/&gt; YAML</string>
+    <string name="llm_yaml_title">Bearbeiten LLM: %1$s</string>
+    <string name="llm_edit_yaml_tip">Roh-YAML bearbeiten — Formular lädt nach dem Speichern mit den geparsten Werten neu</string>
+    <string name="llm_yaml_after_save">YAML-Editor nach dem ersten Speichern verfügbar</string>
+    <string name="action_test">Testen</string>
+    <string name="form_edit_testing">Teste ungespeicherte Werte…</string>
+    <string name="form_edit_saving">Speichere…</string>
+    <string name="form_edit_test_ok">Test erfolgreich:</string>
+    <string name="form_edit_test_fail">Test fehlgeschlagen:</string>
+    <string name="form_edit_save_fail">Speichern fehlgeschlagen:</string>
 </resources>

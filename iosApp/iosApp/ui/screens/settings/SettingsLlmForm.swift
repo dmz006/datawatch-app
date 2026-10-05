@@ -21,6 +21,7 @@ struct LlmFormSheet: View {
     @State private var testModel = ""
     @State private var status: String?
     @State private var statusTone = 0
+    @State private var showYaml = false
 
     private var isEdit: Bool { editName != nil }
     private var kind: String { v["kind"] ?? "ollama" }
@@ -49,6 +50,7 @@ struct LlmFormSheet: View {
                         LlmClaudeSection(v: $v)
                     }
                     testSection
+                    yamlSection
                 }
             }
             .scrollContentBackground(.hidden)
@@ -58,8 +60,35 @@ struct LlmFormSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
             .task { load() }
+            .sheet(isPresented: $showYaml) {
+                LlmJsonSheet(profile: profile, name: editName ?? "") { load() }
+            }
         }
         .dwThemed()
+    }
+
+    /// PWA LLM panel "</> YAML" escape hatch (_llmOpenYAMLForCurrent).
+    private var yamlSection: some View {
+        Section {
+            Button {
+                openYaml()
+            } label: {
+                Label("</> YAML", systemImage: "chevron.left.forwardslash.chevron.right")
+                    .foregroundStyle(DatawatchColors.primary)
+            }
+        } footer: {
+            Text("Edit raw YAML — form will reload with parsed values on save")
+        }
+        .listRowBackground(DatawatchColors.surface)
+    }
+
+    private func openYaml() {
+        guard isEdit else {
+            status = L("YAML editor available after first save")
+            statusTone = 0
+            return
+        }
+        showYaml = true
     }
 
     @ToolbarContentBuilder
@@ -180,6 +209,127 @@ struct LlmFormSheet: View {
         ) { err in
             DispatchQueue.main.async {
                 saving = false
+                if let err {
+                    status = "✕ " + err
+                    statusTone = 2
+                } else {
+                    onSaved()
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
+/// PWA openFormEditPopup raw view for an LLM: the record as pretty-printed JSON
+/// (the PWA's "YAML" view is JSON.stringify / JSON.parse). Test saves first,
+/// like the PWA; Save PUTs and the form reloads with the parsed values.
+struct LlmJsonSheet: View {
+    let profile: ServerProfile
+    let name: String
+    let onSaved: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var loaded = false
+    @State private var busy = false
+    @State private var status: String?
+    @State private var statusTone = 0
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 8) {
+                editor
+                if let status {
+                    FormStatusLine(text: status, tone: statusTone)
+                }
+                Button {
+                    runTest()
+                } label: {
+                    Label("Test", systemImage: "checkmark.seal")
+                }
+                .disabled(!loaded || busy)
+                .tint(DatawatchColors.primary)
+            }
+            .padding()
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(DatawatchColors.background)
+            .navigationTitle(L("Edit") + " LLM: " + name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .task { load() }
+        }
+        .dwThemed()
+    }
+
+    @ViewBuilder
+    private var editor: some View {
+        if loaded {
+            TextEditor(text: $text)
+                .font(DatawatchFonts.terminalSmall)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .scrollContentBackground(.hidden)
+                .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 8))
+        } else {
+            ProgressView().frame(maxWidth: .infinity)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") { dismiss() }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            if busy {
+                ProgressView()
+            } else {
+                Button("Save") { save() }.disabled(!loaded)
+            }
+        }
+    }
+
+    private func load() {
+        IosYamlRecall.shared.llmJson(profile: profile, name: name, onSuccess: { json in
+            DispatchQueue.main.async {
+                text = json
+                loaded = true
+            }
+        }, onError: { msg in
+            DispatchQueue.main.async {
+                status = msg
+                statusTone = 2
+            }
+        })
+    }
+
+    private func runTest() {
+        busy = true
+        status = L("Testing unsaved values…")
+        statusTone = 0
+        IosYamlRecall.shared.testLlmJson(profile: profile, name: name, text: text, onSuccess: { reply in
+            DispatchQueue.main.async {
+                busy = false
+                status = "✓ " + L("Test passed:") + " " + reply
+                statusTone = 1
+            }
+        }, onError: { msg in
+            DispatchQueue.main.async {
+                busy = false
+                status = "✕ " + L("Test failed:") + " " + msg
+                statusTone = 2
+            }
+        })
+    }
+
+    private func save() {
+        busy = true
+        status = L("Saving…")
+        statusTone = 0
+        IosYamlRecall.shared.saveLlmJson(profile: profile, name: name, text: text) { err in
+            DispatchQueue.main.async {
+                busy = false
                 if let err {
                     status = "✕ " + err
                     statusTone = 2

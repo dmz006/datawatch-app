@@ -1588,4 +1588,14 @@
     <string name="discussion_recall_btn">Recall</string>
     <string name="discussion_recall_title">%1$s — %2$d entries</string>
     <string name="discussion_no_entries">(no entries)</string>
+    <string name="llm_yaml_btn">&lt;/&gt; YAML</string>
+    <string name="llm_yaml_title">Edit LLM: %1$s</string>
+    <string name="llm_edit_yaml_tip">Edit raw YAML — form will reload with parsed values on save</string>
+    <string name="llm_yaml_after_save">YAML editor available after first save</string>
+    <string name="action_test">Test</string>
+    <string name="form_edit_testing">Testing unsaved values…</string>
+    <string name="form_edit_saving">Saving…</string>
+    <string name="form_edit_test_ok">Test passed:</string>
+    <string name="form_edit_test_fail">Test failed:</string>
+    <string name="form_edit_save_fail">Save failed:</string>
 </resources>

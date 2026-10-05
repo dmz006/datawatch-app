@@ -1277,4 +1277,14 @@
     <string name="discussion_recall_btn">Recuperar</string>
     <string name="discussion_recall_title">%1$s — %2$d entradas</string>
     <string name="discussion_no_entries">(sin entradas)</string>
+    <string name="llm_yaml_btn">&lt;/&gt; YAML</string>
+    <string name="llm_yaml_title">Editar LLM: %1$s</string>
+    <string name="llm_edit_yaml_tip">Editar YAML en bruto — el formulario recargará con los valores parseados al guardar</string>
+    <string name="llm_yaml_after_save">Editor YAML disponible tras el primer guardado</string>
+    <string name="action_test">Probar</string>
+    <string name="form_edit_testing">Probando valores no guardados…</string>
+    <string name="form_edit_saving">Guardando…</string>
+    <string name="form_edit_test_ok">Prueba pasó:</string>
+    <string name="form_edit_test_fail">Prueba falló:</string>
+    <string name="form_edit_save_fail">Error al guardar:</string>
 </resources>
