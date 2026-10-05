@@ -63,7 +63,8 @@ struct AutomataView: View {
     }
 
     private var selectedProfile: ServerProfile? {
-        // D2a: picker-bar "All" (Sessions-only) falls back to the active profile.
+        // D2a: under "All" the list aggregates every server; the wizard and
+        // Templates use the active (first enabled) profile.
         if let id = selectedProfileId, let p = store.profiles.first(where: { $0.id == id }) {
             return p
         }
@@ -85,14 +86,16 @@ struct AutomataView: View {
             ToolbarItem(placement: .principal) {
                 HeaderView(
                     title: "Automata",
-                    serverName: selectedProfile?.displayName
+                    serverName: store.isAllServers ? L("All servers") : selectedProfile?.displayName
                 )
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
                     DocsLinkButton(profile: selectedProfile, anchor: "automata")
                     AlertsBellButton()
-                    ReachabilityDotView(profile: selectedProfile)
+                    if !store.isAllServers {
+                        ReachabilityDotView(profile: selectedProfile)
+                    }
                 }
             }
         }
@@ -113,7 +116,7 @@ struct AutomataView: View {
     private var profileContent: some View {
         VStack(spacing: 0) {
             // D2a: shared PWA "Server:" chip bar (hidden with one server).
-            ServerPickerBar()
+            ServerPickerBar(showsAll: true)
 
             Picker("Section", selection: $section) {
                 ForEach(AutomataSection.allCases, id: \.self) { s in
@@ -128,7 +131,11 @@ struct AutomataView: View {
             switch section {
             case .prds:
                 if let profile = selectedProfile {
-                    PrdListView(profile: profile, onBrowseTemplates: { section = .templates })
+                    PrdListView(
+                        profile: profile,
+                        allProfiles: store.isAllServers ? store.enabledProfiles : [],
+                        onBrowseTemplates: { section = .templates }
+                    )
                 }
             case .templates:
                 if let profile = selectedProfile {
