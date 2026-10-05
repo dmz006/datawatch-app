@@ -8,6 +8,15 @@ import kotlin.test.assertEquals
 
 class MappersTest {
     @Test
+    fun `hyphenated hostname keeps the whole prefix so fullId matches the server`() {
+        val session =
+            SessionDto(id = "5d47", state = "running", fullId = "build-box-2-5d47", hostname = "build-box-2")
+                .toDomain(serverProfileId = "p")
+        assertEquals("build-box-2", session.hostnamePrefix)
+        assertEquals("build-box-2-5d47", session.fullId)
+    }
+
+    @Test
     fun `SessionDto maps to domain Session with correct state and timestamps`() {
         // Wire format per parent datawatch openapi.yaml: task / hostname /
         // RFC3339 created_at / updated_at.

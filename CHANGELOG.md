@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed (Android + iOS, 2026-10-05)
+- **Session actions on servers whose hostname contains a hyphen**: the session's server-side id was derived by cutting at the first '-', so Stop/Restart/Rename/Delete and deep links (`datawatch://session/<full id>`) missed on hosts like `build-box-2`. The prefix is now taken by removing the `-<id>` suffix.
+- **iOS session card**: the badge row wraps instead of truncating (`⚠ zombie`, `📄 Response`).
+
 ### Added (Android + iOS, 2026-10-04)
 - **Terminal font**: the session terminal now uses bundled JetBrains Mono (v2.304, SIL OFL), falling back to Roboto Mono/monospace. A monthly workflow opens a PR when a newer upstream release ships.
 
