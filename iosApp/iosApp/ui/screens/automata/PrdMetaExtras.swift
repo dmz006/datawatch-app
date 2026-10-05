@@ -98,7 +98,7 @@ struct PrdSpecSnippet: View {
 
 /// Overview meta rows the PWA (`automata_detail_*`) and Android (PrdSkillsRow,
 /// PrdScopeDirsRow, PrdDepthCreatedMeta) show: depth (when > 0), skills, the
-/// scope directories and the created date (PWA `_fmtDate`, "—" when unset).
+/// scope directories, concurrency (when > 1, "N tasks") and the created date (PWA `_fmtDate`, "—" when unset).
 struct PrdOverviewMeta: View {
     let prd: PrdDto
 
@@ -107,12 +107,14 @@ struct PrdOverviewMeta: View {
         let write: [String] = prd.writeDirs
         let read: [String] = prd.readDirs
         let depth: Int = Int(prd.depth)
+        let concurrency: Int = Int(prd.maxConcurrentTasks)
         let created: String = PrdDates.display(prd.createdAt) ?? "—"
         VStack(alignment: .leading, spacing: 6) {
             if depth > 0 { metaLine("Depth", String(depth)) }
             if !skills.isEmpty { metaLine("Skills", skills.joined(separator: ", ")) }
             if !write.isEmpty { metaLine("Writable dirs", write.joined(separator: ", ")) }
             if !read.isEmpty { metaLine("Read-only dirs", read.joined(separator: ", ")) }
+            if concurrency > 1 { metaLine("Concurrency", String(concurrency) + " " + L("tasks")) }
             metaLine("Created", created)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

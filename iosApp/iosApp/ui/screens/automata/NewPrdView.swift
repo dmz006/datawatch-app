@@ -571,6 +571,8 @@ struct PrdSettingsView: View {
     @State private var guided = false
     @State private var continueOnFailure = "inherit"
     @State private var priority = 3
+    /// PWA prdSettings "Max concurrent tasks (0 = global default)" (BL370).
+    @State private var concurrency = 0
     @State private var readDirs = ""
     @State private var writeDirs = ""
     /// PWA prdSettings skills / Android PrdSkillsRow (comma-separated).
@@ -594,6 +596,11 @@ struct PrdSettingsView: View {
                     Stepper("Priority \(priority)", value: $priority, in: 1...9)
                 } footer: {
                     Text("Guided mode pauses each story for approval. Higher priority runs first when capacity is limited.")
+                }
+                Section {
+                    Stepper("Max concurrent tasks \(concurrency)", value: $concurrency, in: 0...32)
+                } footer: {
+                    Text("0 or 1 = sequential · 2+ = fan out independent tasks in parallel")
                 }
                 Section {
                     TextField("Read dirs (comma-separated)", text: $readDirs, axis: .vertical)
@@ -634,6 +641,7 @@ struct PrdSettingsView: View {
                 guided = prd.guidedMode
                 continueOnFailure = prd.continueOnStoryFailure.map { $0.boolValue ? "on" : "off" } ?? "inherit"
                 priority = Int(prd.priority)
+                concurrency = Int(prd.maxConcurrentTasks)
                 readDirs = prd.readDirs.joined(separator: ", ")
                 writeDirs = prd.writeDirs.joined(separator: ", ")
                 skills = prd.skills.joined(separator: ", ")
@@ -649,6 +657,23 @@ struct PrdSettingsView: View {
             profile: profile, prd: prd, type: type, guidedMode: guided, continueOnFailure: continueOnFailure,
             priority: Int32(priority), readDirs: readDirs, writeDirs: writeDirs
         ) { err in
+            DispatchQueue.main.async {
+                if let err {
+                    saving = false
+                    errorMessage = err
+                } else {
+                    saveConcurrency()
+                }
+            }
+        }
+    }
+
+    private func saveConcurrency() {
+        if concurrency == Int(prd.maxConcurrentTasks) {
+            saveSkills()
+            return
+        }
+        IosPrdConcurrency.shared.set(profile: profile, prdId: prd.id, maxConcurrentTasks: Int32(concurrency)) { err in
             DispatchQueue.main.async {
                 if let err {
                     saving = false
