@@ -61,6 +61,9 @@ struct SessionDetailView: View {
     @State private var imageBanner: String? = nil
     /// PWA dismissConnBanner — "use tmux only".
     @State private var connBannerDismissed = false
+    /// PWA tabStatusBadge: hook-health dot + board state, fetched on mount.
+    @State private var boardHook: String = ""
+    @State private var boardState: String = ""
 
     /// Live copy of the session (falls back to the navigation snapshot).
     private var cur: DwSession { live ?? session }
@@ -166,6 +169,18 @@ struct SessionDetailView: View {
         }
         LocalAlertWatcher.shared.foregroundSessionId = session.id
         ShellRestore.setOpenSession(profileId: profile.id, sessionId: session.id)
+        loadStatusBadge()
+    }
+
+    private func loadStatusBadge() {
+        IosSessionStatus.shared.load(profile: profile, session: session) { snap in
+            let hook: String = snap.board?.hookHealth ?? ""
+            let st: String = snap.board?.state ?? ""
+            DispatchQueue.main.async {
+                boardHook = hook
+                boardState = st
+            }
+        }
     }
 
     /// Keeps `cur` fresh while the screen is up (cancelled on disappear).
@@ -173,6 +188,7 @@ struct SessionDetailView: View {
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 10_000_000_000)
             await refreshSession()
+            loadStatusBadge()
         }
     }
 
@@ -361,9 +377,12 @@ struct SessionDetailView: View {
             detailTab = id
         } label: {
             VStack(spacing: 4) {
-                Text(L(title))
-                    .font(DatawatchFonts.badge)
-                    .foregroundStyle(detailTab == id ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                HStack(spacing: 3) {
+                    Text(L(title))
+                        .font(DatawatchFonts.badge)
+                        .foregroundStyle(detailTab == id ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                    if id == "status" { statusTabBadge }
+                }
                 Rectangle()
                     .fill(detailTab == id ? DatawatchColors.primary : Color.clear)
                     .frame(height: 2)
@@ -373,6 +392,21 @@ struct SessionDetailView: View {
             .padding(.top, 6)
         }
         .accessibilityAddTraits(detailTab == id ? .isSelected : [])
+    }
+
+    /// PWA `updateSessionStatusBadge`: ● hook health (alive green / stale amber)
+    /// + 🟢/🟠/⚪ board state.
+    @ViewBuilder
+    private var statusTabBadge: some View {
+        let hookColor: Color? = boardHook == "alive" ? DatawatchColors.success : (boardHook == "stale" ? DatawatchColors.warning : nil)
+        let sym: String = ["running": "🟢", "waiting": "🟠", "idle": "⚪"][boardState] ?? ""
+        if let hookColor {
+            Text("●").font(.system(size: 9)).foregroundStyle(hookColor)
+                .accessibilityLabel("hooks " + boardHook)
+        }
+        if !sym.isEmpty {
+            Text(sym).font(.system(size: 9))
+        }
     }
 
     /// D20a Aa▾ font menu + D69a search + scroll mode.
@@ -586,6 +620,7 @@ struct SessionDetailView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(DatawatchColors.primary.opacity(0.12), in: Capsule())
+            .modifier(RunningPulse(active: cur.state == .running && stateOverrideLabel == nil))
         }
         .disabled(overridingState)
         .accessibilityLabel("Session state \(currentStateLabel). Change state")

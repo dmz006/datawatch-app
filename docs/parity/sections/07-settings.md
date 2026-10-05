@@ -36,7 +36,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Backend Artifact Lifecycle (Tooling) card + ↻ | ✓ tooling | ✓ ToolingCard | ✓ list card tooling (gitignore / clean up actions) | aligned | | |
 | element | File Service card (root path, peers, discussions) | ✓ file_service | ✓ FileServiceCard | ~ list card (root, peers, discussions) read-only; root not editable | misaligned | | |
 | element | Discussion Scopes card (scopes list, write message, New Discussion) | ✓ discussion_scopes A:23897 | ✓ DiscussionScopesCard | ~ list card (scopes) read-only; no write / New Discussion | misaligned | | |
-| element | Security card: biometric lock toggle | ✗ (platform n/a) | ✓ S:703 BiometricPrompt via FragmentActivity | ~ SettingsCustomCards Security toggle `biometricLockEnabled`; `.biometricLocked` never applied → toggle is a no-op | misaligned | | **iOS bug**: gate not enforced (re-checked 2026-10-04) |
+| element | Security card: biometric lock toggle | ✗ (platform n/a) | ✓ S:703 BiometricPrompt via FragmentActivity | ✓ toggle (auth required to enable) → `BiometricLockModifier` on the app root: locks on cold start + return from background; skipped without passcode | aligned | | **iOS bug**: gate not enforced (re-checked 2026-10-04) · fixed 2026-10-04 |
 | element | Secrets vault status | ✓ inside Secrets Store card (Compute) | ~ S:291 SecretsStatusCard still a separate card on General | ✓ vault status row inside Secrets Store list card (PWA placement) | misaligned | decided D33a | Android must fold it into SecretsCard per D33a |
 | element | Config Viewer card (read-only effective config) | ✗ | ✓ ConfigViewerCard | ✓ SettingsConfigViewerCard | pwa-missing | decided D79a | → #172 |
 | element | Raw config editor card | ✗ | ✓ RawConfigCard | ✓ SettingsRawConfigCard — diffed dotted-key PUT, masked values never sent | pwa-missing | decided D79a | → #172 |
@@ -137,7 +137,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | MCP channel card + MCP tools card | ✗ | ~ McpChannelCard mounted (S:441); `McpToolsCard` defined but never mounted | ✓ SettingsMcpChannelCard + SettingsMcpToolsCard | pwa-missing | decided D80a | → #172; Android: mount McpToolsCard in About |
 
 ## Coverage
-rows: 97 · aligned: 53 · ios-missing: 4 · android-missing: 1 · pwa-missing: 5 · misaligned: 33 · n/a: 1
+rows: 97 · aligned: 54 · ios-missing: 4 · android-missing: 1 · pwa-missing: 5 · misaligned: 32 · n/a: 1
 
 Re-audited 2026-10-04 against current code (after B26–B32, 16ed1a85 iOS theme, e19306e2 iOS i18n, d4a142ec Android exit hooks / work queue / pinned badge, 5a209324 Android collapsible cards + docs links). Remaining iOS gaps: Exit Hooks, Work Queue, Observer quicklink, in-app jump into a Settings group, biometric lock not enforced, and the `~` list cards (templates Use/Edit, council runs, profile editors, LLM In-use/YAML, etc.). Remaining Android gaps: Plugin Manager, D33a vault placement, D57b inline restart link, config-key drift (backend_family, whisper.backend, web_search cache_*, vision.*, orchestrator.guardrail_model, autonomous planning/capacity/guardrail keys), unmounted McpToolsCard.
 

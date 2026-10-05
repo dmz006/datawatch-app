@@ -40,6 +40,29 @@ struct SessionActionButtons: View {
     }
 }
 
+// MARK: - Running pill pulse (D18a; PWA dw-running-pulse 700 ms .55 ↔ 1.0)
+
+struct RunningPulse: ViewModifier {
+    let active: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var dim = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(active && !reduceMotion && dim ? 0.55 : 1.0)
+            .onAppear { update() }
+            .onChange(of: active) { _ in update() }
+    }
+
+    private func update() {
+        if active && !reduceMotion {
+            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { dim = true }
+        } else {
+            withAnimation(.default) { dim = false }
+        }
+    }
+}
+
 // MARK: - Saved commands + arrows (PWA savedCmdsQuick, D21b)
 
 /// PWA `loadSavedCmdsQuick`: a literal "Commands…" dropdown (System · Saved ·
