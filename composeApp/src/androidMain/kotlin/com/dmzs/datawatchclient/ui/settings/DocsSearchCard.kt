@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,8 +62,6 @@ import kotlinx.coroutines.launch
 public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var query by remember { mutableStateOf("") }
-    var addSourceText by remember { mutableStateOf("") }
-    var addSourceExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.loadAll()
@@ -209,36 +210,14 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
             }
         }
 
-        // Add source
-        TextButton(onClick = { addSourceExpanded = !addSourceExpanded }) {
-            Text(stringResource(R.string.docs_trust_add_source))
-            Icon(
-                if (addSourceExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                contentDescription = null,
-            )
-        }
-        if (addSourceExpanded) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = addSourceText,
-                    onValueChange = { addSourceText = it },
-                    label = { Text(stringResource(R.string.docs_trust_add_source_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    onClick = {
-                        if (addSourceText.isNotBlank()) {
-                            vm.addSource(addSourceText.trim())
-                            addSourceText = ""
-                            addSourceExpanded = false
-                        }
-                    },
-                    enabled = addSourceText.isNotBlank(),
-                ) {
-                    Text(stringResource(R.string.docs_trust_row_accept))
-                }
-            }
+        // PWA docsTrustExport: "Export YAML" → modal with the server-rendered
+        // docs_search.trust block. (Trusting new sources is via the pending
+        // queue only — operator 2026-10-05.)
+        OutlinedButton(
+            onClick = { vm.exportYaml() },
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            Text(stringResource(R.string.docs_export_btn))
         }
 
         // Error hint
@@ -251,6 +230,49 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
             )
         }
     }
+
+    state.exportYaml?.let { yaml ->
+        DocsTrustExportDialog(yaml = yaml, onDismiss = { vm.closeExport() })
+    }
+}
+
+/** PWA docsTrustExport modal: `<pre>` YAML snippet + paste hint. */
+@Composable
+private fun DocsTrustExportDialog(
+    yaml: String,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.docs_export_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    SelectionContainer {
+                        Text(
+                            yaml,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(10.dp),
+                        )
+                    }
+                }
+                Text(
+                    stringResource(R.string.docs_export_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
+        },
+    )
 }
 
 /** PWA renders an italic, muted "none" for an empty pending / trusted list. */
@@ -273,6 +295,7 @@ public class DocsSearchViewModel : ViewModel() {
         val selected: Set<String> = emptySet(),
         val loaded: Boolean = false,
         val error: String? = null,
+        val exportYaml: String? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -363,12 +386,18 @@ public class DocsSearchViewModel : ViewModel() {
         }
     }
 
-    public fun addSource(source: String) {
+    /** GET /api/docs/trust/export → show the `yaml_snippet` (PWA docsTrustExport). */
+    public fun exportYaml() {
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
-            transport.docsTrustAdd(source).onSuccess { loadAll() }
-                .onFailure { _state.value = _state.value.copy(error = "Add failed: ${it.message}") }
+            transport.docsTrustExportYaml()
+                .onSuccess { _state.value = _state.value.copy(exportYaml = it, error = null) }
+                .onFailure { reportError(it) }
         }
+    }
+
+    public fun closeExport() {
+        _state.value = _state.value.copy(exportYaml = null)
     }
 
     private fun reportError(t: Throwable) {

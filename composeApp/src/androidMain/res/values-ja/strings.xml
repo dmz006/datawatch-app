@@ -1271,4 +1271,10 @@
     <string name="daemon_log_newest">最新</string>
     <string name="daemon_log_older">古い</string>
     <string name="daemon_log_info">%2$d 行中 %1$d 行を表示 (オフセット %3$d)</string>
+    <string name="docs_export_btn">YAMLをエクスポート</string>
+    <string name="docs_export_title">信頼リスト — config.yaml 用 YAML</string>
+    <string name="docs_export_hint">実行時の信頼設定をリセット後も保持するには、config.yaml の docs_search.trust ブロックに貼り付けてください。</string>
+    <string name="discussion_recall_btn">呼び出し</string>
+    <string name="discussion_recall_title">%1$s — %2$d 件</string>
+    <string name="discussion_no_entries">(エントリなし)</string>
 </resources>

@@ -1271,4 +1271,10 @@
     <string name="daemon_log_newest">Neueste</string>
     <string name="daemon_log_older">Älter</string>
     <string name="daemon_log_info">%1$d von %2$d Zeilen (Offset %3$d)</string>
+    <string name="docs_export_btn">YAML exportieren</string>
+    <string name="docs_export_title">Vertrauensliste — YAML für config.yaml</string>
+    <string name="docs_export_hint">Füge dies in den Block docs_search.trust deiner config.yaml ein, damit das Laufzeit-Vertrauen ein Zurücksetzen übersteht.</string>
+    <string name="discussion_recall_btn">Abrufen</string>
+    <string name="discussion_recall_title">%1$s — %2$d Einträge</string>
+    <string name="discussion_no_entries">(keine Einträge)</string>
 </resources>

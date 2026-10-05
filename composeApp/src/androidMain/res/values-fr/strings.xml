@@ -1271,4 +1271,10 @@
     <string name="daemon_log_newest">Plus récents</string>
     <string name="daemon_log_older">Plus anciens</string>
     <string name="daemon_log_info">Affichage de %1$d sur %2$d lignes (décalage %3$d)</string>
+    <string name="docs_export_btn">Exporter YAML</string>
+    <string name="docs_export_title">Liste de confiance — YAML pour config.yaml</string>
+    <string name="docs_export_hint">Collez ceci dans le bloc docs_search.trust de votre config.yaml pour que la confiance d\'exécution survive à une réinitialisation.</string>
+    <string name="discussion_recall_btn">Rappeler</string>
+    <string name="discussion_recall_title">%1$s — %2$d entrées</string>
+    <string name="discussion_no_entries">(aucune entrée)</string>
 </resources>
