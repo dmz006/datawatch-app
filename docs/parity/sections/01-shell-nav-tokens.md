@@ -87,7 +87,7 @@ Refs are `file:line` or symbol. Audited 2026-10-04 from code (no screenshots yet
 | motion | Reduced-motion respected (`prefers-reduced-motion` disables pulses) | ✓ style.css:2356-2358, 2416-2418 | ✓ `rememberDwPulse` / `rememberRunningPulseAlpha` static when animator scale = 0 | ✓ splash, skeleton, card pulse, dashboard honour Reduce Motion; ✗ reachability dot pulse | ios-missing |  | only the iOS dot pulse remains |
 
 ## Coverage
-rows: 80 · aligned: 50 · ios-missing: 6 · android-missing: 0 · pwa-missing: 8 · misaligned: 12 · n/a: 4
+rows: 80 · aligned: 53 · ios-missing: 4 · android-missing: 0 · pwa-missing: 8 · misaligned: 11 · n/a: 4
 
 Re-audited 2026-10-04 against current code after the decisions + implementation pass. Where both apps lack a decided feature the row is filed `ios-missing` and the Notes say "+ Android".
 

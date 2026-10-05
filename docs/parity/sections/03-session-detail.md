@@ -79,7 +79,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | element | Tests card pass/fail(/skip) | ✓ 4317 | ✓ SStP:273 | ✓ SessionStatusView `testsBody` | aligned | | |
 | element | Git card branch + dirty (+ahead) | ✓ 4324 | ✓ SStP:293 | ✓ SessionStatusView `gitBody` | aligned | | |
 | element | Guardrail verdicts card (+ run guardrail POST /guardrail, "Approved") | ✓ 4281, 4431–4440 | ✓ GuardrailVerdictsCard: approve on blocked + ▶ sast/secrets/deps run chips | ✓ `GuardrailVerdictsBody`: approve on blocked (✓ once approved) + ▶ sast/secrets/deps run chips, results to the dock | aligned | | Android done (2026-10-04) · iOS done 2026-10-04 |
-| element | Parent session link (telemetry) | ✓ renderParentSessionLink 4328 | ✓ SStP status_parent_session link → opens parent | ✗ | ios-missing | | |
+| element | Parent session link (telemetry) | ✓ renderParentSessionLink 4328 | ✓ SStP status_parent_session link → opens parent | ✓ SDV info bar `↑ parent` badge → opens parent | aligned | | iOS placement: info bar, not status tab (2026-10-04) |
 | string | "Last 5 events before failure" | ✓ 4458 | ✓ SStP `FailedDrilldown` (last 5 of `failed_task_buf`) | ✓ SessionStatusView `FailedDrilldownView` under failed tasks (last 5 of `failed_task_buf`) | aligned | | iOS done 2026-10-04 |
 
 ## 3.5 Stats sub-tab (cards)
@@ -175,7 +175,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | string | i18n: all detail copy via `t()` keys; Android 86 string resources | ✓ | ✓ | ✓ SwiftUI literal keys + L() with de/es/fr/ja Localizable.strings (detail strings present) | aligned | | |
 
 ## Coverage
-rows: 118 · aligned: 69 · ios-missing: 8 · android-missing: 0 · pwa-missing: 12 · misaligned: 25 · n/a: 4
+rows: 118 · aligned: 81 · ios-missing: 5 · android-missing: 0 · pwa-missing: 12 · misaligned: 16 · n/a: 4
 
 ## Decisions (resolved 2026-10-04)
 1. Mode badge condition → **D17a** tmux only (PWA rule). Android done; iOS still inverse.
