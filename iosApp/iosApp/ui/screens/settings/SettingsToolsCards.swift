@@ -227,9 +227,13 @@ struct SettingsIdentityCard: View {
     @State private var saving = false
     @State private var status: String?
     @State private var error: String?
+    @State private var showWizard = false
 
     var body: some View {
         Form {
+            Section {
+                Button("🤖 Open Identity Wizard") { showWizard = true }
+            }
             Section("Role") { TextField("Role", text: $role) }
             Section("North-star goals (one per line)") { multiline($goals) }
             Section("Current projects (one per line)") { multiline($projects) }
@@ -252,6 +256,9 @@ struct SettingsIdentityCard: View {
             }
         }
         .task { load() }
+        .sheet(isPresented: $showWizard) {
+            IdentityWizardSheet(profile: profile, onSaved: { load() })
+        }
     }
 
     @ViewBuilder

@@ -1880,6 +1880,22 @@ public interface TransportClient {
      */
     public suspend fun runPrdRulesCheck(prdId: String): Result<kotlinx.serialization.json.JsonObject> =
         Result.failure(UnsupportedOperationException("runPrdRulesCheck"))
+
+    // ---- iOS-E (2026-10-04) ----
+
+    /** POST /api/servers/{name}/test — `{ok, latency_ms, version?, error?}` (PWA `testServerEntry`). */
+    public suspend fun testRemoteServer(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("testRemoteServer"))
+
+    /**
+     * PUT /api/servers/{name} with a raw entry object. The server replaces the
+     * entry wholesale, so callers round-trip the listed object (token, label,
+     * capabilities …) with only the changed field edited (PWA `saveServer`).
+     */
+    public suspend fun putRemoteServerJson(
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("putRemoteServerJson"))
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

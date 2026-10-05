@@ -20,6 +20,10 @@ struct SettingsListCardView: View {
     @State private var showAdd = false
     @State private var busy = false
     @State private var formEdit: SettingsFormEditItem?
+    /// Session template "Use" → New Session prefilled from the template.
+    @State private var templateUse: TemplateUseItem?
+    /// Skill registry "Browse" → available skills with sync / unsync.
+    @State private var browseRegistry: SettingsFormEditItem?
 
     /// LLMs + Compute Nodes use the full PWA add/edit forms instead of the generic add sheet.
     private var hasForm: Bool { kind == "llms" || kind == "compute_nodes" }
@@ -75,6 +79,12 @@ struct SettingsListCardView: View {
         }
         .sheet(item: $detail) { item in
             SettingsTextSheet(title: item.title, text: item.text)
+        }
+        .sheet(item: $templateUse) { item in
+            NewSessionView(profile: profile, template: item.values)
+        }
+        .sheet(item: $browseRegistry) { item in
+            SkillBrowseSheet(profile: profile, registry: item.id)
         }
         .confirmationDialog(
             deleteTitle,
@@ -236,7 +246,23 @@ struct SettingsListCardView: View {
         }
     }
 
+    private func useTemplate(_ row: IosSettingsRow) {
+        IosSettingsCrud.shared.formValues(profile: profile, kind: kind, id: row.id, onSuccess: { values in
+            DispatchQueue.main.async { templateUse = TemplateUseItem(id: row.id, values: values) }
+        }, onError: { msg in
+            DispatchQueue.main.async { error = msg }
+        })
+    }
+
     private func runAction(_ row: IosSettingsRow, _ index: Int) {
+        if kind == "session_templates" && index < row.actions.count && row.actions[index] == "Use" {
+            useTemplate(row)
+            return
+        }
+        if kind == "skill_registries" && index < row.actions.count && row.actions[index] == "Browse" {
+            browseRegistry = SettingsFormEditItem(id: row.id)
+            return
+        }
         message = L("Working…")
         IosSettingsLists.shared.action(profile: profile, kind: kind, id: row.id, index: Int32(index), onSuccess: { msg in
             DispatchQueue.main.async {
@@ -492,4 +518,10 @@ struct SettingsAddEntrySheet: View {
             }
         }
     }
+}
+
+/// Session template picked with "Use": its field values prefill New Session.
+struct TemplateUseItem: Identifiable {
+    let id: String
+    let values: [String: String]
 }

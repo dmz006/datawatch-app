@@ -11,6 +11,8 @@ import DatawatchShared
 struct DocsLinkButton: View {
     let profile: ServerProfile?
     let anchor: String
+    /// Whole doc path under `docs/` (e.g. `howto/automata-wizard.md`); overrides `anchor`.
+    var docPath: String? = nil
 
     @State private var showSafari = false
 
@@ -18,7 +20,8 @@ struct DocsLinkButton: View {
         guard let profile else { return nil }
         var base = profile.baseUrl
         if base.hasSuffix("/") { base = String(base.dropLast()) }
-        let urlString = "\(base)/diagrams.html#docs/datawatch-definitions.md#\(anchor)"
+        let target: String = docPath ?? "datawatch-definitions.md#\(anchor)"
+        let urlString = "\(base)/diagrams.html#docs/\(target)"
         return URL(string: urlString)
     }
 

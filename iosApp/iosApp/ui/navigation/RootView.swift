@@ -55,6 +55,9 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToDashboard)) { _ in
             selectedTab = .dashboard
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToSettings)) { _ in
+            selectedTab = .settings
+        }
         .onReceive(NotificationCenter.default.publisher(for: .deepLinkSession)) { note in
             openSession(note.userInfo)
         }

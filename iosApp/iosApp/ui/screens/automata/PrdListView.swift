@@ -200,12 +200,12 @@ final class PrdListViewModel: ObservableObject {
 
     /// Acts on the eligible subset only, one request at a time; non-eligible stay selected.
     func runBatch(_ action: String) async {
-        guard let profile else { return }
         let ids = eligibleIds(action)
         guard !ids.isEmpty else { return }
         batchRunning = true
         var failures = 0
         for id in ids {
+            guard let profile = owner(ofPrd: id) else { failures += 1; continue }
             do {
                 if action == "delete" {
                     try await ServiceLocatorAsync.cancelPrd(profile: profile, prdId: id, hard: true)
@@ -224,7 +224,7 @@ final class PrdListViewModel: ObservableObject {
 
     /// D72a inline card actions (Android PrdRow onApprove / onReject / onRevise / onPlan / onRun / onCancel).
     func act(prdId: String, action: String, body: [String: String]?) async {
-        guard let profile else { return }
+        guard let profile = owner(ofPrd: prdId) else { return }
         do {
             if action == "cancel" {
                 try await ServiceLocatorAsync.cancelPrd(profile: profile, prdId: prdId, hard: false)
@@ -239,6 +239,26 @@ final class PrdListViewModel: ObservableObject {
 
     var profileId: String? { profile?.id }
 
+    // ── D2a all-servers scope (Android AutonomousViewModel.refreshAllServers) ──
+
+    /// Every server listed — one normally, every enabled one under "All".
+    private(set) var profiles: [ServerProfile] = []
+    /// prd id → owning server profile id (aggregate mode only).
+    @Published private(set) var prdServer: [String: String] = [:]
+    var allMode: Bool { profiles.count > 1 }
+
+    /// Server that owns an automaton: its aggregate owner, else the single profile.
+    func owner(ofPrd id: String) -> ServerProfile? {
+        if allMode, let pid = prdServer[id] { return profiles.first { $0.id == pid } }
+        return profile
+    }
+
+    /// Server tag for a card — only when aggregating.
+    func serverName(ofPrd id: String) -> String? {
+        guard allMode else { return nil }
+        return owner(ofPrd: id)?.displayName
+    }
+
     func toggleStatus(_ v: String) {
         if statusFilter.contains(v) { statusFilter.remove(v) } else { statusFilter.insert(v) }
     }
@@ -249,20 +269,27 @@ final class PrdListViewModel: ObservableObject {
 
     private var profile: ServerProfile?
     private var pollTask: Task<Void, Never>? = nil
-    private var prdSubscription: IosSubscription? = nil
+    private var prdSubscriptions: [IosSubscription] = []
     private var inFlight = false
     /// REST is a fallback now that prd_update frames patch the list live (PWA/Android #178).
     private static let interval: Duration = .seconds(30)
 
-    func start(profile: ServerProfile) {
-        if self.profile?.id != profile.id {
+    func start(profile: ServerProfile, all: [ServerProfile] = []) {
+        let scope: [ServerProfile] = all.count > 1 ? all : [profile]
+        if self.profile?.id != profile.id || scope.map({ $0.id }) != profiles.map({ $0.id }) {
             prds = []
+            prdServer = [:]
             error = nil
         }
         self.profile = profile
+        self.profiles = scope
         stop()
-        prdSubscription = IosServiceLocator.shared.subscribePrdUpdates(profile: profile) { [weak self] updated in
-            Task { @MainActor [weak self] in self?.patch(updated) }
+        for p in scope {
+            let pid: String = p.id
+            let sub: IosSubscription = IosServiceLocator.shared.subscribePrdUpdates(profile: p) { [weak self] updated in
+                Task { @MainActor [weak self] in self?.patch(updated, serverId: pid) }
+            }
+            prdSubscriptions.append(sub)
         }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -276,12 +303,13 @@ final class PrdListViewModel: ObservableObject {
     func stop() {
         pollTask?.cancel()
         pollTask = nil
-        prdSubscription?.cancel()
-        prdSubscription = nil
+        for sub in prdSubscriptions { sub.cancel() }
+        prdSubscriptions = []
     }
 
     /// Replace (or insert) one PRD from a `prd_update` frame — no refetch, no flicker.
-    private func patch(_ updated: PrdDto) {
+    private func patch(_ updated: PrdDto, serverId: String) {
+        if allMode { prdServer[updated.id] = serverId }
         if let i = prds.firstIndex(where: { $0.id == updated.id }) {
             prds[i] = updated
         } else {
@@ -290,6 +318,10 @@ final class PrdListViewModel: ObservableObject {
     }
 
     func refreshAsync() async {
+        if allMode {
+            await refreshAllAsync()
+            return
+        }
         guard let profile, !inFlight else { return }
         inFlight = true
         defer { inFlight = false }
@@ -302,12 +334,46 @@ final class PrdListViewModel: ObservableObject {
         }
         isLoading = false
     }
+
+    /// PWA `/api/autonomous/prds/aggregated` equivalent: fetch each enabled
+    /// server in turn and merge, tagging every automaton with its server.
+    /// A server without autonomous enabled (404) is skipped silently.
+    private func refreshAllAsync() async {
+        guard !inFlight else { return }
+        inFlight = true
+        defer { inFlight = false }
+        if prds.isEmpty { isLoading = true }
+        let targets: [ServerProfile] = profiles
+        var merged: [PrdDto] = []
+        var owners: [String: String] = [:]
+        var failures: [String] = []
+        for p in targets {
+            do {
+                let list: [PrdDto] = try await ServiceLocatorAsync.listPrds(profile: p)
+                for prd in list { owners[prd.id] = p.id }
+                merged.append(contentsOf: list)
+            } catch {
+                let msg: String = error.localizedDescription
+                let lower: String = msg.lowercased()
+                if !lower.contains("404") && !lower.contains("not found") {
+                    failures.append("\(p.displayName): \(msg)")
+                }
+            }
+        }
+        guard targets.map({ $0.id }) == profiles.map({ $0.id }) else { return }
+        prds = merged
+        prdServer = owners
+        error = failures.isEmpty ? nil : L("Some servers unreachable: ") + failures.prefix(3).joined(separator: "; ")
+        isLoading = false
+    }
 }
 
 // ── List view ─────────────────────────────────────────────────────────────
 
 struct PrdListView: View {
     let profile: ServerProfile
+    /// D2a: every enabled server when the picker is on "All" (empty otherwise).
+    var allProfiles: [ServerProfile] = []
     /// Wizard "Browse" template link → Automata › Templates.
     var onBrowseTemplates: (() -> Void)? = nil
     @StateObject private var vm = PrdListViewModel()
@@ -351,6 +417,16 @@ struct PrdListView: View {
         } message: {
             Text(vm.batchError ?? "")
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if vm.allMode, let err = vm.error, !vm.prds.isEmpty {
+                Text(err)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.warning)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+            }
+        }
         .sheet(isPresented: $showWizard) {
             NewPrdView(profile: profile, onCreated: { _ in Task { await vm.refreshAsync() } }, onBrowseTemplates: onBrowseTemplates)
         }
@@ -362,7 +438,7 @@ struct PrdListView: View {
             set: { if !$0 { openParent = nil } }
         )) {
             if let parent = openParent {
-                PrdDetailView(profile: profile, initial: parent)
+                PrdDetailView(profile: vm.owner(ofPrd: parent.id) ?? profile, initial: parent)
             }
         }
     }
@@ -380,12 +456,12 @@ struct PrdListView: View {
 
     private func isWatched(_ prd: PrdDto) -> Bool {
         _ = localPrefs.revision
-        guard let pid = vm.profileId else { return false }
+        guard let pid = vm.owner(ofPrd: prd.id)?.id else { return false }
         return localPrefs.contains(.watchedAutomata, profileId: pid, id: prd.id)
     }
 
     private func toggleWatch(_ prd: PrdDto) {
-        guard let pid = vm.profileId else { return }
+        guard let pid = vm.owner(ofPrd: prd.id)?.id else { return }
         localPrefs.toggle(.watchedAutomata, profileId: pid, id: prd.id)
     }
 
@@ -411,7 +487,8 @@ struct PrdListView: View {
             watched: isWatched(prd),
             onWatchToggle: watchToggle,
             onParent: parent,
-            onAction: action
+            onAction: action,
+            serverName: vm.serverName(ofPrd: prd.id)
         )
     }
 
@@ -420,7 +497,7 @@ struct PrdListView: View {
             if vm.isLoading && vm.prds.isEmpty {
                 LoadingIndicator(message: "Loading automata…")
             } else if let err = vm.error, vm.prds.isEmpty {
-                ErrorCard(message: err) { vm.start(profile: profile) }
+                ErrorCard(message: err) { vm.start(profile: profile, all: allProfiles) }
             } else if vm.prds.isEmpty {
                 emptyView
             } else {
@@ -430,9 +507,14 @@ struct PrdListView: View {
                 }
             }
         }
-        .onAppear { vm.start(profile: profile) }
+        .onAppear { vm.start(profile: profile, all: allProfiles) }
         .onDisappear { vm.stop() }
-        .onChange(of: profile.id) { _ in vm.start(profile: profile) }
+        .onChange(of: scopeKey) { _ in vm.start(profile: profile, all: allProfiles) }
+    }
+
+    /// Restart when the server or the All-servers scope changes.
+    private var scopeKey: String {
+        ([profile.id] + allProfiles.map { $0.id }).joined(separator: ",")
     }
 
     private var batchBar: some View {
@@ -524,7 +606,7 @@ struct PrdListView: View {
     private var list: some View {
         List {
             if vm.visible.isEmpty {
-                Text(vm.historyOn || !vm.statusFilter.isEmpty ? "No automata match these filters." : "No active automata — turn on History to see finished ones.")
+                Text(L(vm.historyOn ? "No cancelled, rejected or archived automata." : "No automata. Launch one with ⚡."))
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .listRowBackground(Color.clear)
@@ -544,7 +626,7 @@ struct PrdListView: View {
                         .buttonStyle(.plain)
                     } else {
                         NavigationLink {
-                            PrdDetailView(profile: profile, initial: prd)
+                            PrdDetailView(profile: vm.owner(ofPrd: prd.id) ?? profile, initial: prd)
                         } label: {
                             row(prd)
                         }
@@ -605,6 +687,8 @@ struct PrdRow: View {
     var onParent: (() -> Void)? = nil
     /// D72a: lifecycle strip steps act inline when set (Android PrdRow).
     var onAction: ((String) -> Void)? = nil
+    /// D2a: owning server, shown when the list aggregates every server.
+    var serverName: String? = nil
 
     var body: some View {
         let total = prd.allTasks.count
@@ -623,6 +707,7 @@ struct PrdRow: View {
                 PrdStatusChip(status: prd.status)
             }
             HStack(spacing: 6) {
+                if let serverName { serverChip(serverName) }
                 if let pid = prd.parentPrdId, !pid.isEmpty { parentChip(pid) }
                 Text(metaLine)
                     .font(DatawatchFonts.labelSmall)
@@ -654,6 +739,17 @@ struct PrdRow: View {
         }
         .buttonStyle(.borderless)
         .accessibilityLabel(watched ? "Watching" : "Not watching")
+    }
+
+    private func serverChip(_ name: String) -> some View {
+        Text(name)
+            .font(DatawatchFonts.labelSmall)
+            .foregroundStyle(DatawatchColors.secondary)
+            .lineLimit(1)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(DatawatchColors.secondary.opacity(0.16), in: RoundedRectangle(cornerRadius: 6))
+            .accessibilityLabel("Server \(name)")
     }
 
     /// Android `↗ <parent id prefix>` chip (accent2 @16 %), tappable here.

@@ -4209,6 +4209,28 @@ public class RestTransport(
             }
         }
 
+    // ---- iOS-E (2026-10-04) ----
+
+    override suspend fun testRemoteServer(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/servers/${iosPathPart(name)}/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun putRemoteServerJson(
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/servers/${iosPathPart(name)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
