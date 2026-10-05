@@ -22,6 +22,8 @@ struct SettingsListCardView: View {
     @State private var formEdit: SettingsFormEditItem?
     /// Session template "Use" → New Session prefilled from the template.
     @State private var templateUse: TemplateUseItem?
+    /// Skill registry "Browse" → available skills with sync / unsync.
+    @State private var browseRegistry: SettingsFormEditItem?
 
     /// LLMs + Compute Nodes use the full PWA add/edit forms instead of the generic add sheet.
     private var hasForm: Bool { kind == "llms" || kind == "compute_nodes" }
@@ -80,6 +82,9 @@ struct SettingsListCardView: View {
         }
         .sheet(item: $templateUse) { item in
             NewSessionView(profile: profile, template: item.values)
+        }
+        .sheet(item: $browseRegistry) { item in
+            SkillBrowseSheet(profile: profile, registry: item.id)
         }
         .confirmationDialog(
             deleteTitle,
@@ -252,6 +257,10 @@ struct SettingsListCardView: View {
     private func runAction(_ row: IosSettingsRow, _ index: Int) {
         if kind == "session_templates" && index < row.actions.count && row.actions[index] == "Use" {
             useTemplate(row)
+            return
+        }
+        if kind == "skill_registries" && index < row.actions.count && row.actions[index] == "Browse" {
+            browseRegistry = SettingsFormEditItem(id: row.id)
             return
         }
         message = L("Working…")
