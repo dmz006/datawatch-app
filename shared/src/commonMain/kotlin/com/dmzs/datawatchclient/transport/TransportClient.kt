@@ -1960,6 +1960,16 @@ public interface TransportClient {
      */
     public suspend fun fetchAutonomousEnabled(): Result<Boolean> =
         Result.failure(UnsupportedOperationException("fetchAutonomousEnabled"))
+
+    // ---- Parity extras: compute-node 📡 live detail (2026-10-05) ----
+
+    /**
+     * GET /api/compute/nodes/{name}/detail as raw JSON (PWA `computeShowDetail`
+     * dumps the whole payload). A non-2xx fails with the server's plain-text
+     * reason (e.g. "no monitoring_endpoint configured").
+     */
+    public suspend fun getComputeNodeDetailJson(name: String): Result<kotlinx.serialization.json.JsonElement> =
+        Result.failure(UnsupportedOperationException("getComputeNodeDetailJson"))
 }
 
 /** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */

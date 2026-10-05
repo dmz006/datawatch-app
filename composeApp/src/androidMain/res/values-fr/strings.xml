@@ -1379,4 +1379,14 @@
     <string name="pfe_pull_secret_ph">nom du secret k8s (facultatif)</string>
     <string name="pfe_parent_cb">URL de rappel parent</string>
     <string name="pfe_parent_cb_ph">détection auto si vide</string>
+    <!-- Parity extras 2026-10-05: chat thinking, story verdicts, compute 📡 detail, LLM auto -->
+    <string name="chat_thinking_summary">🧠 Réflexion...</string>
+    <string name="prd_verdict_no_issues">aucun problème</string>
+    <string name="llm_auto">auto</string>
+    <string name="compute_detail_btn_title">Détail de surveillance en direct</string>
+    <string name="compute_detail_title">détail en direct</string>
+    <string name="compute_detail_polling">Sondage en direct chaque 1s tant que le modal est ouvert. Fermer pour arrêter.</string>
+    <string name="compute_detail_unavailable">détail indisponible</string>
+    <string name="compute_detail_fix_label">Correctif :</string>
+    <string name="compute_detail_fix_hint">Modifiez ce nœud de calcul et définissez monitoring_endpoint sur l\'URL d\'un sidecar datawatch-stats --listen exécuté sur le nœud. Sans lui, le démon n\'a rien à interroger pour le détail en direct.</string>
 </resources>

@@ -802,6 +802,8 @@ public data class PrdStoryDto(
     val backend: String? = null,
     val effort: String? = null,
     val model: String? = null,
+    /** BL191 Q6 story-level guardrail verdicts (PWA `prd-story-verdicts` badges). */
+    val verdicts: List<GuardrailVerdictDto> = emptyList(),
 )
 
 /**
@@ -1330,6 +1332,11 @@ public data class LlmRegistryEntryDto(
     @SerialName("permission_mode") val permissionMode: String? = null,
     @SerialName("default_effort") val defaultEffort: String? = null,
     @SerialName("fallback_chain") val fallbackChain: List<String>? = null,
+    /**
+     * Server-owned, READ-ONLY: daemon auto-created this LLM (PWA "auto" badge).
+     * Never sent back on save — [com.dmzs.datawatchclient.transport.LlmSaveBody] strips it.
+     */
+    @SerialName("auto_created") val autoCreated: Boolean = false,
 )
 
 /** Sprint 30 — GET /api/llms/{name}/sessions response. */
@@ -1838,6 +1845,9 @@ public data class GuardrailVerdictDto(
     val guardrail: String = "",
     val outcome: String = "pass",
     val summary: String = "",
+    /** Story/task verdicts (server GuardrailVerdict) also carry severity + issues. */
+    val severity: String = "",
+    val issues: List<String> = emptyList(),
 )
 
 @Serializable

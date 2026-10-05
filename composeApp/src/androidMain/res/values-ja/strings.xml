@@ -1379,4 +1379,14 @@
     <string name="pfe_pull_secret_ph">k8s シークレット名（任意）</string>
     <string name="pfe_parent_cb">親コールバック URL</string>
     <string name="pfe_parent_cb_ph">空の場合は自動検出</string>
+    <!-- Parity extras 2026-10-05: chat thinking, story verdicts, compute 📡 detail, LLM auto -->
+    <string name="chat_thinking_summary">🧠 思考中...</string>
+    <string name="prd_verdict_no_issues">問題なし</string>
+    <string name="llm_auto">自動</string>
+    <string name="compute_detail_btn_title">ライブモニタリング詳細</string>
+    <string name="compute_detail_title">ライブ詳細</string>
+    <string name="compute_detail_polling">モーダル表示中は1秒ごとにライブポーリング。閉じると停止。</string>
+    <string name="compute_detail_unavailable">詳細を取得できません</string>
+    <string name="compute_detail_fix_label">対処:</string>
+    <string name="compute_detail_fix_hint">このコンピュートノードを編集し、monitoring_endpoint にノード上で動作する datawatch-stats --listen サイドカーの URL を設定してください。設定しない場合、デーモンはライブ詳細を取得できません。</string>
 </resources>
