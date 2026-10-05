@@ -160,6 +160,8 @@ internal fun PrdDetailDialog(
     prdCapacity: com.dmzs.datawatchclient.transport.dto.CapacityResponseDto? = null,
     /** #192 — set Automaton admission priority (higher = runs first). */
     onSetPriority: ((Int) -> Unit)? = null,
+    /** BL370 — set per-Automaton max_concurrent_tasks (0 = global default). */
+    onSetConcurrency: ((Int) -> Unit)? = null,
     /** #191 — set allowed read/write directory scope. */
     onSetDirs: ((readDirs: List<String>, writeDirs: List<String>) -> Unit)? = null,
     /** #202 — re-resolve stuck depends_on refs (v8.36.6). */
@@ -611,6 +613,7 @@ internal fun PrdDetailDialog(
                             PrdGuidedModeRow(prd, onSetGuidedMode)
                             PrdContinueOnStoryFailureRow(prd, onSetContinueOnStoryFailure)
                             PrdSkillsRow(prd, onSetSkills)
+                            PrdConcurrencyRow(prd, onSetConcurrency)
                             PrdPriorityRow(prd, onSetPriority)
                             PrdScopeDirsRow(prd, onSetDirs)
                             PrdDepthCreatedMeta(prd)
@@ -1535,6 +1538,81 @@ private fun EditPrdDialog(
 
 // ── Story row + sub-dialogs ───────────────────────────────────────────────
 
+/**
+ * PWA `_renderStoryReadOnlyExtras`: "Progress: d/t tasks · p%[ · ⟳ n active]" + bar,
+ * "✅ Touched:" aggregate (deduped, capped at 12, "+N more") and "→ Session <id>"
+ * (first task with a session id) which opens the worker session detail.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun StoryReadOnlyExtras(story: PrdStoryDto) {
+    val total = story.tasks.size
+    val done = story.tasks.count { it.status in setOf("complete", "completed") }
+    val activeCount = story.tasks.count { it.status in setOf("verifying", "running_tests") }
+    val pct = if (total > 0) kotlin.math.round(100.0 * done / total).toInt() else 0
+    val accent = MaterialTheme.colorScheme.primary
+    val progressText = stringResource(R.string.prd_story_progress, done, total, pct)
+    val activeText = stringResource(R.string.prd_story_active, activeCount)
+    Text(
+        androidx.compose.ui.text.buildAnnotatedString {
+            append(progressText)
+            if (activeCount > 0) {
+                append(" · ")
+                pushStyle(androidx.compose.ui.text.SpanStyle(color = accent, fontWeight = FontWeight.SemiBold))
+                append(activeText)
+                pop()
+            }
+        },
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
+    )
+    androidx.compose.material3.LinearProgressIndicator(
+        progress = { pct / 100f },
+        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+        color = if (pct == 100) Color(0xFF10B981) else accent,
+    )
+    val touched = story.tasks.flatMap { it.filesTouched }.distinct()
+    val capped = touched.take(12)
+    if (capped.isNotEmpty()) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                stringResource(R.string.prd_story_touched),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            capped.forEach { f -> FilePill(name = f, color = Color(0xFF10B981)) }
+            if (touched.size > capped.size) {
+                Text(
+                    stringResource(R.string.prd_story_touched_more, touched.size - capped.size),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    val sid = story.tasks.firstOrNull { !it.sessionId.isNullOrBlank() }?.sessionId
+    if (sid != null) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .clickable { com.dmzs.datawatchclient.ui.DeepLinks.pendingSessionTarget.tryEmit(sid) }
+                    .padding(top = 2.dp, bottom = 2.dp),
+        ) {
+            Text(
+                stringResource(R.string.prd_story_session_link) + " ",
+                style = MaterialTheme.typography.labelSmall,
+                color = accent,
+            )
+            Text(sid, style = MaterialTheme.typography.labelSmall, color = accent, fontFamily = FontFamily.Monospace)
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StoryRow(
@@ -1748,61 +1826,11 @@ private fun StoryRow(
                         }
                     }
                 }
-                // Read-only extras: progress + aggregated files_touched + session link (PWA parity)
-                if (!canEdit && story.tasks.isNotEmpty()) {
-                    val total = story.tasks.size
-                    val done = story.tasks.count { it.status in setOf("complete", "completed", "done") }
-                    val activeCount = story.tasks.count { it.status in setOf("verifying", "running_tests") }
-                    val pct = if (total > 0) done * 100 / total else 0
-                    val progressColor = when {
-                        pct == 100 -> Color(0xFF10B981)
-                        activeCount > 0 -> Color(0xFF3B82F6)
-                        else -> MaterialTheme.colorScheme.primary
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            "$done/$total · $pct%${if (activeCount > 0) " · ⟳ $activeCount active" else ""}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(bottom = 2.dp))
-                    androidx.compose.material3.LinearProgressIndicator(
-                        progress = { pct / 100f },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-                        color = progressColor,
-                    )
-                    // Aggregated files_touched from all tasks (deduped, capped at 12)
-                    val allTouched = story.tasks.flatMap { it.filesTouched }.distinct().take(12)
-                    if (allTouched.isNotEmpty()) {
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                "✅ Touched:",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            allTouched.forEach { f -> FilePill(name = f, color = Color(0xFF10B981)) }
-                        }
-                    }
-                    // Session link — first task with non-empty session_id
-                    val firstSession = story.tasks.firstOrNull { !it.sessionId.isNullOrBlank() }?.sessionId
-                    firstSession?.let { sid ->
-                        Text(
-                            "→ ${sid.take(8)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.clickable { SessionsNavChannel.jumpTo(sid) }.padding(top = 2.dp, bottom = 2.dp),
-                        )
-                    }
+                // PWA `_renderStoryReadOnlyExtras`: read-only cards (!editable) with tasks get
+                // the progress row + bar, the aggregated files_touched row and the worker
+                // session link (iOS PrdStoryReadOnlyExtras parity).
+                if (!pwaEditable && story.tasks.isNotEmpty()) {
+                    StoryReadOnlyExtras(story)
                 }
                 // Task list — v8.23.0 parity
                 if (story.tasks.isNotEmpty()) {
@@ -2544,6 +2572,63 @@ private fun PrdSkillsRow(
                 TextButton(
                     onClick = { editOpen = false },
                 ) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+}
+
+/**
+ * PWA prdSettings "Max concurrent tasks (0 = global default)" (BL370) — numeric
+ * 0–32, POST set_concurrency. Hidden when unset and not editable.
+ */
+@Composable
+private fun PrdConcurrencyRow(prd: PrdDto, onSetConcurrency: ((Int) -> Unit)?) {
+    if (prd.maxConcurrentTasks <= 0 && onSetConcurrency == null) return
+    var editOpen by remember { mutableStateOf(false) }
+    var text by remember(prd.maxConcurrentTasks) { mutableStateOf(prd.maxConcurrentTasks.toString()) }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.prd_settings_concurrency_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            prd.maxConcurrentTasks.toString(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (onSetConcurrency != null) {
+            IconButton(onClick = { editOpen = true }) {
+                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
+            }
+        }
+    }
+    if (editOpen && onSetConcurrency != null) {
+        AlertDialog(
+            onDismissRequest = { editOpen = false },
+            title = { Text(stringResource(R.string.prd_settings_concurrency_label)) },
+            text = {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.filter { c -> c.isDigit() }.take(2) },
+                    label = { Text(stringResource(R.string.prd_settings_concurrency_hint)) },
+                    placeholder = { Text("0") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    // PWA: parseInt(value || '0') || 0; the input is min 0 / max 32.
+                    val n = (text.toIntOrNull() ?: 0).coerceIn(0, 32)
+                    if (n != prd.maxConcurrentTasks) onSetConcurrency(n)
+                    editOpen = false
+                }) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { editOpen = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }

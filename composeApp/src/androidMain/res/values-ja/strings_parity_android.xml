@@ -61,4 +61,13 @@
     <string name="restart_now_link">今すぐ再起動</string>
     <string name="automata_confirm_cancel_planning">⚠️ サーバーで計画を実行中です。\n\nキャンセルするとオートマトン全体が中止され、生成中の計画は破棄されます。サーバー側の計画ジョブは停止するまで少しの間続く場合があります。\n\nオートマトンをキャンセルしますか？</string>
     <string name="observer_no_server">メトリクスを監視するには設定でサーバーを追加してください。</string>
+    <string name="prd_story_progress">進捗: %1$d/%2$d タスク · %3$d%%</string>
+    <string name="prd_story_active">⟳ %1$d 件実行中</string>
+    <string name="prd_story_touched">✅ 変更済み:</string>
+    <string name="prd_story_touched_more">他 %1$d 件</string>
+    <string name="prd_story_session_link">→ セッション</string>
+    <string name="prd_settings_concurrency_label">最大同時タスク数（0 = グローバル既定）</string>
+    <string name="prd_settings_concurrency_hint">0 または 1 = 逐次 · 2 以上 = 独立したタスクを並列実行</string>
+    <string name="automata_detail_concurrency">並行数</string>
+    <string name="automata_detail_concurrency_value">%1$d タスク</string>
 </resources>

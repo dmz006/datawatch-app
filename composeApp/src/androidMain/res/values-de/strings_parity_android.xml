@@ -61,4 +61,13 @@
     <string name="restart_now_link">Jetzt neu starten</string>
     <string name="automata_confirm_cancel_planning">⚠️ Die Planung läuft auf dem Server.\n\nDas Abbrechen beendet den gesamten Automaten — der gerade erstellte Plan wird verworfen. Der serverseitige Planungsjob kann kurz weiterlaufen, bevor er stoppt.\n\nAutomaten abbrechen?</string>
     <string name="observer_no_server">In den Einstellungen einen Server hinzufügen, um Metriken zu überwachen.</string>
+    <string name="prd_story_progress">Fortschritt: %1$d/%2$d Aufgaben · %3$d%%</string>
+    <string name="prd_story_active">⟳ %1$d aktiv</string>
+    <string name="prd_story_touched">✅ Geändert:</string>
+    <string name="prd_story_touched_more">+%1$d weitere</string>
+    <string name="prd_story_session_link">→ Sitzung</string>
+    <string name="prd_settings_concurrency_label">Max. gleichzeitige Aufgaben (0 = globaler Standard)</string>
+    <string name="prd_settings_concurrency_hint">0 oder 1 = sequenziell · 2+ = unabhängige Aufgaben parallel ausführen</string>
+    <string name="automata_detail_concurrency">Parallelität</string>
+    <string name="automata_detail_concurrency_value">%1$d Aufgaben</string>
 </resources>

@@ -4446,6 +4446,24 @@ public class RestTransport(
         }
     }
 
+    // ---- Task S: Automaton concurrency (2026-10-05) ----
+
+    override suspend fun setPrdConcurrency(
+        prdId: String,
+        maxConcurrentTasks: Int,
+    ): Result<Unit> =
+        request {
+            val body =
+                kotlinx.serialization.json.buildJsonObject {
+                    put("max_concurrent_tasks", kotlinx.serialization.json.JsonPrimitive(maxConcurrentTasks))
+                }
+            client.post("${profile.baseUrl}/api/autonomous/prds/${prdId.encodeURLPathPart()}/set_concurrency") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

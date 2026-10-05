@@ -543,6 +543,7 @@ public fun AutonomousScreen(
                 prdActiveSessions = state.prdActiveSessions,
                 prdCapacity = state.prdCapacity,
                 onSetPriority = { priority -> vm.setPriority(id, priority) },
+                onSetConcurrency = { n -> vm.setConcurrency(id, n) },
                 onSetDirs = { readDirs, writeDirs -> vm.setDirs(id, readDirs, writeDirs) },
                 onRepairDependsOn = { vm.repairDependsOn(id) },
                 projectProfiles = projectProfiles,
