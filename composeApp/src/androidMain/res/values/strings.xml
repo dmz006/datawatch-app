@@ -946,8 +946,6 @@
     <string name="docs_trust_row_dismiss">Dismiss</string>
     <string name="docs_trust_none">none</string>
     <string name="docs_howtos_title">How-to guides (%d)</string>
-    <string name="docs_trust_add_source">Add source</string>
-    <string name="docs_trust_add_source_hint">Source ID (e.g. skill:name)</string>
 
     <!-- v0.75.0 — Mic toast + Observer card (S6-7, #88) -->
     <string name="mic_toast_recording">Recording…</string>
@@ -1584,4 +1582,10 @@
     <string name="daemon_log_newest">Newest</string>
     <string name="daemon_log_older">Older</string>
     <string name="daemon_log_info">Showing %1$d of %2$d lines (offset %3$d)</string>
+    <string name="docs_export_btn">Export YAML</string>
+    <string name="docs_export_title">Trust list — YAML for config.yaml</string>
+    <string name="docs_export_hint">Paste this into your config.yaml\'s docs_search.trust block to make runtime trust survive a wipe.</string>
+    <string name="discussion_recall_btn">Recall</string>
+    <string name="discussion_recall_title">%1$s — %2$d entries</string>
+    <string name="discussion_no_entries">(no entries)</string>
 </resources>

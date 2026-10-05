@@ -470,7 +470,7 @@ public object IosSettingsLists {
                     row(p.name, p.name, p.description, enabled = p.enabled, canDelete = true)
                 }
             "discussions" ->
-                tr.listDiscussions().getOrThrow().discussions.map { d -> row(d, d, "") }
+                tr.listDiscussions().getOrThrow().discussions.map { d -> row(d, d, "", actions = listOf("Recall")) }
             "file_service" -> {
                 val m = tr.getFileServiceMeta().getOrThrow()
                 listOf(row("_root", "Root", m.root)) +

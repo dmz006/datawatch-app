@@ -1449,14 +1449,6 @@ public data class DocsHowtosResponse(
     val howtos: List<DocsHowtoDto> = emptyList(),
 )
 
-/** POST /api/docs/trust request body. */
-@Serializable
-public data class DocsTrustAddRequest(
-    val source: String,
-    @SerialName("granted_by") val grantedBy: String = "operator",
-    val note: String? = null,
-)
-
 // ── v0.73.0 Identity + Algorithm + Evals (S4-1/2/3, #53/#54/#55) ────────────
 
 @Serializable

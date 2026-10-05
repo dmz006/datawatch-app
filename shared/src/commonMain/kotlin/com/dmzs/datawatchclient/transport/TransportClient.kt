@@ -1176,9 +1176,6 @@ public interface TransportClient {
     /** GET /api/docs/howtos — list how-to guides with exec metadata. */
     public suspend fun docsListHowtos(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsHowtoDto>>
 
-    /** POST /api/docs/trust `{source, granted_by}` — add a docs source to the trust list. */
-    public suspend fun docsTrustAdd(source: String): Result<Unit>
-
     // ---- v0.73.0 Sprint 4: Identity, Algorithm Mode, Evals ----
 
     /** GET /api/identity — fetch the server's identity profile. */
@@ -1910,6 +1907,25 @@ public interface TransportClient {
         sources: List<String>,
         accept: Boolean,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("docsTrustDecide"))
+
+    // ---- PWA parity: YAML export + discussion recall (2026-10-05) ----
+
+    /**
+     * GET /api/docs/trust/export → `{yaml_snippet}` — the server renders the
+     * `docs_search.trust` YAML block (PWA docsTrustExport); no client YAML.
+     */
+    public suspend fun docsTrustExportYaml(): Result<String> =
+        Result.failure(UnsupportedOperationException("docsTrustExportYaml"))
+
+    /**
+     * GET /api/memory/discussion/{id}?top_k= → `{results:[{content,…}], count}`
+     * (PWA discussionViewEntries — the Discussion Scopes "Recall" button).
+     * Returns each entry's `content` (falls back to the raw entry JSON).
+     */
+    public suspend fun recallDiscussion(
+        id: String,
+        topK: Int = 10,
+    ): Result<List<String>> = Result.failure(UnsupportedOperationException("recallDiscussion"))
 }
 
 /** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */
