@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -167,7 +168,7 @@ private fun AlertsBellPill(
  * Green = reachable, red = unreachable, amber (pulsing) = probing.
  * Tap opens a bottom sheet with last-probe time and a retry button.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun ReachabilityDot(
     reachable: Boolean?,
@@ -175,6 +176,7 @@ internal fun ReachabilityDot(
     onRetry: () -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
+    val reconnectMsg = stringResource(R.string.status_dot_reconnecting)
     val color =
         when (reachable) {
             true -> Color(0xFF10B981)
@@ -200,7 +202,12 @@ internal fun ReachabilityDot(
             Modifier
                 .padding(start = 8.dp)
                 .size(24.dp)
-                .clickable(onClick = { sheetOpen = true }),
+                // Parity D38a: tap opens the status sheet; long-press
+                // force-refreshes the connection (PWA forceRefreshConnection).
+                .combinedClickable(
+                    onClick = { sheetOpen = true },
+                    onLongClick = { forceRefreshConnection(reconnectMsg, onRetry) },
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -322,6 +329,21 @@ internal fun SingleServerPickerTitle(
 internal fun HeaderProfileDot(enabled: Boolean) {
     val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
+}
+
+/**
+ * Parity D38a — PWA `forceRefreshConnection`: drop and reopen the WS
+ * connection ([com.dmzs.datawatchclient.events.ReconnectBus]) and re-probe
+ * the server ([onRetry]). The PWA also re-checks its service worker for a new
+ * bundle; app updates come from the store, so that half is n/a here.
+ */
+internal fun forceRefreshConnection(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    AlertDockChannel.post(message)
+    com.dmzs.datawatchclient.events.ReconnectBus.request()
+    onRetry()
 }
 
 internal fun relativeTimeLabel(epochMs: Long): String {

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="server_picker_label">サーバー:</string>
+    <string name="server_all_label">すべて</string>
+    <string name="first_run_no_server">サーバー未接続</string>
+    <string name="first_run_no_server_hint">この端末から到達できる datawatch サーバーを追加してください（Tailscale またはローカル Wi-Fi）。</string>
+    <string name="status_dot_reconnecting">サーバー接続を更新中…</string>
+</resources>

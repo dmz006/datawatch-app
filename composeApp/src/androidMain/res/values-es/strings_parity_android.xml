@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="server_picker_label">Servidor:</string>
+    <string name="server_all_label">Todos</string>
+    <string name="first_run_no_server">Ningún servidor conectado</string>
+    <string name="first_run_no_server_hint">Añade un servidor datawatch accesible desde este dispositivo (Tailscale o Wi-Fi local).</string>
+    <string name="status_dot_reconnecting">Actualizando la conexión con el servidor…</string>
+</resources>

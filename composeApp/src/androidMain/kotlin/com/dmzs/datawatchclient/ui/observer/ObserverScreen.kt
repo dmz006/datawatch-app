@@ -14,8 +14,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +23,7 @@ import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
-import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
+import com.dmzs.datawatchclient.ui.common.ServerPickerBar
 
 /**
  * Observer tab — aggregates monitoring cards: system stats, eBPF, cluster,
@@ -42,24 +40,11 @@ public fun ObserverScreen(
     val reachable by vm.reachable.collectAsState()
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
-    var pickerOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    SingleServerPickerTitle(
-                        active = state.activeProfile,
-                        open = pickerOpen,
-                        onToggle = { pickerOpen = !pickerOpen },
-                        onDismiss = { pickerOpen = false },
-                        profiles = state.allProfiles,
-                        onSelect = {
-                            vm.selectProfile(it)
-                            pickerOpen = false
-                        },
-                    )
-                },
+                title = { androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.nav_observer)) },
                 actions = {
                     DocsLinkAction("datawatch-definitions.md#observer")
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
@@ -89,6 +74,12 @@ public fun ObserverScreen(
                         .padding(innerPadding)
                         .verticalScroll(rememberScrollState()),
             ) {
+                ServerPickerBar(
+                    profiles = state.allProfiles,
+                    activeId = state.activeProfile?.id,
+                    allMode = false,
+                    onSelect = vm::selectProfile,
+                )
                 com.dmzs.datawatchclient.ui.monitoring.SystemStatsGridCard()
                 com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
                 com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()

@@ -56,6 +56,7 @@ import com.dmzs.datawatchclient.ui.settings.SettingsScreen
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
+import com.dmzs.datawatchclient.ui.shell.LastViewStore
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import com.dmzs.datawatchclient.ui.shell.SettingsNavChannel
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
@@ -67,8 +68,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Top-level composable. Cold-launch lands on Splash. After a minimum splash
- * dwell and once the encrypted DB has emitted its profile list, Splash picks
- * between Onboarding and Home.
+ * dwell and once the encrypted DB has emitted its profile list, Splash goes to
+ * Home (parity D86c: no onboarding page — Sessions shows the no-server state).
  *
  * The initial value of `profiles` is `null` (not empty-list) so we can tell the
  * "still loading" state apart from the "confirmed zero profiles" state — that
@@ -241,15 +242,20 @@ private fun Nav(
                     splashStatus = "ready"
                     delay(180L) // brief flash so "ready" is visible
                 }
-                val next =
-                    if (resolved?.isNotEmpty() == true) {
-                        Destinations.Home
-                    } else {
-                        Destinations.Onboarding
-                    }
-                navController.navigate(next) {
+                // Parity D86c — PWA-style minimal first run: always land on
+                // Home; with no server the Sessions tab shows "No server
+                // connected" + Add server instead of a separate onboarding page.
+                navController.navigate(Destinations.Home) {
                     popUpTo(Destinations.Splash) { inclusive = true }
                     launchSingleTop = true
+                }
+                // Parity D40a — reopen the session that was open at shutdown
+                // (PWA `cs_active_session`), unless a deep link is pending.
+                val lastSession = LastViewStore.lastSession(splashContext)
+                if (lastSession != null && resolved?.isNotEmpty() == true &&
+                    DeepLinks.pendingSessionTarget.replayCache.isEmpty()
+                ) {
+                    navController.navigate(Destinations.sessionDetail(lastSession))
                 }
             }
         }
@@ -349,13 +355,18 @@ private fun Nav(
             val isNew = entry.arguments?.getBoolean("isNew") ?: false
             val openInStatusMode = entry.arguments?.getBoolean("statusMode") ?: false
             val context = LocalContext.current
+            LaunchedEffect(id) { LastViewStore.setLastSession(context, id) }
             SessionDetailScreen(
                 sessionId = id,
                 isNew = isNew,
                 openInStatusMode = openInStatusMode,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    LastViewStore.setLastSession(context, null)
+                    navController.popBackStack()
+                },
                 onOpenSession = { other -> navController.navigate(Destinations.sessionDetail(other)) },
                 onNavigateToSettings = { tab ->
+                    LastViewStore.setLastSession(context, null)
                     context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                         .edit().putString("settings_active_tab", tab).apply()
                     SettingsNavChannel.request(tab)
@@ -460,6 +471,27 @@ private fun HomeShell(
     }
 
     val context = LocalContext.current
+    // Parity D40a — start on the last tab (PWA `cs_active_view`) and record
+    // every tab change.
+    val startTab = remember { LastViewStore.lastTab(context) }
+    LaunchedEffect(tabNav) {
+        tabNav.currentBackStackEntryFlow.collect { entry ->
+            LastViewStore.setLastTab(context, entry.destination.route)
+        }
+    }
+    // A restored Automata / Dashboard tab must not outlive its gate.
+    LaunchedEffect(prdsSupported, dashboardEnabled) {
+        val route = tabNav.currentBackStackEntry?.destination?.route
+        val hidden =
+            (route == Destinations.Tabs.Autonomous && !prdsSupported) ||
+                (route == Destinations.Tabs.Dashboard && !dashboardEnabled)
+        if (hidden) {
+            tabNav.navigate(Destinations.Tabs.Sessions) {
+                popUpTo(tabNav.graph.startDestinationId) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
     val pendingSessionsFilter by SessionsNavChannel.pendingFilter.collectAsState()
     LaunchedEffect(pendingSessionsFilter) {
         pendingSessionsFilter ?: return@LaunchedEffect
@@ -499,7 +531,7 @@ private fun HomeShell(
             Box(modifier = Modifier.fillMaxSize().padding(inner)) {
                 NavHost(
                     navController = tabNav,
-                    startDestination = Destinations.Tabs.Sessions,
+                    startDestination = startTab,
                     modifier = Modifier.widthIn(max = 840.dp).fillMaxHeight().align(Alignment.TopCenter),
                 ) {
                     composable(Destinations.Tabs.Sessions) {

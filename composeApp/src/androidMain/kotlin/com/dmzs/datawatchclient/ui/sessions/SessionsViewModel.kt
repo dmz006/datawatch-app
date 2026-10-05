@@ -482,7 +482,12 @@ public class SessionsViewModel : ViewModel() {
         // Open a persistent WS connection per active profile to receive server-pushed
         // session-list updates. The server sends a "sessions" frame immediately on
         // connect and again on every session change; SessionsHub routes it here.
-        activeProfile
+        // Parity D38a: a status-dot long-press bumps ReconnectBus.tick, which
+        // re-keys this flatMapLatest so the socket is closed and reopened.
+        kotlinx.coroutines.flow.combine(
+            activeProfile,
+            com.dmzs.datawatchclient.events.ReconnectBus.tick,
+        ) { profile, _ -> profile }
             .flatMapLatest { profile ->
                 if (profile == null) emptyFlow()
                 else ServiceLocator.wsTransportFor(profile).globalStream()
