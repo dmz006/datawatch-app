@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -637,6 +638,10 @@ public fun SessionDetailScreen(
                             fetchFresh = { vm.fetchFreshResponse() },
                             title = state.session?.let { it.name ?: it.id },
                         )
+                    }
+                    // Parity D45a — inline process-stats bar above the output.
+                    if (state.session?.state == SessionState.Running || state.session?.state == SessionState.Waiting) {
+                        ProcessStatsBar(fetch = { vm.fetchProcessEnvelope() })
                     }
                     // PWA conn-status-banner: channel/ACP sessions that are active
                     // but whose MCP channel / ACP server isn't connected yet.
@@ -3039,4 +3044,68 @@ private fun SessionHeaderBadge(label: String) {
                 .border(1.dp, accent2, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                 .padding(horizontal = 5.dp),
     )
+}
+
+/**
+ * Parity D45a — PWA `session-stats-bar`: CPU (PWA thresholds) · RAM · Threads ·
+ * FDs · Net (when moving) · GPU (when used), polled every 5 s; hidden while
+ * the server reports no envelope for this session.
+ */
+@Composable
+private fun ProcessStatsBar(fetch: suspend () -> com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto?) {
+    var env by remember { mutableStateOf<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto?>(null) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        while (true) {
+            env = fetch()
+            kotlinx.coroutines.delay(5_000L)
+        }
+    }
+    val e = env ?: return
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+    val cpuColor =
+        when {
+            e.cpuPct > 80 -> MaterialTheme.colorScheme.error
+            e.cpuPct > 50 -> dw.warning
+            else -> dw.success
+        }
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(dw.bg2)
+                .horizontalScroll(androidx.compose.foundation.rememberScrollState())
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        StatsBarCell("CPU", "%.1f%%".format(e.cpuPct), cpuColor)
+        StatsBarCell("RAM", statsBarBytes(e.rssBytes))
+        StatsBarCell("Threads", e.threads.toString())
+        StatsBarCell("FDs", e.fds.toString())
+        if (e.netRxBps > 0 || e.netTxBps > 0) {
+            StatsBarCell("Net", "↓${statsBarRate(e.netRxBps)} ↑${statsBarRate(e.netTxBps)}")
+        }
+        if (e.gpuPct > 0) {
+            val mem = if (e.gpuMemBytes > 0) " / %.1fGB".format(e.gpuMemBytes / 1e9) else ""
+            StatsBarCell("GPU", "%.1f%%".format(e.gpuPct) + mem)
+        }
+    }
+}
+
+@Composable
+private fun StatsBarCell(
+    label: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            value,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+    }
 }

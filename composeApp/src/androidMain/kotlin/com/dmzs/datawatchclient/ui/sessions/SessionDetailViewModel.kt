@@ -547,6 +547,17 @@ public class SessionDetailViewModel(
         viewModelScope.launch { doRefreshFromServer(profile) }
     }
 
+    /**
+     * Parity D45a — PWA `loadSessionStats`: this session's process envelope from
+     * GET /api/stats envelopes (kind == session, full id starts with envelope id).
+     */
+    public suspend fun fetchProcessEnvelope(): com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto? {
+        val profile = profileCache ?: return null
+        val full = fullIdOrShort()
+        return ServiceLocator.transportFor(profile).getAllEnvelopes().getOrNull()
+            ?.let { envs -> sessionEnvelopeFor(full, envs) }
+    }
+
     /** Parity D43a — live last response for the viewer (GET /api/sessions/response). */
     public suspend fun fetchFreshResponse(): Result<String> {
         val profile = profileCache ?: return Result.failure<String>(IllegalStateException("no server"))
@@ -678,3 +689,21 @@ private fun Throwable.describe(): String =
         is TransportError.ServerError -> "server error $status"
         else -> message ?: this::class.simpleName ?: "unknown"
     }
+
+/** PWA match rule: `e.kind === 'session' && e.id && sessionId.startsWith(e.id)`. */
+internal fun sessionEnvelopeFor(
+    sessionFullId: String,
+    envelopes: List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>,
+): com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto? =
+    envelopes.firstOrNull { it.kind == "session" && it.id.isNotBlank() && sessionFullId.startsWith(it.id) }
+
+/** PWA byte formatting for the stats bar RAM cell (GB / MB / KB). */
+internal fun statsBarBytes(b: Long): String =
+    when {
+        b > 1_000_000_000L -> "%.1fGB".format(b / 1e9)
+        b > 1_000_000L -> "%.0fMB".format(b / 1e6)
+        else -> "%.0fKB".format(b / 1e3)
+    }
+
+/** PWA rate formatting for the stats bar Net cell (MB/s else KB/s). */
+internal fun statsBarRate(bps: Long): String = if (bps > 1_000_000L) "%.1fMB/s".format(bps / 1e6) else "%.0fKB/s".format(bps / 1e3)
