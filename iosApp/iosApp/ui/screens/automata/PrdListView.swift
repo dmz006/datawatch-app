@@ -308,6 +308,8 @@ final class PrdListViewModel: ObservableObject {
 
 struct PrdListView: View {
     let profile: ServerProfile
+    /// Wizard "Browse" template link → Automata › Templates.
+    var onBrowseTemplates: (() -> Void)? = nil
     @StateObject private var vm = PrdListViewModel()
     @State private var showWizard = false
     @State private var confirmBatchDelete = false
@@ -350,7 +352,7 @@ struct PrdListView: View {
             Text(vm.batchError ?? "")
         }
         .sheet(isPresented: $showWizard) {
-            NewPrdView(profile: profile) { _ in Task { await vm.refreshAsync() } }
+            NewPrdView(profile: profile, onCreated: { _ in Task { await vm.refreshAsync() } }, onBrowseTemplates: onBrowseTemplates)
         }
         .prdReviewDialogs($review) { prdId, action, body in
             Task { await vm.act(prdId: prdId, action: action, body: body) }
@@ -550,8 +552,18 @@ struct PrdListView: View {
                 }
                 .contextMenu {
                     Button(vm.pinned.contains(prd.id) ? "Unpin" : "Pin") { vm.togglePin(prd.id) }
+                    // D52b: Pause / Resume (POST /prds/{id}/pause|resume).
+                    if prd.status.lowercased() == "running" {
+                        Button { Task { await vm.act(prdId: prd.id, action: "pause", body: nil) } } label: {
+                            Label("Pause", systemImage: "pause.fill")
+                        }
+                    } else if prd.status.lowercased() == "paused" {
+                        Button { Task { await vm.act(prdId: prd.id, action: "resume", body: nil) } } label: {
+                            Label("Resume", systemImage: "play.fill")
+                        }
+                    }
                 }
-                .listRowBackground(DatawatchColors.surface)
+                .listRowBackground(PrdRowBackground(status: prd.status))
                 .listRowSeparatorTint(DatawatchColors.border)
             }
         }
@@ -600,6 +612,8 @@ struct PrdRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 if pinned { Text("📌").font(DatawatchFonts.labelSmall).accessibilityLabel("Pinned") }
+                if let t = prd.type, !t.isEmpty { PrdTypeBadge(type: t) }
+                if prd.isTemplate { PrdTemplateBadge() }
                 Text(prd.displayTitle)
                     .font(DatawatchFonts.titleMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
@@ -615,12 +629,19 @@ struct PrdRow: View {
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .lineLimit(1)
             }
+            if let pos = PrdCardStyle.positionLine(prd) {
+                Text(pos)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.success)
+                    .lineLimit(2)
+            }
             if total > 0 {
                 ProgressView(value: Double(done), total: Double(total))
                     .tint(PrdStatusStyle.color(prd.status))
                     .accessibilityLabel("\(done) of \(total) tasks complete")
             }
             PrdLifecycleStrip(prd: prd, onAction: onAction)
+            PrdStoriesTree(prd: prd)
         }
         .padding(.vertical, 6)
     }
@@ -655,7 +676,6 @@ struct PrdRow: View {
 
     private var metaLine: String {
         var parts: [String] = []
-        if let t = prd.type, !t.isEmpty { parts.append(t) }
         if let b = prd.backend, !b.isEmpty {
             parts.append((prd.model?.isEmpty == false) ? "\(b)/\(prd.model!)" : b)
         }

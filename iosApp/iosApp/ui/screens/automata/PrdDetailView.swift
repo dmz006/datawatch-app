@@ -466,11 +466,8 @@ struct PrdDetailView: View {
 
     private func specSection(_ spec: String) -> some View {
         DisclosureGroup {
-            Text(spec)
-                .font(DatawatchFonts.terminalSmall)
-                .foregroundStyle(DatawatchColors.onSurface)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // D53b: native markdown + GFM tables; Mermaid via CDN in a WKWebView.
+            PrdMarkdownView(source: spec)
                 .padding(.top, 6)
         } label: {
             Text("Spec")

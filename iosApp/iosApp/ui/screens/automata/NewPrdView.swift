@@ -1,12 +1,16 @@
 import SwiftUI
 import DatawatchShared
 
-/// Launch Automaton wizard (parity B14; PWA wizard / Android NewPrdDialog):
-/// title → spec → workspace (project profile or directory) → execution backend /
-/// model / effort → planning backend + decomposition model.
+/// Launch Automaton wizard (parity B14; PWA openLaunchAutomatonWizard / Android
+/// NewPrdDialog): template strip → intent (auto-detected type, overridable) →
+/// optional title → workspace (profile or directory + Browse) → execution backend /
+/// model / effort → planning backend → Advanced (guided, scan, rules, per-story
+/// approval, skills hint) → memory.
 struct NewPrdView: View {
     let profile: ServerProfile
     var onCreated: (String) -> Void = { _ in }
+    /// PWA "Or start from a template → Browse": switches Automata to Templates.
+    var onBrowseTemplates: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var options: IosPrdWizardOptions? = nil
@@ -20,6 +24,16 @@ struct NewPrdView: View {
     @State private var planningBackend = ""
     @State private var planningTouched = false
     @State private var planningModel = ""
+    /// PWA `_wizardState.type` / `typeOverridden`.
+    @State private var type = "software"
+    @State private var typeOverridden = false
+    /// PWA Advanced: guided is sent; scan / rules / story approval are UI-only (as in PWA + Android).
+    @State private var guidedMode = false
+    @State private var scanEnabled = true
+    @State private var rulesEnabled = true
+    @State private var storyApproval = false
+    @State private var showDirBrowser = false
+    private static let types = ["software", "research", "operational", "personal"]
     /// D73a (Android NewPrdDialog #175): memory seed / harvest + promote-to scope.
     @State private var memorySeed = false
     @State private var memoryHarvest = false
@@ -29,8 +43,9 @@ struct NewPrdView: View {
     @State private var errorMessage: String? = nil
 
     private var profileMode: Bool { !projectProfile.isEmpty }
+    /// PWA/Android: the intent is required; the title is auto-derived when blank.
     private var canSubmit: Bool {
-        !submitting && !title.trimmingCharacters(in: .whitespaces).isEmpty
+        !submitting && !spec.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     private func models(for b: String) -> [String] {
         guard let o = options else { return [] }
@@ -40,75 +55,14 @@ struct NewPrdView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    TextField("Title", text: $title, prompt: Text("What should this automaton build?"))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Spec (optional)")
-                            .font(DatawatchFonts.labelSmall)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                        TextEditor(text: $spec)
-                            .frame(minHeight: 110)
-                            .font(DatawatchFonts.bodyMedium)
-                            .scrollContentBackground(.hidden)
-                            .accessibilityLabel("Spec")
-                    }
-                }
-
-                Section("Workspace") {
-                    if let o = options, !o.projectProfiles.isEmpty {
-                        Picker("Profile", selection: $projectProfile) {
-                            Text("— project directory —").tag("")
-                            ForEach(o.projectProfiles, id: \.self) { Text($0).tag($0) }
-                        }
-                    }
-                    if !profileMode {
-                        TextField("Project directory", text: $projectDir, prompt: Text("/path/to/project"))
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                    }
-                }
-
+                if onBrowseTemplates != nil { templateStrip }
+                intentSection
+                workspaceSection
                 if !profileMode, let o = options {
-                    Section("Execution") {
-                        Picker("Backend", selection: $backend) {
-                            Text("Daemon default").tag("")
-                            ForEach(o.backends, id: \.self) { Text($0).tag($0) }
-                        }
-                        if !models(for: backend).isEmpty {
-                            Picker("Model", selection: $model) {
-                                Text("Default").tag("")
-                                ForEach(models(for: backend), id: \.self) { Text($0).tag($0) }
-                            }
-                        }
-                        if !o.efforts.isEmpty {
-                            Picker("Effort", selection: $effort) {
-                                Text("Default").tag("")
-                                ForEach(o.efforts, id: \.self) { Text($0).tag($0) }
-                            }
-                        }
-                    }
-
-                    Section {
-                        Picker("Planning backend", selection: Binding(
-                            get: { planningBackend },
-                            set: { planningBackend = $0; planningTouched = true }
-                        )) {
-                            Text("Same as execution").tag("")
-                            ForEach(o.backends, id: \.self) { Text($0).tag($0) }
-                        }
-                        if !models(for: planningBackend).isEmpty {
-                            Picker("Decomposition model", selection: $planningModel) {
-                                Text("Default").tag("")
-                                ForEach(models(for: planningBackend), id: \.self) { Text($0).tag($0) }
-                            }
-                        }
-                    } header: {
-                        Text("Planning")
-                    } footer: {
-                        Text("The backend that decomposes the spec into stories and tasks.")
-                    }
+                    executionSection(o)
+                    planningSection(o)
                 }
-
+                advancedSection
                 memorySection
 
                 if let errorMessage {
@@ -132,17 +86,23 @@ struct NewPrdView: View {
                     if submitting {
                         ProgressView()
                     } else {
-                        Button("Create") { submit() }
+                        Button("Launch") { submit() }
                             .fontWeight(.semibold)
                             .disabled(!canSubmit)
                     }
                 }
+            }
+            .sheet(isPresented: $showDirBrowser) {
+                DirectoryBrowserSheet(profile: profile, startPath: projectDir) { picked in projectDir = picked }
             }
             .onAppear {
                 guard options == nil else { return }
                 IosAutomata.shared.loadWizardOptions(profile: profile) { o in
                     DispatchQueue.main.async { options = o }
                 }
+            }
+            .onChange(of: spec) { text in
+                if !typeOverridden { type = IosPrdWizard.shared.inferType(intent: text) }
             }
             .onChange(of: backend) { b in
                 if !models(for: b).contains(model) { model = "" }
@@ -154,6 +114,145 @@ struct NewPrdView: View {
             }
         }
         .dwThemed()
+    }
+
+    private var templateStrip: some View {
+        Section {
+            HStack(spacing: 8) {
+                Text("📦").accessibilityHidden(true)
+                Text("Or start from a template →")
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Spacer(minLength: 4)
+                Button("Browse") {
+                    onBrowseTemplates?()
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+
+    private var intentSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("What do you want to accomplish?")
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                TextEditor(text: $spec)
+                    .frame(minHeight: 110)
+                    .font(DatawatchFonts.bodyMedium)
+                    .scrollContentBackground(.hidden)
+                    .accessibilityLabel("Intent")
+            }
+            detectedRow
+            TextField("Title", text: $title, prompt: Text("Auto-derived from intent if blank"))
+        }
+    }
+
+    /// PWA wizard-detected-row: accent2 "Detected: <type>" pill + override dropdown.
+    private var detectedRow: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 4) {
+                Text("Detected:").opacity(0.7)
+                Text(type)
+            }
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(DatawatchColors.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+            .background(DatawatchColors.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(DatawatchColors.secondary, lineWidth: 1))
+            .accessibilityHint("Auto-inferred from your intent text. Override with the type menu.")
+            Spacer(minLength: 4)
+            Picker("Type", selection: Binding(
+                get: { type },
+                set: { type = $0; typeOverridden = true }
+            )) {
+                ForEach(Self.types, id: \.self) { Text($0).tag($0) }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+        }
+    }
+
+    private var workspaceSection: some View {
+        Section("Workspace") {
+            if let o = options, !o.projectProfiles.isEmpty {
+                Picker("Profile", selection: $projectProfile) {
+                    Text("— project directory —").tag("")
+                    ForEach(o.projectProfiles, id: \.self) { Text($0).tag($0) }
+                }
+            }
+            if !profileMode {
+                HStack(spacing: 8) {
+                    TextField("Project directory", text: $projectDir, prompt: Text("/path/to/project"))
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    Button("Browse…") { showDirBrowser = true }
+                        .buttonStyle(.borderless)
+                        .accessibilityHint("Browse folders on the server")
+                }
+            }
+        }
+    }
+
+    private func executionSection(_ o: IosPrdWizardOptions) -> some View {
+        Section("Execution") {
+            Picker("Backend", selection: $backend) {
+                Text("Daemon default").tag("")
+                ForEach(o.backends, id: \.self) { Text($0).tag($0) }
+            }
+            if !models(for: backend).isEmpty {
+                Picker("Model", selection: $model) {
+                    Text("Default").tag("")
+                    ForEach(models(for: backend), id: \.self) { Text($0).tag($0) }
+                }
+            }
+            if !o.efforts.isEmpty {
+                Picker("Effort", selection: $effort) {
+                    Text("Default").tag("")
+                    ForEach(o.efforts, id: \.self) { Text($0).tag($0) }
+                }
+            }
+        }
+    }
+
+    private func planningSection(_ o: IosPrdWizardOptions) -> some View {
+        Section {
+            Picker("Planning backend", selection: Binding(
+                get: { planningBackend },
+                set: { planningBackend = $0; planningTouched = true }
+            )) {
+                Text("Same as execution").tag("")
+                ForEach(o.backends, id: \.self) { Text($0).tag($0) }
+            }
+            if !models(for: planningBackend).isEmpty {
+                Picker("Decomposition model", selection: $planningModel) {
+                    Text("Default").tag("")
+                    ForEach(models(for: planningBackend), id: \.self) { Text($0).tag($0) }
+                }
+            }
+        } header: {
+            Text("Planning")
+        } footer: {
+            Text("The backend that decomposes the spec into stories and tasks.")
+        }
+    }
+
+    /// PWA wizard-advanced-details (collapsed by default).
+    private var advancedSection: some View {
+        Section {
+            DisclosureGroup("Advanced") {
+                Toggle("Guided Mode (pre-planning session)", isOn: $guidedMode)
+                Toggle("Security scan", isOn: $scanEnabled)
+                Toggle("Rules check (after scan)", isOn: $rulesEnabled)
+                Toggle("Per-story approval", isOn: $storyApproval)
+                Text("💡 Configure skills in Settings → Agents → Project Profiles → Skills")
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.secondary)
+            }
+        }
     }
 
     private var memorySection: some View {
@@ -186,10 +285,12 @@ struct NewPrdView: View {
         guard canSubmit else { return }
         submitting = true
         errorMessage = nil
-        IosExtras.shared.createPrd(
+        IosPrdWizard.shared.createPrd(
             profile: profile,
             title: title,
             spec: spec,
+            type: type,
+            guidedMode: guidedMode,
             projectDir: projectDir,
             projectProfile: projectProfile,
             backend: backend,

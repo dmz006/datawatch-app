@@ -131,7 +131,7 @@ struct AutomataView: View {
             switch section {
             case .prds:
                 if let profile = selectedProfile {
-                    PrdListView(profile: profile)
+                    PrdListView(profile: profile, onBrowseTemplates: { section = .templates })
                 }
             case .templates:
                 if let profile = selectedProfile {
