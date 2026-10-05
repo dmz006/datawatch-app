@@ -46,7 +46,7 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 9. ~~**Observer extras** — schedule edit via two prompts (D56b) + select-all; channel diagnostics, Matrix Test, web-search history; memory role/since filters; RTK update badge; duplicate Pipelines/Identity cards removed.~~ Done.
 10. ~~**Settings** — installed-plugin enable/disable/reload; missing config keys; vault status inside Secrets card (D33a); inline restart link (D57b); mount `McpToolsCard`.~~ Done (plugin "test" omitted — the PWA Plugin Manager has no test action). `goose`/`opencode` config-card drift (07 › row 81) still open.
 11. ~~**Dashboard stat strip** (D34a); flat OpenCode model list (D58b).~~ Done.
-12. **Low** — ~~accent2 alert-pill border (D3a)~~, ~~99+ cap~~ done; ~~accent #7C3AED compute badge (D6b)~~, ~~splash fade-out~~, ~~LLM badge (llm_ref + border)~~ done 2026-10-04; ~~copy/wording drift in 02/03/06~~ done 2026-10-04 (LLM short-label badges + >1 rule, uppercase state badge, "⬡ worker", "Input needed" + inline short summary ▼/▲; Tmux/Channel, hooks copy, focus empty, Process Stats, no-envelope, chat empty, timeline copy; "No eBPF data available", "no peers registered" + deploy hint, Newest/Older + offset counter — all locales). (iOS compute badge still accent2 → primary per D6b.)
+12. **Low** — ~~accent2 alert-pill border (D3a)~~, ~~99+ cap~~ done; ~~accent #7C3AED compute badge (D6b)~~, ~~splash fade-out~~, ~~LLM badge (llm_ref + border)~~ done 2026-10-04; ~~copy/wording drift in 02/03/06~~ done 2026-10-04 (LLM short-label badges + >1 rule, uppercase state badge, "⬡ worker", "Input needed" + inline short summary ▼/▲; Tmux/Channel, hooks copy, focus empty, Process Stats, no-envelope, chat empty, timeline copy; "No eBPF data available", "no peers registered" + deploy hint, Newest/Older + offset counter — all locales). (iOS compute badge → primary per D6b done 2026-10-05.)
 
 ### Both apps
 
@@ -65,13 +65,13 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 |---|---|---|---|---|---|---|---|---|
 | 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 53 | 4 | 0 | 8 | 11 | 4 |
 | 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 55 | 6 | 0 | 7 | 8 | 7 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 81 | 5 | 0 | 12 | 16 | 4 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 82 | 5 | 0 | 12 | 15 | 4 |
 | 04 | [Alerts](sections/04-alerts.md) | 65 | 44 | 3 | 0 | 2 | 8 | 8 |
 | 05 | [Automata](sections/05-automata.md) | 99 | 65 | 1 | 0 | 8 | 25 | 0 |
 | 06 | [Observer](sections/06-observer.md) | 93 | 81 | 0 | 0 | 4 | 7 | 1 |
 | 07 | [Settings](sections/07-settings.md) | 97 | 68 | 2 | 0 | 5 | 21 | 1 |
 | 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 51 | 11 | 0 | 4 | 0 | 5 |
-| | **Total** | **706** | **498** | **32** | **0** | **50** | **96** | **30** |
+| | **Total** | **706** | **499** | **32** | **0** | **50** | **95** | **30** |
 
 Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
 means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");

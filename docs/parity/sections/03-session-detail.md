@@ -15,7 +15,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | string | Rename success/fail toast "Session renamed"/"Rename failed" | ✓ 5276 | ✓ SDVM session_renamed / session_rename_failed → alert dock (D41a) | ✓ SDV `performRename` → dock "Session renamed" / "Rename failed: …" (D41a); title updates | aligned | | iOS gives no feedback either way |
 | element | Backend badge (lowercase backend) | ✓ 2934 backendText | ✓ SDS:1119 InfoBadge primary | ✓ SDV:152 primary | aligned | | |
 | element | LLM badge `⚡ llm_ref` green bordered | ✓ 2934 | ✓ SDS:1123 #10B981 | ✓ SDV:156 success | aligned | | |
-| element | Compute node badge `⚙ ref` purple | ✓ 2935 #a855f7 | ✓ SDS SessionInfoBar DwAccent #7C3AED | ~ SDV metaBadge `secondary` (#A855F7) | misaligned | per D6b | PWA badge uses var(--accent) = #7C3AED dark (fallback #a855f7); Android hard-codes 8B5CF6 (D6b), iOS uses accent2 |
+| element | Compute node badge `⚙ ref` purple | ✓ 2935 #a855f7 | ✓ SDS SessionInfoBar DwAccent #7C3AED | ✓ SDV metaBadge `primary` (#7C3AED / light #2563EB) | aligned | per D6b | PWA badge uses var(--accent) = #7C3AED dark (fallback #a855f7); Android hard-codes 8B5CF6 (D6b), iOS uses accent2 |
 | element | Mode badge only for non-tmux modes (channel/chat/acp) | ✓ renderSessionDetail: badge only when sessionMode == tmux | ✓ SessionInfoBar shows only when mode == tmux | ✓ SDV `infoBadges` "tmux" badge only when `SessionMode.of == tmux` | misaligned | decided D17a | iOS still on the old inverse rule · D17a done on iOS |
 | element | Agent badge `⬡ agent_id` | ✗ (⬡ worker badge on list card only, app.js renderSessionCard) | ✓ `SessionHeaderBadge` ⬡ agent | ✓ SDV metadataBar `⬡ agentId` | pwa-missing | decided D66a | Android also missing · → #172 · Android also missing · → #172 · Android done (D66a) (2026-10-04) |
 | element | "Chrome" badge when `sess.chrome` | ✗ | ✓ accent2 "Chrome" badge | ✓ SDV metadataBar "Chrome" badge | pwa-missing | decided D66a | Android shows it as subtitle text · → #172 · Android shows it as subtitle text · → #172 · Android done (D66a) (2026-10-04) |
@@ -175,7 +175,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | string | i18n: all detail copy via `t()` keys; Android 86 string resources | ✓ | ✓ | ✓ SwiftUI literal keys + L() with de/es/fr/ja Localizable.strings (detail strings present) | aligned | | |
 
 ## Coverage
-rows: 118 · aligned: 81 · ios-missing: 5 · android-missing: 0 · pwa-missing: 12 · misaligned: 16 · n/a: 4
+rows: 118 · aligned: 82 · ios-missing: 5 · android-missing: 0 · pwa-missing: 12 · misaligned: 15 · n/a: 4
 
 ## Decisions (resolved 2026-10-04)
 1. Mode badge condition → **D17a** tmux only (PWA rule). Android done; iOS still inverse.
