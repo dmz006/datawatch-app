@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -35,7 +36,6 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
@@ -1172,14 +1172,6 @@ private fun SessionRow(
                     modifier = Modifier.padding(end = 8.dp),
                 )
             }
-            if (reorderMode) {
-                Icon(
-                    Icons.Filled.DragHandle,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp).padding(end = 4.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
             // Parity D16a — PWA line 1: name, else task (80 chars), else "(no task)".
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 val line1 =
@@ -1240,6 +1232,12 @@ private fun SessionRow(
                     )
                 }
             }
+            SessionDragHandle(
+                enabled = !selectionMode,
+                onDragStart = onDragStart,
+                onDrag = onDrag,
+                onDragEnd = onDragEnd,
+            )
         }
 
         // Meta row: short-id pill (+ hostname only with several servers);
@@ -1837,6 +1835,48 @@ private fun SessionsHeaderTitle(
             maxLines = 1,
         )
     }
+}
+
+/**
+ * PWA `.drag-handle` (style.css:2176): always-visible `⋮⋮`, text2 colour at
+ * opacity .4, 14 sp, last item of the card's title row. Dragging it reorders
+ * immediately — no long-press and no separate reorder mode (operator
+ * 2026-10-05); the whole-card long-press drag still works too.
+ */
+@Composable
+private fun SessionDragHandle(
+    enabled: Boolean,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+) {
+    val desc = stringResource(R.string.session_drag_handle)
+    Text(
+        "⋮⋮",
+        fontSize = 14.sp,
+        letterSpacing = (-1).sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        modifier =
+            Modifier
+                .padding(start = 4.dp)
+                .alpha(0.4f)
+                .widthIn(min = 24.dp)
+                .semantics { contentDescription = desc }
+                .pointerInput(enabled) {
+                    if (!enabled) return@pointerInput
+                    detectDragGestures(
+                        onDragStart = { _: androidx.compose.ui.geometry.Offset -> onDragStart() },
+                        onDragEnd = { onDragEnd() },
+                        onDragCancel = { onDragEnd() },
+                        onDrag = { change, delta ->
+                            change.consume()
+                            onDrag(delta.y)
+                        },
+                    )
+                }
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+    )
 }
 
 /**

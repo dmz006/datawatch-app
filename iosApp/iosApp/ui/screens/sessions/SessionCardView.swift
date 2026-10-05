@@ -160,6 +160,16 @@ struct SessionCardView: View {
             actions
             SessionStatePill(state: session.state)
                 .opacity(dim)
+            // PWA .drag-handle (style.css:2176): always-visible ⋮⋮ at opacity .4.
+            // Reorder itself is the List's native drag (`.onMove`), which iOS
+            // starts with a press-and-hold on the row — the handle included.
+            Text(verbatim: "⋮⋮")
+                .font(.system(size: 14))
+                .kerning(-1)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .opacity(0.4)
+                .frame(minWidth: 24)
+                .accessibilityLabel(L("Drag to reorder"))
         }
     }
 

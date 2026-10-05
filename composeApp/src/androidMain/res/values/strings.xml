@@ -1598,4 +1598,5 @@
     <string name="form_edit_test_ok">Test passed:</string>
     <string name="form_edit_test_fail">Test failed:</string>
     <string name="form_edit_save_fail">Save failed:</string>
+    <string name="session_drag_handle">Drag to reorder</string>
 </resources>
