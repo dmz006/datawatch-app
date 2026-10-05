@@ -18,7 +18,7 @@ final class AlertsViewModel: ObservableObject {
 
     func publishBadge() {
         let badge: Int = LocalSessionPrefs.badgeCount(
-            serverUnread: unreadCount, alerts: alerts, sessions: sessions, profileId: profile?.id
+            serverUnread: unreadCount, alerts: alerts, sessions: sessions, profileId: allMode ? nil : profile?.id
         )
         UserDefaults.standard.set(badge, forKey: "dw.alert.badge")
     }
@@ -76,7 +76,24 @@ final class AlertsViewModel: ObservableObject {
 
     func session(for alert: DatawatchShared.Alert) -> DwSession? {
         guard let sid = alert.sessionId, !sid.isEmpty else { return nil }
-        return sessions.first { $0.fullId == sid || $0.id == sid }
+        let pid: String? = alertServer[alert.id]
+        return sessions.first { ($0.fullId == sid || $0.id == sid) && (pid == nil || $0.serverProfileId == pid) }
+    }
+
+    // ── D2a all-servers aggregate (Android AlertsViewModel allServersMode) ──
+
+    /// True when alerts from every enabled server are merged ("All" chip).
+    var allMode: Bool { profiles.count > 1 }
+
+    /// The server an alert came from (nil outside all-servers mode).
+    func server(for alert: DatawatchShared.Alert) -> ServerProfile? {
+        guard allMode, let pid = alertServer[alert.id] else { return nil }
+        return profiles.first { $0.id == pid }
+    }
+
+    /// The profile that owns a session — used for links and quick replies.
+    func owner(of session: DwSession) -> ServerProfile? {
+        profiles.first { $0.id == session.serverProfileId } ?? profile
     }
 
     private func isDone(_ s: DwSession) -> Bool {
@@ -140,7 +157,9 @@ final class AlertsViewModel: ObservableObject {
         var system: [DatawatchShared.Alert] = []
         for a in filteredAlerts {
             if let sid = a.sessionId, !sid.isEmpty {
-                bySession[sid, default: []].append(a)
+                // All servers: two servers can share a session id — key by server too.
+                let key: String = allMode ? "\(alertServer[a.id] ?? "")|\(sid)" : sid
+                bySession[key, default: []].append(a)
             } else {
                 system.append(a)
             }
@@ -152,8 +171,9 @@ final class AlertsViewModel: ObservableObject {
             default: return 2
             }
         }
-        var out = bySession.map { sid, list in
-            AlertGroup(id: sid, session: sessions.first { $0.fullId == sid || $0.id == sid }, isSystem: false, alerts: list)
+        var out: [AlertGroup] = bySession.map { key, list in
+            let s: DwSession? = list.first.flatMap { session(for: $0) }
+            return AlertGroup(id: key, session: s, isSystem: false, alerts: list)
         }
         out.sort { l, r in
             let lr = rank(l), rr = rank(r)
@@ -195,16 +215,23 @@ final class AlertsViewModel: ObservableObject {
 
     // ── Loading ──────────────────────────────────────────────────────────
 
+    /// Primary profile (the single active server, or the first in "All").
     private(set) var profile: ServerProfile?
+    /// Every server being shown — one normally, every enabled one in "All" (D2a).
+    private(set) var profiles: [ServerProfile] = []
+    /// alert id → server profile id (alert ids are server-random hex, unique across servers).
+    @Published private(set) var alertServer: [String: String] = [:]
     private var pollTask: Task<Void, Never>? = nil
     private var inFlight = false
     private static let pollInterval: Duration = .seconds(5)
 
-    func load(from profiles: [ServerProfile]) {
-        let newActive = profiles.first
-        guard newActive?.id != profile?.id else { return }
-        profile = newActive
-        if newActive != nil {
+    func load(from newProfiles: [ServerProfile]) {
+        guard newProfiles.map({ $0.id }) != profiles.map({ $0.id }) else { return }
+        profiles = newProfiles
+        profile = newProfiles.first
+        alerts = []
+        alertServer = [:]
+        if profile != nil {
             refresh()
             startPolling()
         } else {
@@ -241,6 +268,10 @@ final class AlertsViewModel: ObservableObject {
     }
 
     func refreshAsync() async {
+        if allMode {
+            await refreshAllAsync()
+            return
+        }
         guard let profile, !inFlight else { return }
         inFlight = true
         defer { inFlight = false }
@@ -249,6 +280,7 @@ final class AlertsViewModel: ObservableObject {
         do {
             let result = try await alertsResult
             alerts = result.alerts
+            alertServer = [:]
             unreadCount = result.unreadCount
             error = nil
             // D49a (PWA renderAlertsView): opening the page acknowledges everything.
@@ -261,6 +293,41 @@ final class AlertsViewModel: ObservableObject {
         isLoading = false
     }
 
+    /// D2a: fetch every enabled server in turn (sequential, like Sessions) and
+    /// merge newest-first; an unreachable server is named in the error line.
+    private func refreshAllAsync() async {
+        guard !inFlight else { return }
+        inFlight = true
+        defer { inFlight = false }
+        let targets: [ServerProfile] = profiles
+        var merged: [DatawatchShared.Alert] = []
+        var owners: [String: String] = [:]
+        var liveSessions: [DwSession] = []
+        var failures: [String] = []
+        for p in targets {
+            do {
+                let result = try await ServiceLocatorAsync.listAlerts(profile: p)
+                for a in result.alerts { owners[a.id] = p.id }
+                merged.append(contentsOf: result.alerts)
+                if result.unreadCount > 0 && !result.alerts.isEmpty { acknowledgeAll(p) }
+            } catch {
+                failures.append("\(p.displayName): \(error.localizedDescription)")
+            }
+            if let live = try? await ServiceLocatorAsync.listSessions(profile: p) {
+                liveSessions.append(contentsOf: live)
+            }
+        }
+        guard targets.map({ $0.id }) == profiles.map({ $0.id }) else { return }
+        alerts = merged.sorted { $0.createdAt.toEpochMilliseconds() > $1.createdAt.toEpochMilliseconds() }
+        alertServer = owners
+        sessions = liveSessions
+        // Opening the page acknowledged each server's alerts (D49a).
+        unreadCount = 0
+        error = failures.isEmpty ? nil : L("Some servers unreachable: ") + failures.prefix(2).joined(separator: "; ")
+        publishBadge()
+        isLoading = false
+    }
+
     private func acknowledgeAll(_ profile: ServerProfile) {
         unreadCount = 0
         IosServiceLocator.shared.markAllAlertsRead(profile: profile, onSuccess: {}, onError: { _ in })
@@ -268,17 +335,20 @@ final class AlertsViewModel: ObservableObject {
 
     /// Dismiss all alerts — D48a: deletes on the server like the PWA ✕.
     func dismissAll() {
-        guard let profile else { return }
-        IosServiceLocator.shared.deleteAllAlerts(
-            profile: profile,
-            onSuccess: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.unreadCount = 0
-                    self?.alerts = []
-                }
-            },
-            onError: { _ in }
-        )
+        for p in profiles {
+            let pid: String = p.id
+            IosServiceLocator.shared.deleteAllAlerts(
+                profile: p,
+                onSuccess: { [weak self] in
+                    DispatchQueue.main.async {
+                        guard let self else { return }
+                        self.unreadCount = 0
+                        self.alerts = self.alerts.filter { self.alertServer[$0.id] != nil && self.alertServer[$0.id] != pid }
+                    }
+                },
+                onError: { _ in }
+            )
+        }
     }
 }
 
@@ -293,7 +363,7 @@ struct AlertsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-        ServerPickerBar()
+        ServerPickerBar(showsAll: true)
         Group {
             if store.profiles.isEmpty {
                 noProfilesView
@@ -319,12 +389,14 @@ struct AlertsView: View {
                         profile: store.activeProfile,
                         anchor: "alerts"
                     )
-                    ReachabilityDotView(profile: store.activeProfile)
+                    if !store.isAllServers {
+                        ReachabilityDotView(profile: store.activeProfile)
+                    }
                 }
             }
         }
         .onAppear {
-            vm.load(from: store.activeProfile.map { [$0] } ?? [])
+            vm.load(from: shownProfiles)
             if let p = store.activeProfile {
                 IosQuickCommands.shared.loadSaved(profile: p) { list in
                     DispatchQueue.main.async { savedCommands = list }
@@ -335,11 +407,17 @@ struct AlertsView: View {
             vm.stopPolling()
         }
         .onChange(of: store.profiles) { _ in
-            vm.load(from: store.activeProfile.map { [$0] } ?? [])
+            vm.load(from: shownProfiles)
         }
         .onChange(of: store.activeProfileId) { _ in
-            vm.load(from: store.activeProfile.map { [$0] } ?? [])
+            vm.load(from: shownProfiles)
         }
+    }
+
+    /// D2a: the active server, or every enabled server when "All" is picked.
+    private var shownProfiles: [ServerProfile] {
+        if store.isAllServers { return store.enabledProfiles }
+        return store.activeProfile.map { [$0] } ?? []
     }
 
     // ── Header ────────────────────────────────────────────────────────────
@@ -517,6 +595,14 @@ struct AlertsView: View {
         VStack(spacing: 0) {
             tabRow
             filterBar
+            if vm.allMode, let err = vm.error {
+                Text(err)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.warning)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+            }
             List {
                 if vm.filteredAlerts.isEmpty {
                     HStack {
@@ -581,7 +667,7 @@ struct AlertsView: View {
     /// D49a/D50d: no per-alert read state or swipe — opening the page acks all,
     /// ✕ in the filter bar dismisses all (PWA).
     private func alertRow(_ alert: DatawatchShared.Alert) -> some View {
-        AlertRow(alert: alert, isPrompt: vm.isPrompt(alert))
+        AlertRow(alert: alert, isPrompt: vm.isPrompt(alert), serverName: vm.server(for: alert)?.displayName)
     }
 
     // ── By-session card header (PWA renderSessionCard) ─────────────────────
@@ -594,6 +680,12 @@ struct AlertsView: View {
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
             sessionLabel(for: group.session, isSystem: group.isSystem, fallbackId: group.id)
+            if let first = group.alerts.first, !group.isSystem, let server = vm.server(for: first) {
+                Text(server.displayName)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
+                    .lineLimit(1)
+            }
             if let state = stateText(group.session) {
                 Text(state.text)
                     .font(DatawatchFonts.labelSmall)
@@ -633,7 +725,7 @@ struct AlertsView: View {
             Text("System")
                 .font(DatawatchFonts.bodyMedium.weight(.bold))
                 .foregroundStyle(DatawatchColors.onSurface)
-        } else if let session, let profile = vm.profile {
+        } else if let session, let profile = vm.owner(of: session) {
             NavigationLink {
                 SessionDetailView(session: session, profile: profile)
             } label: {
@@ -702,7 +794,7 @@ struct AlertsView: View {
     }
 
     private func sendReply(_ value: String, to session: DwSession) {
-        guard let profile = vm.profile else { return }
+        guard let profile = vm.owner(of: session) else { return }
         replying = session.id
         IosQuickCommands.shared.send(
             profile: profile,
@@ -724,6 +816,8 @@ struct AlertsView: View {
 private struct AlertRow: View {
     let alert: DatawatchShared.Alert
     let isPrompt: Bool
+    /// D2a: server tag shown when Alerts aggregates every server.
+    var serverName: String? = nil
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -740,6 +834,7 @@ private struct AlertRow: View {
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
                     Spacer()
+                    if let serverName { serverTag(serverName) }
                 }
 
                 // Title
@@ -761,6 +856,16 @@ private struct AlertRow: View {
             .background(alertBackground)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private func serverTag(_ name: String) -> some View {
+        Text(name)
+            .font(DatawatchFonts.badge)
+            .foregroundStyle(DatawatchColors.secondary)
+            .lineLimit(1)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(DatawatchColors.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 3))
     }
 
     private var borderColor: Color {
