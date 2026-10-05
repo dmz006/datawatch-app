@@ -12,4 +12,25 @@
     <string name="response_viewer_none">(keine Antwort erfasst)</string>
     <string name="response_viewer_failed">(Antwort konnte nicht geladen werden)</string>
     <string name="response_viewer_copied">In die Zwischenablage kopiert</string>
+    <string name="observer_memory_maintenance">Speicherwartung</string>
+    <string name="memmaint_eviction_title">Bereinigung veralteter Ähnlichkeiten</string>
+    <string name="memmaint_dry_run">Probelauf</string>
+    <string name="memmaint_apply_web_only">Anwenden (destruktiv) ist nur in der Web-Oberfläche verfügbar.</string>
+    <string name="observer_system_statistics">Systemstatistiken</string>
+    <string name="matrix_test_btn">Testen</string>
+    <string name="matrix_test_sent">Matrix-Testnachricht gesendet</string>
+    <string name="channel_diag_title">Kanaldiagnose</string>
+    <string name="channel_diag_unavailable">nicht verfügbar</string>
+    <string name="channel_diag_no_sessions">(keine aktiven Sitzungen)</string>
+    <string name="loading_ellipsis_short">Wird geladen…</string>
+    <string name="observer_peer_snapshot_title">Peer-Snapshot</string>
+    <string name="observer_peer_snapshot_unavailable">Snapshot nicht verfügbar: %1$s</string>
+    <string name="observer_peer_snapshot_empty">Keine Envelopes gemeldet.</string>
+    <string name="action_ok">OK</string>
+    <string name="schedules_select_all">Alle auswählen</string>
+    <string name="schedules_delete_selected">Auswahl löschen</string>
+    <string name="schedules_delete_selected_confirm">%1$d geplante Ereignis(se) löschen?</string>
+    <string name="schedules_edit">Zeitplan bearbeiten</string>
+    <string name="schedules_edit_command_prompt">Befehl bearbeiten:</string>
+    <string name="schedules_edit_time_prompt">Neue Zeit (ISO, leer = beibehalten):</string>
 </resources>

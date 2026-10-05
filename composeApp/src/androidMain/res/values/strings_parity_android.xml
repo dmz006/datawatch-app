@@ -12,4 +12,25 @@
     <string name="response_viewer_none">(no response captured)</string>
     <string name="response_viewer_failed">(failed to load response)</string>
     <string name="response_viewer_copied">Copied to clipboard</string>
+    <string name="observer_memory_maintenance">Memory Maintenance</string>
+    <string name="memmaint_eviction_title">Similarity-stale eviction</string>
+    <string name="memmaint_dry_run">Dry-run</string>
+    <string name="memmaint_apply_web_only">Apply (destructive) is available in the web UI only.</string>
+    <string name="observer_system_statistics">System Statistics</string>
+    <string name="matrix_test_btn">Test</string>
+    <string name="matrix_test_sent">Matrix test message sent</string>
+    <string name="channel_diag_title">Channel diagnostics</string>
+    <string name="channel_diag_unavailable">unavailable</string>
+    <string name="channel_diag_no_sessions">(no active sessions)</string>
+    <string name="loading_ellipsis_short">Loading…</string>
+    <string name="observer_peer_snapshot_title">Peer snapshot</string>
+    <string name="observer_peer_snapshot_unavailable">Snapshot unavailable: %1$s</string>
+    <string name="observer_peer_snapshot_empty">No envelopes reported.</string>
+    <string name="action_ok">OK</string>
+    <string name="schedules_select_all">Select all</string>
+    <string name="schedules_delete_selected">Delete selected</string>
+    <string name="schedules_delete_selected_confirm">Delete %1$d scheduled event(s)?</string>
+    <string name="schedules_edit">Edit schedule</string>
+    <string name="schedules_edit_command_prompt">Edit command:</string>
+    <string name="schedules_edit_time_prompt">New time (ISO, or empty to keep):</string>
 </resources>

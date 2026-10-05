@@ -16,6 +16,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
+import com.dmzs.datawatchclient.R
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +53,7 @@ import kotlinx.coroutines.launch
 @Composable
 public fun MempalaceActionsCard(vm: MempalaceActionsViewModel = viewModel()) {
     val state by vm.state.collectAsState()
-    Section(id = "memmaint", title = "Mempalace", docsAnchor = "memory-maintenance") {
+    Section(id = "memmaint", title = stringResource(R.string.observer_memory_maintenance), docsAnchor = "memory-maintenance") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             SweepRow(state, vm)
             Spacer(Modifier.height(12.dp))
@@ -78,7 +80,7 @@ private fun SweepRow(
     vm: MempalaceActionsViewModel,
 ) {
     Text(
-        "Sweep stale",
+        stringResource(R.string.memmaint_eviction_title),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
     )
@@ -93,14 +95,6 @@ private fun SweepRow(
             modifier = Modifier.weight(1f),
             singleLine = true,
         )
-        Spacer(Modifier.padding(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = state.sweepDryRun,
-                onCheckedChange = vm::setSweepDryRun,
-            )
-            Text("dry-run", style = MaterialTheme.typography.labelSmall)
-        }
     }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -110,16 +104,19 @@ private fun SweepRow(
             onClick = { vm.runSweep() },
             enabled = state.sweepDays.toIntOrNull() != null && !state.busy,
         ) {
-            Text(if (state.sweepDryRun) "Estimate" else "Sweep now")
+            Text(stringResource(R.string.memmaint_dry_run))
         }
     }
+    // Parity D89b — phones run the eviction as a dry-run only.
+    Text(
+        stringResource(R.string.memmaint_apply_web_only),
+        modifier = Modifier.padding(top = 4.dp),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     state.sweepResult?.let { count ->
         Text(
-            if (state.sweepDryRun) {
-                "$count entries would be removed"
-            } else {
-                "$count entries removed"
-            },
+            "$count entries would be removed",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -303,9 +300,10 @@ public class MempalaceActionsViewModel(
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
             _state.value = _state.value.copy(busy = true, banner = null)
+            // Parity D89b — memory maintenance on phones is dry-run only.
             transport.memorySweepStale(
                 olderThanDays = days,
-                dryRun = _state.value.sweepDryRun,
+                dryRun = true,
             ).fold(
                 onSuccess = { count ->
                     _state.value = _state.value.copy(busy = false, sweepResult = count)

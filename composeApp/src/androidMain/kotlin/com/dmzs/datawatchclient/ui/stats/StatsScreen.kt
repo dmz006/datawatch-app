@@ -539,12 +539,8 @@ private fun SessionStatisticsCard(
     val total = s.sessionsTotal
     val max = (maxSessions ?: total).coerceAtLeast(total).coerceAtLeast(1)
     val fraction = (total.toFloat() / max.toFloat()).coerceIn(0f, 1f)
-    val ringColor =
-        when {
-            fraction >= 0.9f -> MaterialTheme.colorScheme.error
-            fraction >= 0.7f -> dw.warning
-            else -> dw.success
-        }
+    // PWA donut is always the success colour (no threshold tint).
+    val ringColor = dw.success
     StatsCard(id = "sessions", title = stringResource(R.string.stats_section_sessions)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -657,7 +653,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 } else {
                     null
                 }
-            UsageBar("CPU Load", cpuPct, cpuSub)
+            UsageBar("CPU Load", cpuPct, cpuSub, StatsMetric.Cpu)
             PerCoreCpuStrip(s.cpuCoresDetail)
 
             // Memory — show used/total under the bar.
@@ -675,7 +671,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 } else {
                     null
                 }
-            UsageBar("Memory", memPct, memSub)
+            UsageBar("Memory", memPct, memSub, StatsMetric.Memory)
 
             // Disk — same pattern, also tolerate v1 flat scalar.
             val diskUsed = s.diskUsed
@@ -692,7 +688,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 } else {
                     null
                 }
-            UsageBar("Disk", diskPct, diskSub)
+            UsageBar("Disk", diskPct, diskSub, StatsMetric.Disk)
 
             // Swap — only render when the host actually has swap configured.
             if (s.swapTotal > 0) {
@@ -712,7 +708,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
             if (s.gpuName != null || gpuUtilPct != null) {
                 val tempSuffix = s.gpuTemp?.let { " · ${"%.0f".format(it)}°C" } ?: ""
                 val gpuSub = s.gpuName?.plus(tempSuffix) ?: tempSuffix.ifBlank { null }
-                UsageBar("GPU", gpuUtilPct, gpuSub)
+                UsageBar("GPU", gpuUtilPct, gpuSub, StatsMetric.Gpu)
             }
 
             // GPU VRAM — shown as a bar.
@@ -811,6 +807,7 @@ private fun UsageBar(
     label: String,
     pct: Double?,
     subtitle: String?,
+    metric: StatsMetric = StatsMetric.Other,
 ) {
     if (pct == null) return
     val clamped = pct.coerceIn(0.0, 100.0)
@@ -820,7 +817,7 @@ private fun UsageBar(
             Text(
                 "${"%.1f".format(clamped)}%",
                 style = MaterialTheme.typography.bodyMedium,
-                color = pctColor(clamped),
+                color = pctColor(metric, clamped),
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -832,7 +829,7 @@ private fun UsageBar(
                     .padding(top = 4.dp)
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-            color = pctColor(clamped),
+            color = pctColor(metric, clamped),
             trackColor = LocalDatawatchColors.current.bg3,
         )
         subtitle?.let {
@@ -846,13 +843,42 @@ private fun UsageBar(
     }
 }
 
+/** Parity D29a — the metrics the PWA stats panel colours with its own thresholds. */
+internal enum class StatsMetric { Cpu, Memory, Disk, Gpu, Other }
+
+/** Colour role a [StatsMetric] bar takes at a given percentage. */
+internal enum class StatsTone { Error, Warning, Success, Accent, Accent2 }
+
+/**
+ * Parity D29a — PWA `renderStatsData` thresholds verbatim (strict `>`):
+ * CPU >80 error / >50 warning / success; Memory >85 error / accent;
+ * Disk >90 error / accent2; GPU >80 error / success. Bars the PWA doesn't
+ * draw (swap, VRAM) use accent.
+ */
+internal fun statsMetricTone(
+    metric: StatsMetric,
+    pct: Double,
+): StatsTone =
+    when (metric) {
+        StatsMetric.Cpu -> if (pct > 80) StatsTone.Error else if (pct > 50) StatsTone.Warning else StatsTone.Success
+        StatsMetric.Memory -> if (pct > 85) StatsTone.Error else StatsTone.Accent
+        StatsMetric.Disk -> if (pct > 90) StatsTone.Error else StatsTone.Accent2
+        StatsMetric.Gpu -> if (pct > 80) StatsTone.Error else StatsTone.Success
+        StatsMetric.Other -> StatsTone.Accent
+    }
+
 @Composable
-private fun pctColor(pct: Double): Color {
+private fun pctColor(
+    metric: StatsMetric,
+    pct: Double,
+): Color {
     val dw = LocalDatawatchColors.current
-    return when {
-        pct >= 90 -> MaterialTheme.colorScheme.error
-        pct >= 70 -> dw.warning
-        else -> dw.success
+    return when (statsMetricTone(metric, pct)) {
+        StatsTone.Error -> MaterialTheme.colorScheme.error
+        StatsTone.Warning -> dw.warning
+        StatsTone.Success -> dw.success
+        StatsTone.Accent -> MaterialTheme.colorScheme.primary
+        StatsTone.Accent2 -> dw.accent2
     }
 }
 

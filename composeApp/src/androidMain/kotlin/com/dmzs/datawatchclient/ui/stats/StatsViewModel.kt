@@ -83,17 +83,11 @@ public class StatsViewModel : ViewModel() {
                 }
             }
         }
-        // REST poll only runs while the card is on screen — WS handles background updates.
-        // On becoming visible: immediate refresh, then every 30 s while still visible.
+        // Parity D54b — PWA model: one-shot REST fetch when the view renders,
+        // then live WS `stats` frames (collected above). No timed re-poll.
         viewModelScope.launch {
             _visible.collect { visible ->
-                if (visible) {
-                    doRefresh()
-                    while (_visible.value && isActive) {
-                        delay(REFRESH_INTERVAL_MS)
-                        if (_visible.value) doRefresh()
-                    }
-                }
+                if (visible) doRefresh()
             }
         }
     }

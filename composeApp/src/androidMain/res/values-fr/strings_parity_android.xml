@@ -12,4 +12,25 @@
     <string name="response_viewer_none">(aucune réponse capturée)</string>
     <string name="response_viewer_failed">(échec du chargement de la réponse)</string>
     <string name="response_viewer_copied">Copié dans le presse-papiers</string>
+    <string name="observer_memory_maintenance">Maintenance de la mémoire</string>
+    <string name="memmaint_eviction_title">Éviction des similarités obsolètes</string>
+    <string name="memmaint_dry_run">Simulation</string>
+    <string name="memmaint_apply_web_only">Appliquer (destructif) n’est disponible que dans l’interface web.</string>
+    <string name="observer_system_statistics">Statistiques système</string>
+    <string name="matrix_test_btn">Tester</string>
+    <string name="matrix_test_sent">Message de test Matrix envoyé</string>
+    <string name="channel_diag_title">Diagnostic des canaux</string>
+    <string name="channel_diag_unavailable">indisponible</string>
+    <string name="channel_diag_no_sessions">(aucune session active)</string>
+    <string name="loading_ellipsis_short">Chargement…</string>
+    <string name="observer_peer_snapshot_title">Instantané du pair</string>
+    <string name="observer_peer_snapshot_unavailable">Instantané indisponible : %1$s</string>
+    <string name="observer_peer_snapshot_empty">Aucune enveloppe signalée.</string>
+    <string name="action_ok">OK</string>
+    <string name="schedules_select_all">Tout sélectionner</string>
+    <string name="schedules_delete_selected">Supprimer la sélection</string>
+    <string name="schedules_delete_selected_confirm">Supprimer %1$d événement(s) planifié(s) ?</string>
+    <string name="schedules_edit">Modifier la planification</string>
+    <string name="schedules_edit_command_prompt">Modifier la commande :</string>
+    <string name="schedules_edit_time_prompt">Nouvelle heure (ISO, ou vide pour conserver) :</string>
 </resources>

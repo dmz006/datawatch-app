@@ -258,6 +258,17 @@ class MonitoringViewModelTests {
         }
 
     @Test
+    fun `sweep is always a dry run on phones (D89b)`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.memorySweepStale(any(), any()) } returns Result.success(3)
+            val vm = MempalaceActionsViewModel(r)
+            vm.setSweepDryRun(false)
+            vm.runSweep()
+            io.mockk.coVerify { t.memorySweepStale(30, true) }
+        }
+
+    @Test
     fun `spellcheck stores suggestions from response`() =
         runTest(testDispatcher) {
             val (t, r) = fakeResolver()

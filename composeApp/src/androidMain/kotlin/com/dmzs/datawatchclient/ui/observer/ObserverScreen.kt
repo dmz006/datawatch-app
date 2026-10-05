@@ -80,30 +80,51 @@ public fun ObserverScreen(
                     allMode = false,
                     onSelect = vm::selectProfile,
                 )
-                com.dmzs.datawatchclient.ui.monitoring.SystemStatsGridCard()
-                com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
-                com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
-                com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()
-                com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
-                com.dmzs.datawatchclient.ui.monitoring.PeerResourcesCard()
-                com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
-                com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
-                com.dmzs.datawatchclient.ui.about.McpChannelCard()
-                CommBackendsCard()
-                MatrixStatusCard()
+                // Parity D28a — PWA Observer order: one "System Statistics"
+                // block (grid + stats panel + eBPF + plugins + peers + cluster +
+                // channel + comm sub-blocks), then the standalone cards, with
+                // Federated Peers last. Pipelines and Identity live in Settings
+                // only (PWA has no Observer copy).
+                ObserverStatsBlock()
                 com.dmzs.datawatchclient.ui.memory.MemoryCard()
                 com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
                 com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                 com.dmzs.datawatchclient.ui.monitoring.CooldownCard()
                 com.dmzs.datawatchclient.ui.monitoring.SessionAnalyticsCard()
                 com.dmzs.datawatchclient.ui.monitoring.AuditLogCard()
-                // PWA renders the live pipelines block under the audit log (8 s).
-                com.dmzs.datawatchclient.ui.automata.PipelineManagerCard(liveRefreshMs = 8_000L)
                 KnowledgeGraphCard()
-                // PWA identity panel (/api/identity) sits under the KG browser.
-                com.dmzs.datawatchclient.ui.settings.IdentityCard()
                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
             }
         }
     }
+}
+
+/**
+ * Parity D28a — the PWA "System Statistics" section is one collapsible block
+ * holding every stats sub-panel; collapsing it hides them all (key `stats`).
+ */
+@Composable
+private fun ObserverStatsBlock() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val collapsed = com.dmzs.datawatchclient.ui.theme.PwaCardCollapseStore.isCollapsed(context, "stats")
+    com.dmzs.datawatchclient.ui.theme.PwaCardHeader(
+        title = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.observer_system_statistics),
+        collapsed = collapsed,
+        onToggle = { com.dmzs.datawatchclient.ui.theme.PwaCardCollapseStore.toggle(context, "stats") },
+        docsAnchor = "system-statistics",
+        headerActions = null,
+    )
+    if (collapsed) return
+    com.dmzs.datawatchclient.ui.monitoring.SystemStatsGridCard()
+    com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
+    com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
+    com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()
+    com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
+    com.dmzs.datawatchclient.ui.monitoring.PeerResourcesCard()
+    com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
+    com.dmzs.datawatchclient.ui.about.McpChannelCard()
+    ChannelDiagnosticsCard()
+    CommBackendsCard()
+    MatrixStatusCard()
 }
