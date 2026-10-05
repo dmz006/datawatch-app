@@ -209,6 +209,17 @@ voice/TTS strings, store listings, user-facing docs, release notes, error messag
 - Before shipping UI copy, grep user-visible strings (string resources, `Text("…")`,
   locale files) for `\bPRDs?\b` and fix any hit.
 
+## Terminal Font — JetBrains Mono, kept current (operator, 2026-10-04)
+
+The xterm terminal (Android + iOS share `composeApp/src/androidMain/assets/xterm/`)
+bundles **JetBrains Mono** Regular/Bold woff2 under `xterm/fonts/` (SIL OFL 1.1,
+licence alongside). The pinned upstream tag lives in `fonts/JetBrainsMono.VERSION`.
+
+- `.github/workflows/font-update.yml` checks the upstream release monthly (and on
+  manual dispatch) and opens a PR when a newer version exists. Review + merge it.
+- To update by hand: `scripts/update-jetbrains-mono.sh` (prints `UPDATED`/`UP_TO_DATE`).
+- Never swap the font for a CDN link — the WebView loads `file://` assets offline.
+
 ## Documentation Rules
 
 Every commit that adds or changes behavior must update documentation. This is blocking
