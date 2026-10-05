@@ -373,7 +373,11 @@ public object IosSettingsLists {
                 }
             "session_templates" ->
                 tr.getSessionTemplates().getOrThrow().map { s ->
-                    row(s.name, s.name, listOf(s.backend, s.projectDir, s.effort, s.description).filter { it.isNotEmpty() }.joinToString(" · "), canDelete = true)
+                    // "Use" is handled in Swift (opens New Session prefilled), never reaches action().
+                    row(
+                        s.name, s.name, listOf(s.backend, s.projectDir, s.effort, s.description).filter { it.isNotEmpty() }.joinToString(" · "),
+                        canDelete = true, actions = listOf("Use"),
+                    )
                 }
             "device_aliases" ->
                 tr.getDeviceAliases().getOrThrow().map { a -> row(a.alias, a.alias, a.server, canDelete = true) }
