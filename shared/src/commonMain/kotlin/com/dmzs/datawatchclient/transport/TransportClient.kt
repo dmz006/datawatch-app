@@ -1835,8 +1835,6 @@ public interface TransportClient {
      */
     public suspend fun runPrdRulesCheck(prdId: String): Result<kotlinx.serialization.json.JsonObject> =
         Result.failure(UnsupportedOperationException("runPrdRulesCheck"))
-
-    // @@PARITY_ANDROID_IFACE@@
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

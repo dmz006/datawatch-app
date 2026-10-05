@@ -17,10 +17,10 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | element | LLM badge `⚡ llm_ref` green bordered | ✓ 2934 | ✓ SDS:1123 #10B981 | ✓ SDV:156 success | aligned | | |
 | element | Compute node badge `⚙ ref` purple | ✓ 2935 #a855f7 | ~ SDS SessionInfoBar #8B5CF6 | ~ SDV metaBadge `secondary` (#A855F7) | misaligned | | PWA badge uses var(--accent) = #7C3AED dark (fallback #a855f7); Android hard-codes 8B5CF6 (D6b), iOS uses accent2 |
 | element | Mode badge only for non-tmux modes (channel/chat/acp) | ✓ renderSessionDetail: badge only when sessionMode == tmux | ✓ SessionInfoBar shows only when mode == tmux | ~ SDV metadataBar shows `messagingBackend` badge only when NOT tmux (inverse rule) | misaligned | decided D17a | iOS still on the old inverse rule |
-| element | Agent badge `⬡ agent_id` | ✗ (⬡ worker badge on list card only, app.js renderSessionCard) | ✗ | ✓ SDV metadataBar `⬡ agentId` | pwa-missing | decided D66a | Android also missing · → #172 |
-| element | "Chrome" badge when `sess.chrome` | ✗ | ~ SDS top-bar subtitle "· Chrome" (session_chrome, tertiary text, not a badge) | ✓ SDV metadataBar "Chrome" badge | pwa-missing | decided D66a | Android shows it as subtitle text · → #172 |
+| element | Agent badge `⬡ agent_id` | ✗ (⬡ worker badge on list card only, app.js renderSessionCard) | ✓ `SessionHeaderBadge` ⬡ agent | ✓ SDV metadataBar `⬡ agentId` | pwa-missing | decided D66a | Android also missing · → #172 · Android done (D66a) (2026-10-04) |
+| element | "Chrome" badge when `sess.chrome` | ✗ | ✓ accent2 "Chrome" badge | ✓ SDV metadataBar "Chrome" badge | pwa-missing | decided D66a | Android shows it as subtitle text · → #172 · Android done (D66a) (2026-10-04) |
 | interaction | State badge clickable → state override | ✓ 2941 showStateOverride 14843 | ✓ SDS:1156 DropdownMenu on pill; StateOverrideDialog 2578 | ✓ SDV `stateMenu` Menu on state pill → IosSessionOps.overrideState | aligned | | |
-| element | State override options running / waiting_input / complete / error / killed | ✓ 14843 | ~ SessionInfoBar DropdownMenu over all `SessionState.values()` (adds New, Rate limited) | ✓ SDV `overrideStates` (running / waiting_input / complete / killed / failed) | misaligned | | PWA wire list is running/waiting_input/complete/killed/failed; Android offers 7 |
+| element | State override options running / waiting_input / complete / error / killed | ✓ 14843 | ✓ PWA five (running / waiting_input / complete / killed / failed) | ✓ SDV `overrideStates` (running / waiting_input / complete / killed / failed) | aligned | | PWA wire list is running/waiting_input/complete/killed/failed; Android offers 7 |
 | motion | Running state pill pulses alpha (static for waiting/rate_limited) | ✓ style.css `.state-badge-running` `dw-running-pulse` 700 ms .55↔1.0 | ✓ SessionInfoBar `rememberRunningPulseAlpha` (PWA timing, reduced-motion aware) | ✗ SDV `stateMenu` static (pulse exists only on SessionCardView) | ios-missing | decided D18a | |
 | element | Last-activity age chip (`session-last-activity`) for active sessions | ✓ 2942 + `updateLastActivityClocks` 15510: text2 age text + dot coloured green <30 s / amber <5 min / red | ✓ SessionInfoBar last-activity dot + age, 1 s tick | ✓ SDV `LastActivityIndicator` (dot <30 s / <5 min / red + age, 1 s tick; active only) | aligned | decided D19a | |
 | interaction | `■ Stop` (active) · `↻ Restart` + `🗑 Delete` (done), left of state pill | ✓ 2918–2920 btn-stop/restart/delete | ✓ SessionInfoBar same glyphs, left of the pill | ~ SDV `killButton` stop.circle in nav bar; Restart/Delete in `terminalActionBar` at bottom | misaligned | | iOS actions belong in the info bar with glyph+label |
@@ -28,7 +28,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | interaction | Stop/Restart/Delete confirmation modals | ✓ killSession 4391 / deleteSession 5406 (showConfirmModal) | ✓ SDS killConfirm/deleteConfirm | ✓ SDV kill alert + `SessionDeleteSheet` | aligned | | |
 | element | Delete dialog: memory strategy Keep/Purge/Archive + role filter (#199) | ~ 5406 (verify fields) | ✓ SDS:123 deleteMemoryStrategy/Roles | ✓ SessionOpsSheets `SessionDeleteSheet` (Keep/Purge/Archive + role filter + scope) | aligned | | PWA picker confirmed in app.js deleteSession (memory_strategy, role filter, archive scope) |
 | interaction | Timeline button 🕐 (right cluster, first) | ✓ 2949 toggleSessionTimeline | ✓ SDS:1243 | ✓ SDV toolbar `clock` button (first in trailing cluster) | aligned | | |
-| interaction | Response button 📄 (right cluster, second; only when last_response) | ✓ 2950 (always) | ~ SessionInfoBar only if hasResponse | ~ SDV toolbar `doc.text`, only if lastResponse | misaligned | decided D43a | PWA always shows; apps hide when empty |
+| interaction | Response button 📄 (right cluster, second; only when last_response) | ✓ 2950 (always) | ✓ always shown in SessionInfoBar | ~ SDV toolbar `doc.text`, only if lastResponse | ios-missing | decided D43a | PWA always shows; apps hide when empty · Android done (D43a); iOS still hides when empty (2026-10-04) |
 | interaction | Watch/unwatch toggle (session_watch_on/off) in top bar | ✗ | ✓ SDS isWatched toggle | ✓ SDV `watchButton` (bell in top bar) | pwa-missing | decided D61a | → #172 |
 | interaction | Docs link button in top bar | ✗ (global help) | ✓ SDS `DocsLinkAction` | ✓ SDV `DocsLinkButton(anchor: "sessions")` | pwa-missing | | App-wide convention, see §01; no decision |
 | string | Hooks-installed toast for claude-code sessions | ✗ | ✓ SDS status_hooks_installed_toast | ✓ SDV `applyDetailExtras` one-time `SessionToast` | pwa-missing | decided D67a | → #172 |
@@ -40,14 +40,14 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
 | element | Pending schedules strip (`/api/schedules?session_id&state=pending`), per-item time + ✕ cancel | ✓ loadSessionSchedules 3654 | ✓ SDS `SessionSchedulesStrip` + SessionSchedulesViewModel | ✗ (only `ScheduleInputSheet` to create) | ios-missing | | |
-| element | Process stats bar (CPU/RAM/Threads/FDs/Net/GPU) above output, 5 s poll of /api/stats envelopes | ✓ fetchStats setInterval 5000 | ✗ (Stats sub-tab only) | ✗ (Stats sub-tab only) | ios-missing | decided D45a | Android also missing |
+| element | Process stats bar (CPU/RAM/Threads/FDs/Net/GPU) above output, 5 s poll of /api/stats envelopes | ✓ fetchStats setInterval 5000 | ✓ `ProcessStatsBar` above the output, 5 s poll of /api/stats envelopes | ✗ (Stats sub-tab only) | ios-missing | decided D45a | Android also missing · Android done (D45a) (2026-10-04) |
 | element | Connection banner for channel/acp: "Waiting for {mode}… [— answer the input prompt below first] ✕" | ✓ 2783–2811 dismissConnBanner 894 | ✓ SDS `ConnStatusBanner` until `channel_ready`, waiting note, ✕ dismiss | ✗ | ios-missing | | iOS CSB is a list-level reachability banner, not this |
 | element | Server-unreachable banner "terminal stream paused, last frame shown" (OFFLINE_GRACE 3.5 s debounce) | ✗ (WS status dot global) | ✗ removed (header reachability dot only) | ~ iTV `reconnectOverlay` "Terminal disconnected" + Reconnect (full-screen, blocks view) | misaligned | decided D46b | iOS still blocks the terminal on disconnect |
 | element | Rate-limit inline notice (yellow #FEF3C7/#92400E, dismissible, retry-at) | ✗ (state badge only) | ✓ SDS InlineNotices | ✓ SDX `RateLimitNotice` (state + live `rate_limited` events, retry-at) | pwa-missing | decided D67a | → #172 |
 | element | Needs-input: yellow `.input-bar.needs-input` border (banner removed v6.13.9) | ✓ style.css `.input-bar.needs-input` border var(--waiting) blue + rgba(59,130,246,.05) | ✓ composer waiting tint | ✓ SDV composerBar 2px `waiting` rule + waiting @8 % field | aligned | | PWA CSS comments say "yellow" but the rule uses --waiting (blue) (Android colour unverified) |
 | motion | Connecting splash until first pane_capture: favicon 64px @0.3 + "CONNECTING TO SESSION…" (#00E5A0, 12px, 600, ls 2px) | ✓ `DWSplashArt.startSessionLoading` eye + bolt canvas | ✓ SLO EyeOnlyAnimated + bolt | ✓ iSLO `SplashEyeView(bolt: true)` + "datawatch" + status (static under Reduce Motion) | aligned | decided D10a | Feature text above (favicon/uppercase) is the pre-D10 PWA |
 | motion | Splash min/max dwell (new session 2 s/15 s; existing 0.5 s/8 s) | ✗ (watchdog only) | ✓ SDS min 2 s/0.5 s, max 15 s/8 s | ✗ iTV hides overlay on first frame | pwa-missing | decided D10a | Part of the Android splash adopted everywhere; iOS also missing · → #172 |
-| motion | Connect watchdog: retry every 5 s ×3 → "Unable to connect…" + Retry + "Use without terminal" | ✓ MAX_RETRIES 3 | ✗ | ~ iTV Reconnect overlay only on Error | android-missing | | PWA drives; iOS partial (no auto-retry / "Use without terminal") |
+| motion | Connect watchdog: retry every 5 s ×3 → "Unable to connect…" + Retry + "Use without terminal" | ✓ MAX_RETRIES 3 | ✓ 5 s × 3 re-subscribe → "Unable to connect…" + Retry + Use without terminal | ~ iTV Reconnect overlay only on Error | ios-missing | | PWA drives; iOS partial (no auto-retry / "Use without terminal") · Android done (2026-10-04) |
 | string | Splash stages "connecting…" → "waiting for terminal…" | ~ single uppercase string | ✓ SDS | ✓ iTV "connecting…" → "waiting for terminal…" | pwa-missing | decided D10a | Apps show two stages · → #172 |
 | motion | Generating indicator (3 dots, 600 ms alternate fade, 200/400 ms delays) | ✗ removed alpha.29 (927 no-op; CSS 2395 orphaned) | ✗ | ✗ | aligned | | Spec §4.15 is stale |
 
@@ -78,7 +78,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | element | Sprint / PRD tree card (JSON pre) → live "Live Task Tree" / "Sprint / Automata" | ✓ 4312, 4339–4342 | ✓ SStP:233 SprintCard + 361 Task Tree + 450 breadcrumb | ✓ SessionStatusView `sprintBody` (breadcrumb, Live Task Tree / Sprint / Automata) | aligned | | |
 | element | Tests card pass/fail(/skip) | ✓ 4317 | ✓ SStP:273 | ✓ SessionStatusView `testsBody` | aligned | | |
 | element | Git card branch + dirty (+ahead) | ✓ 4324 | ✓ SStP:293 | ✓ SessionStatusView `gitBody` | aligned | | |
-| element | Guardrail verdicts card (+ run guardrail POST /guardrail, "Approved") | ✓ 4281, 4431–4440 | ~ SStP GuardrailVerdictsCard (read-only) | ~ SessionStatusView `verdictsBody` read-only | misaligned | | Both apps lack the "run guardrail" action |
+| element | Guardrail verdicts card (+ run guardrail POST /guardrail, "Approved") | ✓ 4281, 4431–4440 | ✓ GuardrailVerdictsCard: approve on blocked + ▶ sast/secrets/deps run chips | ~ SessionStatusView `verdictsBody` read-only | ios-missing | | Both apps lack the "run guardrail" action · Android done (2026-10-04) |
 | element | Parent session link (telemetry) | ✓ renderParentSessionLink 4328 | ✓ SStP status_parent_session link → opens parent | ✗ | ios-missing | | |
 | string | "Last 5 events before failure" | ✓ 4458 | ✓ SStP `FailedDrilldown` (last 5 of `failed_task_buf`) | ✗ | ios-missing | | |
 
@@ -128,8 +128,8 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | interaction | Interactive keyboard: xterm onData → sendkey/send_input | ✓ 3545 | ✓ HH onData → DwBridge.onInput | ✓ iTV onInput | aligned | | |
 | interaction | Samsung/IME spurious-Enter suppression (150 ms window), composing-text tracking | n/a | ✓ TV:129–232 | n/a | n/a | | Android-specific IME |
 | interaction | Pinch-zoom WebView as escape hatch for 80-col TUIs | n/a | ✓ TV:558 | ✗ | n/a | | iOS scrollView zoom disabled |
-| interaction | Terminal search (next/prev/clear) via search addon | ✗ | ~ TV searchNext/Prev/Clear controller only, no UI | ✓ SDX `TerminalSearchBar` (dwSearchNext/Prev/Clear) | pwa-missing | decided D69a | Android UI still dormant · → #172 |
-| interaction | Copy selection to clipboard | ✗ (browser native) | ✓ TV:349 dwCopySelection (controller only) | ✓ SDX `TerminalSearchBar` copy: dwCopySelection, else visible rows | n/a | decided D69a | Native selection on web; Android controller only (ties to search UI) |
+| interaction | Terminal search (next/prev/clear) via search addon | ✗ | ✓ 🔍 toggle → `TerminalSearchBar` (▲ ▼ 📋 ✕) | ✓ SDX `TerminalSearchBar` (dwSearchNext/Prev/Clear) | pwa-missing | decided D69a | Android UI still dormant · → #172 · Android done (D69a) (2026-10-04) |
+| interaction | Copy selection to clipboard | ✗ (browser native) | ✓ 📋 in TerminalSearchBar → dwCopySelection | ✓ SDX `TerminalSearchBar` copy: dwCopySelection, else visible rows | n/a | decided D69a | Native selection on web; Android controller only (ties to search UI) · Android UI done (D69a) (2026-10-04) |
 | interaction | Prepend backlog on open (`dwPrependBacklog`) | ~ 3523 bufferedLines | ~ TV:373 `prepend()` defined but never called | ✗ | misaligned | | Not live on Android either (verified 2026-10-04); iOS gets live frames only |
 | element | DATAWATCH_COMPLETE marker lines filtered from captures | ✓ app.js ~609 | ✓ HH:519 | ✓ (HH) | aligned | | |
 | element | Terminal exit: black-screen-safe WebView teardown | n/a | ✓ TV:694–705 | ✓ iTV dismantleUIView | n/a | | |
@@ -139,7 +139,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
 | element | Input bar shown only when active && input_mode != none | ✓ 2965 | ✓ ReplyComposer gating | ~ SDV composerBar shown unless completed/killed/error | misaligned | | iOS ignores input_mode |
-| string | Placeholder: "Waiting for connection…" / "Type your response…" / "Send message…" / "Send command or input…" | ✓ 2973 | ~ session_detail_reply_hint/_waiting "Reply…" / "Reply (input required)…" (input_ph_* strings exist but unused) | ~ SDV `composerPlaceholder` PWA copy; no "Waiting for connection…" | misaligned | | Android copy differs — PWA drives |
+| string | Placeholder: "Waiting for connection…" / "Type your response…" / "Send message…" / "Send command or input…" | ✓ 2973 | ✓ PWA copy (waiting / response / message / command) | ~ SDV `composerPlaceholder` PWA copy; no "Waiting for connection…" | ios-missing | | Android copy differs — PWA drives · Android done; iOS lacks "Waiting for connection…" (2026-10-04) |
 | interaction | Enter sends (not Shift+Enter); empty input sends Enter key | ✓ 4461–4475 | ✓ (send "\r") | ~ SDV send button disabled when empty | misaligned | | iOS blocks empty send; PWA sends Enter |
 | interaction | Send via `send_input` when running/waiting/rate_limited else `command send` | ✓ 4480–4484 | ✓ WsOutbound.sendInput | ✓ sendInput | aligned | | |
 | element | Schedule-input button 🕐 → popup (command, when) | ✓ 2925 showScheduleInputPopup 3681 | ✓ ReplyComposer:2747 Icons.Schedule → scheduleOpen | ✓ SDV `clock.badge` → ScheduleInputSheet (command, when, cron) | aligned | | |
@@ -161,7 +161,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 |---|---|---|---|---|---|---|---|
 | element | Timeline panel above output, toggle, GET /api/sessions/timeline?id | ✓ 3766 inline panel | ~ SDS ModalBottomSheet (server lines + local events) | ~ SessionOpsSheets `SessionTimelineSheet` sheet (GET /api/sessions/timeline) | aligned | | Sheet vs inline panel is the native idiom per D4a; copy tracked below |
 | string | "Loading timeline…" / "No timeline events recorded yet." / "Failed to load timeline." / "Timeline" | ✓ 3774–3799 | ~ "Timeline" / session_detail_no_events "No events yet — open a session…" (timeline_empty string exists, unused here) | ✓ SessionTimelineSheet (PWA strings verbatim) | misaligned | | Android copy differs |
-| element | Response viewer: "Last Response" header, markdown, Copy 📋 ("Copied to clipboard"), ✕, loading/error; GET /api/sessions/response?id | ✓ 14890–14990 | ~ SessionsScreen `LastResponseSheet` on cached `lastResponse` (noise-filtered) | ~ SDV `LastResponseSheet` plain monospaced cached text, Done only | misaligned | decided D43a | Neither app fresh-fetches; iOS lacks markdown + copy |
+| element | Response viewer: "Last Response" header, markdown, Copy 📋 ("Copied to clipboard"), ✕, loading/error; GET /api/sessions/response?id | ✓ 14890–14990 | ✓ fresh fetch + (updating…) + markdown + 📋 copy (+ TTS, D43a) | ~ SDV `LastResponseSheet` plain monospaced cached text, Done only | ios-missing | decided D43a | Neither app fresh-fetches; iOS lacks markdown + copy · Android done (D43a) (2026-10-04) |
 
 ## 3.10 Data sources & lifecycle
 
@@ -175,7 +175,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | string | i18n: all detail copy via `t()` keys; Android 86 string resources | ✓ | ✓ | ✓ SwiftUI literal keys + L() with de/es/fr/ja Localizable.strings (detail strings present) | aligned | | |
 
 ## Coverage
-rows: 118 · aligned: 52 · ios-missing: 16 · android-missing: 1 · pwa-missing: 12 · misaligned: 33 · n/a: 4
+rows: 118 · aligned: 53 · ios-missing: 21 · android-missing: 0 · pwa-missing: 12 · misaligned: 28 · n/a: 4
 
 ## Decisions (resolved 2026-10-04)
 1. Mode badge condition → **D17a** tmux only (PWA rule). Android done; iOS still inverse.
