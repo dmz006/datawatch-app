@@ -97,7 +97,8 @@ struct PrdSpecSnippet: View {
 }
 
 /// Overview meta rows the PWA (`automata_detail_*`) and Android (PrdSkillsRow,
-/// PrdScopeDirsRow) both show: skills and the scope directories.
+/// PrdScopeDirsRow, PrdDepthCreatedMeta) show: depth (when > 0), skills, the
+/// scope directories and the created date (PWA `_fmtDate`, "—" when unset).
 struct PrdOverviewMeta: View {
     let prd: PrdDto
 
@@ -105,18 +106,18 @@ struct PrdOverviewMeta: View {
         let skills: [String] = prd.skills
         let write: [String] = prd.writeDirs
         let read: [String] = prd.readDirs
-        if skills.isEmpty && write.isEmpty && read.isEmpty {
-            EmptyView()
-        } else {
-            VStack(alignment: .leading, spacing: 6) {
-                if !skills.isEmpty { metaLine("Skills", skills.joined(separator: ", ")) }
-                if !write.isEmpty { metaLine("Writable dirs", write.joined(separator: ", ")) }
-                if !read.isEmpty { metaLine("Read-only dirs", read.joined(separator: ", ")) }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
+        let depth: Int = Int(prd.depth)
+        let created: String = PrdDates.display(prd.createdAt) ?? "—"
+        VStack(alignment: .leading, spacing: 6) {
+            if depth > 0 { metaLine("Depth", String(depth)) }
+            if !skills.isEmpty { metaLine("Skills", skills.joined(separator: ", ")) }
+            if !write.isEmpty { metaLine("Writable dirs", write.joined(separator: ", ")) }
+            if !read.isEmpty { metaLine("Read-only dirs", read.joined(separator: ", ")) }
+            metaLine("Created", created)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.card))
     }
 
     private func metaLine(_ label: String, _ value: String) -> some View {

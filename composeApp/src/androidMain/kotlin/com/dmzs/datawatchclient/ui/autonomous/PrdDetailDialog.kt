@@ -613,6 +613,7 @@ internal fun PrdDetailDialog(
                             PrdSkillsRow(prd, onSetSkills)
                             PrdPriorityRow(prd, onSetPriority)
                             PrdScopeDirsRow(prd, onSetDirs)
+                            PrdDepthCreatedMeta(prd)
                             prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
                                 MarkdownView(
                                     text = spec,
@@ -1657,6 +1658,8 @@ private fun StoryRow(
         // Expandable body: description + files + edit buttons
         AnimatedVisibility(visible = expanded) {
             Column(modifier = Modifier.padding(top = 6.dp)) {
+                // PWA 5(a): verdicts on a dedicated row, first in the story body.
+                StoryVerdictsRow(story.verdicts)
                 story.description?.takeIf { it.isNotBlank() }?.let { d ->
                     Text(
                         d,

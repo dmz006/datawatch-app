@@ -325,7 +325,9 @@ public object IosSettingsLists {
                     val model = e.models.joinToString(", ") { it.model }.ifEmpty { e.model }
                     row(
                         e.name, e.name, listOf(e.kind, model).filter { it.isNotEmpty() }.joinToString(" · "),
-                        badges = e.tags.orEmpty(), hasToggle = true, enabled = e.enabled, canDelete = true,
+                        // PWA `llm_auto` badge for daemon auto-created LLMs (read-only flag).
+                        badges = (if (e.autoCreated) listOf("auto") else emptyList()) + e.tags.orEmpty(),
+                        hasToggle = true, enabled = e.enabled, canDelete = true,
                         // PWA "▾ In use…" — handled in Swift (LlmInUseSheet), not by [action].
                         actions = listOf("In use…"),
                         detail = enc(com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto.serializer(), e),
@@ -343,6 +345,8 @@ public object IosSettingsLists {
                         n.name, n.name, sub,
                         badges = (if (n.autoCreated) listOf("auto") else emptyList()) + n.tags,
                         hasToggle = true, enabled = n.enabled, canDelete = true,
+                        // PWA row 📡 → live monitoring detail; handled in Swift (ComputeNodeLiveDetailSheet).
+                        actions = listOf(IosComputeLiveDetail.ACTION),
                         detail = enc(com.dmzs.datawatchclient.transport.dto.ComputeNodeDto.serializer(), n),
                     )
                 }

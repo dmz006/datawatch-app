@@ -351,9 +351,10 @@ private fun ChatBubble(entry: ChatEntry) {
                     )
                 }
                 // PWA renderChatMarkdown: assistant content only (code blocks,
-                // inline code, headings, lists); user/system stay plain text.
+                // inline code, headings, lists, collapsible thinking, inline
+                // images); user/system stay plain text.
                 if (entry.role == SessionEvent.ChatMessage.Role.Assistant && !entry.isStreaming) {
-                    com.dmzs.datawatchclient.ui.autonomous.MarkdownView(entry.content)
+                    ChatAssistantContent(entry.content)
                 } else {
                     Text(
                         entry.content,
