@@ -109,6 +109,10 @@ struct PrdDetailView: View {
     @State private var showSetLlm = false
     @State private var showSettings = false
     @State private var itemEdit: PrdItemEdit? = nil
+    /// PWA ⚙ / 🤖 / ✎ spec + LLM overrides and template Instantiate.
+    @State private var overrideEdit: PrdOverrideEdit? = nil
+    /// Live planning stream (PWA _startDecomposeStream).
+    @StateObject private var live = PrdDecomposeLiveModel()
     @State private var openFile: PrdOpenFile? = nil
     @State private var capacity: CapacityResponseDto? = nil
     /// D74a approve-with-note dialog.
@@ -135,8 +139,12 @@ struct PrdDetailView: View {
                     case "request_revision": showRevision = true
                     case "cancel": showCancel = true
                     case "approve": askApprove()
+                    case "instantiate": overrideEdit = .instantiate
                     default: Task { await vm.perform(action) }
                     }
+                }
+                if let liveState = live.state {
+                    PrdDecomposeLiveCard(state: liveState)
                 }
                 actions
                 if ["completed", "archived"].contains(prd.status.lowercased()) {
@@ -190,9 +198,22 @@ struct PrdDetailView: View {
         }
     }
 
+    /// Override sheet + live planning stream (split out so the type checker copes).
+    private var withLive: some View {
+        mainScroll
+        .sheet(item: $overrideEdit) { edit in
+            PrdOverrideSheet(profile: vm.profile, prdId: prd.id, edit: edit) { Task { await vm.refresh() } }
+        }
+        .task(id: "live-" + prd.status) {
+            guard ["planning", "decomposing"].contains(prd.status.lowercased()) else { return }
+            live.start(profile: vm.profile, prdId: prd.id) { Task { await vm.refresh() } }
+        }
+        .onDisappear { live.stop() }
+    }
+
     /// Sheets + lifecycle (split out so the type checker copes).
     private var withSheets: some View {
-        mainScroll
+        withLive
         .alert("Saved as template", isPresented: $templateSaved) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -331,6 +352,8 @@ struct PrdDetailView: View {
             if prd.scopeWarnings { scopeWarningsBanner }
             PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
             statusGraphs
+            // Android progress (per-story CPU/RSS) + compute-node GPU card.
+            PrdResourceCards(profile: vm.profile, prd: prd)
             capacityCard
             PrdOverviewMeta(prd: prd)
             PrdMemorySection(profile: vm.profile, prd: prd)
@@ -474,9 +497,14 @@ struct PrdDetailView: View {
                 .font(DatawatchFonts.titleMedium)
                 .foregroundStyle(DatawatchColors.onSurface)
             if prd.stories.isEmpty {
-                Text(prd.status.lowercased() == "decomposing" ? "Decomposing — stories appear when planning finishes." : "No stories yet.")
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                if let liveState = live.state, liveState.stories.count > 0 {
+                    // Stories streamed so far (PWA decompose stream "+ title" lines).
+                    PrdDecomposeLiveCard(state: liveState)
+                } else {
+                    Text(["decomposing", "planning"].contains(prd.status.lowercased()) ? "Decomposing — stories appear when planning finishes." : "No stories yet.")
+                        .font(DatawatchFonts.bodyMedium)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
             }
             ForEach(prd.stories, id: \.id) { story in
                 storyGroup(story)
@@ -505,7 +533,22 @@ struct PrdDetailView: View {
             HStack(spacing: 8) {
                 smallAction("✎ Edit", DatawatchColors.primary) { itemEdit = .editStory(story) }
                 smallAction("📁 Files", DatawatchColors.primary) { itemEdit = .storyFiles(story) }
+                smallAction("⚙ Profile", DatawatchColors.primary) { overrideEdit = .storyProfile(story) }
+                smallAction("🤖 LLM", DatawatchColors.primary) { overrideEdit = .storyLlm(story) }
                 smallAction("+ Add task", DatawatchColors.primary) { itemEdit = .addTask(story) }
+            }
+        }
+    }
+
+    /// PWA story header pills: `prof:` (read-only states) + `LLM:` override.
+    @ViewBuilder
+    private func storyPills(_ story: PrdStoryDto) -> some View {
+        let prof: String? = PrdLlmBadge.shared.storyProfileLabel(story: story, editable: editable)
+        let llm: String? = PrdLlmBadge.shared.storyLabel(story: story)
+        if prof != nil || llm != nil {
+            FlowLayout(spacing: 4) {
+                if let prof { PrdMiniPill(text: prof) }
+                if let llm { PrdMiniPill(text: llm) }
             }
         }
     }
@@ -521,6 +564,7 @@ struct PrdDetailView: View {
         }()
         return DisclosureGroup(isExpanded: binding(for: story.id)) {
             VStack(alignment: .leading, spacing: 6) {
+                storyPills(story)
                 storyActions(story)
                 storyEditRow(story)
                 if let d = story.description_, !d.isEmpty {
@@ -717,7 +761,7 @@ struct PrdDetailView: View {
             }
         case .retry: taskOp(story.id, task.id, "retry")
         case .requeue: taskOp(story.id, task.id, "requeue")
-        case .edit: itemEdit = .taskSpec(task)
+        case .edit: overrideEdit = .taskSpecLlm(task)
         case .files: itemEdit = .taskFiles(task)
         }
     }
@@ -778,6 +822,7 @@ struct PrdTaskRow: View {
                     .font(DatawatchFonts.badge)
                     .foregroundStyle(color)
             }
+            badges
             if let err = task.error, !err.isEmpty {
                 // PWA prd-task-error: "⚠ Error: <msg>".
                 Text(verbatim: "⚠ " + L("Error") + ": " + err)
@@ -835,6 +880,28 @@ struct PrdTaskRow: View {
             }
         }
         .padding(.vertical, 3)
+    }
+
+    /// PWA inline task badges: LLM override, ↳ spawn, → child <id>.
+    @ViewBuilder
+    private var badges: some View {
+        let llm: String? = PrdLlmBadge.shared.taskLabel(task: task)
+        let child: String? = (task.childPrdId?.isEmpty == false) ? task.childPrdId : nil
+        if llm != nil || task.spawnPrd || child != nil {
+            FlowLayout(spacing: 4) {
+                if let llm { PrdMiniPill(text: llm) }
+                if task.spawnPrd {
+                    PrdMiniPill(text: "↳ spawn", color: DatawatchColors.secondary)
+                        .accessibilityLabel("Spawns a child automaton")
+                }
+                if let child {
+                    Text(verbatim: "→ " + L("child") + " " + String(child.prefix(8)))
+                        .font(DatawatchFonts.terminalSmall)
+                        .foregroundStyle(DatawatchColors.primary)
+                }
+            }
+            .padding(.leading, 24)
+        }
     }
 
     private func label(_ a: Action) -> String {
