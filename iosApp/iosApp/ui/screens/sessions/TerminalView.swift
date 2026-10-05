@@ -111,6 +111,21 @@ struct TerminalView: View {
     @State private var disconnected = false
     @State private var hasContent = false
     @State private var reconnectGeneration = 0
+    /// PWA startTermConnectWatchdog: 5 s per attempt, 3 re-subscribes, then the
+    /// "Unable to connect…" panel (Retry / Use without terminal).
+    @State private var watchdogEpoch = 0
+    @State private var watchdogAttempt = 0
+    @State private var watchdogFailed = false
+    @State private var withoutTerminal = false
+    static let connectTimeoutSeconds: Double = 5
+    static let connectMaxRetries = 3
+
+    private var loadingStatus: String {
+        if watchdogAttempt > 0 {
+            return String(format: L("Reconnecting to session… attempt %lld of %lld"), Int64(watchdogAttempt), Int64(Self.connectMaxRetries))
+        }
+        return connected ? "waiting for terminal…" : "connecting…"
+    }
 
     var body: some View {
         ZStack {
@@ -128,9 +143,17 @@ struct TerminalView: View {
 
             // Splash stays up through socket connect → subscribe → first pane_capture,
             // so the user never sees a black terminal (Android SessionLoadingOverlay).
-            if !hasContent {
-                SessionLoadingOverlay(status: connected ? "waiting for terminal…" : "connecting…")
-                    .transition(.opacity)
+            if !hasContent && !withoutTerminal {
+                if watchdogFailed {
+                    TermConnectFailedPanel(
+                        maxRetries: Self.connectMaxRetries,
+                        onRetry: retryConnect,
+                        onUseWithout: { withoutTerminal = true }
+                    )
+                } else {
+                    SessionLoadingOverlay(status: loadingStatus)
+                        .transition(.opacity)
+                }
             }
             // D46b (PWA minimal): no blocking disconnect overlay. The shared
             // transport reconnects on its own with backoff; the last frame stays
@@ -146,6 +169,58 @@ struct TerminalView: View {
             disconnected = false
             reconnectGeneration += 1
         }
+        .task(id: watchdogEpoch) { await runConnectWatchdog() }
+    }
+
+    /// Every 5 s without a first frame, re-subscribe (bumps the coordinator's
+    /// generation), up to 3 times; then show the failure panel.
+    private func runConnectWatchdog() async {
+        watchdogAttempt = 0
+        watchdogFailed = false
+        while !hasContent && !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: UInt64(Self.connectTimeoutSeconds * 1_000_000_000))
+            if hasContent || Task.isCancelled { break }
+            if watchdogAttempt >= Self.connectMaxRetries {
+                watchdogFailed = true
+                break
+            }
+            watchdogAttempt += 1
+            reconnectGeneration += 1
+        }
+    }
+
+    private func retryConnect() {
+        reconnectGeneration += 1
+        watchdogEpoch += 1
+    }
+}
+
+/// PWA "Unable to connect to session terminal" (Android TermConnectFailedPanel).
+private struct TermConnectFailedPanel: View {
+    let maxRetries: Int
+    let onRetry: () -> Void
+    let onUseWithout: () -> Void
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("Unable to connect to session terminal")
+                .font(DatawatchFonts.titleMedium)
+                .foregroundStyle(DatawatchColors.onSurface)
+                .multilineTextAlignment(.center)
+            Text(String(format: L("Connection failed after %lld retries."), Int64(maxRetries)))
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(DatawatchColors.error)
+            HStack(spacing: 8) {
+                Button("Retry", action: onRetry)
+                Button("Use without terminal", action: onUseWithout)
+            }
+            .buttonStyle(.bordered)
+            .font(DatawatchFonts.labelSmall)
+            .padding(.top, 4)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DatawatchColors.background)
     }
 }
 

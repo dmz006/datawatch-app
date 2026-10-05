@@ -35,6 +35,16 @@ enum SessionStateStyle {
     }
 
     static func isDone(_ s: SessionState) -> Bool { s == .completed || s == .killed || s == .error }
+
+    /// PWA style.css `.session-card.state-complete` .7 / `.state-killed` .5;
+    /// failed cards are not dimmed. Action zones stay at full opacity.
+    static func doneDim(_ s: SessionState) -> Double {
+        switch s {
+        case .completed: return 0.7
+        case .killed: return 0.5
+        default: return 1.0
+        }
+    }
 }
 
 /// State pill: border currentColor, 11/600, pulse on running (PWA dw-running-pulse
@@ -47,7 +57,8 @@ struct SessionStatePill: View {
     var body: some View {
         let color = SessionStateStyle.color(state)
         let running = state == .running && !reduceMotion
-        Text(SessionStateStyle.key(state))
+        // PWA `.state { text-transform: uppercase }` — wire label, uppercased.
+        Text(SessionStateStyle.key(state).uppercased())
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(color)
             .padding(.horizontal, 7)
@@ -95,6 +106,13 @@ struct SessionCardView: View {
     var onWatchToggle: (() -> Void)? = nil
     /// D62a: locally muted (swipe-to-mute) or server-reported muted.
     var muted: Bool = false
+    /// D43a: PWA `🤖 Summary` card action, only when `session.summarizer.enabled`.
+    var summarizerEnabled: Bool = false
+    var summarizing: Bool = false
+    var onSummarize: () -> Void = {}
+
+    /// PWA `state.summaryLongExpanded[fullId]` — waiting-row long-summary panel.
+    @State private var summaryLongExpanded = false
 
     private var isDone: Bool { SessionStateStyle.isDone(session.state) }
     private var isWaiting: Bool { session.state == .waiting }
@@ -111,8 +129,11 @@ struct SessionCardView: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
-        .opacity(isDone ? 0.6 : 1.0)
     }
+
+    /// Opacity for the non-actionable parts of a done card (PWA keeps the
+    /// action buttons and 📄 Response at full opacity).
+    private var dim: Double { SessionStateStyle.doneDim(session.state) }
 
     private var displayText: String {
         let t = (session.name?.isEmpty == false ? session.name : session.taskSummary) ?? ""
@@ -135,8 +156,10 @@ struct SessionCardView: View {
                 .foregroundStyle(DatawatchColors.onSurface)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .opacity(dim)
             actions
             SessionStatePill(state: session.state)
+                .opacity(dim)
         }
     }
 
@@ -151,12 +174,29 @@ struct SessionCardView: View {
                     cardButton("↻ Restart", tint: DatawatchColors.onSurface, action: onRestart)
                     cardButton("🗑", tint: DatawatchColors.error, action: onDelete)
                 }
+                if summarizerEnabled { summaryButton }
                 // PWA sess-maximize-btn: open this session in Dashboard expand mode.
                 cardButton("☷", tint: DatawatchColors.onSurface, action: onExpand)
                     .accessibilityLabel("Open in Dashboard")
             }
             Text("|").font(.system(size: 11)).foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.5))
         }
+    }
+
+    /// PWA manualSummarize button: `🤖 Summary`, `⏳ Summarizing…` (disabled) while running.
+    private var summaryButton: some View {
+        Button(action: onSummarize) {
+            Text(summarizing ? "⏳ Summarizing…" : "🤖 Summary")
+                .font(.system(size: 10))
+                .foregroundStyle(DatawatchColors.onSurface)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
+        }
+        .buttonStyle(.borderless)
+        .disabled(summarizing)
+        .accessibilityHint("Re-summarize with AI")
     }
 
     private func cardButton(_ title: String, tint: Color, action: @escaping () -> Void) -> some View {
@@ -175,26 +215,7 @@ struct SessionCardView: View {
     private var metaLine: some View {
         // Wraps like the PWA's flex-wrap meta row instead of truncating badges.
         FlowLayout(spacing: 6) {
-            Text(session.id)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(DatawatchColors.onSurface)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 2)
-                .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
-                .accessibilityLabel("Session ID \(session.id)")
-            if let llm = session.llmRef ?? session.backend, !llm.isEmpty {
-                accentBadge(llm)
-            }
-            if session.agentId != nil { accentBadge("⬡ worker") }
-            if SessionCardView.isCouncil(session) { accentBadge("🎭").accessibilityLabel("Council session") }
-            if let server = serverName, !server.isEmpty { accentBadge(server) }
-            if showHost, let host = session.hostnamePrefix, !host.isEmpty { accentBadge(host) }
-            lineageBadges
-            if muted || session.muted {
-                Image(systemName: "speaker.slash.fill").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    .accessibilityLabel("Muted")
-            }
+            Group { metaBadges }.opacity(dim)
             if let onWatchToggle {
                 Button(action: onWatchToggle) {
                     Image(systemName: watched ? "bell.fill" : "bell.slash")
@@ -217,12 +238,40 @@ struct SessionCardView: View {
                 }
                 .buttonStyle(.borderless)
             }
-            if !isDone { ElapsedClock(since: session.createdAt.toEpochMilliseconds()) }
-            Text(SessionCardView.ago(session.lastActivityAt.toEpochMilliseconds()))
-                .font(.system(size: 11))
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            Group {
+                if !isDone { ElapsedClock(since: session.createdAt.toEpochMilliseconds()) }
+                Text(SessionCardView.ago(session.lastActivityAt.toEpochMilliseconds()))
+                    .font(.system(size: 11))
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            .opacity(dim)
         }
         .font(.system(size: 11))
+    }
+
+    /// Identity badges of the meta row (id pill · LLM · worker · council · server · host · lineage · muted).
+    @ViewBuilder
+    private var metaBadges: some View {
+        Text(session.id)
+            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+            .foregroundStyle(DatawatchColors.onSurface)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
+            .accessibilityLabel("Session ID \(session.id)")
+        if let llm = session.llmRef ?? session.backend, !llm.isEmpty {
+            accentBadge(llm)
+        }
+        if session.agentId != nil { accentBadge("⬡ worker") }
+        if SessionCardView.isCouncil(session) { accentBadge("🎭").accessibilityLabel("Council session") }
+        if let server = serverName, !server.isEmpty { accentBadge(server) }
+        if showHost, let host = session.hostnamePrefix, !host.isEmpty { accentBadge(host) }
+        lineageBadges
+        if muted || session.muted {
+            Image(systemName: "speaker.slash.fill").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .accessibilityLabel("Muted")
+        }
     }
 
     private func accentBadge(_ text: String) -> some View {
@@ -271,7 +320,9 @@ struct SessionCardView: View {
             .accessibilityLabel("Claude process not running — session may be a zombie")
     }
 
-    /// PWA: prompt_context last 4 non-empty lines (≤100 chars each), then short summary.
+    /// PWA: prompt_context last 4 non-empty lines (≤100 chars each), then the short
+    /// summary (`last_response`, italic ≤180) with ▼/▲ for `last_summary_long`,
+    /// `AI <age>` and the ✕-closable long-summary panel.
     private var waitingRow: some View {
         let raw = session.promptContext ?? session.lastPrompt ?? ""
         let lines = raw.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
@@ -283,9 +334,10 @@ struct SessionCardView: View {
                 ForEach(Array(shown.enumerated()), id: \.offset) { _, l in Text(l) }
             }
             if let lr = session.lastResponse, !lr.isEmpty {
-                Text(lr.count > 180 ? String(lr.prefix(180)) + "…" : lr)
-                    .italic()
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                waitingSummaryLine(lr)
+                if summaryLongExpanded, let long = longSummary {
+                    longSummaryPanel(long)
+                }
             }
         }
         .font(.system(size: 11, design: .monospaced))
@@ -296,6 +348,59 @@ struct SessionCardView: View {
         .background(DatawatchColors.waiting.opacity(0.08))
         .overlay(alignment: .leading) { Rectangle().fill(DatawatchColors.waiting).frame(width: 2) }
         .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    private var longSummary: String? {
+        guard let l = session.lastSummaryLong, !l.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return l
+    }
+
+    private func waitingSummaryLine(_ lr: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(lr.count > 180 ? String(lr.prefix(180)) + "…" : lr)
+                .font(.system(size: 10))
+                .italic()
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            if longSummary != nil {
+                Button(summaryLongExpanded ? "▲" : "▼") { summaryLongExpanded.toggle() }
+                    .font(.system(size: 11))
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(summaryLongExpanded ? "Collapse details" : "Show details")
+            }
+            if let at = session.summaryGeneratedAt {
+                Text("AI " + SessionCardView.ago(at.toEpochMilliseconds()))
+                    .font(.system(size: 9))
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
+            }
+        }
+    }
+
+    /// PWA long-summary panel: bg3, accent2 left edge, ✕ top-right.
+    private func longSummaryPanel(_ long: String) -> some View {
+        Text(long)
+            .font(.system(size: 10))
+            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            .padding(.leading, 8)
+            .padding(.vertical, 6)
+            .padding(.trailing, 22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
+            .overlay(alignment: .leading) { Rectangle().fill(DatawatchColors.secondary).frame(width: 2) }
+            .overlay(alignment: .topTrailing) { longSummaryClose }
+            .padding(.top, 2)
+    }
+
+    private var longSummaryClose: some View {
+        Button { summaryLongExpanded = false } label: {
+            Text("✕")
+                .font(.system(size: 12))
+                .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
+        }
+        .buttonStyle(.borderless)
+        .padding(.top, 3)
+        .padding(.trailing, 4)
+        .accessibilityLabel("Collapse")
     }
 
     /// PWA running row: "▶ What's it doing?" → inline summary, ▼ details, ↻ age (D14a).

@@ -186,6 +186,21 @@ struct SessionDetailView: View {
         ShellRestore.setOpenSession(profileId: profile.id, sessionId: session.id)
         loadStatusBadge()
         watchChannelReady()
+        replayPendingNeedsInput()
+    }
+
+    /// PWA maybeReplayPendingNeedsInputPopup (Android SessionStateWatcher): a
+    /// needs-input prompt that fired while this session wasn't open is posted
+    /// once to the alert dock ~200 ms after opening (≤ 1 h old).
+    private func replayPendingNeedsInput() {
+        let pid: String = profile.id
+        let sid: String = session.id
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard let prompt = LocalAlertWatcher.shared.consumePendingNeedsInput(profileId: pid, sessionId: sid) else { return }
+            let text: String = "[" + sid + "] " + L("needs input") + " — " + String(prompt.prefix(80))
+            AlertDock.shared.post(text, level: .info)
+        }
     }
 
     /// Live channel/ACP readiness from the shared hub (clears the conn banner).
@@ -724,10 +739,16 @@ struct SessionDetailView: View {
     /// PWA input placeholder rule (app.js input_ph_*).
     private var composerPlaceholder: String {
         if isTranscribing { return "Transcribing…" }
+        if awaitingConnection { return "Waiting for connection…" }
         if isWaiting { return "Type your response…" }
         if session.isChatMode || sessionMode == "channel" { return "Send message…" }
         return "Send command or input…"
     }
+
+    /// PWA `connReady == false`: while the channel / ACP connection banner is up
+    /// (and the session isn't waiting on a prompt) the input is disabled with the
+    /// "Waiting for connection…" placeholder and no send button.
+    private var awaitingConnection: Bool { showConnBanner && !isWaiting }
 
     /// PWA `▶ ch`: on the Channel tab (channel mode, not waiting) the composer
     /// sends via POST /api/channel/send instead of tmux.
@@ -808,7 +829,7 @@ struct SessionDetailView: View {
             .disabled(imageBanner == "uploading")
             .accessibilityLabel("Attach image")
             TextField(L(composerPlaceholder), text: $replyText)
-                .disabled(isTranscribing)
+                .disabled(isTranscribing || awaitingConnection)
                 .font(DatawatchFonts.bodyMedium)
                 .foregroundStyle(DatawatchColors.onSurface)
                 .autocorrectionDisabled()
@@ -820,7 +841,7 @@ struct SessionDetailView: View {
                 .background(isWaiting ? DatawatchColors.waiting.opacity(0.08) : DatawatchColors.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             if whisperEnabled { micButton }
-            sendButton
+            if !awaitingConnection { sendButton }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

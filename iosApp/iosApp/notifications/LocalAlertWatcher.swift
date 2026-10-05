@@ -38,6 +38,19 @@ final class LocalAlertWatcher {
     /// Short id of the session open in detail (set by SessionDetailView).
     var foregroundSessionId: String? = nil
 
+    /// PWA `pendingNeedsInputPopup` (Android `SessionStateWatcher.pendingNeedsInput`):
+    /// a session that entered waiting_input while not open in detail, keyed
+    /// "<profileId>/<shortId>", replayed once into the alert dock on next open.
+    private var pendingNeedsInput: [String: (prompt: String, at: Date)] = [:]
+    static let pendingTTL: TimeInterval = 60 * 60
+
+    /// One-shot: returns (and clears) the stashed prompt if it is ≤ 1 h old.
+    func consumePendingNeedsInput(profileId: String, sessionId: String) -> String? {
+        let key = profileId + "/" + sessionId
+        guard let p = pendingNeedsInput.removeValue(forKey: key) else { return nil }
+        return Date().timeIntervalSince(p.at) <= Self.pendingTTL ? p.prompt : nil
+    }
+
     private init() {}
 
     func update(profiles newProfiles: [ServerProfile]) {
@@ -45,6 +58,9 @@ final class LocalAlertWatcher {
         let ids = Set(enabled.map { $0.id })
         known = known.filter { ids.contains($0.key) }
         episodes = episodes.filter { ids.contains($0.key) }
+        pendingNeedsInput = pendingNeedsInput.filter { entry in
+            ids.contains(where: { entry.key.hasPrefix($0 + "/") })
+        }
         profiles = enabled
     }
 
@@ -104,6 +120,9 @@ final class LocalAlertWatcher {
             if s.state == .waiting {
                 var ep = eps[s.id] ?? Episode(firstSeen: now, notifiedPrompt: nil)
                 let prompt = Self.prompt(for: s)
+                if prev != .waiting && foregroundSessionId != s.id {
+                    pendingNeedsInput[pid + "/" + s.id] = (prompt: prompt, at: now)
+                }
                 let settled: Bool = now.timeIntervalSince(ep.firstSeen) >= Self.settle
                 if settled && ep.notifiedPrompt != prompt {
                     ep.notifiedPrompt = prompt
