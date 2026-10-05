@@ -140,6 +140,29 @@ After any `datawatch update && datawatch stop && datawatch start`:
 
 ---
 
+## Real LLMs in the Sandbox (required)
+
+Council runs, automaton planning (decompose) and LLM sessions must be tested against
+**real** LLMs, not a sandbox with no backend (that only exercises error paths).
+
+1. Keep the compute nodes in a **local** env file outside every repo (never commit
+   hostnames/URLs), e.g. `/home/dmz/workspace/.datawatch-test-llm-nodes.env`:
+   ```
+   DW_TEST_LLM_NODES="nodeA=http://<host-a>:11434,nodeB=http://<host-b>:11434"
+   DW_TEST_LLM_MODEL="qwen3:1.7b"   # small + fast, present on every node
+   ```
+2. After the sandbox daemon is healthy:
+   `scripts/sandbox-seed-llms.sh https://127.0.0.1:$TEST_SERVER_TLS_PORT $TOKEN <env-file>`
+   — registers each compute node + an `ollama-<node>` LLM, points `council.llm_ref`
+   and `autonomous.planning_backend/model` at the first node, registers the council's
+   default `ollama` name (the council resolves its LLM at daemon start), and runs the
+   LLM test.
+3. Verify: a Quick council run returns persona replies + a consensus, and a
+   decompose streams `story` → `progress` → `complete` events.
+
+Scratch files that must survive a reboot (sandbox config, screenshot scripts) live in
+`/home/dmz/workspace/tmp/` — not `/tmp`.
+
 ## Environment Variables (for test scripts)
 
 | Variable | Value | Purpose |
