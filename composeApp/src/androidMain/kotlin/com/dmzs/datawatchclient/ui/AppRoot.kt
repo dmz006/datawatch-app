@@ -1,5 +1,9 @@
 package com.dmzs.datawatchclient.ui
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -190,6 +194,9 @@ public fun AppRoot() {
     }
 }
 
+/** CSS `ease` — cubic-bezier(0.25, 0.1, 0.25, 1). */
+private val SplashFadeEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
+
 @Composable
 private fun Nav(
     navController: NavHostController,
@@ -198,7 +205,10 @@ private fun Nav(
     alertsVm: AlertsViewModel,
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
-        composable(Destinations.Splash) {
+        composable(
+            Destinations.Splash,
+            exitTransition = { fadeOut(tween(durationMillis = 600, easing = SplashFadeEasing)) },
+        ) {
             val splashContext = LocalContext.current
             // Parity D37a — splash only on first launch, app version change,
             // or >24 h since last shown; otherwise go straight in.
@@ -292,7 +302,17 @@ private fun Nav(
                 onCancel = { navController.popBackStack() },
             )
         }
-        composable(Destinations.Home) {
+        composable(
+            Destinations.Home,
+            // Parity: PWA splash `.fade-out` (opacity 0.6 s ease) reveals the app.
+            enterTransition = {
+                if (initialState.destination.route == Destinations.Splash) {
+                    fadeIn(tween(durationMillis = 600, easing = SplashFadeEasing))
+                } else {
+                    null
+                }
+            },
+        ) {
             HomeShell(
                 alertsVm = alertsVm,
                 onAddServer = { navController.navigate(Destinations.AddServer) },
