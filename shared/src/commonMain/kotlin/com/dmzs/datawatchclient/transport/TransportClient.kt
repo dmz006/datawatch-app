@@ -1940,6 +1940,17 @@ public interface TransportClient {
         id: String,
         topK: Int = 10,
     ): Result<List<String>> = Result.failure(UnsupportedOperationException("recallDiscussion"))
+
+    // ---- Automata live planning stream (PWA _startDecomposeStream) ----
+
+    /**
+     * GET /api/autonomous/prds/{id}/decompose/stream — live planning events
+     * (story / progress / complete / error). Reconnects with Last-Event-ID
+     * (1 s → 2 s → 4 s, max 3 tries) and completes after a terminal event, when
+     * the server has no job for [prdId] (404), or when retries run out.
+     */
+    public fun decomposeEvents(prdId: String): kotlinx.coroutines.flow.Flow<com.dmzs.datawatchclient.transport.sse.DecomposeStreamEvent> =
+        kotlinx.coroutines.flow.emptyFlow()
 }
 
 /** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */

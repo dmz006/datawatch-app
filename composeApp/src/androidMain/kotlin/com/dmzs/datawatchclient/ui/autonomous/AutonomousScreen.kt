@@ -81,6 +81,7 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,6 +96,8 @@ public fun AutonomousScreen(
     val reachable by vm.reachable.collectAsState()
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
+    val projectProfiles by vm.projectProfiles.collectAsState()
+    val decomposeLive by vm.decomposeLive.collectAsState()
     var newOpen by remember { mutableStateOf(false) }
     var filterOpen by remember { mutableStateOf(false) }
     var selectMode by remember { mutableStateOf(false) }
@@ -136,6 +139,20 @@ public fun AutonomousScreen(
             vm.clearMemoryRecall()
         }
     }
+    // Story ⚙ picker needs the project profile names (PWA state._prdProjectProfiles).
+    LaunchedEffect(openPrdId) {
+        if (openPrdId != null) vm.loadProjectProfiles()
+    }
+    // Live planning stream while the open automaton is planning (PWA _startDecomposeStream).
+    val openStatus = detailPrd?.status?.lowercase()
+    LaunchedEffect(openPrdId, openStatus) {
+        val id = openPrdId
+        if (id == null) {
+            vm.stopDecomposeStream()
+        } else if (openStatus == "planning" || openStatus == "decomposing") {
+            vm.startDecomposeStream(id)
+        }
+    }
     // Poll observer envelopes + compute node detail while PRD is running/decomposing.
     LaunchedEffect(openPrdId) {
         if (openPrdId != null) vm.startPrdProgressPolling(openPrdId!!) else vm.stopPrdProgressPolling()
@@ -174,6 +191,17 @@ public fun AutonomousScreen(
                         Text("🤖", style = MaterialTheme.typography.titleMedium)
                     }
                     DocsLinkAction("datawatch-definitions.md#automata")
+                    // PWA #headerSearchBtn on the automata view: toggles the same filter
+                    // row as ⊞ (_toggleAutonomousFilters); hidden in detail like the PWA.
+                    if (currentTab == 0 && openPrdId == null) {
+                        IconButton(onClick = { filterOpen = !filterOpen }) {
+                            Icon(
+                                if (filterOpen) Icons.Filled.Close else Icons.Filled.Search,
+                                contentDescription = stringResource(R.string.automata_filter_toggle),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                     if (!state.allServersMode && state.activeProfile != null) {
                         ReachabilityDot(
@@ -286,7 +314,9 @@ public fun AutonomousScreen(
                                 reason,
                             ->
                             vm.reject(id, reason)
-                        }, onRevise = { id, note -> vm.requestRevision(id, note) })
+                        }, onRevise = { id, note -> vm.requestRevision(id, note) }, onInstantiate = { id, vars ->
+                            vm.instantiatePrdTemplate(id, vars)
+                        })
                     else ->
                         TemplatesTab(
                             vm = tmplVm,
@@ -515,6 +545,12 @@ public fun AutonomousScreen(
                 onSetPriority = { priority -> vm.setPriority(id, priority) },
                 onSetDirs = { readDirs, writeDirs -> vm.setDirs(id, readDirs, writeDirs) },
                 onRepairDependsOn = { vm.repairDependsOn(id) },
+                projectProfiles = projectProfiles,
+                onSetStoryLlm = { storyId, b, e, m -> vm.setStoryLlm(id, storyId, b, e, m) },
+                onSetStoryProfile = { storyId, profile -> vm.setStoryProfile(id, storyId, profile) },
+                onEditTaskSpecLlm = { taskId, spec, llm -> vm.editTaskSpecAndLlm(id, taskId, spec, llm) },
+                decomposeLive = decomposeLive?.takeIf { it.first == id }?.second,
+                onInstantiateTemplate = { vars -> vm.instantiatePrdTemplate(id, vars) },
             )
         }
     }
@@ -587,6 +623,7 @@ private fun PrdsBody(
     onRun: (String) -> Unit = {},
     onReject: (String, String) -> Unit = { _, _ -> },
     onRevise: (String, String) -> Unit = { _, _ -> },
+    onInstantiate: (String, Map<String, String>) -> Unit = { _, _ -> },
 ) {
     // PWA automata filter bar text search (`automata_filter_search`): title / id.
     var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
@@ -782,6 +819,7 @@ private fun PrdsBody(
                         onRun = { onRun(prd.id) },
                         onReject = { reason -> onReject(prd.id, reason) },
                         onRevise = { note -> onRevise(prd.id, note) },
+                        onInstantiate = { vars -> onInstantiate(prd.id, vars) },
                     )
                 }
             }
@@ -808,7 +846,12 @@ private fun PrdRow(
     onRun: () -> Unit = {},
     onReject: (String) -> Unit = {},
     onRevise: (String) -> Unit = {},
+    onInstantiate: (Map<String, String>) -> Unit = {},
 ) {
+    var instantiateOpen by remember { mutableStateOf(false) }
+    if (instantiateOpen) {
+        PrdInstantiateTemplateDialog(onDismiss = { instantiateOpen = false }, onSubmit = onInstantiate)
+    }
     val statusColor = prdStatusColor(prd.status)
     val statusLower = prd.status.lowercase()
     val isTerminal = statusLower in setOf("completed", "complete", "cancelled", "canceled", "rejected", "archived")
@@ -1025,6 +1068,8 @@ private fun PrdRow(
                         },
                     onRun = if (showRun) onRun else null,
                     onCancel = if (showCancel) onCancel else null,
+                    isTemplate = prd.isTemplate,
+                    onInstantiate = { instantiateOpen = true },
                 )
                 // Action row: cancel left | approve+pin right — border-top separator mirrors PWA
                 Row(
@@ -1315,7 +1360,29 @@ internal fun LifecycleStrip(
     onRevise: (() -> Unit)? = null,
     onRun: (() -> Unit)? = null,
     onCancel: (() -> Unit)? = null,
+    /** PWA renderLifecycleStrip: template automata get a single "Instantiate" step. */
+    isTemplate: Boolean = false,
+    onInstantiate: (() -> Unit)? = null,
 ) {
+    if (isTemplate) {
+        val accent = MaterialTheme.colorScheme.primary
+        Row(modifier = Modifier.padding(top = 4.dp)) {
+            Box(
+                modifier =
+                    Modifier
+                        .border(1.dp, accent, RoundedCornerShape(6.dp))
+                        .then(if (onInstantiate != null) Modifier.clickable(onClick = onInstantiate) else Modifier)
+                        .padding(horizontal = 9.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    stringResource(R.string.prd_action_instantiate),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = accent,
+                )
+            }
+        }
+        return
+    }
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
     val accent = MaterialTheme.colorScheme.primary // #8B5CF6 = var(--accent)
     val success = dw.success // #10B981 = var(--success)

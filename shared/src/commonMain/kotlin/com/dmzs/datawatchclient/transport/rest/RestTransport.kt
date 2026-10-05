@@ -4346,6 +4346,62 @@ public class RestTransport(
             }
         }
 
+    // ---- Automata live planning stream (PWA _startDecomposeStream) ----
+
+    override fun decomposeEvents(prdId: String): Flow<com.dmzs.datawatchclient.transport.sse.DecomposeStreamEvent> =
+        flow {
+            var lastEventId: String? = null
+            var failures = 0
+            while (true) {
+                var finished = false
+                try {
+                    client.prepareGet("${profile.baseUrl}/api/autonomous/prds/$prdId/decompose/stream") {
+                        bearer()?.let { header(HttpHeaders.Authorization, it) }
+                        header(HttpHeaders.Accept, "text/event-stream")
+                        header(HttpHeaders.CacheControl, "no-cache")
+                        lastEventId?.let { header("Last-Event-ID", it) }
+                        timeout {
+                            // Planning can take minutes; server keepalive is 25 s.
+                            requestTimeoutMillis = Long.MAX_VALUE
+                            socketTimeoutMillis = 60_000L
+                            connectTimeoutMillis = 10_000L
+                        }
+                    }.execute { res ->
+                        val channel = res.bodyAsChannel()
+                        val reader = com.dmzs.datawatchclient.transport.sse.DecomposeSseLineReader()
+                        while (!finished) {
+                            val line = channel.readUTF8Line() ?: break
+                            val frame = reader.feed(line) ?: continue
+                            frame.id?.let { lastEventId = it }
+                            val ev = com.dmzs.datawatchclient.transport.sse.DecomposeStreamParser.parse(frame) ?: continue
+                            failures = 0
+                            emit(ev)
+                            if (ev.isTerminal) finished = true
+                        }
+                        if (!finished) {
+                            reader.flush()?.let { frame ->
+                                com.dmzs.datawatchclient.transport.sse.DecomposeStreamParser.parse(frame)?.let { ev ->
+                                    emit(ev)
+                                    if (ev.isTerminal) finished = true
+                                }
+                            }
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: ClientRequestException) {
+                    // 404 = no planning job for this automaton (already done / never started).
+                    if (e.response.status == HttpStatusCode.NotFound) return@flow
+                } catch (e: Throwable) {
+                    // network drop — retry below
+                }
+                if (finished) return@flow
+                failures++
+                if (failures > DECOMPOSE_STREAM_MAX_RETRIES) return@flow
+                delay(minOf(1_000L shl (failures - 1), 30_000L))
+            }
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
@@ -4415,6 +4471,8 @@ public class RestTransport(
         }
 
     public companion object {
+        internal const val DECOMPOSE_STREAM_MAX_RETRIES: Int = 3
+
         /**
          * Default Json configuration that tolerates extra fields (forward-compat with
          * future datawatch server versions).
