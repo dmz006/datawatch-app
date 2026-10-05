@@ -1863,7 +1863,8 @@ public data class SummarizeResultDto(
 public data class GuardrailLibraryItemDto(
     val name: String = "",
     val description: String = "",
-    val kind: String = "",
+    /** Server `GuardrailEntry.type` ("scan" | "custom" | "skill"); PWA shows it as the badge. */
+    @SerialName("type") val kind: String = "",
 )
 
 @Serializable

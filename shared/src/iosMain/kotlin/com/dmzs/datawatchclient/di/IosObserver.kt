@@ -1216,10 +1216,21 @@ public object IosObserver {
                                     "done" -> "success"
                                     else -> "muted"
                                 }
-                            val ref = sc.sessionId?.takeIf { it.isNotBlank() }
+                            // PWA loadSchedulesList label: "NEW: <name>" for deferred
+                            // sessions, else "<session_name|session_id> [<schedule_name>]: <command>".
+                            val ref: String? = (sc.sessionName ?: sc.sessionId)?.takeIf { it.isNotBlank() }
+                            val schedRef: String = sc.scheduleName?.let { " [$it]" } ?: ""
+                            val label: String =
+                                if (sc.type == "new_session" && sc.deferredSessionName != null) {
+                                    "NEW: ${sc.deferredSessionName}"
+                                } else if (ref != null) {
+                                    "$ref$schedRef: ${sc.task}"
+                                } else {
+                                    sc.task
+                                }
                             IosScheduleRow(
                                 id = sc.id,
-                                label = if (ref != null) "$ref: ${sc.task}" else sc.task,
+                                label = label,
                                 command = sc.task,
                                 cron = sc.cron.orEmpty(),
                                 whenText = sc.runAt?.let { localTime(it.toString()) } ?: sc.cron.orEmpty(),

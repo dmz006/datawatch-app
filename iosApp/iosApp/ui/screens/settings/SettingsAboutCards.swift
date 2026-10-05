@@ -100,7 +100,7 @@ struct SettingsAboutCard: View {
 
     @ViewBuilder
     private var serverRows: some View {
-        valueRow("Version", info?.serverVersion ?? infoError ?? "—", icon: "server.rack")
+        serverVersionRow
         valueRow("App version", appVersion, icon: "iphone")
         HStack {
             Label("Update", systemImage: "arrow.down.circle")
@@ -186,6 +186,29 @@ struct SettingsAboutCard: View {
                 .font(DatawatchFonts.labelSmall)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .multilineTextAlignment(.trailing)
+        }
+    }
+
+    /// PWA loadVersionInfo: the server version links to its GitHub release (accent2).
+    @ViewBuilder
+    private var serverVersionRow: some View {
+        if let ver = info?.serverVersion, !ver.isEmpty, ver != "?" {
+            let tag: String = ver.hasPrefix("v") ? ver : "v" + ver
+            Button {
+                openExternal("https://github.com/dmz006/datawatch/releases/tag/" + tag)
+            } label: {
+                HStack {
+                    Label(L("Version"), systemImage: "server.rack")
+                        .foregroundStyle(DatawatchColors.onSurface)
+                    Spacer()
+                    Text(verbatim: tag)
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.secondary)
+                }
+            }
+            .accessibilityHint(L("Opens the release notes"))
+        } else {
+            valueRow("Version", infoError ?? "—", icon: "server.rack")
         }
     }
 
