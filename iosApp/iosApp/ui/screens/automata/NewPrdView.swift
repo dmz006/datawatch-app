@@ -92,6 +92,14 @@ struct NewPrdView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+                // PWA wizard header "?" (automata_wizard_help_tip) → howto/automata-wizard.md.
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 4) {
+                        Text("Launch Automaton").font(.headline)
+                        DocsLinkButton(profile: profile, anchor: "", docPath: "howto/automata-wizard.md")
+                            .accessibilityHint("Open the Launch Automaton howto — covers every wizard field including Advanced switches")
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     if submitting {
                         ProgressView()
@@ -258,9 +266,17 @@ struct NewPrdView: View {
                 Toggle("Security scan", isOn: $scanEnabled)
                 Toggle("Rules check (after scan)", isOn: $rulesEnabled)
                 Toggle("Per-story approval", isOn: $storyApproval)
-                Text("💡 Configure skills in Settings → Agents → Project Profiles → Skills")
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.secondary)
+                // PWA automata_wizard_skills_hint_link / Android onOpenSettings.
+                Button {
+                    dismiss()
+                    SettingsDeepLink.open(cardId: "gc_projectprofiles")
+                } label: {
+                    Text("💡 Configure skills in Settings → Agents → Project Profiles → Skills ↗")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                .buttonStyle(.borderless)
             }
         }
     }
