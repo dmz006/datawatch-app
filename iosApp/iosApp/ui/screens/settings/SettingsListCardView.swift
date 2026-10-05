@@ -116,6 +116,22 @@ struct SettingsListCardView: View {
         }
     }
 
+    /// D35a: PWA per-card empty-state copy (app.js), generic fallback otherwise.
+    private var emptyCopy: String {
+        switch kind {
+        case "session_templates": return "No templates — add one with + or via YAML session.templates."
+        case "device_aliases": return "No aliases — add one with + or via YAML device_aliases."
+        case "remote_servers": return "No remote servers configured."
+        case "fed_peers": return "No federation peers registered."
+        case "web_search_providers": return "No search providers configured."
+        case "secrets": return "No secrets stored."
+        case "channel_routing": return "No channel routing rules configured"
+        case "guardrail_library": return "No guardrails registered"
+        case "guardrail_profiles", "cluster_profiles", "project_profiles": return "No profiles yet"
+        default: return "Nothing here yet."
+        }
+    }
+
     private var deleteTitle: String {
         L("Delete") + " \(pendingDelete?.title ?? "")?"
     }
@@ -130,7 +146,7 @@ struct SettingsListCardView: View {
                 }
                 .listRowBackground(DatawatchColors.surface)
             } else if rows.isEmpty {
-                Text("Nothing here yet.")
+                Text(L(emptyCopy))
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .listRowBackground(DatawatchColors.surface)
