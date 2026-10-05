@@ -258,8 +258,12 @@ struct PrdDetailView: View {
         .onDisappear { vm.stop() }
         .task(id: prd.status) {
             guard ["running", "decomposing", "planning", "approved"].contains(prd.status.lowercased()) else { capacity = nil; return }
-            IosPrdCapacity.shared.load(profile: vm.profile, prdId: prd.id) { c in
-                DispatchQueue.main.async { capacity = c }
+            // PWA `_prdCapacityInterval`: re-render the capacity card every 5 s.
+            while !Task.isCancelled {
+                IosPrdCapacity.shared.load(profile: vm.profile, prdId: prd.id) { c in
+                    DispatchQueue.main.async { capacity = c }
+                }
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
             }
         }
         .refreshable { await vm.refresh() }
@@ -530,12 +534,20 @@ struct PrdDetailView: View {
     @ViewBuilder
     private func storyEditRow(_ story: PrdStoryDto) -> some View {
         if editable {
-            HStack(spacing: 8) {
+            FlowLayout(spacing: 8) {
                 smallAction("✎ Edit", DatawatchColors.primary) { itemEdit = .editStory(story) }
                 smallAction("📁 Files", DatawatchColors.primary) { itemEdit = .storyFiles(story) }
                 smallAction("⚙ Profile", DatawatchColors.primary) { overrideEdit = .storyProfile(story) }
                 smallAction("🤖 LLM", DatawatchColors.primary) { overrideEdit = .storyLlm(story) }
                 smallAction("+ Add task", DatawatchColors.primary) { itemEdit = .addTask(story) }
+                // PWA prdRemoveStory 🗑 (confirm, then remove_story).
+                smallAction("🗑", DatawatchColors.error) {
+                    itemConfirm = ItemConfirm(
+                        title: "Remove story?",
+                        message: "Remove story \"\(story.title.isEmpty ? story.id : story.title)\" and all its tasks? This cannot be undone.",
+                        destructiveLabel: "Remove"
+                    ) { storyOp(story.id, "remove") }
+                }
             }
         }
     }
@@ -575,6 +587,9 @@ struct PrdDetailView: View {
                 }
                 PrdFileChips(label: "PLANNED FILES", files: story.files, conflicts: fileConflicts) { openFile = PrdOpenFile(path: $0) }
                 PrdFileChips(label: "FILES TOUCHED", files: story.filesTouched) { openFile = PrdOpenFile(path: $0) }
+                if !editable && !story.tasks.isEmpty {
+                    PrdStoryReadOnlyExtras(story: story, profileId: vm.profile.id)
+                }
                 ForEach(story.tasks, id: \.id) { task in
                     PrdTaskRow(
                         task: task, actions: taskActions(task), busy: itemBusy == task.id,
