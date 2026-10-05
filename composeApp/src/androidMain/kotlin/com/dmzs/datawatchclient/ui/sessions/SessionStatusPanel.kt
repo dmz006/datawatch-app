@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -219,9 +220,12 @@ private fun FocusCard(
     val dw = LocalDatawatchColors.current
     StatusCard(title = stringResource(R.string.status_card_focus)) {
         if (focus.isNullOrBlank()) {
+            // PWA renderStatusBoard: no last event → `status_no_events_yet`
+            // (italic); otherwise an em-dash placeholder for the task.
             Text(
-                "—",
+                if (lastEvent == null) stringResource(R.string.status_no_focus) else "—",
                 style = MaterialTheme.typography.bodySmall,
+                fontStyle = if (lastEvent == null) FontStyle.Italic else FontStyle.Normal,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return@StatusCard

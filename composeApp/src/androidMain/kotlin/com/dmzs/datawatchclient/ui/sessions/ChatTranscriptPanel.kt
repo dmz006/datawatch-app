@@ -25,9 +25,11 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.SessionEvent
 import kotlinx.datetime.Instant
@@ -156,10 +158,17 @@ public fun ChatTranscriptPanel(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            // PWA `.chat-empty`: 💬 (36px, .3) + chat_empty_hint (13px) + chat_memory_hint (11px).
             Text(
-                "Waiting for the first chat message…",
-                style = MaterialTheme.typography.bodyMedium,
+                "💬",
+                fontSize = 36.sp,
+                modifier = Modifier.alpha(0.3f),
+            )
+            Text(
+                androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.chat_empty_hint),
+                fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
             )
             Text(
                 androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.chat_memory_hint),

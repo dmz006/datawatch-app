@@ -44,7 +44,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | element | eBPF "Degraded" banner (built without eBPF / not active) | ✓ renderStatsData banner (app.js:20672) | ✓ StatsScreen:67–92 | ✓ EbpfBanner | aligned | decided D78a |  |
 | element | eBPF status line (live / configured+cap / cap missing / off, colored dot) | ✓ loadEBPFStatus app.js:19905 (`/api/stats?v=2`) | ✓ EBpfStatusCard | ✓ ObserverEbpfBlocks | aligned | | |
 | element | Network Traffic per-process table (Process / In / Out) | ✓ loadEBPFNetworkTraffic | ✓ EBpfNetworkCard "Network (by process)" | ✓ NetTrafficTable (top 10) | aligned | | |
-| string | "No eBPF data available" | ✓ t('ebpf_no_data') | ~ stats_ebpf_configured_not_active "eBPF configured but probes not active…" | ✓ "No eBPF data available" | misaligned |  | Android wording differs |
+| string | "No eBPF data available" | ✓ t('ebpf_no_data') | ✓ EBpfNetworkCard always renders; empty → `ebpf_no_data` "No eBPF data available" (.7) | ✓ "No eBPF data available" | aligned |  | Android copy aligned 2026-10-04 |
 | element | Installed plugins list (version + status) | ✓ loadPluginsStatus `/api/plugins` | ✓ PluginsCard | ✓ ObserverPluginsBlock | aligned | | |
 | element | Peer Resources: per peer CPU %, Mem used/total, GPU util/temp/power/VRAM chips, shape tag, "no snapshot" | ✓ loadPeerResourceOverview app.js:19701 | ✓ PeerResourcesCard (obs_cn_* strings) | ✓ ObserverPeerResourcesBlock | aligned | | |
 | data | Peer snapshots `/api/observer/peers/{name}/stats` in parallel | ✓ | ✓ | ✓ shared with grid (loadSystems) | aligned | | |
@@ -57,7 +57,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | interaction | × Remove peer (rotates token) with confirm | ✓ removeObserverPeer | ✓ × with confirm → removeObserverPeer (FederatedPeersCard.kt:278) | ✓ alert confirm | aligned | decided D55a |  |
 | element | Peer dot colors by last push: green <15 s / amber <60 s / red ≥60 s / grey never | ✓ | ✓ FederatedPeersCard Canvas + relative age (v1.23.4) | ✓ | aligned | | |
 | element | Shape badge A/B/C (agent/standalone/cluster) | ✓ grey outline word tag agent/standalone/cluster (app.js:20269) | ~ ShapeBadge coloured word tag (FederatedPeersCard.kt:377) | ✓ | misaligned |  | Android colours the tag; PWA neutral; iOS (unverified) |
-| string | Empty: "no peers registered" + deploy hint `datawatch-stats --datawatch <url> --name <peer>` | ✓ app.js:20066 | ~ "no peers registered" / "No peers." without deploy hint | ✓ with deploy hint | misaligned |  | Android lacks deploy hint |
+| string | Empty: "no peers registered" + deploy hint `datawatch-stats --datawatch <url> --name <peer>` | ✓ app.js:20066 | ✓ "no peers registered" + deploy hint (both views); filter-empty → "no peers match the \"x\" filter" | ✓ with deploy hint | aligned |  | Android copy aligned 2026-10-04 |
 | element | "attached to ComputeNode" tag on peer | ✓ t('observer_attached_to') | ✓ (observerPeer != null filter, v1.23.4) | ✓ ⇄ node / free tag | aligned | | |
 | element | Cluster nodes block (hidden until non-empty) | ✓ loadObserverClusterNodes `/api/observer/stats` | ✓ ClusterNodesCard | ✓ ObserverClusterBlock | aligned | | |
 | element | MCP channel bridge status (collapsed chevron block) | ✓ `/api/channel/info` app.js:19608 | ✓ McpChannelCard (ui/about) | ✓ DisclosureGroup | aligned | | |
@@ -99,7 +99,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | element | Identity panel (`/api/identity`) under KG | ✗ in Observer (Settings identityPanel app.js:6910) | ✓ Settings only (Observer copy dropped) | ✗ in Observer (Settings › Identity) | aligned |  | earlier row mis-placed PWA; Android should drop the Observer copy |
 | **7.9 Daemon Log** | | | | | | | |
 | element | Monospace panel, dark bg, max-height 300 | ✓ | ✓ DaemonLogCard | ✓ | aligned | | |
-| interaction | Newest / Older (50 lines, offset counter) | ✓ loadDaemonLog | ~ "Newer" / "Older" / "Refresh" (DaemonOpsCards.kt:139–153) | ✓ Newest/Older | misaligned |  | Android labels differ |
+| interaction | Newest / Older (50 lines, offset counter) | ✓ loadDaemonLog | ✓ "Newest" / "Older" + "Showing N of T lines (offset O)" in the button row (DaemonOpsCards.kt) | ✓ Newest/Older | aligned |  | Android copy aligned 2026-10-04 |
 | data | Auto-refresh | ✓ setInterval app.js:12513 | ✓ delay(10_000) | ✓ 10 s | aligned | | |
 | element | Daemon ops cards: Network interfaces, Kill orphans, Daemon update, Restart daemon, Hot-reload subsystem | ✗ in Observer (PWA: Settings) | ✓ ops/DaemonOpsCards (not mounted in ObserverScreen — Settings) | ✗ | n/a | | belongs to 07 |
 | **7.10 Federated Peers (bottom card)** | | | | | | | |

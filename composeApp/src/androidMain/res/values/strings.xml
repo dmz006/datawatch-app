@@ -113,13 +113,13 @@
     <string name="dialog_delete_session_body">The session history will be removed from the server. This cannot be undone.</string>
 
     <!-- ── Session detail ── -->
-    <string name="session_detail_tab_tmux">tmux</string>
-    <string name="session_detail_tab_channel">channel</string>
+    <string name="session_detail_tab_tmux">Tmux</string>
+    <string name="session_detail_tab_channel">Channel</string>
     <string name="session_detail_tab_stats">stats</string>
     <string name="session_detail_status_subtab_status">Status</string>
     <string name="session_detail_status_subtab_stats">Stats</string>
-    <string name="session_detail_stats_no_data">No process stats — eBPF may not be active for this session.</string>
-    <string name="stats_card_host">Host</string>
+    <string name="session_detail_stats_no_data">The observer hasn\'t attributed a process tree to this session. Most common causes: (1) SessionAttribution is off in the observer config, or (2) the LLM runs inside a container the observer can\'t enter. Falling back to backend-level stats when available.</string>
+    <string name="stats_card_host">Process Stats</string>
     <string name="stats_card_container">Container</string>
     <string name="stats_card_compute_node">Compute Node</string>
     <string name="stats_card_llm">LLM</string>
@@ -144,7 +144,7 @@
     <string name="status_card_sprint">Sprint</string>
     <string name="status_card_tests">Tests</string>
     <string name="status_card_git">Git</string>
-    <string name="status_no_focus">No active focus</string>
+    <string name="status_no_focus">No hook events received yet. Hooks auto-install on session start for claude-code; for other backends see the howto.</string>
     <string name="status_no_sprint">No sprint data</string>
     <string name="status_no_tests">No test data</string>
     <string name="status_tests_no_signal">No test signal yet · hook payload tests=… expected</string>
@@ -157,9 +157,9 @@
     <string name="voice_cmd_session_label">Session: %1$s</string>
     <string name="voice_cmd_no_session">No active session found</string>
     <string name="voice_cmd_sent">Sent</string>
-    <string name="status_hooks_alive">Hooks alive</string>
-    <string name="status_hooks_stale">Hooks stale</string>
-    <string name="status_hooks_missing">Hooks missing</string>
+    <string name="status_hooks_alive">hooks alive</string>
+    <string name="status_hooks_stale">hooks stale</string>
+    <string name="status_hooks_missing">no hooks installed</string>
     <string name="status_idle_since">Idle since %1$s</string>
     <string name="status_hook_docs_link">Docs ↗</string>
     <string name="status_llm_more_soon">Token rate · latency · model state in next update</string>
@@ -170,7 +170,6 @@
     <string name="session_detail_schedule_reply">Schedule reply</string>
     <string name="session_detail_generating">generating</string>
     <string name="session_detail_no_messages">No messages yet. Waiting for session output…</string>
-    <string name="session_detail_no_events">No events yet — open a session that has produced output to see state transitions, prompts, and completions here.</string>
     <string name="session_detail_kill_title">Stop session?</string>
     <string name="session_detail_kill_body">This stops the tmux session on the server. The session cannot be resumed (a new session would need to be started).</string>
     <string name="session_detail_delete_title">Delete session?</string>
@@ -408,7 +407,6 @@
     <string name="stats_ebpf_degraded_title">⚠ eBPF Degraded</string>
     <string name="stats_section_process_network">Network (by process)</string>
     <string name="stats_process_network_empty">No per-process network data — eBPF taps not active.</string>
-    <string name="stats_ebpf_configured_not_active">eBPF configured but probes not active. Check server logs or run: datawatch setup ebpf</string>
     <string name="monitor_no_session_selected">Select a session from the list</string>
     <string name="stats_ebpf_degraded_default">eBPF support is built into the daemon but probes aren\'t loaded. Run `datawatch setup ebpf` to enable.</string>
 
@@ -1572,4 +1570,16 @@
     <string name="work_queue_delete_title">Delete queue item %1$s?</string>
     <string name="card_collapse">Collapse section</string>
     <string name="card_expand">Expand section</string>
+    <!-- Parity copy drift (02/03/06 sections, 2026-10-04) -->
+    <string name="sessions_input_needed">Input needed</string>
+    <string name="sessions_summary_show">Show details</string>
+    <string name="sessions_summary_collapse">Collapse details</string>
+    <string name="sessions_worker_badge">worker</string>
+    <string name="sessions_worker_badge_desc">Container worker (agent %1$s)</string>
+    <string name="ebpf_no_data">No eBPF data available</string>
+    <string name="obs_peer_deploy_hint">deploy datawatch-stats --datawatch &lt;url&gt; --name &lt;peer&gt; on a remote host, or spawn an autonomous worker (it auto-peers).</string>
+    <string name="obs_peer_no_match">no peers match the \"%1$s\" filter</string>
+    <string name="daemon_log_newest">Newest</string>
+    <string name="daemon_log_older">Older</string>
+    <string name="daemon_log_info">Showing %1$d of %2$d lines (offset %3$d)</string>
 </resources>

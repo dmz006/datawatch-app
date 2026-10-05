@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -139,11 +140,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                 } else if (state.groupByNode) {
                     // Bucketed view: one section per ComputeNode + unbound
                     if (state.byNode.isEmpty() && state.unbound.isEmpty()) {
-                        Text(
-                            "No peers.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        NoPeersRegistered()
                     } else {
                         state.byNode.forEach { (nodeName, peers) ->
                             Text(
@@ -186,11 +183,14 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                         }
                     }
                     val visible = state.peers.filter { peer -> peerMatchesFilter(peer, state.filter) }
-                    if (visible.isEmpty()) {
+                    if (state.peers.isEmpty()) {
+                        NoPeersRegistered()
+                    } else if (visible.isEmpty()) {
                         Text(
-                            "No peers in this group.",
+                            stringResource(R.string.obs_peer_no_match, state.filter.name.lowercase()),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.alpha(0.7f),
                         )
                     } else {
                         visible.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }, onSnapshot = { snapshotTarget = peer.name }) }
@@ -643,5 +643,26 @@ public class FederatedPeersViewModel(
         transport.getObserverPeersByNode().onSuccess { dto ->
             _state.value = _state.value.copy(byNode = dto.byNode, unbound = dto.unbound)
         }
+    }
+}
+
+/**
+ * PWA renderObserverPeersCard empty state: "no peers registered" · deploy
+ * hint (`datawatch-stats --datawatch <url> --name <peer>`), both at .7 opacity.
+ */
+@Composable
+private fun NoPeersRegistered() {
+    Column(modifier = Modifier.alpha(0.7f)) {
+        Text(
+            stringResource(R.string.obs_peer_no_peers),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            stringResource(R.string.obs_peer_deploy_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }

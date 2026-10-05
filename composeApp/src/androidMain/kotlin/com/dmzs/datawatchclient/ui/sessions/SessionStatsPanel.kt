@@ -102,7 +102,7 @@ internal fun SessionStatsCards(
         val backendLabel = envelope.label.takeIf { it.isNotBlank() } ?: session?.backend
         HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples, backendLabel)
     } else {
-        HostCardNoData(session?.backend)
+        HostCardNoData()
     }
 
     // Container card — conditional on envelope.container != null
@@ -183,12 +183,10 @@ private fun StatRowWithSparkline(
 }
 
 @Composable
-private fun HostCardNoData(backend: String? = null) {
-    val title = if (!backend.isNullOrBlank()) {
-        stringResource(R.string.stats_card_host_with_backend, backend.uppercase())
-    } else {
-        stringResource(R.string.stats_card_host)
-    }
+private fun HostCardNoData() {
+    // PWA renderSessionStats: no envelope → "Process Stats" title +
+    // `session_stats_no_envelope_body`.
+    val title = stringResource(R.string.stats_card_host)
     SectionCard {
         PwaSectionTitle(title)
         Box(
