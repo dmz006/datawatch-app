@@ -1799,6 +1799,41 @@ public interface TransportClient {
     /** DELETE /api/queue/{id}. */
     public suspend fun deleteQueueItem(id: String): Result<Unit> =
         Result.failure(UnsupportedOperationException("deleteQueueItem"))
+
+    // ---- iOS settings depth parity ----
+
+    /**
+     * POST /api/federation/peers `{name, url, enabled, token?, capabilities?, channel_identity?}`
+     * (PWA `submitFedPeerForm`).
+     */
+    public suspend fun addFederationPeer(body: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        Result.failure(UnsupportedOperationException("addFederationPeer"))
+
+    /** PUT /api/federation/peers/{name} — partial update (server merges onto the stored entry). */
+    public suspend fun updateFederationPeer(
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("updateFederationPeer"))
+
+    /** POST /api/federation/peers/{name}/test — `{ok, latency_ms, version?, error?}` (PWA `testFedPeer`). */
+    public suspend fun testFederationPeer(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("testFederationPeer"))
+
+    /** POST /api/profiles/{kind}s — create a project / cluster profile (PWA `saveProfileEditor` isNew). */
+    public suspend fun createKindProfile(
+        kind: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("createKindProfile"))
+
+    /**
+     * PATCH /api/websearch/providers/{name} with a raw partial body — only the
+     * keys present are changed, so an untouched `api_key` is never overwritten
+     * with the masked `********` the list endpoint returns.
+     */
+    public suspend fun patchWebSearchProviderJson(
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("patchWebSearchProviderJson"))
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

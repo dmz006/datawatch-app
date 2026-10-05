@@ -59,6 +59,8 @@ private struct SettingsServerCustomCard: View {
         case .mcpChannel: SettingsMcpChannelCard(profile: profile)
         case .subsystemReload: SettingsSubsystemReloadCard(profile: profile)
         case .encryption: SettingsEncryptionCard(profile: profile)
+        case .exitHooks: SettingsExitHooksCard(profile: profile)
+        case .workQueue: SettingsWorkQueueCard(profile: profile)
         default: EmptyView()
         }
     }

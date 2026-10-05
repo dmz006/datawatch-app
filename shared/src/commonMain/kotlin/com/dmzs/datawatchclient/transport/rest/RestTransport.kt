@@ -4076,6 +4076,64 @@ public class RestTransport(
             Unit
         }
 
+    // ---- iOS settings depth parity ----
+
+    override suspend fun addFederationPeer(body: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/federation/peers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+            Unit
+        }
+
+    override suspend fun updateFederationPeer(
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/federation/peers/${iosPathPart(name)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+            Unit
+        }
+
+    override suspend fun testFederationPeer(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/federation/peers/${iosPathPart(name)}/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createKindProfile(
+        kind: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/profiles/${iosPathPart(kind)}s") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+            Unit
+        }
+
+    override suspend fun patchWebSearchProviderJson(
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.patch("${profile.baseUrl}/api/websearch/providers/${iosPathPart(name)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

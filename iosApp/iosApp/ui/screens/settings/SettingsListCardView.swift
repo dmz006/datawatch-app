@@ -23,12 +23,18 @@ struct SettingsListCardView: View {
 
     /// LLMs + Compute Nodes use the full PWA add/edit forms instead of the generic add sheet.
     private var hasForm: Bool { kind == "llms" || kind == "compute_nodes" }
+    /// Field-form edit via IosSettingsCrud (templates, fed peers, providers, …).
+    private var crudEdit: Bool { IosSettingsCrud.shared.canEdit(kind: kind) }
+    /// Project / cluster profiles: JSON editor (PWA form ↔ YAML escape hatch).
+    private var jsonEdit: Bool { IosSettingsCrud.shared.isJsonEdited(kind: kind) }
+    private var canEditRows: Bool { hasForm || crudEdit || jsonEdit }
 
     var body: some View {
         List {
             if !cardActions.isEmpty {
                 Section { cardActionButtons }
             }
+            SettingsListExtras(profile: profile, kind: kind, onChanged: { load() })
             if let message {
                 Section {
                     Text(message)
@@ -53,7 +59,7 @@ struct SettingsListCardView: View {
         .refreshable { load() }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if !addFields.isEmpty || hasForm {
+                if !addFields.isEmpty || hasForm || jsonEdit {
                     Button { showAdd = true } label: {
                         Image(systemName: "plus").foregroundStyle(DatawatchColors.primary)
                     }
@@ -88,6 +94,8 @@ struct SettingsListCardView: View {
             LlmFormSheet(profile: profile, editName: nil) { load() }
         } else if kind == "compute_nodes" {
             ComputeNodeFormSheet(profile: profile, editName: nil) { load() }
+        } else if jsonEdit {
+            SettingsProfileJsonSheet(profile: profile, kind: kind, name: nil) { load() }
         } else {
             SettingsAddEntrySheet(fields: addFields) { values, done in
                 create(values, done: done)
@@ -99,8 +107,12 @@ struct SettingsListCardView: View {
     private func editSheet(_ name: String) -> some View {
         if kind == "llms" {
             LlmFormSheet(profile: profile, editName: name) { load() }
-        } else {
+        } else if kind == "compute_nodes" {
             ComputeNodeFormSheet(profile: profile, editName: name) { load() }
+        } else if jsonEdit {
+            SettingsProfileJsonSheet(profile: profile, kind: kind, name: name) { load() }
+        } else {
+            SettingsCrudEditSheet(profile: profile, kind: kind, id: name, fields: addFields) { load() }
         }
     }
 
@@ -132,7 +144,7 @@ struct SettingsListCardView: View {
                     )
                     .listRowBackground(DatawatchColors.surface)
                     .contextMenu {
-                        if hasForm {
+                        if canEditRows {
                             Button { formEdit = SettingsFormEditItem(id: row.id) } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
@@ -240,7 +252,7 @@ struct SettingsListCardView: View {
     }
 
     private func open(_ row: IosSettingsRow) {
-        if hasForm {
+        if canEditRows {
             formEdit = SettingsFormEditItem(id: row.id)
             return
         }
@@ -249,6 +261,15 @@ struct SettingsListCardView: View {
     }
 
     private func create(_ values: [String: String], done: @escaping (String?) -> Void) {
+        if IosSettingsCrud.shared.handlesCreate(kind: kind) {
+            IosSettingsCrud.shared.save(profile: profile, kind: kind, originalId: nil, values: values) { err in
+                DispatchQueue.main.async {
+                    done(err)
+                    if err == nil { load() }
+                }
+            }
+            return
+        }
         IosSettingsLists.shared.create(profile: profile, kind: kind, values: values) { err in
             DispatchQueue.main.async {
                 done(err)
@@ -358,15 +379,23 @@ struct SettingsTextSheet: View {
     }
 }
 
-/// Add-entry form for list cards. `onSave(values, done)` — done(nil) dismisses.
+/// Add/edit-entry form for list cards. `onSave(values, done)` — done(nil) dismisses.
+/// Edit mode: `initial` pre-fills, `lockedKeys` are read-only (the entry's id),
+/// secure fields stay blank ("leave blank to keep current").
 struct SettingsAddEntrySheet: View {
     let fields: [SettingsAddField]
+    var initial: [String: String] = [:]
+    var lockedKeys: Set<String> = []
+    var title: String = "Add"
     let onSave: ([String: String], @escaping (String?) -> Void) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var values: [String: String] = [:]
     @State private var saving = false
     @State private var error: String?
+    @State private var seeded = false
+
+    private var isEdit: Bool { !lockedKeys.isEmpty }
 
     var body: some View {
         NavigationStack {
@@ -386,8 +415,14 @@ struct SettingsAddEntrySheet: View {
             }
             .scrollContentBackground(.hidden)
             .background(DatawatchColors.background)
-            .navigationTitle("Add")
+            .navigationTitle(L(title))
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                if !seeded {
+                    seeded = true
+                    values = initial
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -412,8 +447,15 @@ struct SettingsAddEntrySheet: View {
             Text(L(f.label))
                 .font(DatawatchFonts.labelSmall)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
-            if f.secure {
-                SecureField(prompt, text: binding)
+            if lockedKeys.contains(f.key) {
+                Text(verbatim: values[f.key] ?? "")
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            } else if f.secure {
+                SecureField(isEdit ? L("Leave blank to keep current") : prompt, text: binding)
+            } else if f.multiline {
+                TextEditor(text: binding)
+                    .frame(minHeight: 120)
+                    .font(DatawatchFonts.bodyMedium)
             } else {
                 TextField(prompt, text: binding)
                     .textInputAutocapitalization(.never)
