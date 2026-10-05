@@ -257,30 +257,36 @@ public class WebSocketTransport(
                         request = { bearerHeader?.let { header(HttpHeaders.Authorization, it) } },
                     ) {
                         println("WsTransport[global]: connected $wsUrl")
-                        for (frame in incoming) {
-                            when (frame) {
-                                is Frame.Text -> {
-                                    val text = frame.readText()
-                                    val dto = runCatching {
-                                        json.decodeFromString(WsFrameDto.serializer(), text)
-                                    }.getOrNull() ?: continue
-                                    when (dto.type) {
-                                        "stats" -> tryRouteStatsFrame(dto.data, json)
-                                        "prd_update" -> tryRoutePrdUpdateFrame(dto.data, json)
-                                        "sessions" -> tryRouteSessionsFrame(dto.data, json, profile.id)
-                                        "session_state" -> tryRouteSessionStateFrame(dto.data, json, profile.id)
-                                        "channel_reply", "channel_notify" -> tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
-                                        "channel_ready" -> ChannelReadyHub.routeFrame(dto.data)
-                                        "alert" -> tryRouteAlertFrame(dto.data, profile.id)
-                                        "hook_update" -> HookHub.route(dto.data, profile.id)
+                        // PWA state.connected — drives the iOS reachability dot.
+                        WsConnectionHub.opened(profile.id)
+                        try {
+                            for (frame in incoming) {
+                                when (frame) {
+                                    is Frame.Text -> {
+                                        val text = frame.readText()
+                                        val dto = runCatching {
+                                            json.decodeFromString(WsFrameDto.serializer(), text)
+                                        }.getOrNull() ?: continue
+                                        when (dto.type) {
+                                            "stats" -> tryRouteStatsFrame(dto.data, json)
+                                            "prd_update" -> tryRoutePrdUpdateFrame(dto.data, json)
+                                            "sessions" -> tryRouteSessionsFrame(dto.data, json, profile.id)
+                                            "session_state" -> tryRouteSessionStateFrame(dto.data, json, profile.id)
+                                            "channel_reply", "channel_notify" -> tryRouteChannelFrame(dto.type, dto.data, dto.timestamp)
+                                            "channel_ready" -> ChannelReadyHub.routeFrame(dto.data)
+                                            "alert" -> tryRouteAlertFrame(dto.data, profile.id)
+                                            "hook_update" -> HookHub.route(dto.data, profile.id)
+                                        }
                                     }
+                                    is Frame.Close -> {
+                                        println("WsTransport[global]: server closed WS")
+                                        return@webSocket
+                                    }
+                                    else -> {}
                                 }
-                                is Frame.Close -> {
-                                    println("WsTransport[global]: server closed WS")
-                                    return@webSocket
-                                }
-                                else -> {}
                             }
+                        } finally {
+                            WsConnectionHub.closed(profile.id)
                         }
                     }
                     backoff = INITIAL_BACKOFF_MS
