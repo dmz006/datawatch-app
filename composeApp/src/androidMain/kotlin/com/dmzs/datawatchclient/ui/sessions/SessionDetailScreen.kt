@@ -1576,39 +1576,53 @@ private fun TimelineSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-            Text(stringResource(R.string.session_detail_timeline), style = MaterialTheme.typography.titleMedium)
-            val usingServer = serverLines != null && serverLines!!.isNotEmpty()
-            val subtitle =
-                when {
-                    usingServer -> "${serverLines!!.size} events (server feed)"
-                    fetchFailed -> "${localItems.size} events (local cache — server feed unavailable)"
-                    else -> "${localItems.size} events (local cache)"
-                }
             Text(
-                subtitle,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                stringResource(R.string.session_detail_timeline),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp),
             )
-            if (usingServer) {
-                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    // key = index: server may return duplicate lines (same event
-                    // logged twice), so using content as key would crash with
-                    // "Key already used" IllegalArgumentException.
-                    itemsIndexed(serverLines!!) { idx, line -> TimelineServerRow(line) }
-                }
-            } else if (localItems.isEmpty()) {
-                Text(
-                    stringResource(R.string.session_detail_no_events),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    // key includes index to guard against duplicate ts+hashCode.
-                    itemsIndexed(localItems) { idx, ev ->
-                        TimelineRow(ev)
-                        HorizontalDivider()
+            // PWA toggleTimeline copy: "Loading timeline…" → rows, or
+            // "No timeline events recorded yet." / "Failed to load timeline.".
+            // Locally cached events fill in when the server feed is empty/unavailable.
+            val usingServer = serverLines != null && serverLines!!.isNotEmpty()
+            val loading = serverLines == null && !fetchFailed
+            when {
+                usingServer ->
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        // key = index: server may return duplicate lines (same event
+                        // logged twice), so using content as key would crash with
+                        // "Key already used" IllegalArgumentException.
+                        itemsIndexed(serverLines!!) { idx, line -> TimelineServerRow(line) }
+                    }
+                loading ->
+                    Text(
+                        stringResource(R.string.timeline_loading),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                else -> {
+                    if (fetchFailed) {
+                        Text(
+                            stringResource(R.string.timeline_error),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                    }
+                    if (localItems.isNotEmpty()) {
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            // key includes index to guard against duplicate ts+hashCode.
+                            itemsIndexed(localItems) { idx, ev ->
+                                TimelineRow(ev)
+                                HorizontalDivider()
+                            }
+                        }
+                    } else if (!fetchFailed) {
+                        Text(
+                            stringResource(R.string.timeline_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
@@ -1789,14 +1803,24 @@ private fun ChatEventList(
         if (events.isNotEmpty() && isAtBottom) listState.animateScrollToItem(events.size - 1)
     }
     if (events.isEmpty()) {
-        Box(
+        // PWA `.chat-empty`: 💬 + chat_empty_hint + chat_memory_hint.
+        Column(
             modifier = modifier.fillMaxSize().padding(24.dp),
-            contentAlignment = Alignment.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
+            Text("💬", fontSize = 36.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
             Text(
-                stringResource(R.string.session_detail_no_messages),
-                style = MaterialTheme.typography.bodyMedium,
+                stringResource(R.string.chat_empty_hint),
+                fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Text(
+                stringResource(R.string.chat_memory_hint),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
         return

@@ -73,9 +73,11 @@ public fun PwaStatePill(state: SessionState) {
                 .border(width = 1.dp, color = fg.copy(alpha = alpha), shape = RoundedCornerShape(10.dp))
                 .padding(horizontal = 7.dp, vertical = 2.dp),
     ) {
+        // PWA `.session-card .state` uses `text-transform: uppercase` and the
+        // card's inline 11px override (app.js renderSessionCard).
         Text(
-            state.label(),
-            fontSize = 10.sp,
+            state.label().uppercase(),
+            fontSize = 11.sp,
             color = fg.copy(alpha = alpha),
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.3.sp,

@@ -101,15 +101,14 @@
     <string name="dialog_delete_session_body">L\'historique de session sera supprimé du serveur. Cette action est irréversible.</string>
 
     <!-- ── Session detail ── -->
-    <string name="session_detail_tab_tmux">tmux</string>
-    <string name="session_detail_tab_channel">canal</string>
+    <string name="session_detail_tab_tmux">Tmux</string>
+    <string name="session_detail_tab_channel">Canal</string>
     <string name="session_detail_input_required">Saisie requise</string>
     <string name="session_detail_waiting_reply">La session attend une réponse.</string>
     <string name="session_detail_timeline">Chronologie</string>
     <string name="session_detail_schedule_reply">Planifier une réponse</string>
     <string name="session_detail_generating">génération</string>
     <string name="session_detail_no_messages">Aucun message pour l\'instant. En attente de la sortie de la session…</string>
-    <string name="session_detail_no_events">Aucun événement pour l\'instant — ouvrez une session avec une sortie pour voir les transitions d\'état, les invites et les complétions.</string>
     <string name="session_detail_kill_title">Arrêter la session ?</string>
     <string name="session_detail_kill_body">Cela arrête la session tmux sur le serveur. La session ne peut pas être reprise.</string>
     <string name="session_detail_delete_title">Supprimer la session ?</string>
@@ -1043,7 +1042,7 @@
     <string name="automata_confirm_cancel_body">Annuler \"%1$s\" ? L\'exécution s\'arrêtera et l\'automate passera à l\'état annulé.</string>
     <string name="state_filter_btn_tip">État (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
-    <string name="stats_card_host">Hôte</string>
+    <string name="stats_card_host">Stats du processus</string>
     <string name="stats_card_container">Conteneur</string>
     <string name="stats_card_compute_node">Nœud de calcul</string>
     <string name="stats_card_llm">LLM</string>
@@ -1067,22 +1066,22 @@
     <string name="status_card_sprint">Sprint</string>
     <string name="status_card_tests">Tests</string>
     <string name="status_card_git">Git</string>
-    <string name="status_no_focus">Aucun focus actif</string>
+    <string name="status_no_focus">Aucun événement de hook reçu. Les hooks s\'installent automatiquement au démarrage de session pour claude-code ; pour les autres backends, voir le howto.</string>
     <string name="status_no_sprint">Aucune donnée de sprint</string>
     <string name="status_no_tests">Aucune donnée de test</string>
     <string name="status_tests_no_signal">Aucun signal de test · payload hook tests=… attendu</string>
     <string name="status_no_git">Aucune donnée git</string>
     <string name="status_git_no_state">Aucun état git · payload hook git=… attendu</string>
-    <string name="stats_card_host_with_backend">Stats backend — %1$s</string>
+    <string name="stats_card_host_with_backend">Stats du backend — %1$s</string>
     <string name="voice_cmd_confirm_title">Envoyer à datawatch ?</string>
     <string name="voice_cmd_confirm_send">Envoyer</string>
     <string name="voice_cmd_confirm_cancel">Annuler</string>
     <string name="voice_cmd_session_label">Session : %1$s</string>
     <string name="voice_cmd_no_session">Aucune session active trouvée</string>
     <string name="voice_cmd_sent">Envoyé</string>
-    <string name="status_hooks_alive">Hooks actifs</string>
-    <string name="status_hooks_stale">Hooks obsolètes</string>
-    <string name="status_hooks_missing">Hooks manquants</string>
+    <string name="status_hooks_alive">hooks actifs</string>
+    <string name="status_hooks_stale">hooks obsolètes</string>
+    <string name="status_hooks_missing">hooks non installés</string>
     <string name="status_idle_since">Inactif depuis %1$s</string>
     <string name="status_hook_docs_link">Docs ↗</string>
     <string name="status_llm_more_soon">Taux de tokens · latence · état du modèle dans la prochaine mise à jour</string>
@@ -1256,4 +1255,18 @@
     <string name="work_queue_delete_title">Supprimer l\'élément de file %1$s ?</string>
     <string name="card_collapse">Réduire la section</string>
     <string name="card_expand">Développer la section</string>
+    <!-- Parity copy drift (02/03/06 sections, 2026-10-04) -->
+    <string name="session_detail_stats_no_data">L\'observateur n\'a attribué aucun arbre de processus à cette session. Causes les plus courantes : (1) SessionAttribution est désactivé dans la configuration de l\'observateur, ou (2) le LLM tourne dans un conteneur où l\'observateur ne peut pas entrer. Repli sur les stats au niveau du backend si disponibles.</string>
+    <string name="sessions_input_needed">Saisie requise</string>
+    <string name="sessions_summary_show">Afficher les détails</string>
+    <string name="sessions_summary_collapse">Réduire les détails</string>
+    <string name="sessions_worker_badge">worker</string>
+    <string name="sessions_worker_badge_desc">Worker de conteneur (agent %1$s)</string>
+    <string name="ebpf_no_data">Aucune donnée eBPF disponible</string>
+    <string name="obs_peer_no_peers">aucun pair enregistré</string>
+    <string name="obs_peer_deploy_hint">déployez datawatch-stats --datawatch &lt;url&gt; --name &lt;peer&gt; sur un hôte distant, ou lancez un worker autonome (il s\'enregistre automatiquement comme pair).</string>
+    <string name="obs_peer_no_match">aucun pair ne correspond au filtre « %1$s »</string>
+    <string name="daemon_log_newest">Plus récents</string>
+    <string name="daemon_log_older">Plus anciens</string>
+    <string name="daemon_log_info">Affichage de %1$d sur %2$d lignes (décalage %3$d)</string>
 </resources>
