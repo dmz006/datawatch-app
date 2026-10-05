@@ -96,7 +96,7 @@ public object ConfigFieldSchemas {
     public val Autonomous: ConfigSection =
         ConfigSection(
             id = "gc_autonomous",
-            title = "Autonomous PRD decomposition",
+            title = "Automaton decomposition",
             fields =
                 listOf(
                     Toggle("autonomous.enabled", "Enable autonomous loop"),

@@ -266,7 +266,7 @@ private fun ConstellationCard(
         if (prds.isNotEmpty()) {
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
             Text(
-                "PRDs",
+                "Automata",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 2.dp),
@@ -299,7 +299,7 @@ private fun ConstellationCard(
             }
             if (prds.size > 4) {
                 Text(
-                    "+${prds.size - 4} more PRDs",
+                    "+${prds.size - 4} more Automata",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),

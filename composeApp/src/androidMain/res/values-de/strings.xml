@@ -218,8 +218,8 @@
     <string name="prd_detail_description_label">Beschreibung</string>
     <string name="prd_detail_files_label">Dateien</string>
     <string name="prd_detail_files_hint">Ein Pfad pro Zeile, max. 50.</string>
-    <string name="prd_detail_delete_title">PRD löschen?</string>
-    <string name="prd_detail_delete_body">Löscht „%1$s" und alle untergeordneten PRDs dauerhaft. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="prd_detail_delete_title">Automat löschen?</string>
+    <string name="prd_detail_delete_body">Löscht „%1$s“ und alle untergeordneten Automaten dauerhaft. Das kann nicht rückgängig gemacht werden.</string>
     <string name="prd_detail_edit_files">✎ Dateien</string>
 
     <!-- ── Monitor ── -->
@@ -442,10 +442,10 @@
     <string name="prd_btn_clone_template">Als Vorlage klonen</string>
     <string name="prd_btn_clone_template_title">Diese Automation als wiederverwendbare Vorlage speichern</string>
     <string name="prd_btn_delete">Löschen</string>
-    <string name="prd_btn_delete_title">PRD und alle Nachkommen endgültig löschen</string>
+    <string name="prd_btn_delete_title">Automat und alle Nachkommen endgültig löschen</string>
     <string name="prd_btn_edit_spec">Spec bearbeiten</string>
     <string name="prd_btn_request_revision">Überarbeitung anfordern</string>
-    <string name="prd_btn_request_revision_title">PRD mit einer Notiz zur Überarbeitung zurücksenden</string>
+    <string name="prd_btn_request_revision_title">Automat mit einer Notiz zur Überarbeitung zurücksenden</string>
     <string name="prd_btn_settings">Einstellungen</string>
     <string name="prd_decision_detail">Detail</string>
     <string name="prd_decisions_count">Entscheidungen</string>
@@ -456,25 +456,25 @@
     <string name="prd_edit_story_title_prefix">Story bearbeiten</string>
     <string name="prd_edit_task_files_title">Aufgaben-Dateien bearbeiten</string>
     <string name="prd_edit_task_title_prefix">Aufgabe bearbeiten</string>
-    <string name="prd_list_empty">Keine PRDs gefunden.</string>
+    <string name="prd_list_empty">Keine Automaten gefunden.</string>
     <string name="prd_more_actions">Weitere Aktionen</string>
     <string name="prd_new_backend_label">Backend</string>
     <string name="prd_new_effort_label">Aufwand</string>
     <string name="prd_new_model_label">Modell (optional)</string>
     <string name="prd_new_spec_label">Spezifikation — Feature auf Englisch beschreiben</string>
     <string name="prd_new_spec_ph">Eine CACHE-Spalte zu /api/stats hinzufügen…</string>
-    <string name="prd_new_title">Neues PRD</string>
+    <string name="prd_new_title">Neuer Automat</string>
     <string name="prd_new_title_label">Titel (optional)</string>
     <string name="prd_new_title_ph">Kurze Überschrift</string>
     <string name="prd_no_decisions">Noch keine Entscheidungen aufgezeichnet.</string>
     <string name="prd_no_stories">Noch keine Storys.</string>
     <string name="prd_no_tasks">Keine Aufgaben.</string>
     <string name="prd_revision_prompt">Was muss überarbeitet werden?</string>
-    <string name="prd_scan_help">Statische Analyse (SAST, Secrets, Abhängigkeiten, LLM-Grader) über die PRD-Spec und zugehörige Dateien. Führt die konfigurierten Scanner aus und meldet ein Urteil und Befunde.</string>
-    <string name="prd_scan_run_title">Alle konfigurierten Scanner gegen diese PRD ausführen</string>
+    <string name="prd_scan_help">Statische Analyse (SAST, Secrets, Abhängigkeiten, LLM-Grader) über die Automat-Spec und zugehörige Dateien. Führt die konfigurierten Scanner aus und meldet ein Urteil und Befunde.</string>
+    <string name="prd_scan_run_title">Alle konfigurierten Scanner gegen diesen Automaten ausführen</string>
     <string name="prd_set_llm_hint">Aufgaben ohne Override erben diese Werte. Leer = globaler session.llm_backend-Standard.</string>
-    <string name="prd_set_llm_title">PRD-Worker-LLM</string>
-    <string name="prd_set_story_profile_hint">Leer = PRD-Standardausführungsprofil erben. Ein Name überschreibt nur diese Story.</string>
+    <string name="prd_set_llm_title">Automat-Worker-LLM</string>
+    <string name="prd_set_story_profile_hint">Leer = Standardausführungsprofil des Automaten erben. Ein Name überschreibt nur diese Story.</string>
     <string name="prd_set_story_profile_title">Ausführungsprofil überschreiben</string>
     <string name="prd_settings_guided_label">Geführter Modus — nach jeder Story für Review pausieren</string>
     <string name="prd_settings_modal_title">Automaton-Einstellungen</string>
@@ -500,7 +500,7 @@
     <string name="prd_stories_tasks">Storys &amp; Aufgaben</string>
     <string name="prd_story_desc_label">Beschreibung</string>
     <string name="prd_story_title_label">Titel</string>
-    <string name="prd_task_llm_hint">Aufgaben-LLM-Override — leer erbt von PRD dann global.</string>
+    <string name="prd_task_llm_hint">Aufgaben-LLM-Override — leer erbt vom Automaten, dann global.</string>
     <string name="prd_view_spec">Spec anzeigen</string>
     <string name="profile_agent_settings_section">Agent-Einstellungen</string>
     <string name="profile_claude_key_secret_label">Claude-Auth-Schlüssel-Secret</string>

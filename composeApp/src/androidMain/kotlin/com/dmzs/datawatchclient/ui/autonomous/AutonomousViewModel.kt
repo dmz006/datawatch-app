@@ -648,7 +648,7 @@ public class AutonomousViewModel(
         spec: String?,
         permissionMode: String? = null,
     ) {
-        prdOp("Edit PRD") {
+        prdOp("Edit Automaton") {
             it.patchPrd(
                 prdId = prdId,
                 title = title?.takeIf { t -> t.isNotBlank() },
@@ -856,7 +856,7 @@ public class AutonomousViewModel(
                 onFailure = { err ->
                     _state.value =
                         _state.value.copy(
-                            banner = "Fix PRD failed — ${err.message ?: err::class.simpleName}",
+                            banner = "Fix Automaton failed — ${err.message ?: err::class.simpleName}",
                         )
                 },
             )
