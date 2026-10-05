@@ -166,7 +166,7 @@ private fun AlertsBellPill(
 
 /**
  * Animated reachability dot shown at the far right of TopAppBar actions.
- * Green = reachable, red = unreachable, amber (pulsing) = probing.
+ * Green = reachable; red = unreachable or not yet probed (PWA .status-dot).
  * Tap opens a bottom sheet with last-probe time and a retry button.
  */
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -178,26 +178,20 @@ internal fun ReachabilityDot(
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
     val reconnectMsg = stringResource(R.string.status_dot_reconnecting)
-    val color =
-        when (reachable) {
-            true -> Color(0xFF10B981)
-            false -> Color(0xFFEF4444)
-            null -> Color(0xFFF59E0B)
-        }
+    // PWA .status-dot: red until connected, green when connected — no
+    // separate probing colour (operator 2026-10-05). 300 ms colour
+    // transition mirrors `transition: background 0.3s ease`.
+    val color by androidx.compose.animation.animateColorAsState(
+        targetValue = if (reachable == true) Color(0xFF10B981) else Color(0xFFEF4444),
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+        label = "status-dot",
+    )
     val description =
         when (reachable) {
             true -> stringResource(R.string.sessions_server_online)
             false -> stringResource(R.string.sessions_server_unreachable)
             null -> stringResource(R.string.sessions_probing)
         }
-    val scale by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
-        initial = 1f,
-        target = 1.4f,
-        durationMs = 900,
-        staticValue = 1f,
-        active = reachable == null,
-        label = "probe-pulse",
-    )
     Box(
         modifier =
             Modifier
@@ -214,12 +208,7 @@ internal fun ReachabilityDot(
         Surface(
             color = color,
             modifier =
-                Modifier
-                    .size(12.dp)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
+                Modifier.size(12.dp),
             shape = CircleShape,
         ) {}
     }
