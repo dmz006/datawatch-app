@@ -275,7 +275,7 @@ struct NewSessionView: View {
         if !dir.isEmpty { workingDir = dir }
         let backend: String = t["backend"] ?? ""
         if !backend.isEmpty {
-            let match: IosLlmChoice? = o.llms.first { $0.name == backend } ?? o.llms.first { $0.kind == backend }
+            let match: IosLlmChoice? = o.llms.first(where: { $0.name == backend }) ?? o.llms.first(where: { $0.kind == backend })
             if let match { llmName = match.name }
         }
         let wantEffort: String = t["effort"] ?? ""
