@@ -587,11 +587,12 @@ private struct OllamaModelRow: View {
 
 // MARK: - Council runs
 
-/// PWA Council panel: proposal + mode + personas → run; recent runs list.
+/// PWA Council panel: personas (all pre-checked) + proposal + mode → run,
+/// which opens the live watch sheet; recent runs open a replay.
 struct SettingsCouncilRunsView: View {
     let profile: ServerProfile
 
-    @State private var runs: [IosCouncilRun] = []
+    @State private var runs: [IosCouncilPastRun] = []
     @State private var personas: [IosSettingsRow] = []
     @State private var selected: Set<String> = []
     @State private var proposal = ""
@@ -599,11 +600,12 @@ struct SettingsCouncilRunsView: View {
     @State private var busy = false
     @State private var loaded = false
     @State private var error: String?
+    @State private var sheet: CouncilSheetTarget?
 
     var body: some View {
         List {
             Section("New run") { newRunForm }
-            Section("Recent runs") { runRows }
+            Section("Recent Runs") { runRows }
             if let error {
                 Section {
                     Text(error)
@@ -620,16 +622,19 @@ struct SettingsCouncilRunsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { load() }
         .refreshable { load() }
+        .sheet(item: $sheet) { target in
+            CouncilLiveRunSheet(profile: profile, target: target, onFinished: { load() })
+        }
     }
 
     @ViewBuilder
     private var newRunForm: some View {
-        TextField(L("Proposal"), text: $proposal, axis: .vertical)
+        TextField(L("Proposal text..."), text: $proposal, axis: .vertical)
             .lineLimit(2...6)
             .listRowBackground(DatawatchColors.surface)
         Picker("Mode", selection: $mode) {
-            Text("Quick").tag("quick")
-            Text("Debate").tag("debate")
+            Text("Quick (1 round)").tag("quick")
+            Text("Debate (3 rounds)").tag("debate")
         }
         .pickerStyle(.segmented)
         .listRowBackground(DatawatchColors.surface)
@@ -642,7 +647,7 @@ struct SettingsCouncilRunsView: View {
         }
         Button(action: start) {
             HStack {
-                Text("Run council").foregroundStyle(DatawatchColors.primary)
+                Text("Run Council").foregroundStyle(DatawatchColors.primary)
                 Spacer()
                 if busy { ProgressView().controlSize(.small) }
             }
@@ -660,9 +665,13 @@ struct SettingsCouncilRunsView: View {
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .listRowBackground(DatawatchColors.surface)
         } else {
-            ForEach(runs.prefix(5), id: \.id) { r in
-                CouncilRunRow(run: r) { stop(r) }
-                    .listRowBackground(DatawatchColors.surface)
+            ForEach(runs, id: \.id) { r in
+                Button {
+                    sheet = CouncilSheetTarget(id: r.id, initial: nil, live: false)
+                } label: {
+                    CouncilPastRunRow(run: r)
+                }
+                .listRowBackground(DatawatchColors.surface)
             }
         }
     }
@@ -683,7 +692,7 @@ struct SettingsCouncilRunsView: View {
                 if selected.isEmpty { selected = Set(list.filter { $0.enabled }.map { $0.id }) }
             }
         }, onError: { _ in })
-        IosSettingsCrud.shared.councilRuns(profile: profile, onSuccess: { list in
+        IosCouncilRuns.shared.recentRuns(profile: profile, limit: 5, onSuccess: { list in
             DispatchQueue.main.async {
                 runs = list
                 loaded = true
@@ -701,53 +710,52 @@ struct SettingsCouncilRunsView: View {
         busy = true
         error = nil
         let chosen: [String] = personas.map { $0.id }.filter { selected.contains($0) }
-        IosSettingsCrud.shared.startCouncilRun(profile: profile, proposal: proposal, mode: mode, personas: chosen) { err in
+        IosCouncilRuns.shared.start(profile: profile, proposal: proposal, mode: mode, personas: chosen, onStarted: { initial in
             DispatchQueue.main.async {
                 busy = false
-                if let err {
-                    error = err
-                } else {
-                    proposal = ""
-                    load()
-                }
+                proposal = ""
+                sheet = CouncilSheetTarget(id: initial.runId, initial: initial, live: true)
             }
-        }
-    }
-
-    private func stop(_ r: IosCouncilRun) {
-        IosSettingsCrud.shared.stopCouncilRun(profile: profile, id: r.id) { err in
+        }, onError: { msg in
             DispatchQueue.main.async {
-                error = err
-                load()
+                busy = false
+                error = L("Council start failed") + ": " + msg
             }
-        }
+        })
     }
 }
 
-private struct CouncilRunRow: View {
-    let run: IosCouncilRun
-    let onStop: () -> Void
+/// PWA recent-run line: mode chip · N personas × M rounds · short id.
+private struct CouncilPastRunRow: View {
+    let run: IosCouncilPastRun
 
-    private var running: Bool { run.status == "running" || run.status == "pending" }
+    private var summary: String {
+        "\(run.personaCount) " + L("personas") + " × \(run.roundCount) " + L("rounds")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(verbatim: run.proposal)
-                .foregroundStyle(DatawatchColors.onSurface)
-                .lineLimit(2)
-            Text(verbatim: [run.mode, run.status, run.startedAt].filter { !$0.isEmpty }.joined(separator: " · "))
-                .font(DatawatchFonts.labelSmall)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-            if !run.consensus.isEmpty {
-                Text(verbatim: run.consensus)
+            HStack(spacing: 6) {
+                Text(verbatim: run.mode)
+                    .font(DatawatchFonts.badge)
+                    .foregroundStyle(DatawatchColors.primary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(DatawatchColors.primary.opacity(0.15), in: RoundedRectangle(cornerRadius: DatawatchRadius.sm))
+                Text(verbatim: summary)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Text(verbatim: run.shortId)
+                    .font(DatawatchFonts.terminalSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Spacer()
+                if run.running { CouncilPhaseChip(phase: "running") }
+            }
+            if !run.proposal.isEmpty {
+                Text(verbatim: run.proposal)
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.onSurface)
-                    .lineLimit(4)
-            }
-            if running {
-                Button("Stop", role: .destructive, action: onStop)
-                    .buttonStyle(.borderless)
-                    .font(DatawatchFonts.labelSmall)
+                    .lineLimit(2)
             }
         }
     }
