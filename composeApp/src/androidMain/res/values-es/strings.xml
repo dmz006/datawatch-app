@@ -1309,4 +1309,19 @@
     <string name="form_edit_test_fail">Prueba falló:</string>
     <string name="form_edit_save_fail">Error al guardar:</string>
     <string name="session_drag_handle">Arrastra para reordenar</string>
+    <!-- Automata story/task LLM overrides, live planning, template badges -->
+    <string name="prd_set_story_llm_title">Anular LLM de historia</string>
+    <string name="prd_story_llm_hint">Anulación de LLM por historia — vacío hereda del Autómata y luego de la configuración global. Todas las tareas de esta historia heredan esto salvo que tengan su propia anulación.</string>
+    <string name="prd_story_llm_btn">Anular el LLM de esta historia</string>
+    <string name="prd_story_profile_inherit">(heredar predeterminado del autómata)</string>
+    <string name="prd_task_spawn_badge">↳ spawn</string>
+    <string name="prd_task_spawn_hint">La especificación de esta tarea es un autómata hijo; el ejecutor lo planificará, aprobará y ejecutará</string>
+    <string name="prd_task_child_link">→ hijo %1$s</string>
+    <string name="decompose_in_progress">Descomponiendo autómata…</string>
+    <string name="decompose_story_count">%1$d historias generadas</string>
+    <string name="decompose_error">Error al descomponer</string>
+    <string name="tmpl_builtin_badge">integrado</string>
+    <string name="tmpl_used_count">Usado %1$d×</string>
+    <string name="prd_instantiate_vars_label">Variables de plantilla (k=v,k=v)</string>
+    <string name="automata_filter_toggle">Mostrar/ocultar filtros de autómatas</string>
 </resources>

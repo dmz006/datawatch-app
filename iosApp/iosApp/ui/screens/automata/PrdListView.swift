@@ -376,6 +376,9 @@ struct PrdListView: View {
     var allProfiles: [ServerProfile] = []
     /// Wizard "Browse" template link → Automata › Templates.
     var onBrowseTemplates: (() -> Void)? = nil
+    /// PWA #headerSearchBtn on the automata view: the header toggle drives the same
+    /// filter row as ⊞ (kept in sync both ways).
+    var headerFilterOpen: Binding<Bool>? = nil
     @StateObject private var vm = PrdListViewModel()
     @State private var showWizard = false
     @State private var confirmBatchDelete = false
@@ -405,6 +408,12 @@ struct PrdListView: View {
             .padding(.bottom, 20)
             .accessibilityLabel("Launch automaton")
             }
+        }
+        .onChange(of: headerFilterOpen?.wrappedValue ?? false) { open in
+            if open != vm.filterOpen { vm.filterOpen = open }
+        }
+        .onChange(of: vm.filterOpen) { open in
+            if let b = headerFilterOpen, b.wrappedValue != open { b.wrappedValue = open }
         }
         .alert("Delete \(vm.eligibleIds("delete").count) automaton(s)?", isPresented: $confirmBatchDelete) {
             Button("Delete", role: .destructive) { Task { await vm.runBatch("delete") } }

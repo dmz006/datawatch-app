@@ -36,8 +36,11 @@ struct TemplatesView: View {
                         templateCard(tmpl)
                             .listRowBackground(DatawatchColors.surface)
                             .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) { deleting = tmpl } label: {
-                                    Label("Delete", systemImage: "trash")
+                                // PWA: built-in templates are read-only (no ✎ / ✕).
+                                if !tmpl.isBuiltin {
+                                    Button(role: .destructive) { deleting = tmpl } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
                                 }
                             }
                     }
@@ -84,6 +87,7 @@ struct TemplatesView: View {
                     .font(DatawatchFonts.titleMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
                     .lineLimit(2)
+                if t.isBuiltin { PrdMiniPill(text: L("built-in")) }
                 Spacer(minLength: 6)
                 if let type = t.type, !type.isEmpty {
                     Text(type)
@@ -111,10 +115,17 @@ struct TemplatesView: View {
                         .font(DatawatchFonts.badge)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
+                if t.useCount > 0 {
+                    Text("Used \(Int(t.useCount))×")
+                        .font(DatawatchFonts.badge)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
                 Spacer()
-                Button("✎ Edit") { editing = t }
-                    .font(DatawatchFonts.labelSmall)
-                    .buttonStyle(.borderless)
+                if !t.isBuiltin {
+                    Button("✎ Edit") { editing = t }
+                        .font(DatawatchFonts.labelSmall)
+                        .buttonStyle(.borderless)
+                }
                 Button("▶ Use") { using = t }
                     .font(DatawatchFonts.labelSmall.weight(.semibold))
                     .buttonStyle(.borderless)

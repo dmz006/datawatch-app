@@ -55,6 +55,8 @@ struct AutomataView: View {
     @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
     @State private var section: AutomataSection = .prds
     @State private var showIdentityWizard = false
+    /// PWA #headerSearchBtn (automata view): toggles the list's filter row.
+    @State private var filterOpen = false
 
     // D22a/D25a: Automata | Templates. The type registry moved to
     // Settings › Automata › Type Registry (SettingsAutomataTypesView).
@@ -100,6 +102,15 @@ struct AutomataView: View {
                         .accessibilityLabel("Identity wizard")
                     }
                     DocsLinkButton(profile: selectedProfile, anchor: "automata")
+                    if section == .prds {
+                        Button {
+                            withAnimation { filterOpen.toggle() }
+                        } label: {
+                            Image(systemName: filterOpen ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                                .foregroundStyle(DatawatchColors.primary)
+                        }
+                        .accessibilityLabel(filterOpen ? "Hide filter" : "Toggle Automata filters")
+                    }
                     AlertsBellButton()
                     if !store.isAllServers {
                         ReachabilityDotView(profile: selectedProfile)
@@ -147,7 +158,8 @@ struct AutomataView: View {
                     PrdListView(
                         profile: profile,
                         allProfiles: store.isAllServers ? store.enabledProfiles : [],
-                        onBrowseTemplates: { section = .templates }
+                        onBrowseTemplates: { section = .templates },
+                        headerFilterOpen: $filterOpen
                     )
                 }
             case .templates:
