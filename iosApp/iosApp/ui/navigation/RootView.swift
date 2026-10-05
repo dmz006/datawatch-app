@@ -221,7 +221,7 @@ struct RootView: View {
     private func pollStalePeers() async {
         stalePeerCount = 0
         while !Task.isCancelled {
-            if scenePhase == .active, !profileStore.isAllServers, let profile = profileStore.activeProfile {
+            if !profileStore.isAllServers, let profile = profileStore.activeProfile {
                 IosStalePeers.shared.count(profile: profile) { value in
                     let n: Int = Int(value.int32Value)
                     DispatchQueue.main.async {
