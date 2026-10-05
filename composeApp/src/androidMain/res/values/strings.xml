@@ -966,10 +966,10 @@
     <string name="council_config_max_parallel">Max parallel</string>
     <string name="council_config_draft_retention">Draft retention (days)</string>
     <string name="council_run_proposal">Proposal</string>
-    <string name="council_mode_debate">Debate</string>
-    <string name="council_mode_quick">Quick</string>
+    <string name="council_mode_debate">Debate (3 rounds)</string>
+    <string name="council_mode_quick">Quick (1 round)</string>
     <string name="council_run_btn">Run Council</string>
-    <string name="council_results_title">Results</string>
+    <string name="council_results_title">Recent Runs</string>
     <string name="council_round_label">Round</string>
     <string name="council_consensus">Consensus</string>
 
@@ -1584,4 +1584,25 @@
     <string name="daemon_log_newest">Newest</string>
     <string name="daemon_log_older">Older</string>
     <string name="daemon_log_info">Showing %1$d of %2$d lines (offset %3$d)</string>
+
+    <!-- Council live runs (PWA councilOpenLiveWatch) -->
+    <string name="council_btn_detail">detail</string>
+    <string name="council_runs_summary">%1$d personas × %2$d rounds</string>
+    <string name="council_live_title">Council run</string>
+    <string name="council_cancel_confirm">Cancel council run %1$s?</string>
+    <string name="council_phase_connecting">connecting</string>
+    <string name="council_phase_running">running</string>
+    <string name="council_phase_synthesizing">synthesizing</string>
+    <string name="council_phase_completed">completed</string>
+    <string name="council_phase_cancelled">cancelled</string>
+    <string name="council_phase_error">error</string>
+    <string name="council_live_round">Round %1$d of %2$d</string>
+    <string name="council_live_responding">responding…</string>
+    <string name="council_live_waiting">waiting</string>
+    <string name="council_live_synthesizing">Synthesizing…</string>
+    <string name="council_live_lost">Lost connection to the council run.</string>
+    <string name="council_start_failed">Council start failed</string>
+    <string name="council_cancel_btn_label">cancel</string>
+    <string name="council_running_label">Running council…</string>
+    <string name="council_personas_count">personas</string>
 </resources>

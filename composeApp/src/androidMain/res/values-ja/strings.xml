@@ -829,10 +829,10 @@
     <string name="council_config_max_parallel">最大並列数</string>
     <string name="council_config_draft_retention">下書き保持期間（日）</string>
     <string name="council_run_proposal">提案</string>
-    <string name="council_mode_debate">討論</string>
-    <string name="council_mode_quick">クイック</string>
+    <string name="council_mode_debate">討論 (3 ラウンド)</string>
+    <string name="council_mode_quick">クイック (1 ラウンド)</string>
     <string name="council_run_btn">Councilを実行</string>
-    <string name="council_results_title">結果</string>
+    <string name="council_results_title">最近の実行</string>
     <string name="council_round_label">ラウンド</string>
     <string name="council_consensus">コンセンサス</string>
 
@@ -1271,4 +1271,25 @@
     <string name="daemon_log_newest">最新</string>
     <string name="daemon_log_older">古い</string>
     <string name="daemon_log_info">%2$d 行中 %1$d 行を表示 (オフセット %3$d)</string>
+
+    <!-- Council live runs (PWA councilOpenLiveWatch) -->
+    <string name="council_btn_detail">詳細</string>
+    <string name="council_runs_summary">%1$d ペルソナ × %2$d ラウンド</string>
+    <string name="council_live_title">カウンシル実行</string>
+    <string name="council_cancel_confirm">カウンシル実行 %1$s をキャンセルしますか?</string>
+    <string name="council_phase_connecting">接続中</string>
+    <string name="council_phase_running">実行中</string>
+    <string name="council_phase_synthesizing">統合中</string>
+    <string name="council_phase_completed">完了</string>
+    <string name="council_phase_cancelled">キャンセル済み</string>
+    <string name="council_phase_error">エラー</string>
+    <string name="council_live_round">ラウンド %1$d / %2$d</string>
+    <string name="council_live_responding">応答中…</string>
+    <string name="council_live_waiting">待機中</string>
+    <string name="council_live_synthesizing">統合中…</string>
+    <string name="council_live_lost">カウンシル実行への接続が切れました。</string>
+    <string name="council_start_failed">カウンシルの開始に失敗しました</string>
+    <string name="council_cancel_btn_label">キャンセル</string>
+    <string name="council_running_label">カウンシル実行中…</string>
+    <string name="council_personas_count">ペルソナ</string>
 </resources>

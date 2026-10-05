@@ -829,10 +829,10 @@
     <string name="council_config_max_parallel">Max. parallèle</string>
     <string name="council_config_draft_retention">Rétention brouillon (jours)</string>
     <string name="council_run_proposal">Proposition</string>
-    <string name="council_mode_debate">Débat</string>
-    <string name="council_mode_quick">Rapide</string>
+    <string name="council_mode_debate">Débat (3 tours)</string>
+    <string name="council_mode_quick">Rapide (1 tour)</string>
     <string name="council_run_btn">Lancer le Council</string>
-    <string name="council_results_title">Résultats</string>
+    <string name="council_results_title">Exécutions récentes</string>
     <string name="council_round_label">Tour</string>
     <string name="council_consensus">Consensus</string>
 
@@ -1271,4 +1271,25 @@
     <string name="daemon_log_newest">Plus récents</string>
     <string name="daemon_log_older">Plus anciens</string>
     <string name="daemon_log_info">Affichage de %1$d sur %2$d lignes (décalage %3$d)</string>
+
+    <!-- Council live runs (PWA councilOpenLiveWatch) -->
+    <string name="council_btn_detail">détail</string>
+    <string name="council_runs_summary">%1$d personas × %2$d tours</string>
+    <string name="council_live_title">Exécution du Conseil</string>
+    <string name="council_cancel_confirm">Annuler l\'exécution du Conseil %1$s ?</string>
+    <string name="council_phase_connecting">connexion</string>
+    <string name="council_phase_running">en cours</string>
+    <string name="council_phase_synthesizing">synthèse</string>
+    <string name="council_phase_completed">terminé</string>
+    <string name="council_phase_cancelled">annulé</string>
+    <string name="council_phase_error">erreur</string>
+    <string name="council_live_round">Tour %1$d sur %2$d</string>
+    <string name="council_live_responding">répond…</string>
+    <string name="council_live_waiting">en attente</string>
+    <string name="council_live_synthesizing">Synthèse…</string>
+    <string name="council_live_lost">Connexion à l\'exécution du Conseil perdue.</string>
+    <string name="council_start_failed">Échec du lancement du Conseil</string>
+    <string name="council_cancel_btn_label">annuler</string>
+    <string name="council_running_label">Conseil en cours…</string>
+    <string name="council_personas_count">personas</string>
 </resources>
