@@ -34,13 +34,20 @@ import platform.Security.SecTrustRef
 public object IosCertPins {
     private val pins = HashMap<String, String>()
 
+    // Hosts whose profile explicitly opted in to "Trust all certificates (insecure)".
+    private val trustAllHosts = HashSet<String>()
+
     public fun sync(baseUrl: String, trustAnchorSha256: String?, trustAllSentinel: String) {
         val host = hostOf(baseUrl) ?: return
         val pin = trustAnchorSha256?.takeIf { it.isNotBlank() && it != trustAllSentinel }
         if (pin != null) pins[host] = normalize(pin) else pins.remove(host)
+        if (trustAnchorSha256 == trustAllSentinel) trustAllHosts.add(host) else trustAllHosts.remove(host)
     }
 
     public fun pinFor(host: String): String? = pins[host.lowercase()]
+
+    /** True only for a host whose profile opted in to trust-all. */
+    public fun isTrustAll(host: String): Boolean = host.lowercase() in trustAllHosts
 
     public fun normalize(hex: String): String =
         hex.lowercase().filter { it in '0'..'9' || it in 'a'..'f' }
@@ -52,7 +59,9 @@ public object IosCertPins {
 public object IosTls {
     /**
      * Darwin URLSession challenge handler shared by every Ktor client.
-     * - trustAll → accept any server trust (profile sentinel; insecure).
+     * - trustAll → accept any server trust, but only for a host whose profile
+     *   opted in (IosCertPins.isTrustAll); other hosts fall through to the
+     *   pin / system-validation paths below.
      * - pinned host → accept iff the leaf SHA-256 matches, else cancel.
      * - otherwise → system default validation (CAs + user-installed anchors).
      */
@@ -63,7 +72,7 @@ public object IosTls {
             val trust = space.serverTrust
             if (space.authenticationMethod != NSURLAuthenticationMethodServerTrust || trust == null) {
                 completion(NSURLSessionAuthChallengePerformDefaultHandling, null)
-            } else if (trustAll) {
+            } else if (trustAll && IosCertPins.isTrustAll(space.host)) {
                 completion(NSURLSessionAuthChallengeUseCredential, NSURLCredential.credentialForTrust(trust))
             } else {
                 val pin = IosCertPins.pinFor(space.host)

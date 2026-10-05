@@ -91,11 +91,20 @@ public object ServiceLocator {
     }
 
     private val httpClient: HttpClient by lazy { createHttpClient() }
-    private val trustAllClient: HttpClient by lazy { createTrustAllHttpClient() }
-    private val wsClient: HttpClient by lazy { createHttpClientWithWebSockets(trustAll = false) }
-    private val wsTrustAllClient: HttpClient by lazy {
-        createHttpClientWithWebSockets(trustAll = true)
-    }
+    private val wsClient: HttpClient by lazy { createHttpClientWithWebSockets() }
+
+    // "Trust all certificates (insecure)" opt-in — one client per opted-in host;
+    // the bypass inside each client is scoped to that host only (AndroidTrustAll.kt).
+    private val trustAllClients: MutableMap<String, HttpClient> = mutableMapOf()
+    private val trustAllWsClients: MutableMap<String, HttpClient> = mutableMapOf()
+
+    private fun trustAllRestClient(host: String): HttpClient =
+        synchronized(trustAllClients) { trustAllClients.getOrPut(host) { createTrustAllHttpClient(host) } }
+
+    private fun trustAllWsClient(host: String): HttpClient =
+        synchronized(trustAllWsClients) {
+            trustAllWsClients.getOrPut(host) { createHttpClientWithWebSockets(trustAllHost = host) }
+        }
 
     public const val TRUST_ALL_SENTINEL: String = "ALLOW_ALL_INSECURE"
 
@@ -112,7 +121,9 @@ public object ServiceLocator {
     private fun restClientFor(profile: ServerProfile): HttpClient {
         val anchor = profile.trustAnchorSha256
         return when {
-            anchor == TRUST_ALL_SENTINEL -> trustAllClient
+            anchor == TRUST_ALL_SENTINEL ->
+                com.dmzs.datawatchclient.transport.trustAllHostOf(profile.baseUrl)
+                    ?.let { trustAllRestClient(it) } ?: httpClient
             com.dmzs.datawatchclient.transport.CertPins.isPin(anchor, TRUST_ALL_SENTINEL) -> {
                 val pin = com.dmzs.datawatchclient.transport.CertPins.normalize(anchor!!)
                 synchronized(pinnedClients) {
@@ -126,7 +137,9 @@ public object ServiceLocator {
     private fun wsClientFor(profile: ServerProfile): HttpClient {
         val anchor = profile.trustAnchorSha256
         return when {
-            anchor == TRUST_ALL_SENTINEL -> wsTrustAllClient
+            anchor == TRUST_ALL_SENTINEL ->
+                com.dmzs.datawatchclient.transport.trustAllHostOf(profile.baseUrl)
+                    ?.let { trustAllWsClient(it) } ?: wsClient
             com.dmzs.datawatchclient.transport.CertPins.isPin(anchor, TRUST_ALL_SENTINEL) -> {
                 val pin = com.dmzs.datawatchclient.transport.CertPins.normalize(anchor!!)
                 synchronized(pinnedWsClients) {
