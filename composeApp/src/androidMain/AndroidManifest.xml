@@ -55,6 +55,11 @@
                      alias for one release so already-posted notifications still open. -->
                 <data android:scheme="datawatch" android:host="session"/>
                 <data android:scheme="dwclient" android:host="session"/>
+                <!-- Alert deep links (iOS AppRouter parity): datawatch://alert/<id>. -->
+                <data android:scheme="datawatch" android:host="alert"/>
+                <data android:scheme="dwclient" android:host="alert"/>
+                <data android:scheme="datawatch" android:host="alerts"/>
+                <data android:scheme="dwclient" android:host="alerts"/>
             </intent-filter>
         </activity>
 

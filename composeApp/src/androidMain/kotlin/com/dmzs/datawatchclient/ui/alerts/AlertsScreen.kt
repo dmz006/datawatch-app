@@ -302,6 +302,26 @@ public fun AlertsScreen(
 
             val groups = state.visibleGroups
 
+            // Alert deep link (datawatch://alert/<id>): scroll to the focused alert.
+            val chronoListState = androidx.compose.foundation.lazy.rememberLazyListState()
+            val groupListState = androidx.compose.foundation.lazy.rememberLazyListState()
+            val focus by vm.focusTarget.collectAsState()
+            LaunchedEffect(focus, groups, state.sortMode) {
+                val f = focus ?: return@LaunchedEffect
+                if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
+                    val idx =
+                        groups.flatMap { it.alerts }.sortedByDescending { it.createdAt }
+                            .indexOfFirst { it.id == f.alertId }
+                    if (idx < 0) return@LaunchedEffect
+                    chronoListState.animateScrollToItem(idx)
+                } else {
+                    val idx = groups.indexOfFirst { it.sessionId == f.groupSessionId }
+                    if (idx < 0) return@LaunchedEffect
+                    groupListState.animateScrollToItem(idx)
+                }
+                vm.consumeFocus()
+            }
+
             if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
                 // Flat chronological view scoped to the current tab's groups.
                 val flatChrono = groups.flatMap { it.alerts }.sortedByDescending { it.createdAt }
@@ -315,6 +335,7 @@ public fun AlertsScreen(
                     }
                 } else {
                     LazyColumn(
+                        state = chronoListState,
                         modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         items(flatChrono, key = { it.id }) { alert ->
@@ -356,7 +377,7 @@ public fun AlertsScreen(
                         }
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(state = groupListState, modifier = Modifier.fillMaxSize()) {
                         items(groups, key = { it.sessionId }) { group ->
                             val expanded =
                                 group.sessionId in state.expandedSessionIds ||
