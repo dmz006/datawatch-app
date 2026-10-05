@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -362,16 +363,14 @@ public fun SessionDetailScreen(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
+                            // Parity D66a — agent ⬡ and "Chrome" header badges.
+                            state.session?.agentId?.takeIf { it.isNotBlank() }?.let { agent ->
+                                Spacer(modifier = Modifier.width(6.dp))
+                                SessionHeaderBadge("⬡ ${agent.take(12)}")
+                            }
                             if (state.session?.chrome == true) {
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    "· " + stringResource(R.string.session_chrome),
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                )
+                                SessionHeaderBadge(stringResource(R.string.session_chrome))
                             }
                             state.messagingBackend?.takeIf { it.isNotBlank() }?.let { ch ->
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -943,6 +942,8 @@ public fun SessionDetailScreen(
                                     chatMode && !statusMode && state.session?.state != SessionState.Waiting &&
                                         state.session?.backend.let { it == "claude" || it == "claude-code" || it == "opencode-acp" },
                                 onSendChannel = vm::sendViaChannel,
+                                connReady = state.reachable == true,
+                                channelMode = chatMode && !statusMode,
                             )
                         }
                     }
@@ -1220,7 +1221,7 @@ private fun SessionInfoBar(
                         expanded = stateMenuOpen,
                         onDismissRequest = onStateMenuDismiss,
                     ) {
-                        SessionState.values().forEach { target ->
+                        PWA_OVERRIDE_STATES.forEach { target ->
                             androidx.compose.material3.DropdownMenuItem(
                                 text = {
                                     Text(
@@ -2036,6 +2037,8 @@ private fun ReplyComposer(
     whisperConfigured: Boolean = false,
     channelSend: Boolean = false,
     onSendChannel: () -> Unit = {},
+    connReady: Boolean = true,
+    channelMode: Boolean = false,
 ) {
     HorizontalDivider()
     // Parity D21b — PWA keys strip: "Commands…" dropdown + inline custom input.
@@ -2440,10 +2443,13 @@ private fun ReplyComposer(
             onValueChange = onTextChange,
             placeholder = {
                 Text(
+                    // PWA input-bar placeholder (app.js:2988).
                     when {
                         transcribing -> "Transcribing…"
-                        waitingInput -> stringResource(R.string.session_detail_reply_waiting)
-                        else -> stringResource(R.string.session_detail_reply_hint)
+                        !connReady -> stringResource(R.string.input_ph_waiting)
+                        waitingInput -> stringResource(R.string.input_ph_response)
+                        channelMode -> stringResource(R.string.input_ph_message)
+                        else -> stringResource(R.string.input_ph_command)
                     },
                 )
             },
@@ -2634,7 +2640,7 @@ private fun StateOverrideDialog(
         title = { Text(stringResource(R.string.session_detail_override_state)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SessionState.values().forEach { s ->
+                PWA_OVERRIDE_STATES.forEach { s ->
                     TextButton(
                         onClick = { onPick(s) },
                         modifier = Modifier.fillMaxWidth(),
@@ -3009,4 +3015,28 @@ private fun LogModeView(
             )
         }
     }
+}
+
+/**
+ * PWA `showStateOverride` options (app.js): running · waiting_input · complete ·
+ * killed · failed — no New / Rate limited.
+ */
+internal val PWA_OVERRIDE_STATES: List<SessionState> =
+    listOf(SessionState.Running, SessionState.Waiting, SessionState.Completed, SessionState.Killed, SessionState.Error)
+
+/** Small accent2-outlined pill for the header metadata row (D66a agent / Chrome). */
+@Composable
+private fun SessionHeaderBadge(label: String) {
+    val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+    Text(
+        label,
+        maxLines = 1,
+        softWrap = false,
+        style = MaterialTheme.typography.labelSmall,
+        color = accent2,
+        modifier =
+            Modifier
+                .border(1.dp, accent2, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                .padding(horizontal = 5.dp),
+    )
 }
