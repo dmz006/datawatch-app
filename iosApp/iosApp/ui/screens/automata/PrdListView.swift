@@ -700,7 +700,13 @@ struct PrdListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(DatawatchColors.background)
+        .background {
+            // PWA `.sessions-watermark` (favicon eye, opacity .045).
+            ZStack {
+                DatawatchColors.background
+                DatawatchWatermark()
+            }
+        }
         .refreshable { await vm.refreshAsync() }
     }
 

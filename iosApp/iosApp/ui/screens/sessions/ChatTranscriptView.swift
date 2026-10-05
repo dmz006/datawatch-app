@@ -13,6 +13,7 @@ struct ChatTranscriptView: View {
         let role: String
         var content: String
         var streaming: Bool
+        let ts: Date
     }
 
     @State private var entries: [Entry] = []
@@ -95,43 +96,10 @@ struct ChatTranscriptView: View {
         .accessibilityHint(earlierExpanded ? "Collapse earlier messages" : "Expand earlier messages")
     }
 
-    @ViewBuilder
+    /// PWA `.chat-bubble` header + palette (Android ChatBubble); markdown for
+    /// completed assistant messages.
     private func bubble(_ e: Entry) -> some View {
-        switch e.role {
-        case "user":
-            HStack {
-                Spacer(minLength: 40)
-                Text(e.content)
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .padding(10)
-                    .background(DatawatchColors.primary.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
-                    .textSelection(.enabled)
-            }
-        case "assistant":
-            HStack {
-                Text(markdown(e.content))
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .padding(10)
-                    .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(alignment: .bottomTrailing) {
-                        if e.streaming { ProgressView().controlSize(.mini).padding(4) }
-                    }
-                    .textSelection(.enabled)
-                Spacer(minLength: 40)
-            }
-        default:
-            Text(e.content)
-                .font(DatawatchFonts.labelSmall.italic())
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                .frame(maxWidth: .infinity)
-        }
-    }
-
-    private func markdown(_ s: String) -> AttributedString {
-        (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            ?? AttributedString(s)
+        ChatBubbleView(role: e.role, content: e.content, streaming: e.streaming, ts: e.ts)
     }
 
     private func start() {
@@ -146,13 +114,14 @@ struct ChatTranscriptView: View {
         connected = true
         guard let chat = event as? SessionEventChatMessage else { return }
         let role = IosSessionOps.shared.chatRole(event: chat)
+        let ts = Date(timeIntervalSince1970: Double(chat.ts.toEpochMilliseconds()) / 1000.0)
         switch role {
         case "assistant":
             if chat.streaming {
                 if let i = streamingIndex, entries.indices.contains(i) {
                     entries[i].content += chat.content
                 } else {
-                    entries.append(Entry(role: role, content: chat.content, streaming: true))
+                    entries.append(Entry(role: role, content: chat.content, streaming: true, ts: ts))
                     streamingIndex = entries.count - 1
                 }
             } else if let i = streamingIndex, entries.indices.contains(i) {
@@ -160,11 +129,11 @@ struct ChatTranscriptView: View {
                 entries[i].streaming = false
                 streamingIndex = nil
             } else if !chat.content.trimmingCharacters(in: .whitespaces).isEmpty {
-                entries.append(Entry(role: role, content: chat.content, streaming: false))
+                entries.append(Entry(role: role, content: chat.content, streaming: false, ts: ts))
             }
             transient = nil
         case "user":
-            entries.append(Entry(role: role, content: chat.content, streaming: false))
+            entries.append(Entry(role: role, content: chat.content, streaming: false, ts: ts))
         default:
             let lc = chat.content.trimmingCharacters(in: .whitespaces).lowercased()
             if lc == "processing..." || lc == "thinking..." {
@@ -172,7 +141,7 @@ struct ChatTranscriptView: View {
             } else if lc.hasPrefix("ready") {
                 transient = nil
             } else {
-                entries.append(Entry(role: role, content: chat.content, streaming: false))
+                entries.append(Entry(role: role, content: chat.content, streaming: false, ts: ts))
             }
         }
         if entries.count > Self.maxEntries {
