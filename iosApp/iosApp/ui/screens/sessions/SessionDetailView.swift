@@ -64,6 +64,8 @@ struct SessionDetailView: View {
     /// PWA tabStatusBadge: hook-health dot + board state, fetched on mount.
     @State private var boardHook: String = ""
     @State private var boardState: String = ""
+    /// PWA showChannelHelp popup.
+    @State private var showChannelHelp = false
 
     /// Live copy of the session (falls back to the navigation snapshot).
     private var cur: DwSession { live ?? session }
@@ -82,7 +84,7 @@ struct SessionDetailView: View {
                 if rateLimitShown && !isDone {
                     RateLimitNotice(retryAt: rateRetryAt) { rateLimitShown = false }
                 }
-                if showSearch && detailTab == "tmux" && !isChatMode {
+                if showSearch && detailTab == "tmux" && !isChatMode && !isLogMode {
                     TerminalSearchBar(controller: terminal) { showSearch = false }
                 }
                 outputPanes
@@ -104,6 +106,9 @@ struct SessionDetailView: View {
         }
         .sheet(isPresented: $showSchedule, onDismiss: { scheduleReload += 1 }) {
             ScheduleInputSheet(profile: profile, session: session, prefill: replyText)
+        }
+        .sheet(isPresented: $showChannelHelp) {
+            ChannelHelpSheet()
         }
         .sheet(isPresented: $showTimeline) {
             SessionTimelineSheet(profile: profile, session: session)
@@ -335,6 +340,14 @@ struct SessionDetailView: View {
     /// PWA: chat-transcript sessions (OpenWebUI / Ollama) render bubbles, not a terminal.
     private var isChatMode: Bool { session.outputMode == "chat" }
 
+    /// PWA log viewer (output_mode=log — ACP / headless sessions): colour-classed
+    /// log lines instead of the terminal.
+    private var isLogMode: Bool { session.outputMode == "log" }
+
+    /// Chat and log panes mount no terminal, so input goes straight over the
+    /// session socket they hold open.
+    private var usesSocketInput: Bool { isChatMode || isLogMode }
+
     /// PWA getSessionMode: tmux | channel | acp.
     private var sessionMode: String { SessionMode.of(session) }
 
@@ -366,7 +379,8 @@ struct SessionDetailView: View {
                 tabButton(tab.0, title: tab.1)
             }
             Spacer(minLength: 4)
-            if detailTab == "tmux" { terminalTools }
+            if detailTab == "tmux" && !isLogMode { terminalTools }
+            if detailTab == "channel" { channelHelpButton }
         }
         .background(DatawatchColors.surface)
         .overlay(Divider().background(DatawatchColors.border), alignment: .bottom)
@@ -407,6 +421,21 @@ struct SessionDetailView: View {
         if !sym.isEmpty {
             Text(sym).font(.system(size: 9))
         }
+    }
+
+    /// PWA `?` (showChannelHelp) beside the tabs while the Channel tab is active.
+    private var channelHelpButton: some View {
+        Button {
+            showChannelHelp = true
+        } label: {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .frame(minWidth: 40, minHeight: 40)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Channel Commands")
+        .padding(.trailing, 4)
     }
 
     /// D20a Aa▾ font menu + D69a search + scroll mode.
@@ -467,6 +496,10 @@ struct SessionDetailView: View {
         ZStack {
             if isChatMode {
                 ChatTranscriptView(profile: profile, session: session)
+                    .opacity(detailTab == "tmux" ? 1 : 0)
+                    .allowsHitTesting(detailTab == "tmux")
+            } else if isLogMode {
+                SessionLogView(profile: profile, session: session)
                     .opacity(detailTab == "tmux" ? 1 : 0)
                     .allowsHitTesting(detailTab == "tmux")
             } else {
@@ -681,6 +714,10 @@ struct SessionDetailView: View {
             if isChatMode && detailTab == "tmux" {
                 ChatMemoryCmdBar { prefix in replyText = prefix }
             }
+            // D68b: Yes / No / Stop chips while the session waits on a prompt.
+            if isWaiting && detailTab == "tmux" {
+                QuickReplyChips { reply in sendQuickReply(reply) }
+            }
             // D21b: Commands… dropdown + custom input, hold-to-repeat arrows.
             SavedCommandsRow(profile: profile, session: session) { _ in
                 LocalAlertWatcher.shared.onReplied(sessionId: session.id)
@@ -795,7 +832,7 @@ struct SessionDetailView: View {
             return
         }
         replyText = ""
-        if isChatMode {
+        if usesSocketInput {
             guard !text.isEmpty else { return }
             if !IosSessionOps.shared.sendText(session: session, text: text + "\r") {
                 AlertDock.shared.post(L("Chat isn't connected yet — try again in a moment."), level: .error)
@@ -805,6 +842,18 @@ struct SessionDetailView: View {
         // PWA: an empty input sends Enter. TerminalView forwards this as a
         // `send_input` frame on the session's /ws hub (WsOutbound).
         terminalInput = text + "\r"
+    }
+
+    /// D68b chip reply ("yes\r" / "no\r" / "stop\r") — same path as the composer.
+    private func sendQuickReply(_ reply: String) {
+        LocalAlertWatcher.shared.onReplied(sessionId: session.id)
+        if usesSocketInput {
+            if !IosSessionOps.shared.sendText(session: session, text: reply) {
+                AlertDock.shared.post(L("Chat isn't connected yet — try again in a moment."), level: .error)
+            }
+            return
+        }
+        terminalInput = reply
     }
 
     // ── Actions ───────────────────────────────────────────────────────────

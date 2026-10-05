@@ -2,7 +2,8 @@ import SwiftUI
 import DatawatchShared
 
 /// Session Status sub-tab (parity B8) — PWA `renderSessionStatusBoard`: hook-health
-/// dot, Current focus, Live Task Tree / Sprint, Tests, Git, guardrail verdicts.
+/// dot, Current focus, Live Task Tree / Sprint (+ last-5-events drill-down under a
+/// failed task), Tests, Git, guardrail verdicts with approve / run.
 /// Polls every 5 s only while visible.
 struct SessionStatusView: View {
     let profile: ServerProfile
@@ -32,8 +33,13 @@ struct SessionStatusView: View {
                     card(taskTree.isEmpty ? "Sprint / Automata" : "Live Task Tree") { sprintBody(board) }
                     card("Tests") { testsBody(board) }
                     card("Git") { gitBody(board) }
-                    if let verdicts = telemetry?.guardrailVerdicts, !verdicts.isEmpty {
-                        card("Guardrail verdicts") { verdictsBody(verdicts) }
+                    // Always shown (as Android) so "Run guardrail" is reachable with no verdicts.
+                    card("Guardrail verdicts") {
+                        GuardrailVerdictsBody(
+                            profile: profile,
+                            session: session,
+                            verdicts: telemetry?.guardrailVerdicts ?? []
+                        ) { Task { await loadOnce() } }
                     }
                     Text("Council / Skills / Tracker / closed-task summaries appear once hook payloads include those fields.")
                         .font(DatawatchFonts.labelSmall)
@@ -139,6 +145,7 @@ struct SessionStatusView: View {
     }
 
     private var taskTree: [TelemetryTaskDto] { telemetry?.tasks ?? [] }
+    private var failedBuf: [TelemetryHookEventDto] { telemetry?.failedTaskBuf ?? [] }
 
     @ViewBuilder
     private func sprintBody(_ board: SessionStatusBoardDto) -> some View {
@@ -168,6 +175,10 @@ struct SessionStatusView: View {
                         }
                     }
                     .font(DatawatchFonts.labelSmall)
+                    // PWA renderFailedDrilldown (T10): last 5 hook events before failure.
+                    if task.status == "failed" && !failedBuf.isEmpty {
+                        FailedDrilldownView(events: Array(failedBuf.suffix(5)))
+                    }
                 }
             } else if let sprint = board.sprint {
                 VStack(alignment: .leading, spacing: 2) {
@@ -225,30 +236,6 @@ struct SessionStatusView: View {
             .font(DatawatchFonts.bodyMedium)
         } else {
             muted("no git state — hook payload git=… expected")
-        }
-    }
-
-    private func verdictsBody(_ verdicts: [GuardrailVerdictDto]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(Array(verdicts.enumerated()), id: \.offset) { _, v in
-                let color: Color = v.outcome == "pass" ? DatawatchColors.success
-                    : (v.outcome == "warn" ? DatawatchColors.warning : DatawatchColors.error)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(v.outcome.uppercased())
-                            .font(DatawatchFonts.badge)
-                            .foregroundStyle(color)
-                        Text(v.guardrail)
-                            .font(DatawatchFonts.labelSmall.bold())
-                            .foregroundStyle(DatawatchColors.onSurface)
-                    }
-                    if !v.summary.isEmpty {
-                        Text(v.summary)
-                            .font(DatawatchFonts.labelSmall)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    }
-                }
-            }
         }
     }
 
