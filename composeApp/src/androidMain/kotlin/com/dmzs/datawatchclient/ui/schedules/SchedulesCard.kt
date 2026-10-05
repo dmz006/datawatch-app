@@ -31,7 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.Schedule
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaCard
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.dmzs.datawatchclient.R
 import androidx.compose.material.icons.filled.Edit
@@ -237,6 +241,20 @@ private fun SchedulesCardBody(
     }
 }
 
+private fun isDeferredSession(schedule: Schedule): Boolean =
+    schedule.type == "new_session" && !schedule.deferredSessionName.isNullOrBlank()
+
+/**
+ * PWA loadSchedulesList label: `NEW: <name>` for deferred-session launches,
+ * else `<session_name or session_id> [<schedule_name>]: <command>`.
+ */
+internal fun scheduleRowLabel(schedule: Schedule): String {
+    if (isDeferredSession(schedule)) return "NEW: ${schedule.deferredSessionName}"
+    val ref = (schedule.sessionName ?: schedule.sessionId)?.takeIf { it.isNotBlank() }
+    val schedRef = schedule.scheduleName?.takeIf { it.isNotBlank() }?.let { " [$it]" }.orEmpty()
+    return if (ref != null) "$ref$schedRef: ${schedule.task}" else schedule.task
+}
+
 @Composable
 private fun ScheduleRow(
     schedule: Schedule,
@@ -251,11 +269,31 @@ private fun ScheduleRow(
     ) {
         androidx.compose.material3.Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                schedule.task,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    scheduleRowLabel(schedule),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                // PWA cron badge: shown when the server sent `cron_expr` (not for NEW: rows).
+                if (!schedule.cron.isNullOrBlank() && !isDeferredSession(schedule)) {
+                    Surface(
+                        color = LocalDatawatchColors.current.bg2,
+                        shape = RoundedCornerShape(2.dp),
+                    ) {
+                        Text(
+                            "cron",
+                            fontSize = 9.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                        )
+                    }
+                }
+            }
             Row(
                 modifier = Modifier.padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,

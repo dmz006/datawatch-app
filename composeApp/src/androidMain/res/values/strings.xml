@@ -936,12 +936,15 @@
     <!-- v0.75.0 — Docs Search + trust queue (S6-4, S6-8, #84, #85, #89) -->
     <string name="docs_search_title">Docs Search</string>
     <string name="docs_search_placeholder">Search documentation…</string>
-    <string name="docs_trust_pending_title">Pending sources</string>
+    <string name="docs_trust_pending_title">Pending sources awaiting trust</string>
     <string name="docs_trust_select_all">Select all</string>
     <string name="docs_trust_accept">Trust selected</string>
     <string name="docs_trust_dismiss">Dismiss selected</string>
-    <string name="docs_trusted_sources">Trusted sources (%d)</string>
+    <string name="docs_trusted_sources">Trusted sources</string>
     <string name="docs_trust_remove">Remove trust</string>
+    <string name="docs_trust_row_accept">Trust</string>
+    <string name="docs_trust_row_dismiss">Dismiss</string>
+    <string name="docs_trust_none">none</string>
     <string name="docs_howtos_title">How-to guides (%d)</string>
     <string name="docs_trust_add_source">Add source</string>
     <string name="docs_trust_add_source_hint">Source ID (e.g. skill:name)</string>

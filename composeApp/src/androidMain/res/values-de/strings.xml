@@ -806,8 +806,11 @@
     <string name="docs_trust_select_all">Alle auswählen</string>
     <string name="docs_trust_accept">Ausgewählte vertrauen</string>
     <string name="docs_trust_dismiss">Ausgewählte verwerfen</string>
-    <string name="docs_trusted_sources">Vertrauenswürdige Quellen (%d)</string>
+    <string name="docs_trusted_sources">Vertrauenswürdige Quellen</string>
     <string name="docs_trust_remove">Vertrauen entfernen</string>
+    <string name="docs_trust_row_accept">Vertrauen</string>
+    <string name="docs_trust_row_dismiss">Verwerfen</string>
+    <string name="docs_trust_none">keine</string>
 
     <!-- v0.75.0 — Mic toast + Observer card (S6-7, #88) -->
     <string name="mic_toast_recording">Aufnahme läuft…</string>

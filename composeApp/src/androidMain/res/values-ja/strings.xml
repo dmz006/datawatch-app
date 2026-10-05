@@ -806,8 +806,11 @@
     <string name="docs_trust_select_all">すべて選択</string>
     <string name="docs_trust_accept">選択を信頼</string>
     <string name="docs_trust_dismiss">選択を却下</string>
-    <string name="docs_trusted_sources">信頼済みソース（%d 件）</string>
+    <string name="docs_trusted_sources">信頼済みソース</string>
     <string name="docs_trust_remove">信頼を削除</string>
+    <string name="docs_trust_row_accept">信頼する</string>
+    <string name="docs_trust_row_dismiss">却下</string>
+    <string name="docs_trust_none">なし</string>
 
     <!-- v0.75.0 — Mic toast + Observer card (S6-7, #88) -->
     <string name="mic_toast_recording">録音中…</string>

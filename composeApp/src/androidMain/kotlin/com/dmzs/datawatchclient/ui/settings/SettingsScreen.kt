@@ -1032,23 +1032,46 @@ private fun DaemonInfoRow(
     serverInfo: ServerInfo?,
     error: String?,
 ) {
-    val label =
+    // PWA loadVersionInfo (aboutVersion): server version as `vX.Y.Z` in accent2,
+    // linking to its GitHub release. Fallbacks keep the em-dash style.
+    val ver = serverInfo?.version?.trim().orEmpty()
+    val tag: String? =
+        if (ver.isNotEmpty() && ver != "?") (if (ver.startsWith("v")) ver else "v$ver") else null
+    val fallback =
         when {
             activeProfile == null -> "No active server"
-            serverInfo != null -> "${serverInfo.hostname} · datawatch v${serverInfo.version}"
             error != null -> "— (${activeProfile.displayName} unreachable)"
+            serverInfo != null -> "—"
             else -> stringResource(R.string.common_loading)
         }
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text("Connected to", style = MaterialTheme.typography.bodyMedium)
-        Text(
-            label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Text(stringResource(R.string.settings_version), style = MaterialTheme.typography.bodyMedium)
+        if (tag != null) {
+            Text(
+                tag,
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalDatawatchColors.current.accent2,
+                modifier =
+                    Modifier.clickable {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://github.com/dmz006/datawatch/releases/tag/" + Uri.encode(tag)),
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    },
+            )
+        } else {
+            Text(
+                fallback,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

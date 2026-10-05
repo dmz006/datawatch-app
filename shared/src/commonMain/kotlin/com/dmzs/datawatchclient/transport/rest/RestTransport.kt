@@ -2328,40 +2328,6 @@ public class RestTransport(
             }.body()
         }
 
-    override suspend fun docsPendingList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto>> =
-        request {
-            client.get("${profile.baseUrl}/api/docs/trust/pending") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
-        }
-
-    override suspend fun docsTrustAccept(paths: List<String>): Result<Unit> =
-        request {
-            client.post("${profile.baseUrl}/api/docs/trust/accept") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-                contentType(ContentType.Application.Json)
-                setBody(com.dmzs.datawatchclient.transport.dto.DocsTrustBulkRequest(paths))
-            }
-            Unit
-        }
-
-    override suspend fun docsTrustDismiss(paths: List<String>): Result<Unit> =
-        request {
-            client.post("${profile.baseUrl}/api/docs/trust/dismiss") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-                contentType(ContentType.Application.Json)
-                setBody(com.dmzs.datawatchclient.transport.dto.DocsTrustBulkRequest(paths))
-            }
-            Unit
-        }
-
-    override suspend fun docsTrustedList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto>> =
-        request {
-            client.get("${profile.baseUrl}/api/docs/trust") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
-        }
-
     override suspend fun docsTrustRemove(path: String): Result<Unit> =
         request {
             client.delete("${profile.baseUrl}/api/docs/trust/${path.replace("/", "%2F")}") {
@@ -2379,7 +2345,9 @@ public class RestTransport(
 
     override suspend fun docsTrustAdd(source: String): Result<Unit> =
         request {
-            client.post("${profile.baseUrl}/api/docs/trust/add") {
+            // Server route is POST /api/docs/trust (there is no /trust/add — that path
+            // falls through to the DELETE /trust/{source} handler).
+            client.post("${profile.baseUrl}/api/docs/trust") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(io.ktor.http.ContentType.Application.Json)
                 setBody(com.dmzs.datawatchclient.transport.dto.DocsTrustAddRequest(source))

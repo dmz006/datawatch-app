@@ -1432,21 +1432,6 @@ public data class DocsSearchResultDto(
     val score: Float = 0f,
 )
 
-/** GET /api/docs/trust/pending — a source pending user trust approval (v0.75.0 S6-4). */
-@Serializable
-public data class DocsPendingSourceDto(
-    val path: String,
-    val reason: String? = null,
-)
-
-/** GET /api/docs/trust — a trusted source entry (v0.75.0 S6-4). */
-@Serializable
-public data class DocsTrustedSourceDto(val path: String)
-
-/** POST /api/docs/trust/accept or /dismiss body (v0.75.0 S6-4). */
-@Serializable
-public data class DocsTrustBulkRequest(val paths: List<String>)
-
 /** GET /api/docs/howtos — single how-to entry. */
 @Serializable
 public data class DocsHowtoDto(
@@ -1464,7 +1449,7 @@ public data class DocsHowtosResponse(
     val howtos: List<DocsHowtoDto> = emptyList(),
 )
 
-/** POST /api/docs/trust/add request body. */
+/** POST /api/docs/trust request body. */
 @Serializable
 public data class DocsTrustAddRequest(
     val source: String,

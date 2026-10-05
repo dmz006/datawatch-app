@@ -97,6 +97,18 @@ class RestTransportIosHTest {
         }
 
     @Test
+    fun docsTrustAddPostsToTrustRoot() =
+        runTest {
+            server.enqueue(json("""{"ok":true}"""))
+            assertTrue(transport.docsTrustAdd("skill:x").isSuccess)
+            val req = server.takeRequest()
+            assertEquals("POST", req.method)
+            assertEquals("/api/docs/trust", req.path)
+            val body = Json.parseToJsonElement(req.body.readUtf8()) as JsonObject
+            assertEquals("skill:x", body["source"]!!.jsonPrimitive.content)
+        }
+
+    @Test
     fun scheduleMapsCronExprAndSessionName() =
         runTest {
             server.enqueue(
