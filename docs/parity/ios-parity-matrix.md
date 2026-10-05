@@ -1,35 +1,103 @@
 # PWA ↔ Android ↔ iOS parity matrix — master (2026-10-04)
 
-Rules: PWA drives design unless an app idea is better; every judgment call below is the
-user's — nothing here is pre-decided. Schema and section scopes: [`README.md`](README.md).
+Rules: PWA drives design unless an app idea is better; every judgment call is the user's —
+all 92 were answered on 2026-10-04 (§2). Schema and section scopes: [`README.md`](README.md).
 Section files: [`sections/`](sections/).
+
+## Remaining work (as of 2026-10-04)
+
+Ordered by user impact within each platform. Refs: `SS` section file › row Feature.
+
+### iOS
+
+1. **Alert dock** — header pill (muted/0/N), tap toggles dock, 60 s coalescing ×N, session mute; 🔕 mutes instead of dismissing; ad-hoc toasts route to the dock (D3a/D41a/D47a). `04` › Header alert pill, Alert dock panel, Dock coalescing, 🔕 button · `01` › Alert pill states, Toasts retired · `08` › Toast
+2. **Live WS `alert` frames** → badge + dock entry (D51a). `04` › WS `alert` frame, Toast on WS alert
+3. **Interim local notifications** from polling with 45 s settle window (D87b). `04` › Waiting-state settle window
+4. **Deep links** — register `datawatch://` and fix `AppRouter` path parsing (D84b). `01` › Deep link to a session
+5. **Session-detail controls** — "Stop" wording (D44a); ■ Stop · ↻ Restart · 🗑 Delete in info bar; remove full-screen disconnect overlay (D46b); saved-commands dropdown + custom input (D21b); hide tab bar in session detail. `03` › Stop wording, Server-unreachable banner, Saved commands · `01` › Bottom nav hidden in session detail
+6. **Composer/channel gaps** — send via channel `▶ ch`, pending-schedules strip, rename feedback, respect `input_mode`. `03` › Send via channel, Pending schedules strip, Rename toast, Input bar shown only when…
+7. **Automata detail + pills** — PWA five tabs (D24a); PWA status-pill colours + pulse (D23a); Archive; tab label "Automata" (D22a). `05` › Detail tabs, Status pill, Actions: Archive, Tab strip
+8. **New Session directory browser**. `08` › Directory browser
+9. **Sessions list** — historical state chip must auto-enable History (regression); tree view + parent/zombie badges; pending-schedules badge; card left state edge + border pulse. `02` › Picking a historical state chip…, Tree view toggle, parent/zombie badge, Pending-schedules badge, Card surface
+10. **Biometric lock toggle is a no-op** (`.biometricLocked` never applied). `07` › Security card
+11. **Restore last tab + open session; status-dot long-press reconnect** (D40a/D38a). `01` › Restore last view, Dot gestures
+12. **Alerts cleanup** — drop per-alert read UI + single-alert swipe (D49a/D50d); All-servers aggregate (D2a); prompt rule incl. `waiting_input`. `04` › Per-alert mark-read, Swipe-left single alert, Multi-server aggregate, Prompt category rule
+13. **Session-detail med items** — Aa▾ font dropdown (D20a), tmux-only mode badge (D17a), running pill pulse (D18a), inline process-stats bar (D45a), JetBrains Mono terminal (D8a), connection banner, status-tab badge dot + fetch on mount, parent link, last-5-events, log mode, hold-to-repeat, fresh-fetch response viewer + 🤖 Summary (D43a). `03`, `02` › Response content freshness, 🤖 Summary
+14. **Automata wizard + list** — intent auto-detect, advanced toggles, Browse, template/skills links; All-servers scope, stories tree, position line, type/template badges, left border; Pause/Resume (D52b); markdown/Mermaid spec render (D53b). `05`
+15. **Shell** — hide Automata/Dashboard tabs until autonomous enabled; identity-wizard 🤖 button; `ServerPickerBar` instead of segmented control on Observer/Automata/Dashboard (D2a); tab order Sessions·Automata·Alerts. `01`, `06` › Server picker
+16. **Settings depth** — Exit Hooks + Work Queue cards; CRUD on list cards (session templates, council runs/wizard, profiles edit, guardrail profiles, skill registries, fed-peer form, channel routing, web-search providers, Tailscale key, discussion scopes, Ollama marketplace, kind migration). `07` `~` rows · `08`
+17. **Observer** — "Cross-host view"; federation "Test peer". `06`
+18. **Low** — "Updated to vX" splash badge, accent2 active-tab tint + FAB, 99+ badge cap, Reduce-Motion on dot pulse, empty/error copy (D35a), console_cols, Line Up/Down, C-c/C-b quick inputs, camera attach, Yes/No/Stop chips (D68b), chat collapse, channel `?` help.
+19. **Later** — App Intents / WidgetKit (D85a). `01` › Platform integrations
+
+### Android
+
+1. **Server picker bar** (PWA chip + bar, not title dropdown) on Sessions/Observer (D2a). `02` › Server / profile switcher · `01` › Server-picker placement · `06` › Header title, Server picker
+2. **Current status inline in card**, not a bottom sheet (D14a). `02` › Running: ▶ What's it doing?, Current-status result
+3. **Observer to PWA rules** — card order with nested stats block (D28a); 📊 peer snapshot modal (D55a); memory maintenance dry-run only, no "Sweep now" (D89b); thresholds verbatim (D29a); one-shot + WS refresh, 8 s grid (D54b). `06` › Card order, 📊 Snapshot button, 2×2 maintenance grid, thresholds rows, REST fallback cadence · `08` › Observer peer snapshot modal
+4. **Automata detail tabs** — add Rules + Scan, Graph/Progress as cards (D24a); progress bar on list cards; PWA sort. `05` › Detail tabs, Card: progress bar, List sort
+5. **Fresh-fetch response viewer + 🤖 Summary** (D43a). `02`, `03` › Response viewer
+6. **Shell** — `dwclient://` → `datawatch://` (D84b); restore last tab + session (D40a); status-dot long-press reconnect (D38a); drop Onboarding for minimal first run (D86c). `01`
+7. **Alerts quick reply** = saved-commands select sending `alertSendCmd`; group order by state rank. `04` › Quick reply, Group ordering
+8. **Session detail** — inline process-stats bar (D45a); terminal search UI (D69a); agent ⬡ + Chrome badges (D66a); connect watchdog; JetBrains Mono terminal (D8a); 5-state override list; composer placeholder copy. `03`
+9. **Observer extras** — schedule edit via two prompts (D56b) + select-all; channel diagnostics, Matrix Test, web-search history; memory role/since filters; RTK update badge; remove duplicate Pipelines/Identity cards. `06`
+10. **Settings** — installed-plugin enable/disable/reload/test; missing config keys (`session.backend_family`, `whisper.backend`, `web_search.cache_*`, `vision.*`, `orchestrator.guardrail_model`, autonomous planning keys); vault status inside Secrets card (D33a); inline restart link instead of banner (D57b); mount `McpToolsCard`. `07`
+11. **Dashboard stat strip** (sessions/tasks/guardrails/burn rate) (D34a); flat OpenCode model list (D58b). `08`
+12. **Low** — accent2 alert-pill border (D3a), accent #7C3AED compute badge (D6b), splash fade-out, 99+ cap, LLM/worker badge copy, copy/wording drift in 02/03/06.
+
+### Both apps
+
+- "Approve" on blocked guardrail verdicts + "Run guardrail" action. `08` › Guardrail verdicts inline · `03` › Guardrail verdicts card
+- Backend setup hint ⚠ "not installed or configured". `08`
+
+### PWA (server repo)
+
+1. **#172 — app extras to the PWA (D59–D83)**: watch sessions/automata + watched-badge filter (D61a), swipe-to-mute + muted icon (D62a), Whisper reply (D63a), council badge/filter (D64a), skeleton list (D60a), three-finger swipe (D65a), hooks toast / rate-limit notice / persisted mode (D67a), agent/Chrome badges (D66a), terminal search (D69a), Yes/No/Stop chips (D68b), alert-rule Recent Firings (D70a), PRD extras (D71a–D76a), memory UI (D77a), Observer server-info/envelopes/backend-health/add-memory (D78a), config viewer + raw editor (D79a), subsystem reload + MCP cards (D80a), New Session library + resume (D81a/D82a), inline file viewer (D83a), splash status line + replay (D59a). Rows tagged "→ #172".
+2. **PRD Pause/Resume** wired up (D52b) — unreachable in all three today. `05` › Actions: Pause / Resume
+3. **Lowercase "datawatch"** in header, manifest and title (D1a/D9a). `01` › Sessions-list header title, Brand/manifest, Brand casing
 
 ## 1. Summary
 
-| # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a | decisions |
-|---|---|---|---|---|---|---|---|---|---|
-| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 21 | 10 | 3 | 5 | 36 | 5 | 19 |
-| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 18 | 6 | 11 | 12 | 33 | 3 | 15 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 45 | 2 | 13 | 13 | 41 | 4 | 14 |
-| 04 | [Alerts](sections/04-alerts.md) | 65 | 20 | 6 | 0 | 7 | 24 | 8 | 12 |
-| 05 | [Automata](sections/05-automata.md) | 99 | 42 | 5 | 4 | 7 | 40 | 1 | 14 |
-| 06 | [Observer](sections/06-observer.md) | 93 | 4 | 47 | 6 | 11 | 24 | 1 | 10 |
-| 07 | [Settings](sections/07-settings.md) | 97 | 12 | 53 | 5 | 4 | 23 | 0 | 11 |
-| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 22 | 29 | 6 | 5 | 6 | 3 | 7 |
-| | **Total** | **706** | **184** | **158** | **48** | **64** | **227** | **25** | **102 → 92** |
+| # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a |
+|---|---|---|---|---|---|---|---|---|
+| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 39 | 14 | 1 | 8 | 14 | 4 |
+| 02 | [Sessions list](sections/02-sessions-list.md) | 83 | 42 | 8 | 0 | 7 | 19 | 7 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 52 | 16 | 1 | 12 | 33 | 4 |
+| 04 | [Alerts](sections/04-alerts.md) | 65 | 30 | 11 | 1 | 2 | 13 | 8 |
+| 05 | [Automata](sections/05-automata.md) | 99 | 47 | 15 | 1 | 8 | 28 | 0 |
+| 06 | [Observer](sections/06-observer.md) | 93 | 55 | 2 | 8 | 4 | 23 | 1 |
+| 07 | [Settings](sections/07-settings.md) | 97 | 53 | 4 | 1 | 5 | 33 | 1 |
+| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 43 | 15 | 2 | 4 | 2 | 5 |
+| | **Total** | **706** | **361** | **85** | **15** | **50** | **165** | **30** |
 
-Recounted 2026-10-04 after reconciling iOS rows with shipped backlog B1–B18/B33–B34; every
-section's Coverage line now matches its table (06 excludes its 11 sub-heading rows; 08 lost one
-row to a malformed-row repair). Earlier coverage-line discrepancies in 04/05/06 are resolved.
+Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
+means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");
+`*-missing` = that platform lacks something a decision says it should have; `misaligned` = all
+have it but differ in an unsanctioned way. Every section's Coverage line matches its table (06
+excludes its 11 sub-heading rows). No `needs-decision` cells remain.
 
-**26 %** of feature rows are aligned across all three clients; **22 %** are missing on iOS;
-**32 %** exist everywhere but differ.
+Before → after (table counts): aligned 287 → **361** · ios-missing 90 → **85** · android-missing
+0 → **15** · pwa-missing 59 → **50** · misaligned 241 → **165** · n/a 29 → **30**. android-missing
+rose because decisions (D2a, D14a, D24a, D28a, D55a, D89b …) now prescribe PWA behaviour Android
+does not yet follow; several iOS rows moved from `misaligned` to `ios-missing` for the same reason.
 
-## 2. Decisions needed (92)
+**51 %** of feature rows are aligned; **12 %** are missing on iOS; **23 %** still differ.
 
-Each decision lists source refs (`SS-Dn` = section file, decision n). "**PWA default**" marks the
-option that follows the PWA; it is not a recommendation. 102 section decisions → 92: eleven
-duplicates merged, one (03-D6) split.
+## 2. Decisions (resolved 2026-10-04)
+
+All 92 answered by the user on 2026-10-04. Outcomes: D1a (lowercase "datawatch") · D2a · D3a/a ·
+D4a (native chrome + PWA colours) · D5b (SF Symbols on iOS) · D6b · D7b (system font + Dynamic
+Type) · D8a · D9a (lowercase) · D10a (eye + bolt overlay, matches live PWA) · D11a · D12a–D17a ·
+D18a, D19a (match live PWA) · D20a · D21b · D22a–D30a · D31b (native grouped Settings, six PWA
+groups as sections) · D32 (iOS-native density) · D33a · D34a · D35a · D36b · D37a–D45a · D46b ·
+D47a–D49a · D50d · D51a · D52b (wire Pause/Resume everywhere) · D53b · D54b · D55a · D56b · D57b ·
+D58b · **D59–D83 → all three platforms** (PWA side tracked in server issue #172; D68b) · D84b
+(`datawatch://`) · D85a (App Intents/WidgetKit are parity, later) · D86c · D87b · D88c · D89b ·
+D90a · D91a · D92a. Section files record the local → master mapping under "Decisions (resolved
+2026-10-04)". The original option text is kept below for reference.
+
+Source refs: `SS-Dn` = section file, decision n. "**PWA default**" marks the option that follows
+the PWA. 102 section decisions → 92: eleven duplicates merged, one (03-D6) split.
 
 ### Design / visual
 
@@ -140,64 +208,64 @@ For every item here the **PWA default** is "PWA unchanged" (not adopted in the P
 ## 3. Mechanical backlog (no decision attached)
 
 iOS work, ordered sessions → detail → automata → observer → settings → alerts → dashboard/post-spec →
-shell. Chunks are ≈1–2 days. Refs are section files; feature names match the row's Feature cell.
+shell. Status in brackets as of the 2026-10-04 re-audit (done = shipped, small leftovers noted). Chunks are ≈1–2 days. Refs are section files; feature names match the row's Feature cell.
 Where a chunk touches a decision, it is noted — build the decided variant.
 
 **Sessions list (+ New Session, which is the list's FAB)**
-- **B1** New Session surface + FAB — name, task, directory, profile/cluster, LLM picker + compute node, permission/model/effort, Chrome flag, recent-done restart, submit (`08` New Session rows; empty-state copy depends on D35).
-- **B2** History toggle + 5-min recent window, toolbar in empty state, select mode + bulk delete with confirm (`02`; UI variant per D15).
-- **B3** Drag-to-reorder with persisted order + drag handle (`02`; see D42).
-- **B4** Card extras: ▶ quick-commands popup (waiting_input), "no change since last refresh", WS `session_state` single-row diff (`02`).
-- **B5** Session filters CRUD, saved-commands editor, kind profiles; localised list strings (`02`).
+- **B1** [partial — form + FAB shipped; directory browser missing (08)] New Session surface + FAB — name, task, directory, profile/cluster, LLM picker + compute node, permission/model/effort, Chrome flag, recent-done restart, submit (`08` New Session rows; empty-state copy depends on D35).
+- **B2** [partial — shipped; regression: historical state chip no longer auto-enables History (02)] History toggle + 5-min recent window, toolbar in empty state, select mode + bulk delete with confirm (`02`; UI variant per D15).
+- **B3** [done — long-press drag outside edit mode unverified on device] Drag-to-reorder with persisted order + drag handle (`02`; see D42).
+- **B4** [done] Card extras: ▶ quick-commands popup (waiting_input), "no change since last refresh", WS `session_state` single-row diff (`02`).
+- **B5** [partial — filters + saved commands + i18n done; profile create/edit missing (08)] Session filters CRUD, saved-commands editor, kind profiles; localised list strings (`02`).
 
 **Session detail**
-- **B6** State badge → state-override dropdown, delete dialog with memory strategy, timeline button + timeline (`03`, `08` state override).
-- **B7** Tab bar per mode (channel / tmux-only / chat-only), Channel tab lines + history seed (`03`).
-- **B8** Status sub-tab: `/status` 5 s poll while open, hook-health pill, current focus, sprint/PRD tree, tests, git, guardrail verdicts (`03`).
-- **B9** Stats sub-tab: envelopes poll, Host (donut + sparklines), Container, Compute Node, LLM cards (`03`).
-- **B10** Terminal: Fit to width, configured min cols/rows, scroll mode + strip, prepend backlog on open (`03`).
-- **B11** Composer: pending-schedules strip + schedule popup, image attach + upload/transcribing banners, keys strip, sendkey quick inputs; i18n of detail copy (`03`).
+- **B6** [done] State badge → state-override dropdown, delete dialog with memory strategy, timeline button + timeline (`03`, `08` state override).
+- **B7** [partial — tabs + Channel done; chat-only sessions still show tab bar (03)] Tab bar per mode (channel / tmux-only / chat-only), Channel tab lines + history seed (`03`).
+- **B8** [partial — status board done; tab badge dot, fetch-on-mount, last-5-events drill-down missing (03)] Status sub-tab: `/status` 5 s poll while open, hook-health pill, current focus, sprint/PRD tree, tests, git, guardrail verdicts (`03`).
+- **B9** [done — "Open Compute Node / LLM →" links missing (low)] Stats sub-tab: envelopes poll, Host (donut + sparklines), Container, Compute Node, LLM cards (`03`).
+- **B10** [partial — Fit + scroll mode done; console_cols, Line Up/Down missing (03)] Terminal: Fit to width, configured min cols/rows, scroll mode + strip, prepend backlog on open (`03`).
+- **B11** [partial — schedule input, image attach, keys strip done; pending-schedules strip, C-c/C-b quick inputs, camera source missing (03)] Composer: pending-schedules strip + schedule popup, image attach + upload/transcribing banners, keys strip, sendkey quick inputs; i18n of detail copy (`03`).
 
 **Automata**
-- **B12** List: all-servers aggregated scope, filter bar (status/type badges), template badge, lifecycle strip, pin, stories tree on card (`05`).
-- **B13** Batch mode: select toggle, batch bar (Run/Approve/Cancel/Archive/Delete), batch-delete confirm (`05`).
-- **B14** Launch wizard + ⚡ FAB: title, workspace/profile, execution backend/model/effort, planning backend + decomposition model (`05`).
-- **B15** Templates tab: cards, Use (instantiate) / edit / clone PRD → template, create/edit form (`05`).
-- **B16** Detail actions: reset to draft, delete with memory strategy, edit title/spec, set LLM, run scan/rules, view sessions, settings panel, scope warnings (`05`).
-- **B17** Detail panels: capacity, active-session card, status graphs, terminal-state hint, Decisions tab (`05`; tab layout per D24).
-- **B18** Story/task ops: story approve/reject/cancel, task retry/cancel/requeue/edit/remove, planned/output file chips (`05`).
-- **B19** Live `prd_update` WS patching; orchestrator graphs + pipeline manager cards; i18n (`05`).
+- **B12** [partial — filter bar/pin/lifecycle done; All-servers scope, stories tree, type/template badges, left border missing (05)] List: all-servers aggregated scope, filter bar (status/type badges), template badge, lifecycle strip, pin, stories tree on card (`05`).
+- **B13** [done] Batch mode: select toggle, batch bar (Run/Approve/Cancel/Archive/Delete), batch-delete confirm (`05`).
+- **B14** [partial — wizard shipped; intent auto-detect, advanced toggles, Browse, template/skills links missing (05)] Launch wizard + ⚡ FAB: title, workspace/profile, execution backend/model/effort, planning backend + decomposition model (`05`).
+- **B15** [done — built-in badge + use count missing (low)] Templates tab: cards, Use (instantiate) / edit / clone PRD → template, create/edit form (`05`).
+- **B16** [partial — Archive and Pause/Resume (D52b) missing (05)] Detail actions: reset to draft, delete with memory strategy, edit title/spec, set LLM, run scan/rules, view sessions, settings panel, scope warnings (`05`).
+- **B17** [partial — panels done; tab layout not yet D24a five tabs (05)] Detail panels: capacity, active-session card, status graphs, terminal-state hint, Decisions tab (`05`; tab layout per D24).
+- **B18** [done — story profile/LLM controls minor (05)] Story/task ops: story approve/reject/cancel, task retry/cancel/requeue/edit/remove, planned/output file chips (`05`).
+- **B19** [done — decompose SSE stream missing (low)] Live `prd_update` WS patching; orchestrator graphs + pipeline manager cards; i18n (`05`).
 
 **Observer** (card order per D28, thresholds per D29, refresh per D54)
-- **B20** Per-system grid (local + peers), GPU temp thresholds, GPU-probe-failed card, network label, infrastructure card (`06`).
-- **B21** Stats-panel extras: RTK savings + update badge, episodic memory, `max_sessions` denominator, eBPF status + per-process network table, plugins list (`06`).
-- **B22** Peer resources: per-peer metrics, parallel snapshots, 8 s refresh, group-by-node, dot colours, A/B/C shape badge, "attached to ComputeNode", cluster nodes (`06`).
-- **B23** Channel/comm: MCP bridge status, channel diagnostics, Matrix test, web-search stats + history (`06`).
-- **B24** Memory browser + maintenance: stats cards, search/list/export, results list, eviction confirm (`06`; maintenance scope per D89).
-- **B25** Schedules, cooldown, session analytics, audit log, knowledge graph, daemon log, federation peers (`06`).
+- **B20** [done] Per-system grid (local + peers), GPU temp thresholds, GPU-probe-failed card, network label, infrastructure card (`06`).
+- **B21** [done] Stats-panel extras: RTK savings + update badge, episodic memory, `max_sessions` denominator, eBPF status + per-process network table, plugins list (`06`).
+- **B22** [partial — "Cross-host view" missing (06)] Peer resources: per-peer metrics, parallel snapshots, 8 s refresh, group-by-node, dot colours, A/B/C shape badge, "attached to ComputeNode", cluster nodes (`06`).
+- **B23** [done] Channel/comm: MCP bridge status, channel diagnostics, Matrix test, web-search stats + history (`06`).
+- **B24** [done — dry-run maintenance per D89b] Memory browser + maintenance: stats cards, search/list/export, results list, eviction confirm (`06`; maintenance scope per D89).
+- **B25** [done — federation "Test peer" missing (low)] Schedules, cooldown, session analytics, audit log, knowledge graph, daemon log, federation peers (`06`).
 
 **Settings** (structure per D31)
-- **B26** Scaffold: tab persistence, notifications card, theme Dark/Light/System, language override (`07`).
-- **B27** General: auto-update, session card (17 keys), docs search, session templates, device aliases, tooling lifecycle, file service, discussion scopes (`07`).
-- **B28** Comms: auth card, remote servers + federated peers, web server, MCP server, per-backend comm cards + Signal device linking, proxy resilience, routing rules, channel routing (`07`).
-- **B29** Compute: LLM registry, compute node add/edit, cost rates, cluster profiles, memory (18 keys), RTK, container workers, Tailscale, secrets store (`07`).
-- **B30** Detection filters, alert rules (CRUD), saved commands, output filters cards (`07`).
-- **B31a** Automata settings I: identity, algorithm mode, evals, council panel, project profiles (`07`).
-- **B31b** Automata settings II: pipeline manager, orchestrator, guardrail library + profiles, pipelines config, skill registries, automata defaults (`07`).
-- **B32** Plugins + About: plugin config/status, store/uptime/daemon status, orphaned tmux + kill all, update check + restart daemon, API links (`07`).
+- **B26** [done] Scaffold: tab persistence, notifications card, theme Dark/Light/System, language override (`07`).
+- **B27** [partial — session templates Use/Edit, docs-search sources, discussion scopes read-only (07)] General: auto-update, session card (17 keys), docs search, session templates, device aliases, tooling lifecycle, file service, discussion scopes (`07`).
+- **B28** [partial — federation peer form, channel routing read-only, web-search provider form, Tailscale auth key missing (07/08)] Comms: auth card, remote servers + federated peers, web server, MCP server, per-backend comm cards + Signal device linking, proxy resilience, routing rules, channel routing (`07`).
+- **B29** [partial — LLM + compute forms done; profile edit, Ollama models/marketplace, kind-migration missing (07/08)] Compute: LLM registry, compute node add/edit, cost rates, cluster profiles, memory (18 keys), RTK, container workers, Tailscale, secrets store (`07`).
+- **B30** [done] Detection filters, alert rules (CRUD), saved commands, output filters cards (`07`).
+- **B31a** [partial — council runs/wizard, identity wizard, eval history missing (07/08)] Automata settings I: identity, algorithm mode, evals, council panel, project profiles (`07`).
+- **B31b** [partial — guardrail profile create/edit, skill registry browse/sync missing; Exit Hooks + Work Queue cards missing (07)] Automata settings II: pipeline manager, orchestrator, guardrail library + profiles, pipelines config, skill registries, automata defaults (`07`).
+- **B32** [done — App Store / release links minor] Plugins + About: plugin config/status, store/uptime/daemon status, orphaned tmux + kill all, update check + restart daemon, API links (`07`).
 
 **Alerts** (read model per D49, dismiss per D48)
-- **B33** Server picker, alert → open session, tab/filter persistence, sort toggle, by-session group cards with collapse (`04`).
-- **B34** Quick reply on prompt alerts (saved commands), detection settle window, alert rules card + add form, i18n (`04`).
+- **B33** [partial — multi-server aggregate missing (04)] Server picker, alert → open session, tab/filter persistence, sort toggle, by-session group cards with collapse (`04`).
+- **B34** [done — quick-reply wording minor (04)] Quick reply on prompt alerts (saved commands), detection settle window, alert rules card + add form, i18n (`04`).
 
 **Dashboard / post-spec / modals**
-- **B35** Modal + toast infrastructure: confirm variants, generic modal, toast (4 types, stacking), backend-config popup, filter edit, remote-server forms, web-search provider form, peer snapshot modal (`08`; toast fate per D41).
-- **B36** Dashboard stat tiles + cards (constellation, sparklines, events, gantt, heatmap, guardrails, smoke) + add/edit/expand (`08`; **blocked on D34**).
-- **B37** Post-spec views not covered above: orchestrator graphs view, guardrail verdicts inline, council live run, status board, sessions tree + parent link, algorithm mode, Ollama marketplace, identity wizard, compute telemetry/capacity (`08`; de-duplicate against B27–B31 when scheduling).
+- **B35** [partial — confirm/forms done; alert dock as toast sink (D41a/D3a) missing (01/04/08)] Modal + toast infrastructure: confirm variants, generic modal, toast (4 types, stacking), backend-config popup, filter edit, remote-server forms, web-search provider form, peer snapshot modal (`08`; toast fate per D41).
+- **B36** [done — rebuilt as PWA card grid (D34a)] Dashboard stat tiles + cards (constellation, sparklines, events, gantt, heatmap, guardrails, smoke) + add/edit/expand (`08`; **blocked on D34**).
+- **B37** [partial — sessions tree, council live run, identity wizard, Ollama marketplace missing (08)] Post-spec views not covered above: orchestrator graphs view, guardrail verdicts inline, council live run, status board, sessions tree + parent link, algorithm mode, Ollama marketplace, identity wizard, compute telemetry/capacity (`08`; de-duplicate against B27–B31 when scheduling).
 
 **Shell / tokens**
-- **B38** Splash scene (Earthrise artwork, text block, compact scene in About, eye breathe motion), identity-wizard button, tab gating on autonomous config, nav hidden in detail, Sessions FAB (`01`; gating per D37).
-- **B39** Daemon self-update check in UI, live system colour-scheme switching, alert-pill blue token, locales en/de/es/fr/ja + shell copy (`01`).
+- **B38** [partial — splash art + replay done; tab gating, nav hidden in detail, identity-wizard button missing (01)] Splash scene (Earthrise artwork, text block, compact scene in About, eye breathe motion), identity-wizard button, tab gating on autonomous config, nav hidden in detail, Sessions FAB (`01`; gating per D37).
+- **B39** [partial — update check, theme switching, locales done; alert-pill token pending with alert pill (01)] Daemon self-update check in UI, live system colour-scheme switching, alert-pill blue token, locales en/de/es/fr/ja + shell copy (`01`).
 
 ### Android work (`android-missing`)
 
@@ -214,8 +282,11 @@ Android, or resolved without code: already present — history auto-enable, runn
 pulse, schedules pagination, directory browser, kind-migration modal, secrets vault card,
 certificate pinning (D91a); n/a — stale-dot (the PWA hides it), branding/splash card (removed
 from the PWA in v6.12.0), debug panel (D92a); partial — project profiles are form editors, no
-raw-YAML editor. The section tables carry the per-row Android status. Still open on Android:
-06 per-card docs links (D26a) and collapsible Observer/Settings cards with a rotating chevron (D27a).
+raw-YAML editor. The section tables carry the per-row Android status. 06 per-card docs links
+(D26a) and collapsible Observer/Settings cards (D27a) landed in 5a209324. **2026-10-04 re-audit:**
+the sweep above is complete, but decided-PWA behaviour Android does not yet follow (D2a picker
+bar, D14a inline status, D24a tabs, D28a/D29a/D54b/D55a/D89b Observer, D38a/D40a/D84b/D86c shell)
+is now tracked as `android-missing` / `misaligned` rows — see *Remaining work* at the top.
 
 ### Spec drift (fix `docs/plans/2026-05-12-pwa-full-spec.md`, no decision)
 
@@ -225,10 +296,10 @@ raw-YAML editor. The section tables carry the per-row Android status. Still open
 ## 4. Cross-cutting themes
 
 - **Design tokens from one source.** Colours, type and motion differ in small ways everywhere (accent, alert pill, PRD pills, thresholds); generate Kotlin + Swift tokens from the PWA CSS variables once D6/D7/D23/D29 are decided.
-- **i18n.** PWA ships 5 locales via `t()`; Android 1,363 strings × 4 extra locales; iOS has none — every iOS chunk should land with string keys, not literals.
-- **WS-first data.** PWA and Android consume `sessions`, `session_state`, `stats`, `alert`, `prd_update` frames; iOS only stats/sessions so far. PrdHub and alert frames are the gaps (B19, D51).
-- **Shared modal/toast/confirm infrastructure on iOS** (B35) unblocks most destructive actions across sections — build it first.
-- **"App had a better idea" backlog.** 64 `pwa-missing` rows + 25 scope decisions: Android has accumulated features (watch, memory UI, file viewer, skeletons, config viewer) the PWA never got; each needs a keep/port/drop call.
-- **Motion and splash** are inconsistent on all three (D10, D18, D23, D36, D37); decide once, then implement per platform.
-- **Alert semantics** (D47–D51) differ in meaning, not just look — the highest-risk area for user confusion.
-- **Settings is the largest iOS gap** (53 rows, ~120 config keys); a generic config-field renderer (as Android's `configfields`) is cheaper than 20 bespoke cards.
+- **i18n.** PWA ships 5 locales via `t()`; Android 1,363 strings × 4 extra locales; iOS now ships de/es/fr/ja `.lproj` (~1,379 keys) — new iOS work must land with string keys, not literals.
+- **WS-first data.** PWA and Android consume `sessions`, `session_state`, `stats`, `alert`, `prd_update` frames; iOS now consumes `prd_update` too — the WS `alert` frame (D51a) is the remaining iOS gap.
+- **iOS alert dock** (D3a/D41a/D47a/D51a) is now the single biggest cross-section gap: pill, dock panel, mute, WS alerts and the toast sink all hang off it.
+- **"App had a better idea" backlog.** D59–D83 sent every app-only extra to all three; the PWA half is server issue #172 (50 `pwa-missing` rows, most tagged → #172).
+- **Motion and splash** decided (D10a, D18a, D23a, D36b, D37a); remaining work is iOS PRD pill pulse/colours and splash dwell timing.
+- **Alert semantics** decided (D47a–D51a); Android follows them, iOS still has per-alert read UI and no dock.
+- **Settings** is now mostly covered on iOS via the generic config/list card renderer; what remains is CRUD depth on list cards (07 `~` rows).
