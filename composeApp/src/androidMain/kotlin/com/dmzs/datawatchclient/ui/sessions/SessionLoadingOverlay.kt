@@ -168,7 +168,11 @@ public fun SessionLoadingOverlay(visible: Boolean, statusText: String = "connect
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp),
+                        .padding(start = 16.dp, end = 16.dp, bottom = 80.dp),
+                // Two lines ("Reconnecting to session…" / "attempt N of 3"), centred,
+                // so the spaced monospace label doesn't wrap mid-phrase on a phone.
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 20.sp,
                 color = Teal.copy(alpha = textAlpha),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,

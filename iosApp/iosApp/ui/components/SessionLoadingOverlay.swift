@@ -20,6 +20,7 @@ struct SessionLoadingOverlay: View {
                 .foregroundStyle(DatawatchColors.onSurface)
             Text(status)
                 .font(DatawatchFonts.bodyMedium)
+                .multilineTextAlignment(.center)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .animation(.none, value: status)
         }

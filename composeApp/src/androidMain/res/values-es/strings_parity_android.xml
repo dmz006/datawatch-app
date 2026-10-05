@@ -43,7 +43,7 @@
     <string name="backend_setup_warn_title">Backend no instalado o no configurado</string>
     <string name="backend_setup_warn_detail">Este servidor no informa “%1$s” como backend instalado y habilitado. Instálalo o habilítalo en Ajustes › LLM antes de empezar.</string>
     <string name="terminal_search_ph">Buscar en la terminal…</string>
-    <string name="term_reconnecting_attempt">Reconectando a la sesión… intento %1$d de %2$d</string>
+    <string name="term_reconnecting_attempt">Reconectando a la sesión…\nintento %1$d de %2$d</string>
     <string name="term_connect_retries_failed_n">La conexión falló tras %1$d reintentos.</string>
     <string name="term_retry">Reintentar</string>
     <string name="rtk_update_available">actualización disponible (toca para copiar el comando)</string>
