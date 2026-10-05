@@ -777,6 +777,14 @@ public data class PrdTaskDto(
     val verification: PrdTaskVerificationDto? = null,
     @SerialName("retry_count") val retryCount: Int = 0,
     @SerialName("files_touched") val filesTouched: List<String> = emptyList(),
+    /** Per-task LLM override (PWA prd-task-llm-badge; server set_task_llm). Empty = inherit. */
+    val backend: String? = null,
+    val effort: String? = null,
+    val model: String? = null,
+    /** Task spec is a child automaton spec — executor will Plan + Approve + Run it (PWA ↳ spawn). */
+    @SerialName("spawn_prd") val spawnPrd: Boolean = false,
+    /** Child automaton spawned by this task (PWA → child link). */
+    @SerialName("child_prd_id") val childPrdId: String? = null,
 )
 
 @Serializable
@@ -790,6 +798,10 @@ public data class PrdStoryDto(
     @SerialName("files_touched") val filesTouched: List<String> = emptyList(),
     @SerialName("execution_profile") val executionProfile: String? = null,
     val tasks: List<PrdTaskDto> = emptyList(),
+    /** Per-story LLM override (PWA story LLM pill; server set_story_llm). Empty = inherit. */
+    val backend: String? = null,
+    val effort: String? = null,
+    val model: String? = null,
 )
 
 /**
@@ -956,6 +968,10 @@ public data class TemplateDto(
     val tags: List<String> = emptyList(),
     val description: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
+    /** Shipped with the daemon — read-only (PWA built-in badge; no ✎ / ✕). */
+    @SerialName("is_builtin") val isBuiltin: Boolean = false,
+    /** Times instantiated (PWA "Used N×"). */
+    @SerialName("use_count") val useCount: Int = 0,
 )
 
 @Serializable
