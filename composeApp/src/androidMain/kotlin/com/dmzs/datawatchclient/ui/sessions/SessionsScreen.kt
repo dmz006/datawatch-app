@@ -442,7 +442,10 @@ public fun SessionsScreen(
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                                 fetchSystemCommands = { vm.fetchSystemQuickCommands(session.id) },
                                 fetchCurrentStatus = { vm.fetchCurrentStatus(session.id) },
-                                onResummarize = { vm.resummmarizeSession(session.id) },
+                                fetchFreshResponse = { vm.fetchFreshResponse(session.id) },
+                                summarizerEnabled = state.summarizerEnabled,
+                                summarizing = session.id in state.summarizingIds,
+                                onManualSummarize = { vm.manualSummarize(session.id) },
                                 whisperConfigured = state.whisperConfigured,
                                 deleteSupported = state.deleteSupported,
                                 selectionMode = selectionMode,
@@ -1031,7 +1034,10 @@ private fun SessionRow(
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     fetchCurrentStatus: suspend () -> CurrentStatusDto? = { null },
-    onResummarize: suspend () -> CurrentStatusDto? = { null },
+    fetchFreshResponse: (suspend () -> Result<String>)? = null,
+    summarizerEnabled: Boolean = false,
+    summarizing: Boolean = false,
+    onManualSummarize: () -> Unit = {},
     whisperConfigured: Boolean = false,
     reorderMode: Boolean = false,
     showHostname: Boolean = false,
@@ -1047,13 +1053,17 @@ private fun SessionRow(
 ) {
     var quickCmdsOpen by remember { mutableStateOf(false) }
     var responseOpen by remember { mutableStateOf(false) }
-    var currentStatusOpen by remember { mutableStateOf(false) }
+    // Parity D14a — current status renders inline in the card (PWA
+    // `state.currentStatus[fullId]`), not in a bottom sheet.
     var currentStatusText by remember { mutableStateOf<String?>(null) }
     var currentStatusLongText by remember { mutableStateOf<String?>(null) }
+    var currentStatusAtMs by remember { mutableStateOf<Long?>(null) }
+    var currentStatusLongExpanded by remember { mutableStateOf(false) }
     var currentStatusLoading by remember { mutableStateOf(false) }
     var summaryExpanded by remember { mutableStateOf(false) }
     val currentStatusScope = rememberCoroutineScope()
     val noChangeStr = stringResource(R.string.no_change_since_last_refresh)
+    val unavailableStr = stringResource(R.string.current_status_unavailable)
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
     var restartConfirmOpen by remember { mutableStateOf(false) }
@@ -1426,18 +1436,22 @@ private fun SessionRow(
                             Text(stringResource(R.string.action_stop), color = MaterialTheme.colorScheme.error)
                         }
                         Spacer(modifier = Modifier.width(4.dp))
-                        OutlinedButton(
+                        if (currentStatusText == null && !currentStatusLoading) OutlinedButton(
                             onClick = {
                                 if (!currentStatusLoading) {
                                     currentStatusLoading = true
                                     currentStatusScope.launch {
                                         try {
                                             val dto = fetchCurrentStatus()
-                                            if (dto != null) {
-                                                currentStatusText = if (dto.noChange) noChangeStr else dto.currentStatus
-                                                currentStatusLongText = dto.currentStatusLong.takeIf { it.isNotBlank() }
-                                                currentStatusOpen = true
-                                            }
+                                            currentStatusText =
+                                                when {
+                                                    dto == null -> "($unavailableStr)"
+                                                    dto.noChange -> "($noChangeStr)"
+                                                    else -> dto.currentStatus
+                                                }
+                                            currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
+                                            currentStatusAtMs = System.currentTimeMillis()
+                                            currentStatusLongExpanded = false
                                         } finally {
                                             currentStatusLoading = false
                                         }
@@ -1461,17 +1475,6 @@ private fun SessionRow(
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(stringResource(R.string.sessions_current_status_btn))
-                        }
-                        if (currentStatusOpen && currentStatusText != null) {
-                            CurrentStatusSheet(
-                                status = currentStatusText!!,
-                                statusLong = currentStatusLongText,
-                                onDismiss = {
-                                    currentStatusOpen = false
-                                    currentStatusLongText = null
-                                },
-                                onResummarize = onResummarize,
-                            )
                         }
                     }
                     SessionState.Waiting -> {
@@ -1558,6 +1561,85 @@ private fun SessionRow(
                     }
                     else -> Unit
                 }
+                // Parity D43a — PWA `🤖 Summary` (only when session.summarizer
+                // is enabled). Running sessions take the current-status path.
+                if (summarizerEnabled) {
+                    val busy = summarizing || (session.state == SessionState.Running && currentStatusLoading)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    OutlinedButton(
+                        onClick = {
+                            if (session.state == SessionState.Running) {
+                                if (!currentStatusLoading) {
+                                    currentStatusLoading = true
+                                    currentStatusScope.launch {
+                                        try {
+                                            val dto = fetchCurrentStatus()
+                                            currentStatusText =
+                                                when {
+                                                    dto == null -> "($unavailableStr)"
+                                                    dto.noChange -> "($noChangeStr)"
+                                                    else -> dto.currentStatus
+                                                }
+                                            currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
+                                            currentStatusAtMs = System.currentTimeMillis()
+                                            currentStatusLongExpanded = false
+                                        } finally {
+                                            currentStatusLoading = false
+                                        }
+                                    }
+                                }
+                            } else {
+                                onManualSummarize()
+                            }
+                        },
+                        enabled = !busy,
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 4.dp,
+                            ),
+                    ) {
+                        Text(
+                            if (busy) {
+                                "⏳ " + stringResource(R.string.current_status_summarizing)
+                            } else {
+                                "🤖 " + stringResource(R.string.session_summary_btn)
+                            },
+                            fontSize = 11.sp,
+                        )
+                    }
+                }
+            }
+            if (session.state == SessionState.Running && (currentStatusLoading || currentStatusText != null)) {
+                InlineCurrentStatus(
+                    loading = currentStatusLoading,
+                    text = currentStatusText.orEmpty(),
+                    longText = currentStatusLongText,
+                    generatedAtMs = currentStatusAtMs,
+                    longExpanded = currentStatusLongExpanded,
+                    onToggleLong = { currentStatusLongExpanded = !currentStatusLongExpanded },
+                    onRefresh = {
+                        if (!currentStatusLoading) {
+                            currentStatusLoading = true
+                            currentStatusScope.launch {
+                                try {
+                                    val dto = fetchCurrentStatus()
+                                    currentStatusText =
+                                        when {
+                                            dto == null -> "($unavailableStr)"
+                                            dto.noChange -> "($noChangeStr)"
+                                            else -> dto.currentStatus
+                                        }
+                                    currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
+                                    currentStatusAtMs = System.currentTimeMillis()
+                                    currentStatusLongExpanded = false
+                                } finally {
+                                    currentStatusLoading = false
+                                }
+                            }
+                        }
+                    },
+                )
             }
         }
     }
@@ -1566,6 +1648,8 @@ private fun SessionRow(
         LastResponseSheet(
             response = session.lastResponse.orEmpty(),
             onDismiss = { responseOpen = false },
+            fetchFresh = fetchFreshResponse,
+            title = session.name ?: session.id,
         )
     }
     if (quickCmdsOpen) {
@@ -1827,15 +1911,33 @@ private fun relativeTimeLabel(epochMs: Long): String {
 internal fun LastResponseSheet(
     response: String,
     onDismiss: () -> Unit,
+    fetchFresh: (suspend () -> Result<String>)? = null,
+    title: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Parity D43a — PWA `showResponseViewer`: paint the cached copy, then
+    // always re-fetch GET /api/sessions/response and replace it; "(updating…)"
+    // marks the cached copy while the fetch is in flight.
+    var live by remember { mutableStateOf(response) }
+    var updating by remember { mutableStateOf(fetchFresh != null) }
+    val noResponse = stringResource(R.string.response_viewer_none)
+    val loadFailed = stringResource(R.string.response_viewer_failed)
+    LaunchedEffect(fetchFresh) {
+        val fetch = fetchFresh ?: return@LaunchedEffect
+        fetch()
+            .onSuccess { live = it.ifBlank { noResponse } }
+            .onFailure { if (response.isBlank()) live = loadFailed }
+        updating = false
+    }
     // v0.36.1 (issue #15) — apply the same noise filter the PWA's
     // 💾 Response viewer landed in v5.26.31 so spinners, status
     // timers, footer hints, and box-drawing borders don't bury the
     // actual LLM prose.
     val cleaned =
-        com.dmzs.datawatchclient.util.ResponseNoiseFilter.strip(response)
-            .ifBlank { response }
+        com.dmzs.datawatchclient.util.ResponseNoiseFilter.strip(live)
+            .ifBlank { live }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val copiedMsg = stringResource(R.string.response_viewer_copied)
     val context = androidx.compose.ui.platform.LocalContext.current
     var isSpeaking by remember { mutableStateOf(false) }
     val tts =
@@ -1869,10 +1971,25 @@ internal fun LastResponseSheet(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(R.string.sessions_last_response_sheet),
+                    stringResource(R.string.sessions_last_response_sheet) + (title?.let { " — $it" } ?: ""),
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                if (updating) {
+                    Text(
+                        stringResource(R.string.response_viewer_updating),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(onClick = {
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(cleaned))
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(copiedMsg)
+                }) { Text("📋") }
                 IconButton(onClick = {
                     if (isSpeaking) {
                         tts?.stop()
@@ -1888,116 +2005,74 @@ internal fun LastResponseSheet(
                     )
                 }
             }
-            Text(
-                cleaned,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            com.dmzs.datawatchclient.ui.autonomous.MarkdownView(
+                text = cleaned,
                 modifier = Modifier.padding(top = 12.dp),
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Parity D14a — PWA inline current-status row (app.js:2476-2497): "Summarizing…"
+ * while loading, then the short status with ▼/▲ for the long form and a
+ * `↻ <age>` refresh button. The long form opens in a bg3 box with an accent2
+ * left rule and a ✕ collapse.
+ */
 @Composable
-internal fun CurrentStatusSheet(
-    status: String,
-    statusLong: String? = null,
-    onDismiss: () -> Unit,
-    onResummarize: suspend () -> CurrentStatusDto? = { null },
+private fun InlineCurrentStatus(
+    loading: Boolean,
+    text: String,
+    longText: String?,
+    generatedAtMs: Long?,
+    longExpanded: Boolean,
+    onToggleLong: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var expanded by remember { mutableStateOf(false) }
-    var isSpeaking by remember { mutableStateOf(false) }
-    var isResummarizing by remember { mutableStateOf(false) }
-    var displayStatus by remember { mutableStateOf(status) }
-    var displayLong by remember { mutableStateOf(statusLong) }
-    val scope = rememberCoroutineScope()
-    val tts =
-        remember {
-            var instance: android.speech.tts.TextToSpeech? = null
-            instance =
-                android.speech.tts.TextToSpeech(context) { s ->
-                    if (s == android.speech.tts.TextToSpeech.SUCCESS) instance?.language = java.util.Locale.getDefault()
-                }
-            instance
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    val small = MaterialTheme.typography.labelSmall
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        if (loading) {
+            Text(stringResource(R.string.current_status_summarizing), style = small, color = dim)
+            return@Column
         }
-    DisposableEffect(Unit) {
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
-    }
-
-    ModalBottomSheet(onDismissRequest = {
-        tts?.stop()
-        onDismiss()
-    }, sheetState = sheetState) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState())) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text, style = small, color = dim, modifier = Modifier.weight(1f, fill = false))
+            if (longText != null) {
                 Text(
-                    stringResource(R.string.sessions_current_status_sheet),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
+                    if (longExpanded) "▲" else "▼",
+                    style = small,
+                    color = dim,
+                    modifier = Modifier.clickable(onClick = onToggleLong).padding(horizontal = 4.dp),
                 )
-                if (isResummarizing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    IconButton(onClick = {
-                        scope.launch {
-                            isResummarizing = true
-                            val dto = onResummarize()
-                            if (dto != null) {
-                                displayStatus = dto.currentStatus
-                                displayLong = dto.currentStatusLong.takeIf { it.isNotBlank() }
-                            }
-                            isResummarizing = false
-                        }
-                    }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Re-summarize")
-                    }
-                }
-                IconButton(onClick = {
-                    val text = if (expanded && displayLong != null) displayLong!! else displayStatus
-                    if (isSpeaking) {
-                        tts?.stop()
-                        isSpeaking = false
-                    } else {
-                        isSpeaking = true
-                        tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cs")
-                    }
-                }) {
-                    Icon(
-                        if (isSpeaking) Icons.Filled.Stop else Icons.Filled.VolumeUp,
-                        contentDescription = if (isSpeaking) "Stop" else "Play",
-                    )
-                }
             }
-            Text(displayStatus, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
-            if (displayLong != null) {
-                TextButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(top = 4.dp)) {
-                    Text(if (expanded) "▲ Less" else "▼ More detail")
-                }
-                if (expanded) {
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Text(
-                            displayLong!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                        IconButton(
-                            onClick = { expanded = false },
-                            modifier = Modifier.size(24.dp),
-                        ) {
-                            Icon(Icons.Filled.Close, contentDescription = "Collapse", modifier = Modifier.size(14.dp))
+            Text(
+                "↻ " + (generatedAtMs?.let { com.dmzs.datawatchclient.ui.common.relativeTimeLabel(it) } ?: ""),
+                style = small,
+                color = dim,
+                modifier = Modifier.clickable(onClick = onRefresh).padding(start = 4.dp),
+            )
+        }
+        if (longText != null && longExpanded) {
+            val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+            Box(
+                modifier =
+                    Modifier
+                        .padding(top = 6.dp)
+                        .fillMaxWidth()
+                        .background(dw.bg3, RoundedCornerShape(4.dp))
+                        .drawBehind {
+                            drawRect(color = dw.accent2, size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height))
                         }
-                    }
-                }
+                        .padding(start = 8.dp, top = 6.dp, bottom = 6.dp, end = 22.dp),
+            ) {
+                Text(longText, style = small, color = dim)
+                Text(
+                    "✕",
+                    style = small,
+                    color = dim,
+                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 18.dp).clickable(onClick = onToggleLong),
+                )
             }
         }
     }

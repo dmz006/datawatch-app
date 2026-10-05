@@ -5,4 +5,11 @@
     <string name="first_run_no_server">No server connected</string>
     <string name="first_run_no_server_hint">Add a datawatch server reachable from this device (Tailscale or local Wi-Fi).</string>
     <string name="status_dot_reconnecting">Refreshing server connection…</string>
+    <string name="current_status_unavailable">unavailable</string>
+    <string name="current_status_summarizing">Summarizing…</string>
+    <string name="session_summary_btn">Summary</string>
+    <string name="response_viewer_updating">(updating…)</string>
+    <string name="response_viewer_none">(no response captured)</string>
+    <string name="response_viewer_failed">(failed to load response)</string>
+    <string name="response_viewer_copied">Copied to clipboard</string>
 </resources>
