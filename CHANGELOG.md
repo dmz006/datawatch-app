@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added (Android + iOS, 2026-10-04)
+- **Terminal font**: the session terminal now uses bundled JetBrains Mono (v2.304, SIL OFL), falling back to Roboto Mono/monospace. A monthly workflow opens a PR when a newer upstream release ships.
+
 ### Changed (Android — follows the web UI, 2026-10-04 remaining-work sweep)
 - **Server picker bar**: Sessions, Automata, Observer and Dashboard show the web UI's "Server: [All] [a] [b]" chip bar under the header instead of a title dropdown.
 - **Sessions**: "What's it doing?" answers inline in the card (with ▼ details and ↻ refresh); a 🤖 Summary button appears when the server's summarizer is on; the Response viewer always loads the latest response, renders markdown and has a 📋 copy button.

@@ -5,6 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, maximum-scale=5" />
   <link rel="stylesheet" href="xterm.min.css" />
   <style>
+    /* D8a: JetBrains Mono, bundled (fonts/, SIL OFL 1.1 — see fonts/JetBrainsMono-OFL.txt;
+       version pinned in fonts/JetBrainsMono.VERSION, kept current by
+       .github/workflows/font-update.yml). Local files only — no CDN. */
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("fonts/JetBrainsMono-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("fonts/JetBrainsMono-Bold.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+      font-display: block;
+    }
     /* Palette matches PWA internal/server/web/app.js terminal init:
        background #0f1117 (charcoal), foreground #e2e8f0 (slate).
        Compose (`Modifier.imePadding()` on the outer Column) owns the
@@ -26,7 +43,7 @@
          user reported "having to scroll down to find the live tail" because
          the WebView was at the top while xterm rendered tall content. */
       touch-action: none;
-      font-family: "Roboto Mono", "Droid Sans Mono", monospace;
+      font-family: "JetBrains Mono", "Roboto Mono", "Droid Sans Mono", monospace;
     }
     /* Outer scroll container. Horizontal scroll lets a 120-col Claude
        pane display on a 40-char phone viewport (the TUI stays laid out
@@ -114,7 +131,7 @@
       // `cs_term_font_size`).
       fontSize: 9,
       lineHeight: 1.2,
-      fontFamily: '"Roboto Mono", "Droid Sans Mono", monospace',
+      fontFamily: '"JetBrains Mono", "Roboto Mono", "Droid Sans Mono", monospace',
       rows: 24,
       cols: 80,
       theme: {
@@ -283,6 +300,20 @@
     // so retry on rAF + a ladder of delayed ticks until the container has
     // a size. Two extra retries (1200 ms, 2500 ms) cover slow devices where
     // AndroidView reflow hasn't settled by 600 ms.
+    // D8a: once the bundled JetBrains Mono is ready, make xterm re-measure its
+    // cell size (it measured with the fallback font if open() ran first).
+    if (document.fonts && document.fonts.load) {
+      Promise.all([
+        document.fonts.load('400 12px "JetBrains Mono"'),
+        document.fonts.load('700 12px "JetBrains Mono"')
+      ]).then(function () {
+        var fam = term.options.fontFamily;
+        term.options.fontFamily = 'monospace';
+        term.options.fontFamily = fam;
+        safeFit();
+      }).catch(function (e) { log('font load: ' + e); });
+    }
+
     requestAnimationFrame(function () {
       safeFit();
       setTimeout(safeFit, 50);
