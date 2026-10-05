@@ -1,5 +1,7 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -141,6 +143,15 @@ public fun NewSessionScreen(
         mutableStateOf<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto?>(null)
     }
     var pickedComputeNode by remember { mutableStateOf<String?>(null) }
+    // PWA #backendWarn — names of backends the server reports as installed /
+    // enabled (GET /api/backends); empty = unknown, so no warning is shown.
+    var installedBackends by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(selectedProfileId) {
+        installedBackends = emptyList()
+        profiles.firstOrNull { it.id == selectedProfileId }?.let { p ->
+            ServiceLocator.transportFor(p).listBackends().onSuccess { installedBackends = it.llm }
+        }
+    }
     LaunchedEffect(selectedProfileId) {
         llmEntries = emptyList()
         pickedLlm = null
@@ -205,11 +216,8 @@ public fun NewSessionScreen(
         if (llm.kind.startsWith("opencode", ignoreCase = true)) {
             val node = llm.computeNodes.firstOrNull()?.takeIf { it.isNotBlank() }
             transport.fetchOpenCodeModels(node = node).onSuccess { resp ->
-                val groups =
-                    resp.models
-                        .groupBy { it.providerLabel.ifBlank { it.provider } }
-                        .mapValues { (_, list) -> list.map { it.id } }
-                openCodeModelGroups = groups
+                // Parity D58b — PWA flat model list (no provider grouping);
+                // openCodeModelGroups stays empty so the flat picker renders.
                 // Pre-select the server-declared default if nothing chosen yet.
                 if (pickedNonClaudeModel.isBlank() && resp.defaultModel.isNotBlank()) {
                     pickedNonClaudeModel = resp.defaultModel
@@ -512,6 +520,9 @@ public fun NewSessionScreen(
                     noneLabel = stringResource(R.string.session_llm_none_option),
                     onSelect = { picked -> pickedLlm = picked },
                 )
+                pickedLlm?.let { llm ->
+                    if (backendNeedsSetup(llm.kind, installedBackends)) BackendSetupHint(llm.kind)
+                }
                 // Compute Node sub-picker — non-claude LLMs only, and only when nodes exist.
                 val isClaudeLlm = pickedLlm?.kind?.lowercase()?.contains("claude") == true
                 if (pickedLlm != null && !isClaudeLlm) {
@@ -1380,3 +1391,40 @@ private fun ComputeNodePickerDropdown(
  * legacy nested `{backends: {name: {enabled: true}}}` shape so
  * older servers still filter correctly.
  */
+
+/**
+ * PWA `#backendWarn` rule: the picked LLM's backend kind is not among the
+ * backends the server reports as installed/enabled. An empty [installed]
+ * list means the server didn't say, so no warning.
+ */
+internal fun backendNeedsSetup(
+    kind: String,
+    installed: List<String>,
+): Boolean = kind.isNotBlank() && installed.isNotEmpty() && installed.none { it.equals(kind, ignoreCase = true) }
+
+/** PWA `#backendWarn` box: amber "⚠ Backend not installed or configured" + detail. */
+@Composable
+private fun BackendSetupHint(kind: String) {
+    val warn = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.warning
+    Column(
+        modifier =
+            Modifier
+                .padding(top = 6.dp)
+                .fillMaxWidth()
+                .background(warn.copy(alpha = 0.08f), androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
+                .border(1.dp, warn.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Text(
+            "⚠ " + stringResource(R.string.backend_setup_warn_title),
+            color = warn,
+            style = MaterialTheme.typography.labelMedium,
+        )
+        Text(
+            stringResource(R.string.backend_setup_warn_detail, kind),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}

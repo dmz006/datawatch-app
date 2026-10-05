@@ -37,4 +37,9 @@
     <string name="prd_rules_help">AGENT.md / プロジェクトルールのチェック。オートマトンの仕様と生成されたファイルがオペレーター定義のルールに準拠しているか検証します。</string>
     <string name="rules_run">ルールチェックを実行</string>
     <string name="rules_no_results">ルールチェックの結果はまだありません</string>
+    <string name="guardrail_no_verdicts">まだ判定はありません。</string>
+    <string name="guardrail_approve">承認</string>
+    <string name="guardrail_run_label">ガードレールを実行</string>
+    <string name="backend_setup_warn_title">バックエンドがインストールまたは設定されていません</string>
+    <string name="backend_setup_warn_detail">このサーバーは「%1$s」をインストール済み・有効なバックエンドとして報告していません。開始前にインストールするか、設定 › LLM で有効にしてください。</string>
 </resources>

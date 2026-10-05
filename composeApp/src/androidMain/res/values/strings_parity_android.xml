@@ -37,4 +37,9 @@
     <string name="prd_rules_help">AGENT.md / project-rules check. Verifies the Automaton spec and any produced files comply with the operator-defined rules.</string>
     <string name="rules_run">Run Rules Check</string>
     <string name="rules_no_results">No rules check results yet</string>
+    <string name="guardrail_no_verdicts">No verdicts yet.</string>
+    <string name="guardrail_approve">approve</string>
+    <string name="guardrail_run_label">Run guardrail</string>
+    <string name="backend_setup_warn_title">Backend not installed or configured</string>
+    <string name="backend_setup_warn_detail">This server doesn’t report “%1$s” as an installed, enabled backend. Install it or enable it in Settings › LLM before starting.</string>
 </resources>
