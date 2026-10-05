@@ -26,7 +26,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,13 +43,16 @@ import androidx.compose.ui.window.DialogProperties
  * PWA-matching voice recording overlay — shown while a VoiceRecorder is active.
  * The parent starts/owns the recorder; this composable handles Cancel vs Send only.
  *
- * Matches PWA modal: pulsing mic icon, "Recording…" label, 5-bar staggered waveform
- * (error/red, 0.9 s bounce, 120 ms stagger), Cancel + Send (red) buttons.
+ * Matches PWA modal: pulsing mic icon, "Recording…" label, 5-bar waveform
+ * (error/red), Cancel + Send (red) buttons. When [level] is given the bars
+ * follow the live mic level (operator 2026-10-05); otherwise they bounce like
+ * the PWA's CSS animation.
  */
 @Composable
 internal fun VoiceRecordingDialog(
     onCancel: () -> Unit,
     onSend: () -> Unit,
+    level: (() -> Float)? = null,
 ) {
     Dialog(
         onDismissRequest = onCancel,
@@ -87,7 +94,7 @@ internal fun VoiceRecordingDialog(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                 )
-                VoiceWaveformBars()
+                if (level != null) VoiceLevelBars(level) else VoiceWaveformBars()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -103,6 +110,52 @@ internal fun VoiceRecordingDialog(
                     ) { Text("Send") }
                 }
             }
+        }
+    }
+}
+
+/** PWA `.voice-waveform` geometry: 5 × 5 dp bars, 4 dp gap, 14/26/36/26/14 dp tall. */
+private val PWA_BAR_MAX_DP = listOf(14f, 26f, 36f, 26f, 14f)
+
+/**
+ * Live level meter in the PWA waveform's shape: polls [level] every 70 ms and
+ * scrolls the last five samples across the bars, so speech ripples through
+ * them. Each bar spans 40 %–100 % of its PWA height (the CSS scaleY range).
+ */
+@Composable
+internal fun VoiceLevelBars(
+    level: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    var samples by remember { mutableStateOf(List(5) { 0f }) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val v = level().coerceIn(0f, 1f)
+            // Light smoothing against the previous newest sample.
+            val smoothed = 0.6f * v + 0.4f * samples[2]
+            samples = listOf(samples[1], samples[2], smoothed, samples[2], samples[1])
+            kotlinx.coroutines.delay(70)
+        }
+    }
+    Row(
+        modifier = modifier.height(40.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        PWA_BAR_MAX_DP.forEachIndexed { i, max ->
+            val h by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = max * (0.4f + 0.6f * samples[i]),
+                animationSpec = tween(durationMillis = 70),
+                label = "level$i",
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .width(5.dp)
+                        .height(h.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(MaterialTheme.colorScheme.error),
+            )
         }
     }
 }
