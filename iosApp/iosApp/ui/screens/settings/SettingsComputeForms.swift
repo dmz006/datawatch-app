@@ -123,6 +123,9 @@ struct ComputeNodeFormSheet: View {
                     ComputeRoutingSection(v: $v, proxyPeers: proxyPeers)
                     observerSection
                     ComputeHardwareSection(v: $v)
+                    if let name = editName, (v["kind"] ?? "") == "ollama" {
+                        ComputeModelsSection(profile: profile, nodeName: name)
+                    }
                     statusSection
                 }
             }

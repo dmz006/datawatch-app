@@ -333,7 +333,12 @@ public object IosSettingsLists {
                 }
             "compute_nodes" ->
                 tr.listComputeNodes().getOrThrow().map { n ->
-                    val sub = listOf(n.kind, n.address, n.disabledReason.orEmpty()).filter { it.isNotEmpty() }.joinToString(" · ")
+                    // PWA row: kind (legacy kinds flagged "⚠") · address · cap=<max_concurrent_models>.
+                    val legacy: Boolean = n.kind in setOf("local", "remote", "ssh", "docker", "k8s", "remote-proxy")
+                    val kindLabel: String = if (legacy) n.kind + " ⚠" else n.kind
+                    val capVal: Int = n.declaredCapacity?.maxConcurrentModels ?: 0
+                    val cap: String = "cap=" + (if (capVal > 0) capVal.toString() else "—")
+                    val sub = listOf(kindLabel, n.address, cap, n.disabledReason.orEmpty()).filter { it.isNotEmpty() }.joinToString(" · ")
                     row(
                         n.name, n.name, sub,
                         badges = (if (n.autoCreated) listOf("auto") else emptyList()) + n.tags,

@@ -639,6 +639,12 @@ struct AlertsView: View {
                                 .padding(.horizontal, 12)
                                 .padding(.top, 6)
                             alertRow(alert)
+                            // PWA chrono view: Quick reply on prompt alerts.
+                            if vm.isPrompt(alert), !savedCommands.isEmpty, let s = vm.session(for: alert) {
+                                quickReply(for: s)
+                                    .padding(.horizontal, 12)
+                                    .padding(.bottom, 8)
+                            }
                         }
                         .listRowBackground(DatawatchColors.surface)
                         .listRowSeparatorTint(DatawatchColors.border)
@@ -651,7 +657,7 @@ struct AlertsView: View {
                                 ForEach(Array(group.alerts.enumerated()), id: \.element.id) { index, alert in
                                     VStack(alignment: .leading, spacing: 0) {
                                         alertRow(alert)
-                                        if index == 0, group.session?.state == .waiting, let s = group.session {
+                                        if index == 0, group.session?.state == .waiting, !savedCommands.isEmpty, let s = group.session {
                                             quickReply(for: s)
                                                 .padding(.horizontal, 12)
                                                 .padding(.bottom, 8)
@@ -784,21 +790,13 @@ struct AlertsView: View {
         return f.string(from: date)
     }
 
-    // ── Quick reply on the latest alert of a waiting session ─────────────
+    // ── Quick reply (grouped: latest alert of a waiting session; chrono: prompt alerts) ──
 
     private func quickReply(for session: DwSession) -> some View {
+        // PWA `quick-cmd-select`: saved commands only (hidden when none).
         Menu {
-            Button("approve") { sendReply("yes", to: session) }
-            Button("reject") { sendReply("no", to: session) }
-            Button("continue") { sendReply("continue", to: session) }
-            Button("skip") { sendReply("skip", to: session) }
-            Button("ESC") { sendReply("__esc__", to: session) }
-            if !savedCommands.isEmpty {
-                Section("Saved") {
-                    ForEach(savedCommands, id: \.name) { cmd in
-                        Button(cmd.name) { sendReply(cmd.command, to: session) }
-                    }
-                }
+            ForEach(savedCommands, id: \.name) { cmd in
+                Button(cmd.name) { sendReply(cmd.command, to: session) }
             }
         } label: {
             HStack(spacing: 4) {

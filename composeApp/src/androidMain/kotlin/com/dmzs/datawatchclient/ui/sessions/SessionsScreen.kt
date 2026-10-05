@@ -1326,15 +1326,6 @@ private fun SessionRow(
                 }
                 Spacer(modifier = Modifier.width(4.dp))
             }
-            val summaryAt = session.summaryGeneratedAt
-            if (summaryAt != null) {
-                Text(
-                    "AI " + relativeTimeLabel(summaryAt.toEpochMilliseconds()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-            }
             Text(
                 timeLabel,
                 style = MaterialTheme.typography.labelSmall,
@@ -1428,6 +1419,16 @@ private fun SessionRow(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                    }
+                    // PWA waiting row: `AI <age>` after the toggle (9px, text2 @ .7).
+                    val summaryAt = session.summaryGeneratedAt
+                    if (summaryAt != null) {
+                        Text(
+                            "AI " + relativeTimeLabel(summaryAt.toEpochMilliseconds()),
+                            fontSize = 9.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
                     }
                 }
                 if (longSummary != null && summaryExpanded) {

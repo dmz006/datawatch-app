@@ -11,8 +11,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +33,7 @@ import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaCard
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.dmzs.datawatchclient.R
@@ -304,20 +303,23 @@ private fun ScheduleRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                AssistChip(
-                    onClick = {},
-                    label = {
-                        Text(if (schedule.enabled) "enabled" else "disabled")
-                    },
-                    colors =
-                        AssistChipDefaults.assistChipColors(
-                            labelColor =
-                                if (schedule.enabled) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                        ),
+                // PWA loadSchedulesList: the row shows the schedule `state`
+                // as 10px bold uppercase text — pending = warning,
+                // done = success, anything else text2. Older servers
+                // without `state` fall back to enabled/disabled.
+                val dw = LocalDatawatchColors.current
+                val stateText = schedule.state?.takeIf { it.isNotBlank() }
+                    ?: if (schedule.enabled) "enabled" else "disabled"
+                Text(
+                    stateText.uppercase(),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color =
+                        when (stateText) {
+                            "pending" -> dw.warning
+                            "done" -> dw.success
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
         }

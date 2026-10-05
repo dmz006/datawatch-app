@@ -204,8 +204,9 @@ public object IosPrdItemOps {
     ) {
         scope.launch {
             val t = IosServiceLocator.transportFor(profile)
-            val result =
+            val result: Result<Any> =
                 when (action) {
+                    "remove" -> t.removeStory(prdId, storyId, actor = "operator")
                     "approve" -> t.approveStory(prdId, storyId)
                     "reject" -> t.rejectStory(prdId, storyId, reason)
                     "cancel" -> t.cancelPrdStory(prdId, storyId, reason.ifBlank { null })
