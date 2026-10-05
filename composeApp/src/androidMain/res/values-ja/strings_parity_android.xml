@@ -12,4 +12,25 @@
     <string name="response_viewer_none">（応答は記録されていません）</string>
     <string name="response_viewer_failed">（応答を読み込めませんでした）</string>
     <string name="response_viewer_copied">クリップボードにコピーしました</string>
+    <string name="observer_memory_maintenance">メモリのメンテナンス</string>
+    <string name="memmaint_eviction_title">類似度の古い項目の削除</string>
+    <string name="memmaint_dry_run">ドライラン</string>
+    <string name="memmaint_apply_web_only">適用（破壊的操作）は Web UI でのみ利用できます。</string>
+    <string name="observer_system_statistics">システム統計</string>
+    <string name="matrix_test_btn">テスト</string>
+    <string name="matrix_test_sent">Matrix のテストメッセージを送信しました</string>
+    <string name="channel_diag_title">チャンネル診断</string>
+    <string name="channel_diag_unavailable">利用不可</string>
+    <string name="channel_diag_no_sessions">（アクティブなセッションはありません）</string>
+    <string name="loading_ellipsis_short">読み込み中…</string>
+    <string name="observer_peer_snapshot_title">ピアのスナップショット</string>
+    <string name="observer_peer_snapshot_unavailable">スナップショットを取得できません: %1$s</string>
+    <string name="observer_peer_snapshot_empty">エンベロープは報告されていません。</string>
+    <string name="action_ok">OK</string>
+    <string name="schedules_select_all">すべて選択</string>
+    <string name="schedules_delete_selected">選択項目を削除</string>
+    <string name="schedules_delete_selected_confirm">%1$d 件のスケジュール済みイベントを削除しますか？</string>
+    <string name="schedules_edit">スケジュールを編集</string>
+    <string name="schedules_edit_command_prompt">コマンドを編集:</string>
+    <string name="schedules_edit_time_prompt">新しい時刻（ISO、空欄で現状維持）:</string>
 </resources>

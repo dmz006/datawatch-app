@@ -12,4 +12,25 @@
     <string name="response_viewer_none">(no se capturó ninguna respuesta)</string>
     <string name="response_viewer_failed">(no se pudo cargar la respuesta)</string>
     <string name="response_viewer_copied">Copiado al portapapeles</string>
+    <string name="observer_memory_maintenance">Mantenimiento de memoria</string>
+    <string name="memmaint_eviction_title">Expulsión por similitud obsoleta</string>
+    <string name="memmaint_dry_run">Simulación</string>
+    <string name="memmaint_apply_web_only">Aplicar (destructivo) solo está disponible en la interfaz web.</string>
+    <string name="observer_system_statistics">Estadísticas del sistema</string>
+    <string name="matrix_test_btn">Probar</string>
+    <string name="matrix_test_sent">Mensaje de prueba de Matrix enviado</string>
+    <string name="channel_diag_title">Diagnóstico de canales</string>
+    <string name="channel_diag_unavailable">no disponible</string>
+    <string name="channel_diag_no_sessions">(no hay sesiones activas)</string>
+    <string name="loading_ellipsis_short">Cargando…</string>
+    <string name="observer_peer_snapshot_title">Instantánea del par</string>
+    <string name="observer_peer_snapshot_unavailable">Instantánea no disponible: %1$s</string>
+    <string name="observer_peer_snapshot_empty">No se informaron envelopes.</string>
+    <string name="action_ok">Aceptar</string>
+    <string name="schedules_select_all">Seleccionar todo</string>
+    <string name="schedules_delete_selected">Eliminar seleccionados</string>
+    <string name="schedules_delete_selected_confirm">¿Eliminar %1$d evento(s) programado(s)?</string>
+    <string name="schedules_edit">Editar programación</string>
+    <string name="schedules_edit_command_prompt">Editar comando:</string>
+    <string name="schedules_edit_time_prompt">Nueva hora (ISO, o vacío para mantener):</string>
 </resources>
