@@ -1271,4 +1271,19 @@
     <string name="daemon_log_newest">最新</string>
     <string name="daemon_log_older">古い</string>
     <string name="daemon_log_info">%2$d 行中 %1$d 行を表示 (オフセット %3$d)</string>
+    <!-- Automata story/task LLM overrides, live planning, template badges -->
+    <string name="prd_set_story_llm_title">ストーリーLLM上書き</string>
+    <string name="prd_story_llm_hint">ストーリーごとのLLM上書き — 空の場合はオートマトンのデフォルト、続いてグローバル設定を継承します。このストーリーのすべてのタスクは、独自の上書きがない限りこれを継承します。</string>
+    <string name="prd_story_llm_btn">このストーリーのLLMを上書き</string>
+    <string name="prd_story_profile_inherit">（オートマトンのデフォルトを継承）</string>
+    <string name="prd_task_spawn_badge">↳ spawn</string>
+    <string name="prd_task_spawn_hint">このタスクの仕様は子オートマトンの仕様です。エグゼキューターが計画・承認・実行します</string>
+    <string name="prd_task_child_link">→ 子 %1$s</string>
+    <string name="decompose_in_progress">オートマトンを分解中…</string>
+    <string name="decompose_story_count">%1$d個のストーリーを生成</string>
+    <string name="decompose_error">分解に失敗しました</string>
+    <string name="tmpl_builtin_badge">組み込み</string>
+    <string name="tmpl_used_count">%1$d回使用</string>
+    <string name="prd_instantiate_vars_label">テンプレート変数 (k=v,k=v)</string>
+    <string name="automata_filter_toggle">オートマトンのフィルターを切り替え</string>
 </resources>

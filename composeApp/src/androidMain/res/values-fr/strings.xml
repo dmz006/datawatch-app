@@ -1271,4 +1271,19 @@
     <string name="daemon_log_newest">Plus récents</string>
     <string name="daemon_log_older">Plus anciens</string>
     <string name="daemon_log_info">Affichage de %1$d sur %2$d lignes (décalage %3$d)</string>
+    <!-- Automata story/task LLM overrides, live planning, template badges -->
+    <string name="prd_set_story_llm_title">Forcer le LLM de la story</string>
+    <string name="prd_story_llm_hint">Forçage LLM par story — vide hérite de l\'Automate puis de la configuration globale. Toutes les tâches de cette story héritent de cette valeur sauf si elles ont leur propre forçage.</string>
+    <string name="prd_story_llm_btn">Forcer le LLM de cette story</string>
+    <string name="prd_story_profile_inherit">(hériter du défaut de l\'automate)</string>
+    <string name="prd_task_spawn_badge">↳ spawn</string>
+    <string name="prd_task_spawn_hint">La spécification de cette tâche est un automate enfant ; l\'exécuteur le planifiera, l\'approuvera et l\'exécutera</string>
+    <string name="prd_task_child_link">→ enfant %1$s</string>
+    <string name="decompose_in_progress">Décomposition de l\'automate…</string>
+    <string name="decompose_story_count">%1$d stories générées</string>
+    <string name="decompose_error">Échec de la décomposition</string>
+    <string name="tmpl_builtin_badge">intégré</string>
+    <string name="tmpl_used_count">Utilisé %1$d×</string>
+    <string name="prd_instantiate_vars_label">Variables du modèle (k=v,k=v)</string>
+    <string name="automata_filter_toggle">Afficher/masquer les filtres des automates</string>
 </resources>

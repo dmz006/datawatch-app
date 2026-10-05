@@ -145,11 +145,16 @@ private fun TemplateRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                template.title.ifBlank { template.id },
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    template.title.ifBlank { template.id },
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                // PWA renderTemplateCard: built-in badge after the title.
+                if (template.isBuiltin) PrdMiniPill(stringResource(R.string.tmpl_builtin_badge))
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -175,6 +180,14 @@ private fun TemplateRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                // PWA "Used N×" (only when use_count > 0).
+                if (template.useCount > 0) {
+                    Text(
+                        stringResource(R.string.tmpl_used_count, template.useCount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             template.description?.takeIf { it.isNotBlank() }?.let { desc ->
                 Text(
@@ -187,11 +200,14 @@ private fun TemplateRow(
             }
         }
         TextButton(onClick = onUse) { Text(stringResource(R.string.tmpl_use)) }
-        IconButton(
-            onClick = onEdit,
-        ) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit)) }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+        // PWA: built-in templates are read-only (no ✎ / ✕).
+        if (!template.isBuiltin) {
+            IconButton(
+                onClick = onEdit,
+            ) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit)) }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+            }
         }
     }
 }
