@@ -8,7 +8,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
-| nav | Server / profile switcher on list | ✓ P:2095 server-indicator chip + `_injectServerPickerBar` (P:2158) | ~ A:200 `ServerPickerTitle` app-bar dropdown (profiles · Edit · All servers · Add); no picker bar | ✓ I:278 `ServerPickerBar(showsAll: true)` + app-wide active server | misaligned | decided D2a | Android still title dropdown; D2a wants the PWA chip + picker bar |
+| nav | Server / profile switcher on list | ✓ P:2095 server-indicator chip + `_injectServerPickerBar` (P:2158) | ✓ "datawatch" title + server sub-line chip; `ServerPickerBar` (All + profiles) under the header | ✓ I:278 `ServerPickerBar(showsAll: true)` + app-wide active server | aligned | decided D2a | Android still title dropdown; D2a wants the PWA chip + picker bar · per D2a (2026-10-04) |
 | interaction | Toolbar hidden by default; header search icon toggles; state persisted | ✓ P:2035 `cs_filters_collapsed`, P:15351 | ~ A:172 `toolbarExpanded` toggle, not persisted | ~ I:18 `showFilter` toggle, not persisted | misaligned | | collapsed state not persisted on either app |
 | element | Filter text input + clear × | ✓ P:2077 | ✓ SessionsToolbar `sessions_filter_hint` + clear | ✓ I:335 + xmark clear | aligned | | |
 | data | Filter text match fields | ✓ P:1999 name·task·id·backend_family·llm_ref·compute_node_ref | ✓ AV:183–193 name·task·id·backend·llmRef·computeNodeRef | ✓ I:512–521 same six fields | aligned | | |
@@ -48,7 +48,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | `▶` quick-commands button (waiting_input only) → popup | ✓ P:2412 | ✓ "⌨ Commands" → `QuickCommandsSheet` | ✓ IC:149 ▶ (waiting only) → QuickCommandsSheet.swift | aligned | | |
 | element | Done-card actions: `↻ Restart` + `🗑` (red) | ✓ P:2429–2430 | ✓ Restart + Delete (+ `deleteSupported` gate) | ✓ IC:151–152 inline `↻ Restart` + `🗑` | aligned | decided D13a | |
 | interaction | Confirm before Stop / Restart / Delete | ~ P:4406 stop + delete confirm; restart direct (P:4431) | ✓ confirm dialogs for all three | ✓ I:105–131 alerts for all three | misaligned | | apps add a restart confirm the PWA lacks (minor) |
-| element | `🤖 Summary` / `⏳ Summarizing…` button (when summarizer enabled) | ✓ P:2434 `manualSummarize` | ✗ (re-summarize only inside `CurrentStatusSheet`) | ✗ | ios-missing | decided D43a | Android also ✗ |
+| element | `🤖 Summary` / `⏳ Summarizing…` button (when summarizer enabled) | ✓ P:2434 `manualSummarize` | ✓ 🤖 Summary on cards when `session.summarizer.enabled` (running → current-status path) | ✗ | ios-missing | decided D43a | Android also ✗ · Android done (D43a) (2026-10-04) |
 | element | `☷` maximize → Dashboard expand mode (BL303) | ✓ P:2440 `openDashExpand` | ✓ row Fullscreen icon → expand | ✓ IC:155 ☷ → `DashExpandNav.open` | aligned | | |
 | element | LLM badge: `llm_ref`, else `backend_family`, accent2 tint + 1px border | ✓ P:2508 | ~ A:1137 `PwaMetaBadge(backend)` uppercase, accent2 .12, no border, no llm_ref | ✓ IC:185 llmRef ?? backend, accent .12 + border | misaligned | | Android: prefer llm_ref, add border |
 | element | Server badge (`sess.server` ≠ local) | ✓ P:2509 | ✓ outlined accent2 badge when `server` ≠ local | ✓ IC:190 server badge in "All servers" mode (profile name) | aligned | | iOS keys on the aggregating profile, not `server` |
@@ -58,7 +58,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | `⚠ zombie` badge (`claude_alive === false`) | ✓ P:2512 | ✓ A:1226 amber `⚠ zombie` | ✗ | ios-missing | | needs `claude_alive` on iOS DwSession |
 | element | 🎭 Council badge | ✗ | ✓ A:1151 | ✓ IC:189 🎭 badge + I:375 Council chip | pwa-missing | decided D64a | → #172 |
 | element | `📄 Response` button → last-response viewer | ✓ P:2513 → modal | ✓ A:1254 "View last response" → `LastResponseSheet` | ✓ IC:207 `📄 Response` → I:710 `LastResponseSheet` | aligned | decided D43a | |
-| data | Response content freshness | ✓ P:14890 shows cache, then fetches `GET /api/sessions/response?id` (stale badge) | ✗ cached `session.lastResponse` only | ✗ I:717 cached `session.lastResponse` only | misaligned | decided D43a | D43a: both apps must re-fetch |
+| data | Response content freshness | ✓ P:14890 shows cache, then fetches `GET /api/sessions/response?id` (stale badge) | ✓ cached first paint, then GET /api/sessions/response with "(updating…)" badge | ✗ I:717 cached `session.lastResponse` only | ios-missing | decided D43a | D43a: both apps must re-fetch · Android done (D43a) (2026-10-04) |
 | interaction | Read response aloud (TTS) | ✗ | ✓ `LastResponseSheet` TTS | ✗ (Share only) | n/a | decided D43a | D43a chose (a): no TTS for PWA/iOS; Android extra |
 | element | Live elapsed clock on active cards (BL383 `formatElapsed`, tabular, accent2) | ✓ P:2514, P:15468 | ✓ 1 s `formatElapsed`, tnum, accent2 | ✓ IC:327 `ElapsedClock` 1 s, monospacedDigit, accent2 | aligned | | |
 | element | `AI <age>` summary-age label | ✓ P:2449 inside waiting row, 9px | ~ A:1274 meta row, primary .7 | ✗ | ios-missing | | Android placement differs (meta row) |
@@ -68,8 +68,8 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Watch toggle 🔔 (session alerts count toward badge) | ✗ | ✓ A:1174 | ✓ IC:196 bell toggle (`LocalSessionPrefs`) | pwa-missing | decided D61a | → #172 |
 | element | Waiting prompt context: last 4 `prompt_context` lines, 100 chars; fallback "Input needed" | ✓ P:2437 | ~ A:1305 4 lines/100 chars; no "Input needed" fallback | ✓ IC:239 4 lines/100 chars + "Input needed" | misaligned | | Android lacks fallback text (minor) |
 | element | Waiting: short summary (`last_response` italic ≤180) + ▼/▲ envelope for `last_summary_long` + AI age + ✕ panel | ✓ P:2445–2458 | ~ A:1336 "Full summary"/"Less" + ✕; no inline short text | ~ IC:249 italic short summary ≤180; no ▼ long, AI age or ✕ | misaligned | | each app has half |
-| element | Running: `▶ What's it doing?` → current-status | ✓ P:2480 inline | ~ A:1411 → `CurrentStatusSheet` bottom sheet | ✓ IC:297 inline | misaligned | decided D14a | Android still opens a sheet |
-| element | Current-status result: text + ▼ long + `↻ <age>` refresh; "Summarizing…" loading | ✓ P:2462–2478 inline in card | ~ A:1446 bottom sheet: refresh, TTS, More/Less, ✕ | ✓ IC:267 inline text + ▼/▲ + `↻ age` + "Summarizing…" | misaligned | decided D14a | Android still sheet |
+| element | Running: `▶ What's it doing?` → current-status | ✓ P:2480 inline | ✓ inline in card (button → Summarizing… → result) | ✓ IC:297 inline | aligned | decided D14a | Android still opens a sheet · per D14a (2026-10-04) |
+| element | Current-status result: text + ▼ long + `↻ <age>` refresh; "Summarizing…" loading | ✓ P:2462–2478 inline in card | ✓ inline text + ▼/▲ long form (bg3 box, accent2 rule, ✕) + `↻ <age>`; Summarizing… | ✓ IC:267 inline text + ▼/▲ + `↻ age` + "Summarizing…" | aligned | decided D14a | Android still sheet · per D14a; sheet removed (2026-10-04) |
 | data | `no_change` → "(no change since last refresh)" | ✓ P:2533 | ✓ `noChangeStr` | ✓ I:184 | aligned | | |
 | interaction | Quick commands: System · Saved (`/api/commands`) · Custom input | ✓ P:2612 `<select>` + custom row | ✓ sheet: chips + list + custom field | ✓ QuickCommandsSheet.swift System / Saved / Custom | aligned | | |
 | interaction | Voice reply 🎤 (Whisper) in quick commands | ✗ | ✓ (when `whisper.backend` set) | ✓ `QuickCommandsSheet` mic → Custom | pwa-missing | decided D63a | → #172 |
@@ -93,7 +93,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Refresh-in-progress spinner in header | ✗ | ✓ A:229 | ✓ I:151 | n/a | | PWA uses header daemon light (§01); no decision |
 
 ## Coverage
-rows: 83 · aligned: 42 · ios-missing: 8 · android-missing: 0 · pwa-missing: 7 · misaligned: 19 · n/a: 7
+rows: 83 · aligned: 45 · ios-missing: 9 · android-missing: 0 · pwa-missing: 7 · misaligned: 15 · n/a: 7
 
 Re-audited 2026-10-04 against current code (iOS commits cdc228c7, 3e04d88e, c682851e, d52892a2; Android 3e6197eb, 85d42058). Two former pwa-missing rows with no decision (REST fallback poll, header refresh spinner) are now n/a.
 

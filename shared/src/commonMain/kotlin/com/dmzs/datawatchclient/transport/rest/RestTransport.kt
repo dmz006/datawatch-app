@@ -4136,8 +4136,6 @@ public class RestTransport(
             }
         }
 
-    // @@PARITY_ANDROID_REST@@
-
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

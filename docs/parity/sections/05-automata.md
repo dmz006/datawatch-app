@@ -18,12 +18,12 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | element | Filter bar: status badges draft/planning/needs_review/approved/running/blocked (+archived) | ✓ app:17219, css:504–509 | ✓ AS:585–635 FilterChip | ✓ PrdListView status chips incl. archived (filterColor = css:504–509) | aligned |  | Android chip colors vs css:504–509 (unverified) |
 | element | Filter bar: type badges software/research/operational/personal | ✓ app:17228 | ✓ AS:641 | ✓ PrdListView type chips | aligned |  |  |
 | element | Filter bar: "All" select-all checkbox (select mode) | ✓ app:16606 | ✗ (only server All chip AS:1515; no PRD select-all) | ~ "All"/"None" in batch bar (not the filter bar) | misaligned |  |  |
-| data | List sort: pinned first → state rank (active first) → updated | ✓ app:16491–16500 | ~ AS:708 pinned → prdStateRank (AS:1446: review 0, running 1, planning 2 — blocked not ranked) → createdAt hash, not updated_at | ✓ PrdListViewModel.visible: pinned → PWA state rank → updated | misaligned |  | Android rank table + tiebreak differ from PWA |
+| data | List sort: pinned first → state rank (active first) → updated | ✓ app:16491–16500 | ✓ pinned → PWA `_AUTOMATA_STATE_RANK` → updated_at/created_at desc | ✓ PrdListViewModel.visible: pinned → PWA state rank → updated | aligned |  | Android rank table + tiebreak differ from PWA |
 | element | Card: type badge, per-type color (software #6366f1 · research #f59e0b · operational #10b981 · personal #ec4899) | ✓ app:16727 | ✓ AS:1225 TypeBadge (#6366f1/#f59e0b/#10b981/#ec4899) | ✗ PrdRow metaLine plain text | ios-missing |  |  |
 | element | Card: "template" badge (#7c3aed) when `is_template` | ✓ app:16730 | ✓ AS:858 autonomous_template_label | ✗ (templates filtered out of list) | ios-missing |  |  |
 | element | Card: title 15px/700 · status pill right-justified | ✓ app:16769 | ✓ AS:98,112 | ✓ PrdRow | aligned | | |
 | element | Card meta row: `id` (code) + updated_at, mono, right-justified | ✓ app:16773 | ✓ AS:874–931 id.take(8) + server + updated_at (en-GB); ↗parent chip AS:887 | ~ PrdRow metaLine type·backend·counts + ↗parent chip; no id / updated_at | misaligned |  | iOS lacks id/ts; ↗parent link on both apps per D71a (PWA → #172) |
-| element | Card: progress bar + "done/total tasks · pct%" (complete → success fill) | ✓ app:16682, css:513–526 | ✗ no progress bar on card (detail only) | ~ PrdRow ProgressView, no pct label | android-missing |  | iOS also lacks "done/total · pct%" label |
+| element | Card: progress bar + "done/total tasks · pct%" (complete → success fill) | ✓ app:16682, css:513–526 | ✓ 4dp bar (success at 100 %) + "done/total tasks · pct%" | ~ PrdRow ProgressView, no pct label | ios-missing |  | iOS also lacks "done/total · pct%" label · Android done; iOS lacks the label (2026-10-04) |
 | element | Card: current position line "▶ Story i: … · Task j: … (verifying/testing)" when running | ✓ app:16694 | ✓ AS:936 currentPositionLine | ✗ | ios-missing |  |  |
 | element | Card: compact lifecycle strip plan→review→approve→run→done | ✓ app:11212, css:544–585 | ✓ AS LifecycleStrip | ✓ PrdLifecycleStrip (card, display-only) | aligned | | |
 | interaction | Lifecycle steps clickable → plan/approve/reject/revise/run/instantiate/delete actions; `danger` style | ✓ app:11212 (clickable/danger) | ~ AS:1306 LifecycleStrip Plan/Approve/Run/■Cancel clickable, danger style; no Instantiate step | ~ PrdLifecycleStrip onAction on card + detail (.danger look); no Instantiate step | misaligned |  | PWA template cards show Instantiate step (app:11233) |
@@ -52,7 +52,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | interaction | Wizard: "Use template" link → Templates tab · skills hint link · help tip | ✓ automata_wizard_use_template/skills_hint_link/help_tip | ✓ NPD:260 template strip, NPD:238 `?` help, NPD:721 skills hint | ✗ | ios-missing |  |  |
 | nav | Detail view replaces list; breadcrumb/back (`automata_detail_back`) | ✓ app:17848, app:19007 | ~ PDD full-screen dialog, Close | ✓ push + back | aligned |  | per D4a native containers (dialog / push) |
 | element | Detail header: type + status badges, title (tap to edit tip), id, last activity, lifecycle strip | ✓ app:17848+ | ✓ PDD:201–260 | ~ PrdDetailView header + PrdLifecycleStrip (no id / last activity) | misaligned |  | iOS lacks id / last activity |
-| element | Detail tabs: Overview · Stories · Decisions · Rules · Scan(cond.) | ✓ prd_tab_* | ~ PDD:202 Overview · Stories · Decisions · Graph · (Progress when running); no Rules/Scan tabs | ✗ single scroll | misaligned | decided D24a | Android: add Rules/Scan tabs, Graph/Progress → cards; iOS: build five tabs |
+| element | Detail tabs: Overview · Stories · Decisions · Rules · Scan(cond.) | ✓ prd_tab_* | ✓ Overview · Stories · Decisions · Scan · Rules; Graph + Progress as Overview cards | ✗ single scroll | ios-missing | decided D24a | Android: add Rules/Scan tabs, Graph/Progress → cards; iOS: build five tabs · Android done (D24a); Scan/Rules always shown (PrdDto lacks scan/rules flags) (2026-10-04) |
 | interaction | Actions: ✓ Approve | ✓ app:10917 `{actor:'operator'}` (no note) | ✓ PDD:395,868 approve with optional note | ✓ approve-with-note (`PrdReviewDialogs`) | pwa-missing | decided D74a | → #172 |
 | interaction | Actions: ✗ Reject (reason prompt) | ✓ app:11188 prdActionPrompt | ✓ PDD:448,891 | ✓ alert + TextField | aligned | | |
 | interaction | Actions: ↺ Request revision (note prompt) | ✓ prd_btn_request_revision | ✓ PDD:455,924 | ✓ alert "Request revision" | aligned | | |
@@ -107,7 +107,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | string | i18n coverage | ✓ en/de/es/fr/ja `locales/*.json` | ✓ 262 keys, 4 extra locales | ✓ L() + Resources/{de,es,fr,ja}.lproj (automata strings incl.) | aligned |  | iOS localized 2026-10-04 |
 
 ## Coverage
-rows: 99 · aligned: 47 · ios-missing: 15 · android-missing: 1 · pwa-missing: 8 · misaligned: 28 · n/a: 0
+rows: 99 · aligned: 48 · ios-missing: 17 · android-missing: 0 · pwa-missing: 8 · misaligned: 26 · n/a: 0
 
 ## Decisions (resolved 2026-10-04)
 1. Terminology/tab label → **D22a** "Automata | Templates" everywhere (iOS still "PRDs").
