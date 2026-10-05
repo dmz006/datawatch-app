@@ -686,36 +686,29 @@ struct AlertsView: View {
     private func groupHeader(_ group: AlertsViewModel.AlertGroup) -> some View {
         let promptCount = group.alerts.filter { vm.isPrompt($0) }.count
         let last = group.alerts.first.map { alertClock($0) } ?? "—"
-        return HStack(spacing: 8) {
-            Image(systemName: collapsed.contains(group.id) ? "chevron.right" : "chevron.down")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-            sessionLabel(for: group.session, isSystem: group.isSystem, fallbackId: group.id)
-            if let first = group.alerts.first, !group.isSystem, let server = vm.server(for: first) {
-                Text(server.displayName)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
-                    .lineLimit(1)
-            }
-            if let state = stateText(group.session) {
-                Text(state.text)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(state.color)
-            }
-            HStack(spacing: 4) {
-                Text("\(group.alerts.count) \(group.alerts.count == 1 ? "alert" : "alerts")")
+        // Two lines on a phone (PWA header is flex-wrap): name · server … last / state · count.
+        return VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 8) {
+                Image(systemName: collapsed.contains(group.id) ? "chevron.right" : "chevron.down")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                if promptCount > 0 {
-                    Text("· 🟡 \(promptCount)")
-                        .fontWeight(.bold)
-                        .foregroundStyle(DatawatchColors.warning)
+                sessionLabel(for: group.session, isSystem: group.isSystem, fallbackId: group.id)
+                    .layoutPriority(1)
+                if let first = group.alerts.first, !group.isSystem, let server = vm.server(for: first) {
+                    Text(server.displayName)
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
+                        .lineLimit(1)
                 }
+                Spacer(minLength: 4)
+                Text("last \(last)")
+                    .font(DatawatchFonts.terminalSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    .lineLimit(1)
+                    .fixedSize()
             }
-            .font(DatawatchFonts.labelSmall)
-            Spacer(minLength: 4)
-            Text("last \(last)")
-                .font(DatawatchFonts.terminalSmall)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            groupHeaderDetail(group: group, promptCount: promptCount)
+                .padding(.leading, 18)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -727,6 +720,24 @@ struct AlertsView: View {
         }
         .textCase(nil)
         .listRowInsets(EdgeInsets())
+    }
+
+    private func groupHeaderDetail(group: AlertsViewModel.AlertGroup, promptCount: Int) -> some View {
+        HStack(spacing: 6) {
+            if let state = stateText(group.session) {
+                Text(state.text)
+                    .foregroundStyle(state.color)
+            }
+            Text("\(group.alerts.count) \(group.alerts.count == 1 ? "alert" : "alerts")")
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            if promptCount > 0 {
+                Text("· 🟡 \(promptCount)")
+                    .fontWeight(.bold)
+                    .foregroundStyle(DatawatchColors.warning)
+            }
+        }
+        .font(DatawatchFonts.labelSmall)
+        .lineLimit(1)
     }
 
     /// Session name as a link to the session (PWA sessLink); plain text for System/unknown.
