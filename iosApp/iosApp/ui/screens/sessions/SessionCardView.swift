@@ -60,6 +60,8 @@ struct SessionStatePill: View {
         // PWA `.state { text-transform: uppercase }` — wire label, uppercased.
         Text(SessionStateStyle.key(state).uppercased())
             .font(.system(size: 11, weight: .semibold))
+            .lineLimit(1)
+            .fixedSize()
             .foregroundStyle(color)
             .padding(.horizontal, 7)
             .padding(.vertical, 1)
@@ -198,6 +200,8 @@ struct SessionCardView: View {
         Button(action: onSummarize) {
             Text(summarizing ? "⏳ Summarizing…" : "🤖 Summary")
                 .font(.system(size: 10))
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(DatawatchColors.onSurface)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
@@ -213,6 +217,8 @@ struct SessionCardView: View {
         Button(action: action) {
             Text(L(title))
                 .font(.system(size: 11))
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(tint)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
