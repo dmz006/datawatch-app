@@ -70,4 +70,19 @@
     <string name="prd_settings_concurrency_hint">0 o 1 = secuencial · 2+ = ejecutar tareas independientes en paralelo</string>
     <string name="automata_detail_concurrency">Concurrencia</string>
     <string name="automata_detail_concurrency_value">%1$d tareas</string>
+    <string name="llm_field_name">Nombre</string>
+    <string name="llm_field_compute_nodes">ComputeNodes (selección múltiple; failover ordenado)</string>
+    <string name="llm_field_compute_nodes_hint">Orden = orden de respaldo.</string>
+    <string name="llm_field_enabled_models">Modelos habilitados</string>
+    <string name="llm_field_enabled_models_hint">Lista de modelos por nodo. Cada fila habilita un modelo concreto en un Compute Node concreto.</string>
+    <string name="llm_field_auto_add_models">Habilitar modelos nuevos automáticamente</string>
+    <string name="llm_field_max_inflight">Máx. sesiones autónomas en curso (0 = ilimitado)</string>
+    <string name="llm_test_model_label">Modelo de prueba:</string>
+    <string name="llm_test_model_first">(primero activo)</string>
+    <string name="llm_test_btn">Probar</string>
+    <string name="llm_add_btn">Añadir</string>
+    <string name="llm_test_save_first">Guarda primero y luego prueba</string>
+    <string name="llm_test_running">Probando…</string>
+    <string name="llm_option_default">(predeterminado)</string>
+    <string name="llm_option_none">(ninguno)</string>
 </resources>

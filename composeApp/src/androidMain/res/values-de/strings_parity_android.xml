@@ -70,4 +70,19 @@
     <string name="prd_settings_concurrency_hint">0 oder 1 = sequenziell · 2+ = unabhängige Aufgaben parallel ausführen</string>
     <string name="automata_detail_concurrency">Parallelität</string>
     <string name="automata_detail_concurrency_value">%1$d Aufgaben</string>
+    <string name="llm_field_name">Name</string>
+    <string name="llm_field_compute_nodes">ComputeNodes (Mehrfachauswahl; geordnete Failover-Reihenfolge)</string>
+    <string name="llm_field_compute_nodes_hint">Reihenfolge = Failover-Reihenfolge.</string>
+    <string name="llm_field_enabled_models">Aktivierte Modelle</string>
+    <string name="llm_field_enabled_models_hint">Modellliste pro Knoten. Jede Zeile aktiviert ein bestimmtes Modell auf einem bestimmten Compute Node.</string>
+    <string name="llm_field_auto_add_models">Neue Modelle automatisch aktivieren</string>
+    <string name="llm_field_max_inflight">Max. laufende autonome Sitzungen (0 = unbegrenzt)</string>
+    <string name="llm_test_model_label">Testmodell:</string>
+    <string name="llm_test_model_first">(Erstes aktives)</string>
+    <string name="llm_test_btn">Test</string>
+    <string name="llm_add_btn">Hinzufügen</string>
+    <string name="llm_test_save_first">Erst speichern, dann testen</string>
+    <string name="llm_test_running">Teste…</string>
+    <string name="llm_option_default">(Standard)</string>
+    <string name="llm_option_none">(keiner)</string>
 </resources>

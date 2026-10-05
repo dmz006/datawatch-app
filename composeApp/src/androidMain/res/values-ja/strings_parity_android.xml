@@ -70,4 +70,19 @@
     <string name="prd_settings_concurrency_hint">0 または 1 = 逐次 · 2 以上 = 独立したタスクを並列実行</string>
     <string name="automata_detail_concurrency">並行数</string>
     <string name="automata_detail_concurrency_value">%1$d タスク</string>
+    <string name="llm_field_name">名前</string>
+    <string name="llm_field_compute_nodes">ComputeNodes（複数選択、順序付きフェイルオーバー）</string>
+    <string name="llm_field_compute_nodes_hint">順序＝フェイルオーバー順。</string>
+    <string name="llm_field_enabled_models">有効なモデル</string>
+    <string name="llm_field_enabled_models_hint">ノードごとのモデル一覧。各行で特定の Compute Node 上の特定モデルを有効にします。</string>
+    <string name="llm_field_auto_add_models">新しいモデルを自動で有効化</string>
+    <string name="llm_field_max_inflight">実行中の自律セッション上限（0 = 無制限）</string>
+    <string name="llm_test_model_label">テストモデル:</string>
+    <string name="llm_test_model_first">(最初の有効モデル)</string>
+    <string name="llm_test_btn">テスト</string>
+    <string name="llm_add_btn">追加</string>
+    <string name="llm_test_save_first">先に保存してからテストしてください</string>
+    <string name="llm_test_running">テスト中…</string>
+    <string name="llm_option_default">(デフォルト)</string>
+    <string name="llm_option_none">(なし)</string>
 </resources>

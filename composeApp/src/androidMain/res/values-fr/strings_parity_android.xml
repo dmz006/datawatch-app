@@ -70,4 +70,19 @@
     <string name="prd_settings_concurrency_hint">0 ou 1 = séquentiel · 2+ = exécuter les tâches indépendantes en parallèle</string>
     <string name="automata_detail_concurrency">Concurrence</string>
     <string name="automata_detail_concurrency_value">%1$d tâches</string>
+    <string name="llm_field_name">Nom</string>
+    <string name="llm_field_compute_nodes">ComputeNodes (sélection multiple ; basculement ordonné)</string>
+    <string name="llm_field_compute_nodes_hint">Ordre = ordre de basculement.</string>
+    <string name="llm_field_enabled_models">Modèles activés</string>
+    <string name="llm_field_enabled_models_hint">Liste de modèles par nœud. Chaque ligne active un modèle précis sur un Compute Node précis.</string>
+    <string name="llm_field_auto_add_models">Activer automatiquement les nouveaux modèles</string>
+    <string name="llm_field_max_inflight">Sessions autonomes en cours max (0 = illimité)</string>
+    <string name="llm_test_model_label">Modèle de test :</string>
+    <string name="llm_test_model_first">(premier actif)</string>
+    <string name="llm_test_btn">Tester</string>
+    <string name="llm_add_btn">Ajouter</string>
+    <string name="llm_test_save_first">Enregistrez d\'abord, puis testez</string>
+    <string name="llm_test_running">Test en cours…</string>
+    <string name="llm_option_default">(par défaut)</string>
+    <string name="llm_option_none">(aucun)</string>
 </resources>

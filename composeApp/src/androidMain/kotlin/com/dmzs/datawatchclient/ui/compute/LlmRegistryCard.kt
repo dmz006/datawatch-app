@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,8 +83,6 @@ internal suspend fun resolveActiveTransport() =
         )?.let { ServiceLocator.transportFor(it) }
     }
 
-/** LLM kinds that require an ollama/openwebui compute node. SaaS kinds use a single model field. */
-private val NODE_BASED_KINDS = setOf("ollama", "openwebui", "opencode", "opencode-acp", "opencode-prompt")
 
 /**
  * v0.99.0 — Sprint 30: multi-node model table, LlmDetailDialog (models+sessions tabs),
@@ -637,21 +637,115 @@ private val SESSION_BACKEND_KINDS =
         "shell",
     )
 
-/** The 10 valid LLM kinds. openwebui IS valid here (references an ollama ComputeNode). */
+/** PWA `_llmSaasKinds` — no ComputeNodes / node column / auto-add. */
+private val LLM_SAAS_KINDS = setOf("claude-code", "aider", "goose", "gemini")
+
+/** PWA `_renderLLMEditPanel` allKinds, in the same order. */
 private val LLM_KINDS =
     listOf(
         "ollama",
         "openwebui",
         "opencode",
+        "claude-code",
         "opencode-acp",
         "opencode-prompt",
-        "claude-code",
         "aider",
         "goose",
         "gemini",
+        "council",
         "shell",
     )
 
+/** PWA llmEditOutputMode / llmEditInputMode / llmEditPermMode / llmEditEffort options ("" = default/none). */
+private val LLM_OUTPUT_MODES = listOf("", "terminal", "log", "chat")
+private val LLM_INPUT_MODES = listOf("", "tmux", "none")
+private val LLM_PERMISSION_MODES = listOf("", "plan", "acceptEdits", "auto", "bypassPermissions", "dontAsk", "default")
+private val LLM_EFFORTS = listOf("", "quick", "normal", "thorough")
+
+/** One labelled dropdown row; "" renders as [emptyLabel]. */
+@Composable
+private fun LlmChoiceRow(
+    label: String,
+    value: String,
+    options: List<String>,
+    emptyLabel: String,
+    onChange: (String) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+        Box {
+            TextButton(onClick = { open = true }) { Text(value.ifBlank { emptyLabel }) }
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                options.forEach { o ->
+                    DropdownMenuItem(text = { Text(o.ifBlank { emptyLabel }) }, onClick = {
+                        onChange(o)
+                        open = false
+                    })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LlmSwitchRow(
+    label: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+/** Chip list + text field + "+" (PWA renderBadgeInput, freeform). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LlmChipInput(
+    label: String,
+    items: MutableList<String>,
+    placeholder: String,
+) {
+    var input by remember { mutableStateOf("") }
+    if (items.isNotEmpty()) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            items.toList().forEach { item ->
+                AssistChip(
+                    onClick = { items.remove(item) },
+                    label = { Text(item, style = MaterialTheme.typography.labelSmall) },
+                    trailingIcon = { Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(12.dp)) },
+                )
+            }
+        }
+    }
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = input,
+            onValueChange = { input = it },
+            label = { Text(label) },
+            placeholder = { Text(placeholder) },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = {
+            // Accept comma-separated input like the PWA badge input.
+            input.split(',').map { it.trim() }.filter { it.isNotEmpty() && it !in items }.forEach { items.add(it) }
+            input = ""
+        }) { Text("+") }
+    }
+}
+
+/**
+ * PWA `_renderLLMEditPanel` (§8.9) — field order, labels and kind-dependent sections
+ * (`_llmKindChanged`): Name · Kind · ComputeNodes (local kinds) · Enabled Models
+ * (node column hidden for SaaS kinds) · Auto-enable new models (local kinds) · API key
+ * reference · Timeout · Max in-flight · Tags · session-backend section · claude-code
+ * section · Test model + Test · `</> YAML` / Cancel / Save|Add. A literal API key is
+ * never shown; blank keeps it (SecretMask rule). `auto_created` is never sent
+ * (LlmSaveBody).
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LlmRegistryDialog(
@@ -661,79 +755,73 @@ private fun LlmRegistryDialog(
     onOpenYaml: () -> Unit,
     onSave: (LlmRegistryEntryDto) -> Unit,
 ) {
+    val isEdit = existing != null
     var name by remember(existing) { mutableStateOf(existing?.name ?: "") }
     var kind by remember(existing) { mutableStateOf(existing?.kind ?: LLM_KINDS.first()) }
-    var singleModel by remember(existing) {
-        mutableStateOf(if (existing != null && existing.kind !in NODE_BASED_KINDS) existing.model else "")
-    }
-    var pretestEnabled by remember(existing) { mutableStateOf(existing?.pretestEnabled ?: false) }
     var kindDropdown by remember { mutableStateOf(false) }
     var nodeModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
-    val isNodeBased = kind in NODE_BASED_KINDS
-    val isAutoAdd = existing?.autoAddModels ?: false
-    // alpha.41 core fields
+    val isSaas = kind in LLM_SAAS_KINDS
+    val isSessionBackend = kind in SESSION_BACKEND_KINDS
+    val isClaudeCode = kind == "claude-code"
+    // ComputeNodes multi-select; selection order = failover order.
+    val selectedNodes =
+        remember(existing) {
+            val initial = existing?.computeNodes?.ifEmpty { listOfNotNull(existing.computeNode.takeIf { it.isNotBlank() }) }
+            mutableStateListOf(*(initial ?: emptyList()).toTypedArray())
+        }
+    var autoAdd by remember(existing) { mutableStateOf(existing?.autoAddModels ?: false) }
     // A literal key is never shown; the field starts blank and blank keeps it (iOS form rule).
     val existingKey = existing?.apiKeyRef.orEmpty()
     val existingLiteralKey = existingKey.isNotEmpty() && !com.dmzs.datawatchclient.transport.SecretMask.isReference(existingKey)
     var apiKeyRef by remember(existing) { mutableStateOf(if (existingLiteralKey) "" else existingKey) }
-    var timeout by remember(existing) { mutableStateOf(existing?.timeout?.toString() ?: "") }
+    var timeout by remember(existing) { mutableStateOf(existing?.timeoutSeconds?.takeIf { it > 0 }?.toString() ?: "") }
+    var maxInflight by remember(existing) { mutableStateOf(existing?.maxInflight?.takeIf { it > 0 }?.toString() ?: "") }
     val tags = remember(existing) { mutableStateListOf(*(existing?.tags?.toTypedArray() ?: emptyArray())) }
-    var tagInput by remember { mutableStateOf("") }
-    // alpha.41 session-backend fields
-    val isSessionBackend = kind in SESSION_BACKEND_KINDS
     var binary by remember(existing) { mutableStateOf(existing?.binary ?: "") }
-    var consoleCols by remember(existing) { mutableStateOf(existing?.consoleCols?.toString() ?: "") }
-    var consoleRows by remember(existing) { mutableStateOf(existing?.consoleRows?.toString() ?: "") }
-    var outputModeDropdown by remember { mutableStateOf(false) }
-    var outputMode by remember(existing) { mutableStateOf(existing?.outputMode ?: "terminal") }
-    var inputModeDropdown by remember { mutableStateOf(false) }
-    var inputMode by remember(existing) { mutableStateOf(existing?.inputMode ?: "tmux") }
+    var consoleCols by remember(existing) { mutableStateOf(existing?.consoleCols?.takeIf { it > 0 }?.toString() ?: "") }
+    var consoleRows by remember(existing) { mutableStateOf(existing?.consoleRows?.takeIf { it > 0 }?.toString() ?: "") }
+    var outputMode by remember(existing) { mutableStateOf(existing?.outputMode ?: "") }
+    var inputMode by remember(existing) { mutableStateOf(existing?.inputMode ?: "") }
     var autoGitInit by remember(existing) { mutableStateOf(existing?.autoGitInit ?: false) }
     var autoGitCommit by remember(existing) { mutableStateOf(existing?.autoGitCommit ?: false) }
-    // alpha.41 claude-code-specific fields
-    val isClaudeCode = kind == "claude-code"
     var skipPermissions by remember(existing) { mutableStateOf(existing?.skipPermissions ?: false) }
     var channelEnabled by remember(existing) { mutableStateOf(existing?.channelEnabled ?: false) }
     var autoAcceptDisclaimer by remember(existing) { mutableStateOf(existing?.autoAcceptDisclaimer ?: false) }
-    var permissionModeDropdown by remember { mutableStateOf(false) }
-    var permissionMode by remember(existing) { mutableStateOf(existing?.permissionMode ?: "default") }
-    var defaultEffortDropdown by remember { mutableStateOf(false) }
+    var permissionMode by remember(existing) { mutableStateOf(existing?.permissionMode ?: "") }
     var defaultEffort by remember(existing) { mutableStateOf(existing?.defaultEffort ?: "") }
     val fallbackChain =
         remember(existing) { mutableStateListOf(*(existing?.fallbackChain?.toTypedArray() ?: emptyArray())) }
-    var fallbackInput by remember { mutableStateOf("") }
+    var testModel by remember(existing) { mutableStateOf("") }
+    var testModelDropdown by remember { mutableStateOf(false) }
+    var testStatus by remember { mutableStateOf<Pair<String, Int>?>(null) }
+    var testing by remember { mutableStateOf(false) }
 
-    // Per-node model pairs: initialize from existing.models or from legacy computeNode+model
+    // Enabled models: existing.models, else the legacy single model (PWA existingModels).
     val modelPairs =
         remember(existing) {
             val initial =
                 when {
-                    existing == null -> mutableListOf()
-                    existing.models.isNotEmpty() -> existing.models.toMutableList()
-                    existing.computeNode.isNotBlank() ->
-                        mutableListOf(
-                            LlmModelPairDto(existing.computeNode, existing.model),
-                        )
-                    else -> mutableListOf()
+                    existing == null -> emptyList()
+                    existing.models.isNotEmpty() -> existing.models
+                    existing.model.isNotBlank() ->
+                        listOf(LlmModelPairDto(existing.computeNodes.firstOrNull() ?: existing.computeNode, existing.model))
+                    else -> emptyList()
                 }
             mutableStateListOf(*initial.toTypedArray())
         }
 
     val scope = rememberCoroutineScope()
+    val saveFirstMsg = stringResource(R.string.llm_test_save_first)
+    val testingMsg = stringResource(R.string.llm_test_running)
+    val defaultLabel = stringResource(R.string.llm_option_default)
+    val noneLabel = stringResource(R.string.llm_option_none)
 
-    // Pre-load models for all currently-selected compute nodes.
     // opencode kinds source their model list from /api/opencode/models?node=<n>
     // (not /api/compute/nodes/$n/models), matching the session-wizard behaviour.
     val isOpenCode = kind.startsWith("opencode", ignoreCase = true)
     LaunchedEffect(kind) {
         val transport = resolveActiveTransport() ?: return@LaunchedEffect
-        val nodesToLoad =
-            if (isNodeBased) {
-                modelPairs.map { it.computeNode }.filter { it.isNotBlank() }.toSet() +
-                    computeNodes.map { it.name }.toSet()
-            } else {
-                emptySet()
-            }
+        val nodesToLoad = if (isSaas) emptySet() else computeNodes.map { it.name }.toSet()
         val loaded = mutableMapOf<String, List<String>>()
         nodesToLoad.forEach { nodeName ->
             if (isOpenCode) {
@@ -751,467 +839,328 @@ private fun LlmRegistryDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (existing != null) {
-                    stringResource(
-                        R.string.llm_registry_edit,
-                    )
+                if (isEdit) {
+                    "✎ " + stringResource(R.string.llm_registry_edit) + ": " + existing!!.name
                 } else {
-                    stringResource(R.string.llm_registry_add)
+                    "+ " + stringResource(R.string.llm_registry_add)
                 },
             )
         },
         text = {
-            Column(modifier = Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Name
+            Column(
+                modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.compute_node_name_label)) },
+                    label = { Text(stringResource(R.string.llm_field_name)) },
+                    placeholder = { Text("llama3-70b") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = existing == null,
+                    enabled = !isEdit,
                 )
-                // Kind
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         stringResource(R.string.llm_registry_kind_label),
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.weight(1f),
                     )
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = { kindDropdown = true }) { Text(kind) }
-                    DropdownMenu(expanded = kindDropdown, onDismissRequest = { kindDropdown = false }) {
-                        LLM_KINDS.forEach { k ->
-                            DropdownMenuItem(text = { Text(k) }, onClick = {
-                                kind = k
-                                kindDropdown = false
-                            })
+                    Box {
+                        TextButton(onClick = { kindDropdown = true }) { Text(kind) }
+                        DropdownMenu(expanded = kindDropdown, onDismissRequest = { kindDropdown = false }) {
+                            LLM_KINDS.forEach { k ->
+                                DropdownMenuItem(text = { Text(k) }, onClick = {
+                                    kind = k
+                                    kindDropdown = false
+                                })
+                            }
                         }
                     }
                 }
 
-                if (isNodeBased) {
-                    // Per-node model table
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // ComputeNodes multi-select (local kinds only); order = failover order.
+                if (!isSaas) {
+                    Text(stringResource(R.string.llm_field_compute_nodes), style = MaterialTheme.typography.labelSmall)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        computeNodes.forEach { n ->
+                            val idx = selectedNodes.indexOf(n.name)
+                            androidx.compose.material3.FilterChip(
+                                selected = idx >= 0,
+                                onClick = { if (idx >= 0) selectedNodes.remove(n.name) else selectedNodes.add(n.name) },
+                                label = {
+                                    Text(
+                                        (if (idx >= 0) "${idx + 1}. " else "") + "${n.name} (${n.kind.ifBlank { "?" }})",
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.llm_field_compute_nodes_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // Enabled Models table (node column hidden for SaaS kinds).
+                HorizontalDivider()
+                Text(stringResource(R.string.llm_field_enabled_models), style = MaterialTheme.typography.labelSmall)
+                Text(
+                    stringResource(R.string.llm_field_enabled_models_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    if (!isSaas) {
                         Text(
                             stringResource(R.string.llm_models_node_col),
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.weight(1f),
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text(
-                            stringResource(R.string.llm_models_model_col),
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Spacer(Modifier.width(32.dp))
                     }
-                    HorizontalDivider()
-
-                    if (modelPairs.isEmpty() && isAutoAdd) {
-                        Text(
-                            stringResource(R.string.llm_models_none),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    modelPairs.forEachIndexed { idx, pair ->
-                        var nodeDropdown by remember { mutableStateOf(false) }
-                        var modelDropdown by remember { mutableStateOf(false) }
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            // Compute node picker
+                    Text(
+                        stringResource(R.string.llm_models_model_col),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(32.dp))
+                }
+                modelPairs.forEachIndexed { idx, pair ->
+                    var nodeDropdown by remember { mutableStateOf(false) }
+                    var modelDropdown by remember { mutableStateOf(false) }
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        if (!isSaas) {
                             Box(modifier = Modifier.weight(1f)) {
-                                TextButton(onClick = { if (!isAutoAdd) nodeDropdown = true }, enabled = !isAutoAdd) {
+                                TextButton(onClick = { nodeDropdown = true }) {
                                     Text(pair.computeNode.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall)
                                 }
                                 DropdownMenu(expanded = nodeDropdown, onDismissRequest = { nodeDropdown = false }) {
                                     computeNodes.forEach { n ->
                                         DropdownMenuItem(text = { Text(n.name) }, onClick = {
-                                            modelPairs[idx] = pair.copy(computeNode = n.name, model = "")
+                                            modelPairs[idx] = pair.copy(computeNode = n.name)
                                             nodeDropdown = false
-                                            scope.launch {
-                                                val transport = resolveActiveTransport() ?: return@launch
-                                                if (isOpenCode) {
-                                                    transport.fetchOpenCodeModels(node = n.name).onSuccess { resp ->
-                                                        nodeModels = nodeModels + (n.name to resp.models.map { it.id }.filter { it.isNotBlank() })
-                                                    }
-                                                } else {
-                                                    transport.getComputeNodeModels(n.name, kind).onSuccess { models ->
-                                                        nodeModels = nodeModels + (n.name to models)
-                                                    }
-                                                }
-                                            }
                                         })
                                     }
                                 }
                             }
                             Spacer(Modifier.width(4.dp))
-                            // Model picker / text
-                            val availableModels = nodeModels[pair.computeNode] ?: emptyList()
-                            Box(modifier = Modifier.weight(1f)) {
-                                if (availableModels.isNotEmpty() && !isAutoAdd) {
-                                    TextButton(onClick = { modelDropdown = true }) {
-                                        Text(pair.model.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                    DropdownMenu(
-                                        expanded = modelDropdown,
-                                        onDismissRequest = { modelDropdown = false },
-                                    ) {
-                                        availableModels.forEach { m ->
-                                            DropdownMenuItem(text = { Text(m) }, onClick = {
-                                                modelPairs[idx] = pair.copy(model = m)
-                                                modelDropdown = false
-                                            })
+                        }
+                        val availableModels = if (isSaas) emptyList() else nodeModels[pair.computeNode].orEmpty()
+                        Box(modifier = Modifier.weight(1f)) {
+                            OutlinedTextField(
+                                value = pair.model,
+                                onValueChange = { modelPairs[idx] = pair.copy(model = it) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("e.g. qwen3:8b", style = MaterialTheme.typography.bodySmall) },
+                                trailingIcon =
+                                    if (availableModels.isNotEmpty()) {
+                                        {
+                                            IconButton(onClick = { modelDropdown = true }) {
+                                                Icon(Icons.Filled.MoreVert, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            }
                                         }
-                                    }
-                                } else {
-                                    OutlinedTextField(
-                                        value = pair.model,
-                                        onValueChange = { if (!isAutoAdd) modelPairs[idx] = pair.copy(model = it) },
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        enabled = !isAutoAdd,
-                                        placeholder = { Text("model", style = MaterialTheme.typography.bodySmall) },
-                                    )
-                                }
-                            }
-                            if (!isAutoAdd) {
-                                IconButton(onClick = { modelPairs.removeAt(idx) }, modifier = Modifier.size(32.dp)) {
-                                    Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                                }
-                            } else {
-                                Spacer(Modifier.width(32.dp))
-                            }
-                        }
-                    }
-
-                    if (!isAutoAdd) {
-                        TextButton(
-                            onClick = { modelPairs.add(LlmModelPairDto("", "")) },
-                            modifier = Modifier.padding(top = 2.dp),
-                        ) {
-                            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                stringResource(R.string.llm_models_add_row),
-                                style = MaterialTheme.typography.labelSmall,
+                                    } else {
+                                        null
+                                    },
                             )
+                            DropdownMenu(expanded = modelDropdown, onDismissRequest = { modelDropdown = false }) {
+                                availableModels.forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = {
+                                        modelPairs[idx] = pair.copy(model = m)
+                                        modelDropdown = false
+                                    })
+                                }
+                            }
+                        }
+                        IconButton(onClick = { modelPairs.removeAt(idx) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(16.dp))
                         }
                     }
-                } else {
-                    // SaaS: single model text input
-                    OutlinedTextField(
-                        value = singleModel,
-                        onValueChange = { singleModel = it },
-                        label = { Text(stringResource(R.string.llm_registry_model_label)) },
-                        singleLine = true,
-                        placeholder = { Text("e.g. gemini-2.0-flash") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                }
+                TextButton(onClick = { modelPairs.add(LlmModelPairDto("", "")) }) {
+                    Text(stringResource(R.string.llm_models_add_row), style = MaterialTheme.typography.labelSmall)
+                }
+                if (!isSaas) {
+                    LlmSwitchRow(stringResource(R.string.llm_field_auto_add_models), autoAdd) { autoAdd = it }
                 }
 
-                // Pretest enabled (G20: Switch replaces Checkbox)
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(R.string.llm_registry_pretest_label),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Switch(checked = pretestEnabled, onCheckedChange = { pretestEnabled = it })
-                }
-
-                // alpha.41 core: API key ref, timeout, tags
                 HorizontalDivider()
                 OutlinedTextField(
                     value = apiKeyRef,
                     onValueChange = { apiKeyRef = it },
                     label = { Text(stringResource(R.string.llm_field_api_key_ref)) },
-                    placeholder = { if (existingLiteralKey) Text(com.dmzs.datawatchclient.transport.SecretMask.PLACEHOLDER) },
+                    placeholder = {
+                        Text(
+                            if (existingLiteralKey) com.dmzs.datawatchclient.transport.SecretMask.PLACEHOLDER else "\${secret:anthropic-key}",
+                        )
+                    },
                     visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Row(
+                OutlinedTextField(
+                    value = timeout,
+                    onValueChange = { if (it.all { c -> c.isDigit() }) timeout = it },
+                    label = { Text(stringResource(R.string.llm_field_timeout)) },
+                    placeholder = { Text("0") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = timeout,
-                        onValueChange = { if (it.all { c -> c.isDigit() }) timeout = it },
-                        label = { Text(stringResource(R.string.llm_field_timeout)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                // Tags chip input
-                if (tags.isNotEmpty()) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        tags.forEach { tag ->
-                            AssistChip(
-                                onClick = { tags.remove(tag) },
-                                label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
-                                trailingIcon = {
-                                    Icon(
-                                        Icons.Filled.Close,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                },
-                            )
-                        }
-                    }
-                }
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = tagInput,
-                        onValueChange = { tagInput = it },
-                        label = { Text(stringResource(R.string.llm_field_tags)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = {
-                        if (tagInput.isNotBlank()) {
-                            tags.add(tagInput.trim())
-                            tagInput = ""
-                        }
-                    }) { Text("+") }
-                }
+                )
+                OutlinedTextField(
+                    value = maxInflight,
+                    onValueChange = { if (it.all { c -> c.isDigit() }) maxInflight = it },
+                    label = { Text(stringResource(R.string.llm_field_max_inflight)) },
+                    placeholder = { Text("0") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                LlmChipInput(stringResource(R.string.llm_field_tags), tags, "fast, coding…")
 
-                // alpha.41 session-backend section
+                // PWA llmSessionSect (session-backend kinds).
                 if (isSessionBackend) {
                     HorizontalDivider()
-                    Text(
-                        stringResource(R.string.llm_section_session_backend),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                    OutlinedTextField(
+                        value = binary,
+                        onValueChange = { binary = it },
+                        label = { Text(stringResource(R.string.llm_field_binary)) },
+                        placeholder = { Text("e.g. claude / aider / goose") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    OutlinedTextField(value = binary, onValueChange = {
-                        binary = it
-                    }, label = {
-                        Text(
-                            stringResource(R.string.llm_field_binary),
-                        )
-                    }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = consoleCols, onValueChange = {
-                            if (it.all {
-                                        c ->
-                                    c.isDigit()
-                                }
-                            ) {
-                                consoleCols = it
-                            }
-                        }, label = {
-                            Text(
-                                stringResource(R.string.llm_field_console_cols),
-                            )
-                        }, singleLine = true, modifier = Modifier.weight(1f))
-                        OutlinedTextField(value = consoleRows, onValueChange = {
-                            if (it.all {
-                                        c ->
-                                    c.isDigit()
-                                }
-                            ) {
-                                consoleRows = it
-                            }
-                        }, label = {
-                            Text(
-                                stringResource(R.string.llm_field_console_rows),
-                            )
-                        }, singleLine = true, modifier = Modifier.weight(1f))
-                    }
-                    // Output mode
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_output_mode),
-                            style = MaterialTheme.typography.bodySmall,
+                        OutlinedTextField(
+                            value = consoleCols,
+                            onValueChange = { if (it.all { c -> c.isDigit() }) consoleCols = it },
+                            label = { Text(stringResource(R.string.llm_field_console_cols)) },
+                            placeholder = { Text("120") },
+                            singleLine = true,
                             modifier = Modifier.weight(1f),
                         )
-                        Box {
-                            TextButton(onClick = { outputModeDropdown = true }) { Text(outputMode) }
-                            DropdownMenu(
-                                expanded = outputModeDropdown,
-                                onDismissRequest = { outputModeDropdown = false },
-                            ) {
-                                listOf("terminal", "log", "chat").forEach { m ->
-                                    DropdownMenuItem(text = { Text(m) }, onClick = {
-                                        outputMode = m
-                                        outputModeDropdown = false
-                                    })
-                                }
-                            }
-                        }
-                    }
-                    // Input mode
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_input_mode),
-                            style = MaterialTheme.typography.bodySmall,
+                        OutlinedTextField(
+                            value = consoleRows,
+                            onValueChange = { if (it.all { c -> c.isDigit() }) consoleRows = it },
+                            label = { Text(stringResource(R.string.llm_field_console_rows)) },
+                            placeholder = { Text("40") },
+                            singleLine = true,
                             modifier = Modifier.weight(1f),
                         )
-                        Box {
-                            TextButton(onClick = { inputModeDropdown = true }) { Text(inputMode) }
-                            DropdownMenu(
-                                expanded = inputModeDropdown,
-                                onDismissRequest = { inputModeDropdown = false },
-                            ) {
-                                listOf("tmux", "chat", "none").forEach { m ->
-                                    DropdownMenuItem(text = { Text(m) }, onClick = {
-                                        inputMode = m
-                                        inputModeDropdown = false
-                                    })
-                                }
-                            }
-                        }
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_auto_git_init),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(checked = autoGitInit, onCheckedChange = { autoGitInit = it })
+                    LlmChoiceRow(stringResource(R.string.llm_field_output_mode), outputMode, LLM_OUTPUT_MODES, defaultLabel) {
+                        outputMode = it
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_auto_git_commit),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(checked = autoGitCommit, onCheckedChange = { autoGitCommit = it })
+                    LlmChoiceRow(stringResource(R.string.llm_field_input_mode), inputMode, LLM_INPUT_MODES, defaultLabel) {
+                        inputMode = it
                     }
+                    LlmSwitchRow(stringResource(R.string.llm_field_auto_git_init), autoGitInit) { autoGitInit = it }
+                    LlmSwitchRow(stringResource(R.string.llm_field_auto_git_commit), autoGitCommit) { autoGitCommit = it }
                 }
 
-                // Default effort — shown for node-based kinds (ollama, openwebui, opencode) and claude-code
-                if (isNodeBased || isClaudeCode) {
-                    HorizontalDivider()
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_default_effort),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Box {
-                            TextButton(onClick = { defaultEffortDropdown = true }) {
-                                Text(defaultEffort.ifBlank { "— inherit —" })
-                            }
-                            DropdownMenu(
-                                expanded = defaultEffortDropdown,
-                                onDismissRequest = { defaultEffortDropdown = false },
-                            ) {
-                                DropdownMenuItem(text = { Text("— inherit —") }, onClick = {
-                                    defaultEffort = ""
-                                    defaultEffortDropdown = false
-                                })
-                                listOf("low", "medium", "normal", "high", "max", "quick", "thorough").forEach { e ->
-                                    DropdownMenuItem(text = { Text(e) }, onClick = {
-                                        defaultEffort = e
-                                        defaultEffortDropdown = false
-                                    })
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // alpha.41 claude-code-specific section
+                // PWA llmClaudeSect (claude-code only).
                 if (isClaudeCode) {
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_skip_permissions),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(checked = skipPermissions, onCheckedChange = { skipPermissions = it })
+                    HorizontalDivider()
+                    LlmSwitchRow(stringResource(R.string.llm_field_skip_permissions), skipPermissions) { skipPermissions = it }
+                    LlmSwitchRow(stringResource(R.string.llm_field_channel_enabled), channelEnabled) { channelEnabled = it }
+                    LlmSwitchRow(stringResource(R.string.llm_field_auto_accept), autoAcceptDisclaimer) { autoAcceptDisclaimer = it }
+                    LlmChoiceRow(
+                        stringResource(R.string.llm_field_permission_mode),
+                        permissionMode,
+                        LLM_PERMISSION_MODES,
+                        noneLabel,
+                    ) { permissionMode = it }
+                    LlmChoiceRow(stringResource(R.string.llm_field_default_effort), defaultEffort, LLM_EFFORTS, defaultLabel) {
+                        defaultEffort = it
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_channel_enabled),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(checked = channelEnabled, onCheckedChange = { channelEnabled = it })
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_auto_accept),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(checked = autoAcceptDisclaimer, onCheckedChange = { autoAcceptDisclaimer = it })
-                    }
-                    // Permission mode
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.llm_field_permission_mode),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Box {
-                            TextButton(onClick = { permissionModeDropdown = true }) { Text(permissionMode) }
-                            DropdownMenu(
-                                expanded = permissionModeDropdown,
-                                onDismissRequest = { permissionModeDropdown = false },
-                            ) {
-                                listOf("default", "acceptEdits", "bypassPermissions").forEach { m ->
-                                    DropdownMenuItem(text = { Text(m) }, onClick = {
-                                        permissionMode = m
-                                        permissionModeDropdown = false
-                                    })
-                                }
-                            }
-                        }
-                    }
-                    // Fallback chain
-                    if (fallbackChain.isNotEmpty()) {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            fallbackChain.forEach { llm ->
-                                AssistChip(onClick = {
-                                    fallbackChain.remove(llm)
-                                }, label = {
-                                    Text(llm, style = MaterialTheme.typography.labelSmall)
-                                }, trailingIcon = {
-                                    Icon(
-                                        Icons.Filled.Close,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(12.dp),
-                                    )
+                    LlmChipInput(stringResource(R.string.llm_field_fallback_chain), fallbackChain, "claude-personal, gemini-backup…")
+                }
+
+                // PWA test row: status + "Test model:" (first enabled | node / model) + Test.
+                testStatus?.let { (msg, tone) ->
+                    Text(
+                        msg,
+                        style = MaterialTheme.typography.labelSmall,
+                        color =
+                            when (tone) {
+                                1 -> Color(0xFF10B981)
+                                2 -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.llm_test_model_label), style = MaterialTheme.typography.bodySmall)
+                    Box(modifier = Modifier.weight(1f)) {
+                        val firstLabel = stringResource(R.string.llm_test_model_first)
+                        TextButton(onClick = { testModelDropdown = true }) { Text(testModel.ifBlank { firstLabel }) }
+                        DropdownMenu(expanded = testModelDropdown, onDismissRequest = { testModelDropdown = false }) {
+                            DropdownMenuItem(text = { Text(firstLabel) }, onClick = {
+                                testModel = ""
+                                testModelDropdown = false
+                            })
+                            modelPairs.filter { it.model.isNotBlank() }.forEach { p ->
+                                val label = if (p.computeNode.isNotBlank()) "${p.computeNode} / ${p.model}" else p.model
+                                DropdownMenuItem(text = { Text(label) }, onClick = {
+                                    testModel = p.model
+                                    testModelDropdown = false
                                 })
                             }
                         }
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(value = fallbackInput, onValueChange = {
-                            fallbackInput = it
-                        }, label = {
-                            Text(stringResource(R.string.llm_field_fallback_chain))
-                        }, singleLine = true, modifier = Modifier.weight(1f))
-                        TextButton(onClick = {
-                            if (fallbackInput.isNotBlank()) {
-                                fallbackChain.add(fallbackInput.trim())
-                                fallbackInput = ""
+                    TextButton(
+                        enabled = !testing,
+                        onClick = {
+                            val editName = existing?.name
+                            if (editName == null) {
+                                testStatus = saveFirstMsg to 0
+                                return@TextButton
                             }
-                        }) { Text("+") }
-                    }
+                            testing = true
+                            testStatus = testingMsg to 0
+                            scope.launch {
+                                val transport = resolveActiveTransport()
+                                val result =
+                                    transport?.testLlmJson(editName, testModel.ifBlank { null })
+                                        ?: Result.failure(IllegalStateException("No server"))
+                                testing = false
+                                testStatus =
+                                    result.fold(
+                                        onSuccess = { o ->
+                                            val text =
+                                                (o["text"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                                                    ?: o.toString().take(160)
+                                            "✓ " + text.take(160).ifEmpty { "OK" } to 1
+                                        },
+                                        onFailure = { e -> "✕ " + (e.message ?: "Test failed").take(240) to 2 },
+                                    )
+                            }
+                        },
+                    ) { Text(stringResource(R.string.llm_test_btn)) }
                 }
             }
         },
         confirmButton = {
-            val saveEnabled =
-                name.isNotBlank() &&
-                    when {
-                        isNodeBased && !isAutoAdd -> modelPairs.isNotEmpty() && modelPairs.all { it.model.isNotBlank() }
-                        isNodeBased && isAutoAdd -> true
-                        else -> singleModel.isNotBlank()
-                    }
             TextButton(
                 onClick = {
-                    val commonFields = { base: LlmRegistryEntryDto ->
-                        base.copy(
+                    val cleanModels =
+                        modelPairs.filter { it.model.isNotBlank() }.map { p ->
+                            LlmModelPairDto(if (isSaas) "" else p.computeNode, p.model.trim())
+                        }
+                    val dto =
+                        LlmRegistryEntryDto(
+                            name = if (isEdit) existing!!.name else name.trim(),
+                            kind = kind,
+                            computeNodes = if (isSaas) emptyList() else selectedNodes.toList(),
+                            model = cleanModels.firstOrNull()?.model.orEmpty(),
+                            models = cleanModels,
+                            enabled = existing?.enabled ?: true,
+                            pretestEnabled = existing?.pretestEnabled ?: false,
+                            autoAddModels = !isSaas && autoAdd,
                             apiKeyRef = apiKeyRef.trim().ifBlank { existingKey.takeIf { existingLiteralKey } },
-                            timeout = timeout.trim().toIntOrNull(),
+                            timeoutSeconds = timeout.trim().toIntOrNull(),
+                            maxInflight = maxInflight.trim().toIntOrNull(),
                             tags = tags.toList().ifEmpty { null },
                             binary = if (isSessionBackend) binary.trim().ifBlank { null } else null,
                             consoleCols = if (isSessionBackend) consoleCols.trim().toIntOrNull() else null,
@@ -1224,41 +1173,14 @@ private fun LlmRegistryDialog(
                             channelEnabled = if (isClaudeCode) channelEnabled else null,
                             autoAcceptDisclaimer = if (isClaudeCode) autoAcceptDisclaimer else null,
                             permissionMode = if (isClaudeCode) permissionMode.ifBlank { null } else null,
-                            defaultEffort = if (isNodeBased || isClaudeCode) defaultEffort.ifBlank { null } else null,
+                            defaultEffort = if (isClaudeCode) defaultEffort.ifBlank { null } else null,
                             fallbackChain = if (isClaudeCode) fallbackChain.toList().ifEmpty { null } else null,
                         )
-                    }
-                    val dto =
-                        if (isNodeBased) {
-                            commonFields(
-                                LlmRegistryEntryDto(
-                                    name = name.trim(),
-                                    kind = kind,
-                                    computeNode = modelPairs.firstOrNull()?.computeNode ?: "",
-                                    computeNodes = modelPairs.drop(1).map { it.computeNode },
-                                    model = modelPairs.firstOrNull()?.model ?: "",
-                                    models = modelPairs.toList(),
-                                    enabled = existing?.enabled ?: true,
-                                    pretestEnabled = pretestEnabled,
-                                    autoAddModels = isAutoAdd,
-                                ),
-                            )
-                        } else {
-                            commonFields(
-                                LlmRegistryEntryDto(
-                                    name = name.trim(),
-                                    kind = kind,
-                                    computeNode = "",
-                                    model = singleModel.trim(),
-                                    enabled = existing?.enabled ?: true,
-                                    pretestEnabled = pretestEnabled,
-                                ),
-                            )
-                        }
                     onSave(dto)
                 },
-                enabled = saveEnabled,
-            ) { Text(stringResource(R.string.action_save)) }
+                // PWA: only the name is required (add mode).
+                enabled = isEdit || name.isNotBlank(),
+            ) { Text(stringResource(if (isEdit) R.string.action_save else R.string.llm_add_btn)) }
         },
         dismissButton = {
             Row {
