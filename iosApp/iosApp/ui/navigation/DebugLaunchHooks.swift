@@ -10,6 +10,8 @@ import DatawatchShared
 ///   -dwSeedName <name>                display name (default "sandbox")
 ///   -dwTab sessions|alerts|automata|observer|dashboard|settings
 ///   -dwTheme dark|light|system
+///   -dwOpenSession <id>               open that session (same path as a
+///                                     datawatch://session/<id> link, no OS prompt)
 ///
 /// Values come from the `xcrun simctl launch` command line only; nothing is
 /// stored in the repo.
@@ -46,6 +48,10 @@ enum DebugLaunchHooks {
     }
 
     static var initialTab: AppTab? { arg("-dwTab").flatMap { AppTab(rawValue: $0) } }
+
+    static var openSessionURL: URL? {
+        arg("-dwOpenSession").flatMap { URL(string: "datawatch://session/\($0)") }
+    }
 
     static func applyTheme() {
         if let t = arg("-dwTheme") { UserDefaults.standard.set(t, forKey: "dw.theme") }

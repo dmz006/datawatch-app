@@ -90,6 +90,10 @@ struct RootView: View {
             // Wait for the profile store's first load, then seed (sandbox only).
             for _ in 0..<50 where profileStore.isLoading { try? await Task.sleep(nanoseconds: 100_000_000) }
             DebugLaunchHooks.seedServer(store: profileStore)
+            if let url = DebugLaunchHooks.openSessionURL {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
+            }
         }
         #endif
     }
