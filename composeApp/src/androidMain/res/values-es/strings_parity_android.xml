@@ -33,4 +33,8 @@
     <string name="schedules_edit">Editar programación</string>
     <string name="schedules_edit_command_prompt">Editar comando:</string>
     <string name="schedules_edit_time_prompt">Nueva hora (ISO, o vacío para mantener):</string>
+    <string name="prd_tab_rules">Reglas</string>
+    <string name="prd_rules_help">Comprobación de AGENT.md / reglas del proyecto. Verifica que el spec del autómata y los archivos generados cumplen las reglas definidas por el operador.</string>
+    <string name="rules_run">Ejecutar comprobación de reglas</string>
+    <string name="rules_no_results">Aún no hay resultados de la comprobación de reglas</string>
 </resources>

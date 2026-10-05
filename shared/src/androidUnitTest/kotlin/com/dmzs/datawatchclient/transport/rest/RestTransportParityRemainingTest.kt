@@ -108,4 +108,22 @@ class RestTransportParityRemainingTest {
             server.enqueue(json("""{"ok":true}"""))
             assertFalse(transport.approveGuardrailVerdict("s", "g").getOrThrow())
         }
+
+    @Test
+    fun runPrdRulesCheckPostsAndParsesObject() =
+        runTest {
+            server.enqueue(json("""{"verdict":"pass","violations":[]}"""))
+            val obj = transport.runPrdRulesCheck("prd-1").getOrThrow()
+            assertEquals("\"pass\"", obj["verdict"].toString())
+            val req = server.takeRequest()
+            assertEquals("POST", req.method)
+            assertEquals("/api/autonomous/prds/prd-1/scan/rules", req.path)
+        }
+
+    @Test
+    fun runPrdRulesCheckEmptyBodyIsEmptyObject() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200))
+            assertTrue(transport.runPrdRulesCheck("p").getOrThrow().isEmpty())
+        }
 }

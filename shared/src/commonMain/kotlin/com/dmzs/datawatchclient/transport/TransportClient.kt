@@ -1829,6 +1829,13 @@ public interface TransportClient {
         guardrailName: String,
     ): Result<Boolean> = Result.failure(UnsupportedOperationException("approveGuardrailVerdict"))
 
+    /**
+     * POST /api/autonomous/prds/{id}/scan/rules — AGENT.md / project-rules check
+     * (PWA Rules tab, D24a). Returns the raw result object.
+     */
+    public suspend fun runPrdRulesCheck(prdId: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("runPrdRulesCheck"))
+
     // @@PARITY_ANDROID_IFACE@@
 }
 

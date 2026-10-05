@@ -33,4 +33,8 @@
     <string name="schedules_edit">Zeitplan bearbeiten</string>
     <string name="schedules_edit_command_prompt">Befehl bearbeiten:</string>
     <string name="schedules_edit_time_prompt">Neue Zeit (ISO, leer = beibehalten):</string>
+    <string name="prd_tab_rules">Regeln</string>
+    <string name="prd_rules_help">AGENT.md-/Projektregel-Prüfung. Prüft, ob die Automat-Spec und erzeugte Dateien den vom Betreiber definierten Regeln entsprechen.</string>
+    <string name="rules_run">Regelprüfung ausführen</string>
+    <string name="rules_no_results">Noch keine Ergebnisse der Regelprüfung</string>
 </resources>

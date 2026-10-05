@@ -4120,6 +4120,22 @@ public class RestTransport(
             (obj["session_unblocked"] as? kotlinx.serialization.json.JsonPrimitive)?.content == "true"
         }
 
+    override suspend fun runPrdRulesCheck(prdId: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            val text =
+                client.post("${profile.baseUrl}/api/autonomous/prds/${iosPathPart(prdId)}/scan/rules") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody("{}")
+                }.bodyAsText()
+            if (text.isBlank()) {
+                kotlinx.serialization.json.JsonObject(emptyMap())
+            } else {
+                DefaultJson.parseToJsonElement(text) as? kotlinx.serialization.json.JsonObject
+                    ?: kotlinx.serialization.json.JsonObject(mapOf("result" to DefaultJson.parseToJsonElement(text)))
+            }
+        }
+
     // @@PARITY_ANDROID_REST@@
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }

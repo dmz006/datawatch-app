@@ -33,4 +33,8 @@
     <string name="schedules_edit">スケジュールを編集</string>
     <string name="schedules_edit_command_prompt">コマンドを編集:</string>
     <string name="schedules_edit_time_prompt">新しい時刻（ISO、空欄で現状維持）:</string>
+    <string name="prd_tab_rules">ルール</string>
+    <string name="prd_rules_help">AGENT.md / プロジェクトルールのチェック。オートマトンの仕様と生成されたファイルがオペレーター定義のルールに準拠しているか検証します。</string>
+    <string name="rules_run">ルールチェックを実行</string>
+    <string name="rules_no_results">ルールチェックの結果はまだありません</string>
 </resources>

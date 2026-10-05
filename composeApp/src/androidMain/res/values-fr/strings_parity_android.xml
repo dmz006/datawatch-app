@@ -33,4 +33,8 @@
     <string name="schedules_edit">Modifier la planification</string>
     <string name="schedules_edit_command_prompt">Modifier la commande :</string>
     <string name="schedules_edit_time_prompt">Nouvelle heure (ISO, ou vide pour conserver) :</string>
+    <string name="prd_tab_rules">Règles</string>
+    <string name="prd_rules_help">Vérification AGENT.md / règles du projet. Vérifie que le spec de l’automate et les fichiers produits respectent les règles définies par l’opérateur.</string>
+    <string name="rules_run">Lancer la vérification des règles</string>
+    <string name="rules_no_results">Pas encore de résultats de vérification des règles</string>
 </resources>
