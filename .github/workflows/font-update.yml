@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   update:
@@ -35,5 +36,8 @@ jobs:
           git add composeApp/src/androidMain/assets/xterm/fonts
           git commit -m "chore(fonts): JetBrains Mono $ver (terminal font, D8a)"
           git push -u origin "$branch"
-          gh pr create --title "chore(fonts): JetBrains Mono $ver" \
-            --body "Automated monthly check found a newer upstream JetBrains Mono release (${{ steps.upd.outputs.result }}). Terminal font for Android + iOS (shared xterm assets). Licence: SIL OFL 1.1 (fonts/JetBrainsMono-OFL.txt)."
+          body="Automated monthly check found a newer upstream JetBrains Mono release (${{ steps.upd.outputs.result }}). Terminal font for Android + iOS (shared xterm assets). Licence: SIL OFL 1.1 (fonts/JetBrainsMono-OFL.txt)."
+          # Repo may not allow Actions to open PRs; fall back to an issue linking the branch.
+          gh pr create --title "chore(fonts): JetBrains Mono $ver" --body "$body" \
+            || gh issue create --title "chore(fonts): JetBrains Mono $ver available" \
+                 --body "$body Branch \`$branch\` is ready: https://github.com/${{ github.repository }}/compare/$branch?expand=1"
