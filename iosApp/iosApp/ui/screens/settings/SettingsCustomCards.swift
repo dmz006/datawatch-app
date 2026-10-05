@@ -67,16 +67,16 @@ private struct SettingsServerCustomCard: View {
 // MARK: - Security (iOS: biometric lock)
 
 private struct SettingsSecurityCard: View {
-    @AppStorage("biometricLockEnabled") private var biometricLockEnabled = false
+    @AppStorage(BiometricGate.enabledKey) private var biometricLockEnabled = false
 
     var body: some View {
         List {
             Section {
                 if BiometricGate.isAvailable {
-                    Toggle(isOn: $biometricLockEnabled) {
+                    Toggle(isOn: lockBinding) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L(biometricLabel)).foregroundStyle(DatawatchColors.onSurface)
-                            Text("Require authentication on launch")
+                            Text("Require authentication on launch and when returning to the app")
                                 .font(DatawatchFonts.labelSmall)
                                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                         }
@@ -92,6 +92,21 @@ private struct SettingsSecurityCard: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+    }
+
+    /// Turning the lock on asks for authentication first, so the user proves the
+    /// device can unlock it before the app starts locking on launch/foreground.
+    /// Turning it off is immediate (the app is already unlocked to get here).
+    private var lockBinding: Binding<Bool> {
+        Binding(
+            get: { biometricLockEnabled },
+            set: { on in
+                guard on else { biometricLockEnabled = false; return }
+                BiometricGate.authenticate(reason: L("Enable app lock")) { ok in
+                    biometricLockEnabled = ok
+                }
+            }
+        )
     }
 
     private var biometricLabel: String {
