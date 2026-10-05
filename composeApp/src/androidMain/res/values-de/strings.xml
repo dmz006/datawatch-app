@@ -968,6 +968,7 @@
     <string name="compute_migration_kind_label">Neuer Typ</string>
     <string name="compute_node_enabled_label">Aktiviert</string>
     <string name="compute_node_auto_disabled_reason">Auto-deaktiviert: %s</string>
+    <string name="compute_node_auto">auto</string>
     <string name="compute_node_deprecated_kind">Veralteter Typ: %s — zu ollama oder openai-compat migrieren</string>
     <string name="compute_hardware_section">Hardware</string>
     <string name="compute_hardware_os">Betriebssystem</string>
