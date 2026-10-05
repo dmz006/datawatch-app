@@ -275,10 +275,12 @@ struct ObserverView: View {
     @State private var selectedProfileId: String? = UserDefaults.standard.string(forKey: "dw.active_profile_id")
 
     private var selectedProfile: ServerProfile? {
-        if let id = selectedProfileId {
-            return store.profiles.first(where: { $0.id == id })
+        // D2a: follow the app-wide active server; "All" (Sessions-only) falls
+        // back to the store's first enabled profile.
+        if let id = selectedProfileId, let p = store.profiles.first(where: { $0.id == id }) {
+            return p
         }
-        return store.profiles.first
+        return store.activeProfile
     }
 
     var body: some View {
@@ -339,12 +341,7 @@ struct ObserverView: View {
     @ViewBuilder
     private var profileContent: some View {
         VStack(spacing: 0) {
-            if store.profiles.count > 1 {
-                profilePicker
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(DatawatchColors.surface)
-            }
+            ServerPickerBar()
             if let profile = selectedProfile {
                 observerContent(profile: profile)
             }
@@ -356,18 +353,6 @@ struct ObserverView: View {
         }
     }
 
-    private var profilePicker: some View {
-        Picker("Server", selection: Binding(
-            get: { selectedProfileId ?? store.profiles.first?.id ?? "" },
-            set: { selectedProfileId = $0; store.selectActive($0) }
-        )) {
-            ForEach(store.profiles, id: \.id) { profile in
-                Text(profile.displayName).tag(profile.id)
-            }
-        }
-        .pickerStyle(.segmented)
-        .accessibilityLabel("Select server profile")
-    }
 
     // ── Empty state ───────────────────────────────────────────────────────
 

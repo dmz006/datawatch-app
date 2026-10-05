@@ -144,6 +144,7 @@ struct ObsSubHeader: View {
 
 /// Pulsing green "live" dot (PWA `livePulse 2s`).
 struct ObsLiveDot: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dim = false
 
     var body: some View {
@@ -152,6 +153,8 @@ struct ObsLiveDot: View {
             .frame(width: 7, height: 7)
             .opacity(dim ? 0.35 : 1)
             .onAppear {
+                // Reduce Motion: steady dot, no pulse.
+                guard !reduceMotion else { return }
                 withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { dim = true }
             }
             .accessibilityHidden(true)

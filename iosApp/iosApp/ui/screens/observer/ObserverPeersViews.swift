@@ -133,6 +133,7 @@ struct ObserverPeersBlock: View {
     @State private var metaGroups: [IosMetaGroup]? = nil
     @State private var snapshotPeer: ObsPeerRef? = nil
     @State private var removeTarget: ObsPeerRef? = nil
+    @State private var showCrossHost = false
 
     private var peers: [IosPeerRow] { vm.systems?.peers ?? [] }
 
@@ -148,6 +149,9 @@ struct ObserverPeersBlock: View {
         .task(id: groupByNode) { loadMeta() }
         .sheet(item: $snapshotPeer) { ref in
             PeerSnapshotSheet(profile: profile, name: ref.name)
+        }
+        .sheet(isPresented: $showCrossHost) {
+            CrossHostSheet(profile: profile)
         }
         .peerRemoveAlert(target: $removeTarget, profile: profile, toaster: toaster)
     }
@@ -197,6 +201,18 @@ struct ObserverPeersBlock: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(groupByNode ? DatawatchColors.secondary : DatawatchColors.surface2, in: Capsule())
+            }
+            .buttonStyle(.borderless)
+            // PWA "↔ Cross-host view": local + every peer with cross-peer caller attribution.
+            Button {
+                showCrossHost = true
+            } label: {
+                Text("↔ \(L("Cross-host view"))")
+                    .font(.caption2)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(DatawatchColors.waiting.opacity(0.18), in: Capsule())
             }
             .buttonStyle(.borderless)
         }
