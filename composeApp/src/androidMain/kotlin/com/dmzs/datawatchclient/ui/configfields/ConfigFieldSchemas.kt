@@ -298,6 +298,33 @@ public object ConfigFieldSchemas {
                 ),
         )
 
+    /** PWA `goose` section — Goose (Block) backend. */
+    public val Goose: ConfigSection =
+        ConfigSection(
+            id = "lc_goose",
+            title = "Goose (Block)",
+            fields =
+                listOf(
+                    Toggle("goose.enabled", "Enable Goose backend"),
+                    TextField("goose.binary", "Goose binary path", "goose"),
+                    TextField("goose.provider", "Provider (e.g. anthropic, openai, google)", "anthropic"),
+                    TextField("goose.model", "Model (e.g. claude-sonnet-4-6)", ""),
+                    TextField("goose.api_key_ref", "API key (literal or ${'$'}{secret:name})", "${'$'}{secret:goose-api-key}"),
+                    Toggle("goose.channel_enabled", "MCP channel bridge (connect Goose to this daemon)"),
+                ),
+        )
+
+    /** PWA `opencode` section. */
+    public val OpenCode: ConfigSection =
+        ConfigSection(
+            id = "lc_opencode",
+            title = "OpenCode",
+            fields =
+                listOf(
+                    TextField("opencode.default_model", "Default model (e.g. opencode/big-pickle)", "opencode/big-pickle"),
+                ),
+        )
+
     public val WebSearch: ConfigSection =
         ConfigSection(
             id = "lc_websearch",

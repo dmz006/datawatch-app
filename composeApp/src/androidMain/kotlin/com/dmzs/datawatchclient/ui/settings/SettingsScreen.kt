@@ -365,8 +365,12 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
                                 )
+                                // PWA LLM config order: memory → goose → opencode → web_search → rtk → vision.
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Goose,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.OpenCode,
                                 )
                                 // PWA web_search section (registry-wide toggles) above the providers card.
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
@@ -374,6 +378,9 @@ public fun SettingsScreen(
                                 )
                                 // BL391: replaced single-provider config panel with multi-provider registry card
                                 com.dmzs.datawatchclient.ui.websearch.WebSearchRegistryCard()
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
+                                )
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Vision,
                                 )
