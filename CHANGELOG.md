@@ -8,9 +8,23 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.25.0] — 2026-10-05
+
 ### Fixed (Android + iOS, 2026-10-05)
 - **Session actions on servers whose hostname contains a hyphen**: the session's server-side id was derived by cutting at the first '-', so Stop/Restart/Rename/Delete and deep links (`datawatch://session/<full id>`) missed on hosts like `build-box-2`. The prefix is now taken by removing the `-<id>` suffix.
 - **iOS session card**: the badge row wraps instead of truncating (`⚠ zombie`, `📄 Response`).
+
+### Added (iOS, 2026-10-04)
+- **Alerts and Automata**: an "All" server chip merges every enabled server, with each alert, session and automaton tagged by its server.
+- **Session detail**: guardrail verdicts can be approved when blocked and built-in guardrails run (sast / secrets / deps); "Last 5 events before failure" on the Status tab; log-mode sessions get a coloured log view; Yes / No / Stop chips while a session waits; "?" Channel Commands help.
+- **New Session**: warns when the chosen LLM's backend isn't installed; session templates have a **Use** action that pre-fills the form.
+- **Identity wizard** (🤖 in the Automata header and Settings › Identity), **council settings** and a **🤖 persona wizard**.
+- **Settings**: browse and sync skills from a registry; test and enable/disable remote servers.
+- Launch Automaton wizard links to its help page and to the skills settings; the splash shows "Updated to vX" after an update; empty/error text in Alerts and Automata matches the web UI.
+
+### Changed (Android, 2026-10-04 copy sweep)
+- Sessions list, session detail and Observer text now match the web UI word for word in all languages (state badges uppercase, "⬡ worker", "Input needed", "Tmux"/"Channel" tabs, hooks status, empty/timeline/eBPF/peer messages, Newest/Older log paging); LLM filter chips use the short labels; waiting cards show the short summary inline with ▼/▲.
+- Splash fades into the app (0.6 s), the LLM badge shows the registry name with a border, and the compute-node badge uses the accent colour.
 
 ### Added (Android + iOS, 2026-10-04)
 - **Terminal font**: the session terminal now uses bundled JetBrains Mono (v2.304, SIL OFL), falling back to Roboto Mono/monospace. A monthly workflow opens a PR when a newer upstream release ships.
