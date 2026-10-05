@@ -8,7 +8,6 @@ extension Notification.Name {
 /// In-app jump into a Settings card (PWA `navigate('settings', tab)` /
 /// Android `SettingsNavChannel.request`). The card id is parked in `pending`
 /// so a Settings tab that has not been built yet still opens it on appear.
-@MainActor
 enum SettingsDeepLink {
     static var pending: String? = nil
 
