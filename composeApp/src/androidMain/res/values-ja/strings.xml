@@ -101,7 +101,7 @@
     <string name="dialog_delete_session_body">セッション履歴がサーバーから削除されます。この操作は取り消せません。</string>
 
     <!-- ── Session detail ── -->
-    <string name="session_detail_tab_tmux">tmux</string>
+    <string name="session_detail_tab_tmux">Tmux</string>
     <string name="session_detail_tab_channel">チャンネル</string>
     <string name="session_detail_input_required">入力が必要です</string>
     <string name="session_detail_waiting_reply">セッションが返答を待っています。</string>
@@ -109,7 +109,6 @@
     <string name="session_detail_schedule_reply">返答をスケジュール</string>
     <string name="session_detail_generating">生成中</string>
     <string name="session_detail_no_messages">まだメッセージがありません。セッションの出力を待っています…</string>
-    <string name="session_detail_no_events">まだイベントがありません — 出力のあるセッションを開くと状態遷移、プロンプト、完了が表示されます。</string>
     <string name="session_detail_kill_title">セッションを停止しますか？</string>
     <string name="session_detail_kill_body">サーバー上の tmux セッションを停止します。セッションを再開することはできません。</string>
     <string name="session_detail_delete_title">セッションを削除しますか？</string>
@@ -1043,7 +1042,7 @@
     <string name="automata_confirm_cancel_body">\"%1$s\" をキャンセルしますか？実行が停止され、オートマトンはキャンセル状態に移行します。</string>
     <string name="state_filter_btn_tip">状態 (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
-    <string name="stats_card_host">ホスト</string>
+    <string name="stats_card_host">プロセス統計</string>
     <string name="stats_card_container">コンテナ</string>
     <string name="stats_card_compute_node">計算ノード</string>
     <string name="stats_card_llm">LLM</string>
@@ -1067,7 +1066,7 @@
     <string name="status_card_sprint">スプリント</string>
     <string name="status_card_tests">テスト</string>
     <string name="status_card_git">Git</string>
-    <string name="status_no_focus">アクティブなフォーカスなし</string>
+    <string name="status_no_focus">フックイベント未受信。claude-codeはセッション開始時に自動インストールされます。他のバックエンドはhowtoを参照。</string>
     <string name="status_no_sprint">スプリントデータなし</string>
     <string name="status_no_tests">テストデータなし</string>
     <string name="status_tests_no_signal">テスト信号なし · フックペイロード tests=… 必要</string>
@@ -1081,8 +1080,8 @@
     <string name="voice_cmd_no_session">アクティブなセッションが見つかりません</string>
     <string name="voice_cmd_sent">送信済み</string>
     <string name="status_hooks_alive">フック有効</string>
-    <string name="status_hooks_stale">フック古い</string>
-    <string name="status_hooks_missing">フック未設定</string>
+    <string name="status_hooks_stale">フック停滞</string>
+    <string name="status_hooks_missing">フック未インストール</string>
     <string name="status_idle_since">%1$s前からアイドル</string>
     <string name="status_hook_docs_link">Docs ↗</string>
     <string name="status_llm_more_soon">トークン率・レイテンシ・モデル状態は次回更新で</string>
@@ -1256,4 +1255,18 @@
     <string name="work_queue_delete_title">キューアイテム %1$s を削除しますか?</string>
     <string name="card_collapse">セクションを折りたたむ</string>
     <string name="card_expand">セクションを展開</string>
+    <!-- Parity copy drift (02/03/06 sections, 2026-10-04) -->
+    <string name="session_detail_stats_no_data">observer はこのセッションにプロセスツリーを紐付けていません。主な原因: (1) observer 設定で SessionAttribution が無効、または (2) LLM が observer の入れないコンテナ内で動作中。利用可能な場合はバックエンドレベルの統計にフォールバックします。</string>
+    <string name="sessions_input_needed">入力が必要です</string>
+    <string name="sessions_summary_show">詳細を表示</string>
+    <string name="sessions_summary_collapse">詳細を閉じる</string>
+    <string name="sessions_worker_badge">ワーカー</string>
+    <string name="sessions_worker_badge_desc">コンテナワーカー (エージェント %1$s)</string>
+    <string name="ebpf_no_data">eBPFデータがありません</string>
+    <string name="obs_peer_no_peers">登録済みピアなし</string>
+    <string name="obs_peer_deploy_hint">リモートホストで datawatch-stats --datawatch &lt;url&gt; --name &lt;peer&gt; を実行するか、自律ワーカーを起動してください (自動でピア登録されます)。</string>
+    <string name="obs_peer_no_match">「%1$s」フィルターに一致するピアなし</string>
+    <string name="daemon_log_newest">最新</string>
+    <string name="daemon_log_older">古い</string>
+    <string name="daemon_log_info">%2$d 行中 %1$d 行を表示 (オフセット %3$d)</string>
 </resources>

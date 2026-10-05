@@ -101,7 +101,7 @@
     <string name="dialog_delete_session_body">Die Sitzungshistorie wird vom Server entfernt. Das kann nicht rückgängig gemacht werden.</string>
 
     <!-- ── Session detail ── -->
-    <string name="session_detail_tab_tmux">tmux</string>
+    <string name="session_detail_tab_tmux">Tmux</string>
     <string name="session_detail_tab_channel">Kanal</string>
     <string name="session_detail_input_required">Eingabe erforderlich</string>
     <string name="session_detail_waiting_reply">Sitzung wartet auf eine Antwort.</string>
@@ -109,7 +109,6 @@
     <string name="session_detail_schedule_reply">Antwort planen</string>
     <string name="session_detail_generating">generiert</string>
     <string name="session_detail_no_messages">Noch keine Nachrichten. Warte auf Sitzungsausgabe…</string>
-    <string name="session_detail_no_events">Noch keine Ereignisse — öffne eine Sitzung mit Ausgabe, um Zustandsübergänge, Eingabeaufforderungen und Abschlüsse zu sehen.</string>
     <string name="session_detail_kill_title">Sitzung stoppen?</string>
     <string name="session_detail_kill_body">Dies beendet die tmux-Sitzung auf dem Server. Die Sitzung kann nicht fortgesetzt werden.</string>
     <string name="session_detail_delete_title">Sitzung löschen?</string>
@@ -1043,7 +1042,7 @@
     <string name="automata_confirm_cancel_body">\"%1$s\" abbrechen? Der Lauf wird gestoppt und der Automat wechselt in den Abgebrochen-Status.</string>
     <string name="state_filter_btn_tip">Status (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
-    <string name="stats_card_host">Host</string>
+    <string name="stats_card_host">Prozess-Statistiken</string>
     <string name="stats_card_container">Container</string>
     <string name="stats_card_compute_node">Rechenknoten</string>
     <string name="stats_card_llm">LLM</string>
@@ -1067,13 +1066,13 @@
     <string name="status_card_sprint">Sprint</string>
     <string name="status_card_tests">Tests</string>
     <string name="status_card_git">Git</string>
-    <string name="status_no_focus">Kein aktiver Fokus</string>
+    <string name="status_no_focus">Noch keine Hook-Events. Hooks werden bei Sitzungsstart automatisch für claude-code installiert; für andere Backends siehe Howto.</string>
     <string name="status_no_sprint">Keine Sprint-Daten</string>
     <string name="status_no_tests">Keine Testdaten</string>
     <string name="status_tests_no_signal">Kein Testsignal · Hook-Payload tests=… erwartet</string>
     <string name="status_no_git">Keine Git-Daten</string>
     <string name="status_git_no_state">Kein Git-Status · Hook-Payload git=… erwartet</string>
-    <string name="stats_card_host_with_backend">Backend-Stats — %1$s</string>
+    <string name="stats_card_host_with_backend">Backend-Statistiken — %1$s</string>
     <string name="voice_cmd_confirm_title">An datawatch senden?</string>
     <string name="voice_cmd_confirm_send">Senden</string>
     <string name="voice_cmd_confirm_cancel">Abbrechen</string>
@@ -1082,7 +1081,7 @@
     <string name="voice_cmd_sent">Gesendet</string>
     <string name="status_hooks_alive">Hooks aktiv</string>
     <string name="status_hooks_stale">Hooks veraltet</string>
-    <string name="status_hooks_missing">Hooks fehlen</string>
+    <string name="status_hooks_missing">keine Hooks installiert</string>
     <string name="status_idle_since">Inaktiv seit %1$s</string>
     <string name="status_hook_docs_link">Docs ↗</string>
     <string name="status_llm_more_soon">Token-Rate · Latenz · Modellzustand im nächsten Update</string>
@@ -1256,4 +1255,18 @@
     <string name="work_queue_delete_title">Warteschlangeneintrag %1$s löschen?</string>
     <string name="card_collapse">Abschnitt einklappen</string>
     <string name="card_expand">Abschnitt ausklappen</string>
+    <!-- Parity copy drift (02/03/06 sections, 2026-10-04) -->
+    <string name="session_detail_stats_no_data">Der Observer hat dieser Sitzung keinen Prozessbaum zugeordnet. Häufigste Ursachen: (1) SessionAttribution ist in der Observer-Konfiguration deaktiviert, oder (2) der LLM läuft in einem Container, in den der Observer nicht eintreten kann. Fallback auf Backend-Statistiken, wenn verfügbar.</string>
+    <string name="sessions_input_needed">Eingabe erforderlich</string>
+    <string name="sessions_summary_show">Details anzeigen</string>
+    <string name="sessions_summary_collapse">Details einklappen</string>
+    <string name="sessions_worker_badge">Worker</string>
+    <string name="sessions_worker_badge_desc">Container-Worker (Agent %1$s)</string>
+    <string name="ebpf_no_data">Keine eBPF-Daten verfügbar</string>
+    <string name="obs_peer_no_peers">Keine Peers registriert</string>
+    <string name="obs_peer_deploy_hint">datawatch-stats --datawatch &lt;url&gt; --name &lt;peer&gt; auf einem entfernten Host ausführen oder einen autonomen Worker starten (er registriert sich automatisch als Peer).</string>
+    <string name="obs_peer_no_match">keine Peers für den Filter „%1$s“</string>
+    <string name="daemon_log_newest">Neueste</string>
+    <string name="daemon_log_older">Älter</string>
+    <string name="daemon_log_info">%1$d von %2$d Zeilen (Offset %3$d)</string>
 </resources>

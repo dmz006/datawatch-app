@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -37,28 +38,28 @@ public fun EBpfNetworkCard(vm: StatsViewModel = viewModel()) {
 
     val stats = state.stats ?: return
 
-    // When eBPF is configured but probes aren't active (server-side issue),
-    // show a placeholder rather than vanishing — so the user knows why data is missing.
-    if (!stats.ebpfActive) {
-        if (stats.ebpfEnabled == true) {
-            Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network), docsAnchor = "ebpf-per-process-net") {
-                Text(
-                    text = stringResource(R.string.stats_ebpf_configured_not_active),
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+    val rows =
+        if (!stats.ebpfActive) {
+            emptyList()
+        } else {
+            stats.envelopes
+                .filter { it.netRxBps > 0 || it.netTxBps > 0 }
+                .sortedByDescending { it.netRxBps + it.netTxBps }
+        }
+
+    // PWA loadEBPFNetworkTraffic: the card always renders; with no
+    // per-process data it shows `ebpf_no_data` ("No eBPF data available").
+    if (rows.isEmpty()) {
+        Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network), docsAnchor = "ebpf-per-process-net") {
+            Text(
+                text = stringResource(R.string.ebpf_no_data),
+                modifier = Modifier.fillMaxWidth().padding(8.dp).alpha(0.7f),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         return
     }
-
-    val rows =
-        stats.envelopes
-            .filter { it.netRxBps > 0 || it.netTxBps > 0 }
-            .sortedByDescending { it.netRxBps + it.netTxBps }
-
-    if (rows.isEmpty()) return
 
     Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network), docsAnchor = "ebpf-per-process-net") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
