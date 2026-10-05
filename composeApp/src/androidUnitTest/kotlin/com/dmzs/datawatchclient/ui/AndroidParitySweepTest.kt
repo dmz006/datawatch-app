@@ -86,10 +86,9 @@ class AndroidParitySweepTest {
 
     @Test
     fun `chat bubbles use the PWA chat palette`() {
-        val role = com.dmzs.datawatchclient.domain.SessionEvent.ChatMessage.Role
-        val user = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(role.User)
-        val ai = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(role.Assistant)
-        val sys = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(role.System)
+        val user = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(com.dmzs.datawatchclient.domain.SessionEvent.ChatMessage.Role.User)
+        val ai = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(com.dmzs.datawatchclient.domain.SessionEvent.ChatMessage.Role.Assistant)
+        val sys = com.dmzs.datawatchclient.ui.sessions.chatBubbleStyle(com.dmzs.datawatchclient.domain.SessionEvent.ChatMessage.Role.System)
         assertEquals(androidx.compose.ui.graphics.Color(0xFF3B82F6), user.avatarBg)
         assertEquals(androidx.compose.ui.graphics.Color(0xFF10B981), ai.avatarBg)
         assertEquals(androidx.compose.ui.graphics.Color(0xFF64748B), sys.avatarBg)
