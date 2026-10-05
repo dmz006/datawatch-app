@@ -25,6 +25,15 @@ struct PrdLifecycleStrip: View {
     private enum Look { case idle, done, current, clickable, danger, warn, rejected, faded }
 
     var body: some View {
+        if prd.isTemplate {
+            // PWA renderLifecycleStrip: template automata get a single Instantiate step.
+            step("Instantiate", .clickable, action: "instantiate")
+        } else {
+            strip
+        }
+    }
+
+    private var strip: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(L(hint).uppercased())
                 .font(.system(size: 11, weight: .semibold))
