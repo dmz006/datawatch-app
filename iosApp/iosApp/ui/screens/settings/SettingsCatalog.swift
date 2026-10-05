@@ -66,6 +66,7 @@ enum SettingsCustomCard {
     case alertRules, savedCommands, outputFilters
     case identity, automataTypes, pipelineManager, orchestratorGraphs, algorithmMode
     case about, apiLinks, mcpTools, mcpChannel, subsystemReload, encryption
+    case exitHooks, workQueue
 }
 
 /// Add-entry form spec for list cards (keys map to `IosSettingsLists.create`).
@@ -74,6 +75,7 @@ struct SettingsAddField: Identifiable {
     let label: String
     var secure: Bool = false
     var placeholder: String = ""
+    var multiline: Bool = false
     var id: String { key }
 }
 
@@ -204,7 +206,9 @@ enum SettingsCatalog {
         .list("tooling", "Backend Artifact Lifecycle", "shippingbox", kind: "tooling"),
         .custom("docs_search", "Docs Search", "magnifyingglass", .docsSearch),
         .list("file_service", "File Service", "folder", kind: "file_service"),
-        .list("discussion_scopes", "Discussion Scopes", "bubble.left.and.bubble.right", kind: "discussions"),
+        .list("discussion_scopes", "Discussion Scopes", "bubble.left.and.bubble.right", kind: "discussions", add: [
+            SettingsAddField(key: "id", label: "Scope ID", placeholder: "e.g. design-review"),
+        ]),
         // iOS additions (decisions D79a / platform security)
         .custom("security", "Security", "lock", .security),
         .custom("config_viewer", "Config Viewer", "doc.text.magnifyingglass", .configViewer),
@@ -235,7 +239,13 @@ enum SettingsCatalog {
             SettingsAddField(key: "url", label: "URL", placeholder: "https://host:8443"),
             SettingsAddField(key: "token", label: "Token (optional)", secure: true),
         ]),
-        .list("fedpeers", "Federation Peers", "person.3", kind: "fed_peers"),
+        .list("fedpeers", "Federation Peers", "person.3", kind: "fed_peers", add: [
+            SettingsAddField(key: "name", label: "Name", placeholder: "peer-alpha"),
+            SettingsAddField(key: "url", label: "URL", placeholder: "http://198.51.100.2:8080"),
+            SettingsAddField(key: "token", label: "Token", secure: true, placeholder: "(optional bearer token)"),
+            SettingsAddField(key: "capabilities", label: "Capabilities", placeholder: "federation-peer…"),
+            SettingsAddField(key: "channel_identity", label: "Channel Identity", placeholder: "channel-id-or-pattern"),
+        ]),
         .custom("backends", "Communication Configuration", "antenna.radiowaves.left.and.right", .commBackends),
         .config("cc_websrv", "Web Server", "globe", [
             .toggle("server.enabled", "Enabled"),
@@ -271,7 +281,11 @@ enum SettingsCatalog {
             SettingsAddField(key: "backend", label: "Backend"),
             SettingsAddField(key: "description", label: "Description"),
         ]),
-        .list("channel_routing", "Channel Routing", "arrow.left.arrow.right", kind: "channel_routing"),
+        .list("channel_routing", "Channel Routing", "arrow.left.arrow.right", kind: "channel_routing", add: [
+            SettingsAddField(key: "channel_pattern", label: "Channel pattern"),
+            SettingsAddField(key: "peer_name", label: "Peer name"),
+            SettingsAddField(key: "automata_type", label: "Automata type"),
+        ]),
         .custom("push_notifications", "Push Notifications", "app.badge", .push),
     ]
 
@@ -357,7 +371,16 @@ enum SettingsCatalog {
             .text("vision.default_prompt", "Default prompt (overrides built-in)", "Describe this image concisely."),
             .number("vision.max_image_bytes", "Max image size bytes (0 = 10 MB)", "0"),
         ]),
-        .list("websearch_providers", "Web Search Providers", "list.bullet.rectangle", kind: "web_search_providers"),
+        .list("websearch_providers", "Web Search Providers", "list.bullet.rectangle", kind: "web_search_providers", add: [
+            SettingsAddField(key: "name", label: "Name"),
+            SettingsAddField(key: "type", label: "Type", placeholder: "searxng / brave"),
+            SettingsAddField(key: "url", label: "SearXNG URL", placeholder: "http://localhost:8888"),
+            SettingsAddField(key: "engine", label: "Engine"),
+            SettingsAddField(key: "api_key", label: "API key", secure: true, placeholder: "literal or ${secret:name}"),
+            SettingsAddField(key: "num_results", label: "Default results", placeholder: "10"),
+            SettingsAddField(key: "priority", label: "Priority", placeholder: "0"),
+            SettingsAddField(key: "cache_ttl_seconds", label: "Cache TTL (seconds)", placeholder: "0"),
+        ]),
         .list("secrets_store", "Secrets Store", "lock.shield", kind: "secrets", add: [
             SettingsAddField(key: "name", label: "Name"),
             SettingsAddField(key: "value", label: "Value", secure: true),
@@ -377,6 +400,9 @@ enum SettingsCatalog {
             .number("detection.alert_repeat", "Alert repeat (sec)", "300"),
         ]),
         .custom("filters", "Output Filters", "line.3.horizontal.decrease.circle", .outputFilters),
+        // PWA _cardOrder compute: exit_hooks 215, Work Queue follows in DOM order.
+        .custom("exit_hooks", "Exit Hooks", "arrow.uturn.backward.circle", .exitHooks),
+        .custom("work_queue", "Work Queue", "tray.full", .workQueue),
     ]
 
     // MARK: Automata
@@ -385,7 +411,11 @@ enum SettingsCatalog {
         .custom("identity", "Identity", "person.text.rectangle", .identity),
         .custom("algorithm", "Algorithm Mode", "dial.medium", .algorithmMode),
         .list("evals", "Evals", "checkmark.seal", kind: "evals"),
-        .list("council", "Council Mode", "person.3.sequence", kind: "council_personas"),
+        .list("council", "Council Mode", "person.3.sequence", kind: "council_personas", add: [
+            SettingsAddField(key: "name", label: "Name"),
+            SettingsAddField(key: "description", label: "Description"),
+            SettingsAddField(key: "prompt", label: "System prompt", multiline: true),
+        ]),
         .config("gc_autonomous", "Autonomous Automata planning", "wand.and.stars", [
             .toggle("autonomous.enabled", "Enable autonomous loop"),
             .number("autonomous.poll_interval_seconds", "Poll interval (sec)", "30"),
@@ -432,7 +462,12 @@ enum SettingsCatalog {
             .number("autonomous.max_parallel_tasks", "Max parallel tasks", "3"),
             .number("autonomous.auto_fix_retries", "Auto-fix retries", "0"),
         ], extra: .scanDefaults),
-        .list("automata_guardrail_profiles", "Guardrail Profiles", "shield.checkered", kind: "guardrail_profiles"),
+        .list("automata_guardrail_profiles", "Guardrail Profiles", "shield.checkered", kind: "guardrail_profiles", add: [
+            SettingsAddField(key: "name", label: "Name"),
+            SettingsAddField(key: "guardrails", label: "Guardrails (comma-separated)", placeholder: "rules, security"),
+            SettingsAddField(key: "block_on", label: "Block on (comma-separated)"),
+            SettingsAddField(key: "warn_on", label: "Warn on (comma-separated)"),
+        ]),
         .list("automata_skills", "Skill Registries", "books.vertical", kind: "skill_registries", add: [
             SettingsAddField(key: "name", label: "Name"),
             SettingsAddField(key: "url", label: "Git URL"),
