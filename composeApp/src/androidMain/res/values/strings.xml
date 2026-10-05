@@ -1127,6 +1127,7 @@
     <string name="compute_migration_kind_label">New kind</string>
     <string name="compute_node_enabled_label">Enabled</string>
     <string name="compute_node_auto_disabled_reason">Auto-disabled: %s</string>
+    <string name="compute_node_auto">auto</string>
     <string name="compute_node_deprecated_kind">Deprecated kind: %s — migrate to ollama or openai-compat</string>
     <string name="compute_hardware_section">Hardware</string>
     <string name="compute_hardware_os">OS</string>

@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.compute
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,10 +49,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
@@ -299,8 +302,13 @@ private fun ComputeNodeRow(
     onDelete: () -> Unit,
     onToggleEnabled: (Boolean) -> Unit,
 ) {
+    // PWA dims a disabled node's whole row (opacity .55).
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .alpha(if (node.enabled) 1f else 0.55f)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -310,22 +318,48 @@ private fun ComputeNodeRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(node.name, fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodyMedium)
+                // PWA `auto` pill (auto_created nodes).
+                if (node.autoCreated) {
+                    Text(
+                        stringResource(R.string.compute_node_auto),
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier =
+                            Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                ).padding(horizontal = 5.dp, vertical = 1.dp),
+                    )
+                }
                 AssistChip(
                     onClick = {},
-                    label = { Text(node.kind, style = MaterialTheme.typography.labelSmall) },
+                    label = {
+                        // PWA flags legacy Kind values inline: "<kind> ⚠" in error red.
+                        val deprecated = isDeprecatedComputeKind(node.kind)
+                        Text(
+                            if (deprecated) node.kind + " ⚠" else node.kind,
+                            style = MaterialTheme.typography.labelSmall,
+                            color =
+                                if (deprecated) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                },
+                        )
+                    },
                     colors =
                         AssistChipDefaults.assistChipColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
                             labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
                         ),
                 )
-                if ((node.declaredCapacity?.gpus ?: 1) > 1) {
-                    Text(
-                        "×${node.declaredCapacity?.gpus ?: 1}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                // PWA `cap=<declared_capacity.max_concurrent_models>`.
+                Text(
+                    computeNodeCapLabel(node),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 // Auto-disabled badge
                 if (!node.enabled && node.disabledReason != null) {
                     Badge(containerColor = MaterialTheme.colorScheme.error) {
@@ -1021,3 +1055,11 @@ private fun OllamaTagRow(
         }
     }
 }
+
+/** PWA compute row: legacy Kind values flagged with ⚠ (see the migration banner). */
+internal fun isDeprecatedComputeKind(kind: String): Boolean =
+    kind in setOf("local", "remote", "ssh", "docker", "k8s", "remote-proxy")
+
+/** PWA compute row `cap=` label: declared max concurrent models, "—" when undeclared. */
+internal fun computeNodeCapLabel(node: ComputeNodeDto): String =
+    "cap=" + (node.declaredCapacity?.maxConcurrentModels?.takeIf { it > 0 }?.toString() ?: "—")

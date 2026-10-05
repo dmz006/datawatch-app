@@ -968,6 +968,7 @@
     <string name="compute_migration_kind_label">新しいKind</string>
     <string name="compute_node_enabled_label">有効</string>
     <string name="compute_node_auto_disabled_reason">自動無効化: %s</string>
+    <string name="compute_node_auto">自動</string>
     <string name="compute_node_deprecated_kind">非推奨のKind: %s — ollama または openai-compat に移行してください</string>
     <string name="compute_hardware_section">ハードウェア</string>
     <string name="compute_hardware_os">OS</string>

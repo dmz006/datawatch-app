@@ -339,7 +339,13 @@ struct SessionsView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(DatawatchColors.background)
+            .background {
+                // PWA `.sessions-watermark` (favicon eye, opacity .045).
+                ZStack {
+                    DatawatchColors.background
+                    DatawatchWatermark()
+                }
+            }
             .refreshable { viewModel.refresh() }
             .safeAreaInset(edge: .bottom) { Color.clear.frame(height: selectMode ? 56 : 0) }
         }

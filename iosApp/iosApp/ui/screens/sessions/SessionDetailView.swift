@@ -58,6 +58,9 @@ struct SessionDetailView: View {
     @State private var showSchedule = false
     @State private var scheduleReload = 0
     @State private var photoItem: PhotosPickerItem? = nil
+    /// PWA 📷 "Attach image or take photo" (Android gallery / camera sheet).
+    @State private var showPhotoLibrary = false
+    @State private var showCamera = false
     /// nil = idle; "uploading" or "✓ <name>" for the composer banner (PWA _composerBanner).
     @State private var imageBanner: String? = nil
     /// PWA dismissConnBanner — "use tmux only".
@@ -129,6 +132,14 @@ struct SessionDetailView: View {
         .onChange(of: photoItem) { item in
             guard let item else { return }
             attachImage(item)
+        }
+        .photosPicker(isPresented: $showPhotoLibrary, selection: $photoItem, matching: .images)
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker { image in
+                showCamera = false
+                if let image { attachCapturedImage(image) }
+            }
+            .ignoresSafeArea()
         }
         .onChange(of: detailTab) { tab in savedDetailTab = tab }
         .onAppear(perform: onAppear)
@@ -574,6 +585,16 @@ struct SessionDetailView: View {
 
     // ── Image attach (PWA sessionImageInput → [image:<path>]) ─────────────
 
+    /// Camera capture → same upload path as a library pick.
+    private func attachCapturedImage(_ image: UIImage) {
+        guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
+            AlertDock.shared.post(L("Couldn't read that image."), level: .error)
+            return
+        }
+        imageBanner = "uploading"
+        uploadJPEG(jpeg, name: "camera_\(Int(Date().timeIntervalSince1970)).jpg")
+    }
+
     private func attachImage(_ item: PhotosPickerItem) {
         imageBanner = "uploading"
         Task {
@@ -586,26 +607,31 @@ struct SessionDetailView: View {
                 }
                 return
             }
-            let name = "photo_\(Int(Date().timeIntervalSince1970)).jpg"
-            IosServiceLocator.shared.uploadImageData(
-                profile: profile, imageData: jpeg, fileName: name, mimeType: "image/jpeg",
-                onSuccess: { path in
-                    DispatchQueue.main.async {
-                        let trimmed = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
-                        replyText = (trimmed.isEmpty ? "" : trimmed + "\n") + "[image:\(path)]"
-                        imageBanner = "✓ \(name)"
-                        photoItem = nil
-                    }
-                },
-                onError: { msg in
-                    DispatchQueue.main.async {
-                        imageBanner = nil
-                        photoItem = nil
-                        AlertDock.shared.post(msg, level: .error)
-                    }
-                }
-            )
+            await MainActor.run {
+                uploadJPEG(jpeg, name: "photo_\(Int(Date().timeIntervalSince1970)).jpg")
+            }
         }
+    }
+
+    private func uploadJPEG(_ jpeg: Data, name: String) {
+        IosServiceLocator.shared.uploadImageData(
+            profile: profile, imageData: jpeg, fileName: name, mimeType: "image/jpeg",
+            onSuccess: { path in
+                DispatchQueue.main.async {
+                    let trimmed = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    replyText = (trimmed.isEmpty ? "" : trimmed + "\n") + "[image:\(path)]"
+                    imageBanner = "✓ \(name)"
+                    photoItem = nil
+                }
+            },
+            onError: { msg in
+                DispatchQueue.main.async {
+                    imageBanner = nil
+                    photoItem = nil
+                    AlertDock.shared.post(msg, level: .error)
+                }
+            }
+        )
     }
 
     // ── Scroll mode (PWA toggleScrollMode / scrollPage / exitScrollMode) ─
@@ -817,17 +843,32 @@ struct SessionDetailView: View {
         }
     }
 
+    /// PWA 📷 "Attach image or take photo": gallery or camera (Android
+    /// image-source sheet: "Choose from gallery" / "Take a photo").
+    private var imageAttachMenu: some View {
+        Menu {
+            Button { showPhotoLibrary = true } label: {
+                Label("Choose from gallery", systemImage: "photo.on.rectangle")
+            }
+            if CameraPicker.isAvailable {
+                Button { showCamera = true } label: {
+                    Label("Take a photo", systemImage: "camera")
+                }
+            }
+        } label: {
+            Image(systemName: "camera").foregroundStyle(DatawatchColors.onSurfaceMuted)
+        }
+        .disabled(imageBanner == "uploading")
+        .accessibilityLabel("Attach image or take photo")
+    }
+
     private var composerInputRow: some View {
         HStack(spacing: 8) {
             Button { showSchedule = true } label: {
                 Image(systemName: "clock.badge").foregroundStyle(DatawatchColors.onSurfaceMuted)
             }
             .accessibilityLabel("Schedule input")
-            PhotosPicker(selection: $photoItem, matching: .images) {
-                Image(systemName: "camera").foregroundStyle(DatawatchColors.onSurfaceMuted)
-            }
-            .disabled(imageBanner == "uploading")
-            .accessibilityLabel("Attach image")
+            imageAttachMenu
             TextField(L(composerPlaceholder), text: $replyText)
                 .disabled(isTranscribing || awaitingConnection)
                 .font(DatawatchFonts.bodyMedium)
