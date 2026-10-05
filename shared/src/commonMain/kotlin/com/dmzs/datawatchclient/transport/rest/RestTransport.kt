@@ -4402,6 +4402,24 @@ public class RestTransport(
             }
         }
 
+    // ---- Automata tab gating (2026-10-05) ----
+
+    override suspend fun fetchAutonomousEnabled(): Result<Boolean> {
+        val live =
+            request {
+                val obj: kotlinx.serialization.json.JsonObject =
+                    client.get("${profile.baseUrl}/api/autonomous/config") {
+                        bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    }.body()
+                (obj["enabled"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.lowercase() == "true"
+            }
+        if (live.isSuccess) return live
+        return fetchConfig().map { cfg ->
+            val auto = cfg.raw["autonomous"] as? kotlinx.serialization.json.JsonObject
+            (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)?.content?.lowercase() == "true"
+        }
+    }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

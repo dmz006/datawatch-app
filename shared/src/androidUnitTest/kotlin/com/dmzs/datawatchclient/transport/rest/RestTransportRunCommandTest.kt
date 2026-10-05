@@ -67,4 +67,15 @@ class RestTransportRunCommandTest {
             server.enqueue(MockResponse().setResponseCode(500))
             assertTrue(transport.runCommand("sendkey x: Escape").isFailure)
         }
+
+    @Test
+    fun `autonomous gating reads the live autonomous config`() =
+        runTest {
+            server.enqueue(
+                MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json")
+                    .setBody("""{"enabled":true,"poll_interval_seconds":30}"""),
+            )
+            assertEquals(true, transport.fetchAutonomousEnabled().getOrThrow())
+            assertEquals("/api/autonomous/config", server.takeRequest().path)
+        }
 }
