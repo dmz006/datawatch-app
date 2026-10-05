@@ -61,4 +61,13 @@
     <string name="restart_now_link">Redémarrer maintenant</string>
     <string name="automata_confirm_cancel_planning">⚠️ La planification est en cours sur le serveur.\n\nAnnuler interrompra tout l\'automate — le plan en cours de génération sera abandonné. La tâche de planification côté serveur peut se poursuivre brièvement avant de s\'arrêter.\n\nAnnuler l\'automate ?</string>
     <string name="observer_no_server">Ajoutez un serveur dans Paramètres pour surveiller les métriques.</string>
+    <string name="prd_story_progress">Progression : %1$d/%2$d tâches · %3$d %%</string>
+    <string name="prd_story_active">⟳ %1$d actives</string>
+    <string name="prd_story_touched">✅ Modifiés :</string>
+    <string name="prd_story_touched_more">+%1$d de plus</string>
+    <string name="prd_story_session_link">→ Session</string>
+    <string name="prd_settings_concurrency_label">Tâches simultanées max (0 = valeur globale)</string>
+    <string name="prd_settings_concurrency_hint">0 ou 1 = séquentiel · 2+ = exécuter les tâches indépendantes en parallèle</string>
+    <string name="automata_detail_concurrency">Concurrence</string>
+    <string name="automata_detail_concurrency_value">%1$d tâches</string>
 </resources>

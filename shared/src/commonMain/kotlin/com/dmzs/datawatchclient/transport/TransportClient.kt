@@ -1970,6 +1970,18 @@ public interface TransportClient {
      */
     public suspend fun getComputeNodeDetailJson(name: String): Result<kotlinx.serialization.json.JsonElement> =
         Result.failure(UnsupportedOperationException("getComputeNodeDetailJson"))
+
+    // ---- Task S: Automaton concurrency (2026-10-05) ----
+
+    /**
+     * POST /api/autonomous/prds/{id}/set_concurrency `{max_concurrent_tasks: n}` —
+     * per-Automaton task concurrency override (PWA prdSettings "Max concurrent
+     * tasks"); 0 = use the global default, 0/1 = sequential.
+     */
+    public suspend fun setPrdConcurrency(
+        prdId: String,
+        maxConcurrentTasks: Int,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("setPrdConcurrency"))
 }
 
 /** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */

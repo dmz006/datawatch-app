@@ -121,6 +121,13 @@ internal fun PrdDepthCreatedMeta(prd: PrdDto) {
         if (prd.depth > 0) {
             PrdMetaLine(stringResource(R.string.automata_detail_depth), prd.depth.toString())
         }
+        // PWA Overview meta: "Concurrency — N tasks" only when > 1 (BL370).
+        if (prd.maxConcurrentTasks > 1) {
+            PrdMetaLine(
+                stringResource(R.string.automata_detail_concurrency),
+                stringResource(R.string.automata_detail_concurrency_value, prd.maxConcurrentTasks),
+            )
+        }
         PrdMetaLine(stringResource(R.string.automata_detail_created), formatPrdDate(prd.createdAt))
     }
 }

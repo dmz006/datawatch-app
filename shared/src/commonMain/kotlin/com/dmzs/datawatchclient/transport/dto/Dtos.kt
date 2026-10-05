@@ -699,6 +699,11 @@ public data class PrdDto(
     /** #191 scope dirs: absolute paths workers may write/read. Empty = project dir only. */
     @SerialName("read_dirs") val readDirs: List<String> = emptyList(),
     @SerialName("write_dirs") val writeDirs: List<String> = emptyList(),
+    /**
+     * BL370 per-Automaton task concurrency override (`max_concurrent_tasks`,
+     * omitempty). 0 = use the global `autonomous.max_concurrent_tasks` default.
+     */
+    @SerialName("max_concurrent_tasks") val maxConcurrentTasks: Int = 0,
     /** #191 scope warnings: true when the plan references paths outside allowed directories. */
     @SerialName("scope_warnings") val scopeWarnings: Boolean = false,
 )

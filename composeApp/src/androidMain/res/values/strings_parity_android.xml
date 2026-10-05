@@ -61,4 +61,13 @@
     <string name="restart_now_link">Restart now</string>
     <string name="automata_confirm_cancel_planning">⚠️ Planning is running on the server.\n\nCancelling will abort the entire automaton — the plan being generated will be discarded. The server-side planning job may continue briefly before stopping.\n\nCancel the automaton?</string>
     <string name="observer_no_server">Add a server in Settings to monitor metrics.</string>
+    <string name="prd_story_progress">Progress: %1$d/%2$d tasks · %3$d%%</string>
+    <string name="prd_story_active">⟳ %1$d active</string>
+    <string name="prd_story_touched">✅ Touched:</string>
+    <string name="prd_story_touched_more">+%1$d more</string>
+    <string name="prd_story_session_link">→ Session</string>
+    <string name="prd_settings_concurrency_label">Max concurrent tasks (0 = global default)</string>
+    <string name="prd_settings_concurrency_hint">0 or 1 = sequential · 2+ = fan out independent tasks in parallel</string>
+    <string name="automata_detail_concurrency">Concurrency</string>
+    <string name="automata_detail_concurrency_value">%1$d tasks</string>
 </resources>

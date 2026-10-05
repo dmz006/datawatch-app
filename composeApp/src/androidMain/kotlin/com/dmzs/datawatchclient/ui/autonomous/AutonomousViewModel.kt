@@ -738,6 +738,19 @@ public class AutonomousViewModel(
         }
     }
 
+    /** BL370 — per-Automaton task concurrency override (PWA prdSettings set_concurrency). */
+    public fun setConcurrency(prdId: String, maxConcurrentTasks: Int) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.setPrdConcurrency(prdId, maxConcurrentTasks).fold(
+                onSuccess = { fetchFullPrd(prdId) },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Set concurrency failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
     public fun setDirs(prdId: String, readDirs: List<String>, writeDirs: List<String>) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
