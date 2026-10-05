@@ -37,4 +37,9 @@
     <string name="prd_rules_help">AGENT.md-/Projektregel-Prüfung. Prüft, ob die Automat-Spec und erzeugte Dateien den vom Betreiber definierten Regeln entsprechen.</string>
     <string name="rules_run">Regelprüfung ausführen</string>
     <string name="rules_no_results">Noch keine Ergebnisse der Regelprüfung</string>
+    <string name="guardrail_no_verdicts">Noch keine Urteile.</string>
+    <string name="guardrail_approve">freigeben</string>
+    <string name="guardrail_run_label">Guardrail ausführen</string>
+    <string name="backend_setup_warn_title">Backend nicht installiert oder konfiguriert</string>
+    <string name="backend_setup_warn_detail">Dieser Server meldet „%1$s“ nicht als installiertes, aktiviertes Backend. Installiere es oder aktiviere es unter Einstellungen › LLM, bevor du startest.</string>
 </resources>

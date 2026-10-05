@@ -37,4 +37,9 @@
     <string name="prd_rules_help">Comprobación de AGENT.md / reglas del proyecto. Verifica que el spec del autómata y los archivos generados cumplen las reglas definidas por el operador.</string>
     <string name="rules_run">Ejecutar comprobación de reglas</string>
     <string name="rules_no_results">Aún no hay resultados de la comprobación de reglas</string>
+    <string name="guardrail_no_verdicts">Aún no hay veredictos.</string>
+    <string name="guardrail_approve">aprobar</string>
+    <string name="guardrail_run_label">Ejecutar guardrail</string>
+    <string name="backend_setup_warn_title">Backend no instalado o no configurado</string>
+    <string name="backend_setup_warn_detail">Este servidor no informa “%1$s” como backend instalado y habilitado. Instálalo o habilítalo en Ajustes › LLM antes de empezar.</string>
 </resources>
