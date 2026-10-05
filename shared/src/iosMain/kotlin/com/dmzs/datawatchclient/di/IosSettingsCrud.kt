@@ -90,9 +90,6 @@ public data class IosKindMigration(
  */
 public object IosSettingsCrud {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val pretty = Json { prettyPrint = true; encodeDefaults = true; explicitNulls = false }
-    private val sensitive = Regex("token|secret|password|api_key|apikey|auth", RegexOption.IGNORE_CASE)
-    private const val MASK: String = "•••"
 
     private fun t(profile: ServerProfile): TransportClient = IosServiceLocator.transportFor(profile)
 
@@ -109,7 +106,7 @@ public object IosSettingsCrud {
                 "channel_routing", "council_personas", "skill_registries",
             )
 
-    /** Kinds edited as a raw JSON document (PWA form ↔ YAML escape hatch). */
+    /** Kinds edited by the profile form + YAML view editor ([IosProfileEditor], PWA renderProfileEditor). */
     public fun isJsonEdited(kind: String): Boolean = kind == "cluster_profiles" || kind == "project_profiles"
 
     /** Kinds whose create goes through [save] (vs. the legacy IosSettingsLists.create). */
@@ -312,87 +309,6 @@ public object IosSettingsCrud {
             else -> throw UnsupportedOperationException("Not supported: $kind")
         }
     }
-
-    // ---- Project / cluster profiles as JSON ----
-
-    /** Profile [name] as pretty JSON with credential values masked as "•••" (empty name → template). */
-    public fun profileJson(
-        profile: ServerProfile,
-        kind: String,
-        name: String,
-        onSuccess: (String) -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        scope.launch {
-            val k: String = kindOf(kind)
-            runCatching {
-                if (name.isEmpty()) {
-                    "{\n  \"name\": \"\",\n  \"description\": \"\"\n}"
-                } else {
-                    val o: JsonObject = t(profile).listKindProfiles(k).getOrThrow().first { it.s("name") == name }
-                    pretty.encodeToString(JsonElement.serializer(), mask(o))
-                }
-            }.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Failed to load.") })
-        }
-    }
-
-    /** Saves edited JSON; masked "•••" values are restored from the stored profile. */
-    public fun saveProfileJson(
-        profile: ServerProfile,
-        kind: String,
-        originalName: String?,
-        json: String,
-        onDone: (String?) -> Unit,
-    ) {
-        scope.launch {
-            val k: String = kindOf(kind)
-            val tr = t(profile)
-            val r: Result<Unit> =
-                runCatching {
-                    val edited: JsonObject =
-                        Json.parseToJsonElement(json) as? JsonObject ?: throw IllegalArgumentException("Profile must be a JSON object")
-                    if (originalName == null) {
-                        tr.createKindProfile(k, edited).getOrThrow()
-                    } else {
-                        val stored: JsonObject = tr.listKindProfiles(k).getOrThrow().firstOrNull { it.s("name") == originalName } ?: JsonObject(emptyMap())
-                        val merged: JsonElement = unmask(edited, stored)
-                        tr.putKindProfile(k, originalName, merged as JsonObject).getOrThrow()
-                    }
-                }
-            onDone(msg(r.exceptionOrNull(), "Save failed."))
-        }
-    }
-
-    private fun kindOf(listKind: String): String = if (listKind == "cluster_profiles") "cluster" else "project"
-
-    private fun mask(el: JsonElement): JsonElement =
-        when (el) {
-            is JsonObject ->
-                JsonObject(
-                    el.mapValues { (k, v) ->
-                        if (sensitive.containsMatchIn(k) && v is JsonPrimitive && v !is JsonNull && v.content.isNotEmpty() && !v.content.startsWith("\${secret:")) {
-                            JsonPrimitive(MASK)
-                        } else {
-                            mask(v)
-                        }
-                    },
-                )
-            is JsonArray -> JsonArray(el.map { mask(it) })
-            else -> el
-        }
-
-    private fun unmask(
-        edited: JsonElement,
-        stored: JsonElement?,
-    ): JsonElement =
-        when {
-            edited is JsonPrimitive && edited.content == MASK && stored != null -> stored
-            edited is JsonObject ->
-                JsonObject(edited.mapValues { (k, v) -> unmask(v, (stored as? JsonObject)?.get(k)) })
-            edited is JsonArray ->
-                JsonArray(edited.mapIndexed { i, v -> unmask(v, (stored as? JsonArray)?.getOrNull(i)) })
-            else -> edited
-        }
 
     // ---- Federation peer ----
 
