@@ -172,6 +172,54 @@ public object IosCouncilSettings {
         }
     }
 
+    /**
+     * 🤖 persona wizard (Android CouncilPersonaWizardSheet): refine one step's
+     * answer with the server LLM. [step] is focus · stance · tone · pushback · examples.
+     */
+    public fun refineStep(
+        profile: ServerProfile,
+        step: String,
+        currentAnswer: String,
+        instruction: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            val req =
+                com.dmzs.datawatchclient.transport.dto.CouncilRefineStepRequest(
+                    step = step,
+                    currentAnswer = currentAnswer,
+                    instruction = instruction,
+                )
+            IosServiceLocator.transportFor(profile).refinePersonaStep(req).fold(
+                onSuccess = { r -> onSuccess(r.refined) },
+                onFailure = { e -> onError(e.message ?: "Refine failed.") },
+            )
+        }
+    }
+
+    /** Create the wizard's persona; [assistBackend] "" = none. `null` on success. */
+    public fun createPersona(
+        profile: ServerProfile,
+        name: String,
+        prompt: String,
+        summary: String,
+        assistBackend: String,
+        onDone: (String?) -> Unit,
+    ) {
+        scope.launch {
+            val dto =
+                com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto(
+                    name = name.trim(),
+                    prompt = prompt.trim(),
+                    description = summary.trim(),
+                    assistBackend = assistBackend.ifBlank { null },
+                )
+            val r = IosServiceLocator.transportFor(profile).createCouncilPersona(dto)
+            onDone(r.exceptionOrNull()?.let { it.message ?: "Save failed." })
+        }
+    }
+
     private fun toIos(c: CouncilConfigDto): IosCouncilConfig =
         IosCouncilConfig(
             commFirehose = c.commFirehose,
