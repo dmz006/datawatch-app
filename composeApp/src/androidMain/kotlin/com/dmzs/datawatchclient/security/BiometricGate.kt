@@ -94,8 +94,32 @@ public class BiometricGate(context: Context) {
         val cipher = runCatching { initGateCipher() }.getOrNull()
         if (cipher == null) {
             // Keystore couldn't provide an auth-bound key (rare OEM Keystore
-            // failure). Fail closed: never fall back to an unbound prompt.
-            onFailure("Biometric unlock is unavailable on this device right now.")
+            // failure). Don't lock the user out of their own app (the lock
+            // toggle lives inside it): fall back to the system prompt that also
+            // accepts the device PIN/pattern — still an OS-verified credential.
+            val fallbackInfo =
+                BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Unlock datawatch")
+                    .setSubtitle("Confirm it's you to open sessions and tokens")
+                    .setAllowedAuthenticators(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                            BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+                    )
+                    .build()
+            val fallback =
+                BiometricPrompt(
+                    activity,
+                    executor,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = onSuccess()
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence,
+                        ) = onFailure(errString.toString())
+                    },
+                )
+            fallback.authenticate(fallbackInfo)
             return
         }
         prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
