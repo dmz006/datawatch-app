@@ -175,7 +175,7 @@ Re-audited 2026-10-04 against current code after the user's decisions (master §
 | string | i18n: all detail copy via `t()` keys; Android 86 string resources | ✓ | ✓ | ✓ SwiftUI literal keys + L() with de/es/fr/ja Localizable.strings (detail strings present) | aligned | | |
 
 ## Coverage
-rows: 118 · aligned: 99 · ios-missing: 0 · android-missing: 0 · pwa-missing: 12 · misaligned: 3 · n/a: 4
+rows: 118 · aligned: 100 · ios-missing: 0 · android-missing: 0 · pwa-missing: 12 · misaligned: 2 · n/a: 4
 
 ## Decisions (resolved 2026-10-04)
 1. Mode badge condition → **D17a** tmux only (PWA rule). Android done; iOS still inverse.
