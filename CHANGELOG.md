@@ -8,6 +8,31 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.27.1] — 2026-10-05
+
+### Fixed
+- **Android voice replies failed when Do Not Disturb or silent mode was on** ("Recording failed: Not allowed to change Do Not Disturb state", shown in the alert dock). Muting the ringer to hide the start beep is now best-effort, and a recorder failure no longer leaves the ringer muted.
+- **Android `datawatch://session/<full id>` links** (and a session restored on launch) opened a screen that never connected. Links now resolve to the session.
+- **Automata list**: an automaton with plan scope warnings could break the list (the field was mis-typed). Both apps now list the warnings in the banner.
+- **LLM edits on Android dropped settings**: the timeout, max in-flight and per-model nodes were sent under the wrong field names and lost on save.
+
+### Added / Changed
+- **Web-app features on both apps:**
+  - **Chat:** collapsible 🧠 thinking blocks and inline images.
+  - **Automata:** story verdict badges; automaton depth, created date and concurrency, with concurrency editable in settings.
+  - **Settings:** 📡 live compute-node detail; LLM "auto" badge.
+- **iOS:**
+  - **Automata:** DAG graph card; ＋ button on the Templates tab.
+  - **Settings:** the four extra Automata settings.
+  - **Alert links:** `datawatch://alert/<id>` focuses that alert.
+  - **Status dot:** follows the live connection.
+- **Android:**
+  - **Alert links:** `datawatch://alert/<id>` opens and focuses the alert.
+  - **Automata:** story progress row and worker-session link.
+  - **LLM form:** matches the web UI field for field.
+- **CI**: CodeQL advanced setup scans Swift, Kotlin and GitHub Actions in one workflow.
+
+
 ## [1.27.0] — 2026-10-05
 
 ### Added (Android + iOS)
