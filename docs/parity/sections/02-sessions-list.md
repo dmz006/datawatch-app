@@ -34,7 +34,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | motion | Pressed/hover feedback (`:active` bg3, .2s transitions) | ✓ C:2247, C:375 | ~ Material ripple | ~ system highlight | n/a | | platform-native |
 | interaction | Tap card → session detail | ✓ P:2490 | ✓ A:423 | ✓ I:641 NavigationLink → SessionDetailView | aligned | | |
 | interaction | Drag-to-reorder; order persisted | ✓ P:2350 HTML5 DnD, `cs_session_order` | ✓ A:1065 long-press drag or immediate drag on the ⋮⋮ handle + reorderMode ↑↓; order persisted | ✓ I:325 `List.onMove` + I:651 context-menu Move up/down; `dw.sessions.order` | aligned | | touch idiom on both apps; iOS long-press drag outside edit mode (unverified) |
-| element | Drag handle ⋮⋮ (opacity .4) | ✓ P:2503, C:2176 | ✓ `SessionDragHandle` ⋮⋮ 14 sp, alpha .4, min 24 dp, last in the title row; dragging it reorders at once (`detectDragGestures`, no long-press / reorder mode) | ~ `SessionCardView` ⋮⋮ 14 pt, opacity .4, last in the header; reorder is still the List `.onMove` press-and-hold drag (UIKit drag needs a hold) | aligned (iOS partial) | operator 2026-10-05: handle on both apps | PWA-M 2026-10-05: Android reorderMode leading DragHandle icon dropped (the handle replaces it) |
+| element | Drag handle ⋮⋮ (opacity .4) | ✓ P:2503, C:2176 | ✓ `SessionDragHandle` ⋮⋮ 14 sp, alpha .4, min 24 dp, last in the title row; dragging it reorders at once (`detectDragGestures`, no long-press / reorder mode) | ~ `SessionCardView` ⋮⋮ 14 pt, opacity .4, last in the header; reorder is still the List `.onMove` press-and-hold drag (UIKit drag needs a hold) | misaligned | operator 2026-10-05: handle on both apps | PWA-M 2026-10-05: Android reorderMode leading DragHandle icon dropped (the handle replaces it) · iOS: handle shown; reorder still press-and-hold (UIKit list drag needs a hold) |
 | interaction | Select mode: checkbox on inactive cards; tap toggles | ✓ P:2486 | ✓ A:1111 Checkbox | ✓ IC:125 checkbox on done cards; I:639 tap toggles | aligned | | |
 | element | Select bar | ✓ P:2141 fixed bottom bar: `☑ All/None (N)` · `🗑 Delete (N)` · Cancel; FAB hidden | ✓ `SessionsSelectBar` bottom bar, same three controls | ✓ I:530 `selectBar` ☑ All/None (N) · 🗑 Delete (N) · Cancel | aligned | decided D15a | |
 | interaction | Bulk delete: confirm → `POST /api/sessions/delete` per id → toast | ✓ P:2298 | ✓ dialog, `deleteMany` | ✓ I:132 confirm alert → I:225 `performBulkDelete` per id | aligned | | iOS reports failures inline, no toast |
@@ -93,7 +93,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Refresh-in-progress spinner in header | ✗ | ✓ A:229 | ✓ I:151 | n/a | | PWA uses header daemon light (§01); no decision |
 
 ## Coverage
-rows: 82 · aligned: 63 · ios-missing: 0 · android-missing: 0 · pwa-missing: 7 · misaligned: 5 · n/a: 7
+rows: 83 · aligned: 63 · ios-missing: 0 · android-missing: 0 · pwa-missing: 7 · misaligned: 6 · n/a: 7
 
 Re-audited 2026-10-04 against current code (iOS commits cdc228c7, 3e04d88e, c682851e, d52892a2; Android 3e6197eb, 85d42058). Two former pwa-missing rows with no decision (REST fallback poll, header refresh spinner) are now n/a.
 
