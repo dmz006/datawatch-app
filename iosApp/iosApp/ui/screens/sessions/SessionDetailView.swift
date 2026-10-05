@@ -1007,6 +1007,8 @@ struct SessionDetailView: View {
                 Text("Recording…")
                     .font(DatawatchFonts.titleMedium)
                     .foregroundStyle(.white)
+                // PWA voice-waveform, driven by the live mic level.
+                VoiceLevelBars(recorder: voiceRecorder)
                 HStack(spacing: 16) {
                     Button("Cancel") {
                         voiceRecorder?.cancel()

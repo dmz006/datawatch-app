@@ -282,6 +282,10 @@ struct SettingsListCardView: View {
             llmInUse = SettingsFormEditItem(id: row.id)
             return
         }
+        if kind == "discussions" && index < row.actions.count && row.actions[index] == "Recall" {
+            recallDiscussion(row.id)
+            return
+        }
         message = L("Working…")
         IosSettingsLists.shared.action(profile: profile, kind: kind, id: row.id, index: Int32(index), onSuccess: { msg in
             DispatchQueue.main.async {
@@ -293,6 +297,17 @@ struct SettingsListCardView: View {
                 message = nil
                 error = msg
             }
+        })
+    }
+
+    /// PWA discussionViewEntries: GET /api/memory/discussion/{id} → "id — N entries" modal.
+    private func recallDiscussion(_ id: String) {
+        IosYamlRecall.shared.discussionRecall(profile: profile, id: id, onSuccess: { entries in
+            let title: String = id + " — " + String(entries.count) + " " + L("entries")
+            let body: String = entries.isEmpty ? L("(no entries)") : entries.joined(separator: "\n\n")
+            DispatchQueue.main.async { detail = SettingsDetailItem(title: title, text: body) }
+        }, onError: { msg in
+            DispatchQueue.main.async { error = msg }
         })
     }
 

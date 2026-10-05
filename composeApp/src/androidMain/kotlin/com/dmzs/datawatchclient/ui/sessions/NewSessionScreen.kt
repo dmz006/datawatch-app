@@ -391,6 +391,7 @@ public fun NewSessionScreen(
             if (taskExpanded) {
                 if (showVoiceDialog) {
                     VoiceRecordingDialog(
+                level = { voiceRecorder?.level() ?: 0f },
                         onCancel = {
                             voiceRecorder?.cancel()
                             voiceRecorder = null

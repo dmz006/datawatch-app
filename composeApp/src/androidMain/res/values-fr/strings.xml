@@ -1056,8 +1056,8 @@
     <string name="stats_field_pid">PID</string>
     <string name="stats_field_net">Réseau</string>
     <string name="stats_field_gpu">GPU</string>
-    <string name="stats_open_compute">Ouvrir dans Compute →</string>
-    <string name="stats_open_llm">Ouvrir dans LLM →</string>
+    <string name="stats_open_compute">Ouvrir Compute Node →</string>
+    <string name="stats_open_llm">Ouvrir LLM →</string>
     <string name="stats_llm_more_soon">Taux de tokens · latence · état du modèle dans la prochaine mise à jour</string>
     <string name="stats_container_id">ID du conteneur</string>
     <string name="stats_container_image">Image</string>
@@ -1292,4 +1292,21 @@
     <string name="council_cancel_btn_label">annuler</string>
     <string name="council_running_label">Conseil en cours…</string>
     <string name="council_personas_count">personas</string>
+    <string name="docs_export_btn">Exporter YAML</string>
+    <string name="docs_export_title">Liste de confiance — YAML pour config.yaml</string>
+    <string name="docs_export_hint">Collez ceci dans le bloc docs_search.trust de votre config.yaml pour que la confiance d\'exécution survive à une réinitialisation.</string>
+    <string name="discussion_recall_btn">Rappeler</string>
+    <string name="discussion_recall_title">%1$s — %2$d entrées</string>
+    <string name="discussion_no_entries">(aucune entrée)</string>
+    <string name="llm_yaml_btn">&lt;/&gt; YAML</string>
+    <string name="llm_yaml_title">Modifier LLM : %1$s</string>
+    <string name="llm_edit_yaml_tip">Modifier le YAML brut — le formulaire se recharge avec les valeurs analysées à l\'enregistrement</string>
+    <string name="llm_yaml_after_save">Éditeur YAML disponible après le premier enregistrement</string>
+    <string name="action_test">Tester</string>
+    <string name="form_edit_testing">Test des valeurs non enregistrées…</string>
+    <string name="form_edit_saving">Enregistrement…</string>
+    <string name="form_edit_test_ok">Test réussi :</string>
+    <string name="form_edit_test_fail">Test échoué :</string>
+    <string name="form_edit_save_fail">Échec de l\'enregistrement :</string>
+    <string name="session_drag_handle">Glisser pour réordonner</string>
 </resources>
