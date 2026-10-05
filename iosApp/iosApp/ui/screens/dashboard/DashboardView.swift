@@ -293,7 +293,7 @@ struct DashboardView: View {
         if let id = selectedProfileId, let p = store.profiles.first(where: { $0.id == id }) {
             return p
         }
-        return store.profiles.first
+        return store.activeProfile
     }
 
     var body: some View {
@@ -326,7 +326,9 @@ struct DashboardView: View {
             DashboardEmptyState()
         } else {
             VStack(spacing: 0) {
-                if store.profiles.count > 1 { profilePicker }
+                // D2a: shared PWA "Server:" chip bar; selection flows back
+                // through store.activeProfileId → onChange → activate().
+                ServerPickerBar()
                 grid
             }
         }
@@ -344,22 +346,6 @@ struct DashboardView: View {
                 ReachabilityDotView(profile: selectedProfile)
             }
         }
-    }
-
-    private var profilePicker: some View {
-        Picker("Server", selection: Binding(
-            get: { selectedProfileId ?? store.profiles.first?.id ?? "" },
-            set: { selectedProfileId = $0; store.selectActive($0); activate() }
-        )) {
-            ForEach(store.profiles, id: \.id) { profile in
-                Text(profile.displayName).tag(profile.id)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(DatawatchColors.surface)
-        .accessibilityLabel("Select server profile")
     }
 
     private var grid: some View {
