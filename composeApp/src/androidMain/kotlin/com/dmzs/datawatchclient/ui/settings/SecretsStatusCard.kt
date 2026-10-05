@@ -108,3 +108,43 @@ public fun SecretsStatusCard() {
         }
     }
 }
+
+/**
+ * Parity D33a — vault status as a compact row inside the Secrets Store card:
+ * backend (local / vault), reachability dot, address + mount, last error.
+ */
+@Composable
+internal fun SecretsVaultStatusRow() {
+    var status by remember { mutableStateOf<SecretsStatusDto?>(null) }
+    LaunchedEffect(Unit) {
+        val (_, transport) = com.dmzs.datawatchclient.ui.common.ProfileResolver.Default.resolve() ?: return@LaunchedEffect
+        transport.getSecretsStatus().onSuccess { status = it }
+    }
+    val s = status ?: return
+    Column(modifier = Modifier.padding(bottom = 6.dp)) {
+        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.vault_status_title) + ": ",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (s.activeBackend == "vault") {
+                Canvas(Modifier.size(8.dp)) {
+                    drawCircle(color = if (s.reachable) Color(0xFF10B981) else Color(0xFFEF4444))
+                }
+                Text(" vault", style = MaterialTheme.typography.labelSmall)
+            } else {
+                Text(stringResource(R.string.vault_backend_local), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        if (s.activeBackend == "vault") {
+            listOfNotNull(s.address, s.mount?.let { "mount: $it" }).forEach {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (!s.reachable) {
+                Text(stringResource(R.string.vault_unreachable), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+            }
+            s.lastError?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error) }
+        }
+    }
+}

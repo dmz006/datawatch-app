@@ -29,7 +29,8 @@ public object ConfigFieldSchemas {
                         options = listOf("info", "debug", "warn", "error"),
                     ),
                     Toggle("server.auto_restart_on_config", "Auto-restart on config save"),
-                    LlmSelect("session.llm_backend", "Default LLM backend"),
+                    // PWA GENERAL_CONFIG_FIELDS 'dw' — session.backend_family.
+                    LlmSelect("session.backend_family", "Default LLM backend"),
                 ),
         )
 
@@ -104,6 +105,27 @@ public object ConfigFieldSchemas {
                     NumberField("autonomous.max_parallel_tasks", "Max parallel tasks", "3"),
                     TextField("autonomous.decomposition_backend", "Decomposition backend (empty = inherit)"),
                     TextField("autonomous.verification_backend", "Verification backend (empty = inherit)"),
+                    TextField("autonomous.verification_model", "Verification model (empty = backend default)"),
+                    // PWA planning / capacity / recursion / guardrail / injection keys.
+                    TextField("autonomous.planning_backend", "Planning backend (empty = inherit)"),
+                    TextField("autonomous.planning_model", "Planning model (empty = backend default)"),
+                    NumberField("autonomous.planning_timeout_seconds", "Planning timeout (sec, 0=effort default)", "0"),
+                    Toggle(
+                        "autonomous.capacity_enabled",
+                        "Capacity-aware admission (wait for free slots instead of failing)",
+                    ),
+                    NumberField("autonomous.capacity_wait_timeout_seconds", "Capacity wait timeout (sec, 0=4h)", "14400"),
+                    NumberField(
+                        "autonomous.capacity_gpu_util_pct",
+                        "Hold tasks while node GPU is above (% util, 0=off)",
+                        "0",
+                    ),
+                    NumberField("autonomous.max_recursion_depth", "Max recursion depth (0 disables spawn-automaton)", "5"),
+                    Toggle("autonomous.auto_approve_children", "Auto-approve spawned child automata"),
+                    TextField("autonomous.per_task_guardrails", "Per-task guardrails (comma-separated)", "rules, security"),
+                    TextField("autonomous.per_story_guardrails", "Per-story guardrails (comma-separated)", "release-readiness"),
+                    Toggle("autonomous.injection_guard", "Prompt injection guard (warn on suspicious specs)"),
+                    Toggle("autonomous.block_on_injection", "Block create when injection phrases detected"),
                     // v0.33.11 — three extra server-writable keys
                     // landed upstream with the #19 fix. Keeps mobile
                     // schema in lockstep with the parent switch.
@@ -204,6 +226,7 @@ public object ConfigFieldSchemas {
                 listOf(
                     Toggle("orchestrator.enabled", "Enable Automata Orchestrator"),
                     TextField("orchestrator.guardrail_backend", "Guardrail LLM backend (empty = inherit)"),
+                    TextField("orchestrator.guardrail_model", "Guardrail model (empty = backend default)"),
                     NumberField("orchestrator.guardrail_timeout_ms", "Guardrail timeout (ms)", "120000"),
                     NumberField("orchestrator.max_parallel_prds", "Max parallel automata", "2"),
                 ),
@@ -216,6 +239,11 @@ public object ConfigFieldSchemas {
             fields =
                 listOf(
                     Toggle("whisper.enabled", "Enable voice transcription"),
+                    Select(
+                        key = "whisper.backend",
+                        label = "Backend",
+                        options = listOf("whisper", "openai", "openai_compat", "openwebui", "ollama"),
+                    ),
                     Select(
                         key = "whisper.model",
                         label = "Whisper model",
@@ -276,10 +304,28 @@ public object ConfigFieldSchemas {
             title = "Web Search",
             fields =
                 listOf(
-                    Toggle("web_search.enabled", "Enable web search (SearXNG)"),
-                    TextField("web_search.url", "SearXNG URL", "http://searxng.example.com:3001"),
-                    TextField("web_search.engine", "Search engine", "bing"),
-                    NumberField("web_search.num_results", "Results per query", "10"),
+                    // PWA BL391: per-provider fields live in the providers card;
+                    // this section holds only the registry-wide keys.
+                    Toggle("web_search.enabled", "Enable web search injection (opencode + goose sessions)"),
+                    Toggle("web_search.cache_enabled", "Internal result cache (reduces paid-API usage)"),
+                    NumberField("web_search.cache_ttl_seconds", "Default cache TTL (seconds)", "900"),
+                ),
+        )
+
+    /** PWA `vision` section — image-attachment descriptions. */
+    public val Vision: ConfigSection =
+        ConfigSection(
+            id = "lc_vision",
+            title = "Vision (Image Descriptions)",
+            fields =
+                listOf(
+                    Toggle("vision.enabled", "Enable vision backend (image attachment descriptions)"),
+                    Select("vision.backend", "Backend", listOf("ollama", "openai", "openai_compat")),
+                    TextField("vision.endpoint", "Endpoint URL", "http://localhost:11434"),
+                    TextField("vision.api_key", "API key (required for openai; literal or ${'$'}{secret:name})", "${'$'}{secret:openai-key}"),
+                    TextField("vision.model", "Model (must be vision-capable)", "llava"),
+                    TextField("vision.default_prompt", "Default prompt (overrides built-in)", "Describe this image concisely."),
+                    NumberField("vision.max_image_bytes", "Max image size bytes (0 = 10 MB)", "0"),
                 ),
         )
 

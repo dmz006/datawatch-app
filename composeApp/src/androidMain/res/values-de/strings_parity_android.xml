@@ -50,4 +50,13 @@
     <string name="ws_history_btn">Verlauf</string>
     <string name="ws_history_title">Websuche-Verlauf</string>
     <string name="ws_history_empty">Noch keine Suchen.</string>
+    <string name="plugins_manager_title">Plugin-Verwaltung</string>
+    <string name="plugins_reload">Plugins neu laden</string>
+    <string name="plugins_native">Nativ</string>
+    <string name="plugins_subprocess">Subprozess</string>
+    <string name="plugins_none_subprocess">keine Subprozess-Plugins installiert</string>
+    <string name="plugins_enable">Aktivieren</string>
+    <string name="plugins_disable">Deaktivieren</string>
+    <string name="restart_required_hint">Neustart erforderlich, um Änderungen zu übernehmen.</string>
+    <string name="restart_now_link">Jetzt neu starten</string>
 </resources>

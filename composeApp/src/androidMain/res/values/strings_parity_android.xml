@@ -50,4 +50,13 @@
     <string name="ws_history_btn">History</string>
     <string name="ws_history_title">Web search history</string>
     <string name="ws_history_empty">No searches yet.</string>
+    <string name="plugins_manager_title">Plugin Manager</string>
+    <string name="plugins_reload">Reload plugins</string>
+    <string name="plugins_native">Native</string>
+    <string name="plugins_subprocess">Subprocess</string>
+    <string name="plugins_none_subprocess">no subprocess plugins installed</string>
+    <string name="plugins_enable">Enable</string>
+    <string name="plugins_disable">Disable</string>
+    <string name="restart_required_hint">Restart required to apply changes.</string>
+    <string name="restart_now_link">Restart now</string>
 </resources>

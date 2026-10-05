@@ -287,8 +287,6 @@ public fun SettingsScreen(
                                 // Pipelines / Autonomous / Orchestrator / Agents →
                                 // Automata tab. Plugins → Plugins tab.
                                 SecurityCard()
-                                // v0.75.0 S6-3 (#82): Vault/Secrets status.
-                                SecretsStatusCard()
                                 ConfigViewerCard()
                                 RawConfigCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
@@ -372,8 +370,15 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
                                 )
+                                // PWA web_search section (registry-wide toggles) above the providers card.
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.WebSearch,
+                                )
                                 // BL391: replaced single-provider config panel with multi-provider registry card
                                 com.dmzs.datawatchclient.ui.websearch.WebSearchRegistryCard()
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Vision,
+                                )
                                 // Container Workers (cfg.agents)
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
@@ -430,6 +435,8 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
                                 )
+                                // PWA BL238 Plugin Manager: installed list + enable/disable + reload.
+                                com.dmzs.datawatchclient.ui.plugins.InstalledPluginsCard()
                                 // v8.1.0 issue #134 — community registry browse + install
                                 com.dmzs.datawatchclient.ui.plugins.CommunityPluginsCard()
                             }
@@ -439,6 +446,7 @@ public fun SettingsScreen(
                                 ThemePickerCard()
                                 com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                                 com.dmzs.datawatchclient.ui.about.McpChannelCard()
+                                com.dmzs.datawatchclient.ui.about.McpToolsCard()
                                 com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
                                 com.dmzs.datawatchclient.ui.ops.SubsystemReloadCard()
                                 com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
@@ -1078,108 +1086,74 @@ private fun SectionWithAction(
 }
 
 /**
- * Inline banner shown above the Settings tab content. Probes the
- * active server's `/api/config` for `server.auto_restart_on_config`:
- *  - **true** → server restarts itself on any PUT /api/config; banner
- *    shows a neutral "Changes auto-apply" note so saves feel trusted.
- *  - **false** → banner turns amber with a prominent "Restart now"
- *    button that hits POST /api/restart. Otherwise users type into
- *    fields, see "Saving…", but their change never activates until
- *    someone manually restarts the daemon (user-reported 2026-04-24).
- *
- * Re-fetches whenever the active profile changes.
+ * Parity D57b — PWA "Restart required to apply changes. Restart now" inline
+ * link (app.js backendRestartHint) instead of a persistent banner. Shown only
+ * after a config save in this session ([com.dmzs.datawatchclient.events.ConfigSaveBus])
+ * on a server with `server.auto_restart_on_config` off.
  */
 @Composable
 private fun RestartNeededBanner(profile: ServerProfile?) {
     var autoRestart by remember { mutableStateOf<Boolean?>(null) }
+    var saved by remember { mutableStateOf(false) }
     var restarting by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(profile?.id) {
         autoRestart = null
+        saved = false
         message = null
         val p = profile ?: return@LaunchedEffect
         ServiceLocator.transportFor(p).fetchConfig().onSuccess { cfg ->
-            val srv =
-                (cfg.raw["server"] as? kotlinx.serialization.json.JsonObject)
-            val flag =
-                srv?.get("auto_restart_on_config") as? kotlinx.serialization.json.JsonPrimitive
-            // JsonPrimitive.content returns "true"/"false" for booleans;
-            // parse defensively since the server may emit either case.
+            val srv = cfg.raw["server"] as? kotlinx.serialization.json.JsonObject
+            val flag = srv?.get("auto_restart_on_config") as? kotlinx.serialization.json.JsonPrimitive
             autoRestart = flag?.content?.lowercase() == "true"
         }
     }
+    LaunchedEffect(Unit) {
+        com.dmzs.datawatchclient.events.ConfigSaveBus.events.collect { saved = true }
+    }
+    if (!restartHintVisible(saved = saved, autoRestart = autoRestart, message = message)) return
 
-    val showAmber = autoRestart == false
-    // v0.42.6 — only show the banner when there's a problem to flag
-    // (auto-restart OFF) or a transient status to show ("Restarting
-    // daemon…"). User direction 2026-04-28: the green
-    // "auto-restarts on save" affirmation was visual noise on every
-    // healthy server.
-    if (!showAmber && message == null) return
-
-    val bg =
-        if (showAmber) {
-            MaterialTheme.colorScheme.errorContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    val fg =
-        if (showAmber) {
-            MaterialTheme.colorScheme.onErrorContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
-
-    androidx.compose.material3.Surface(
-        color = bg,
-        shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+    val warn = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.warning
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Text(
+            message ?: stringResource(R.string.restart_required_hint),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (message == null) warn else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (message == null) {
             Text(
-                message
-                    ?: "⚠ Daemon auto-restart is OFF. Some settings won't take effect until you restart.",
-                style = MaterialTheme.typography.bodySmall,
-                color = fg,
-                modifier = Modifier.weight(1f),
+                stringResource(R.string.restart_now_link),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier =
+                    Modifier
+                        .padding(start = 6.dp)
+                        .clickable(enabled = !restarting) {
+                            val p = profile ?: return@clickable
+                            restarting = true
+                            message = "Restarting daemon…"
+                            scope.launch {
+                                ServiceLocator.transportFor(p).restartDaemon().fold(
+                                    onSuccess = { message = "Restart requested. Give the daemon 5–10 s to come back." },
+                                    onFailure = { err -> message = "Restart failed — ${err.message ?: err::class.simpleName}" },
+                                )
+                                restarting = false
+                                saved = false
+                            }
+                        },
             )
-            if (showAmber) {
-                androidx.compose.material3.OutlinedButton(
-                    onClick = {
-                        val p = profile ?: return@OutlinedButton
-                        restarting = true
-                        message = "Restarting daemon…"
-                        scope.launch {
-                            ServiceLocator.transportFor(p).restartDaemon().fold(
-                                onSuccess = {
-                                    message = "Restart requested. Give the daemon 5–10 s to come back."
-                                    restarting = false
-                                },
-                                onFailure = { err ->
-                                    message = "Restart failed — ${err.message ?: err::class.simpleName}"
-                                    restarting = false
-                                },
-                            )
-                        }
-                    },
-                    enabled = !restarting,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 12.dp,
-                            vertical = 4.dp,
-                        ),
-                ) {
-                    Text(
-                        if (restarting) "…" else "Restart now",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
         }
     }
 }
+
+/** D57b: the inline hint shows after a save on a no-auto-restart server, or while a restart message is up. */
+internal fun restartHintVisible(
+    saved: Boolean,
+    autoRestart: Boolean?,
+    message: String?,
+): Boolean = message != null || (saved && autoRestart == false)
