@@ -39,6 +39,16 @@ struct NewPrdView: View {
     @State private var memoryHarvest = false
     @State private var promoteTo = "story-shared"
     private static let promoteScopes = ["session-local", "story-shared", "prd-shared", "project-shared"]
+    /// Display labels for the server's memory scope ids (Terminology Rule: never "PRD").
+    private static func scopeLabel(_ id: String) -> String {
+        switch id {
+        case "session-local": return "Session-local"
+        case "story-shared": return "Story-shared"
+        case "prd-shared": return "Automaton-shared"
+        case "project-shared": return "Project-shared"
+        default: return id
+        }
+    }
     @State private var submitting = false
     @State private var errorMessage: String? = nil
 
@@ -275,7 +285,7 @@ struct NewPrdView: View {
             }
             if memoryHarvest {
                 Picker("Promote to scope", selection: $promoteTo) {
-                    ForEach(Self.promoteScopes, id: \.self) { Text($0).tag($0) }
+                    ForEach(Self.promoteScopes, id: \.self) { Text(L(Self.scopeLabel($0))).tag($0) }
                 }
             }
         }
