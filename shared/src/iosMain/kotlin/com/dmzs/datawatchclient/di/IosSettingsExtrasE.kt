@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.di
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.AvailableSkillDto
+import com.dmzs.datawatchclient.transport.dto.CouncilConfigDto
 import com.dmzs.datawatchclient.transport.dto.SyncSkillsRequestDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -117,4 +118,66 @@ public object IosSkillBrowse {
             onDone(r.exceptionOrNull()?.let { it.message ?: "Sync failed." })
         }
     }
+}
+
+/**
+ * Council subsystem config (PWA council panel config / Android CouncilCard
+ * G14/G22): firehose, real sessions, LLM ref, max parallel, draft retention.
+ * Numbers travel as strings ("" = server default) to keep Swift interop simple.
+ */
+public data class IosCouncilConfig(
+    val commFirehose: Boolean,
+    val spawnRealSessions: Boolean,
+    val llmRef: String,
+    val maxParallel: String,
+    val draftRetentionDays: String,
+)
+
+public object IosCouncilSettings {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    public fun load(
+        profile: ServerProfile,
+        onSuccess: (IosCouncilConfig) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).councilGetConfig().fold(
+                onSuccess = { c -> onSuccess(toIos(c)) },
+                onFailure = { e -> onError(e.message ?: "Failed to load council config.") },
+            )
+        }
+    }
+
+    /** Saves and returns the server's stored config. */
+    public fun save(
+        profile: ServerProfile,
+        config: IosCouncilConfig,
+        onSuccess: (IosCouncilConfig) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            val dto =
+                CouncilConfigDto(
+                    commFirehose = config.commFirehose,
+                    spawnRealSessions = config.spawnRealSessions,
+                    llmRef = config.llmRef.trim().ifBlank { null },
+                    maxParallel = config.maxParallel.trim().toIntOrNull(),
+                    draftRetentionDays = config.draftRetentionDays.trim().toIntOrNull(),
+                )
+            IosServiceLocator.transportFor(profile).councilUpdateConfig(dto).fold(
+                onSuccess = { c -> onSuccess(toIos(c)) },
+                onFailure = { e -> onError(e.message ?: "Save failed.") },
+            )
+        }
+    }
+
+    private fun toIos(c: CouncilConfigDto): IosCouncilConfig =
+        IosCouncilConfig(
+            commFirehose = c.commFirehose,
+            spawnRealSessions = c.spawnRealSessions,
+            llmRef = c.llmRef.orEmpty(),
+            maxParallel = c.maxParallel?.toString().orEmpty(),
+            draftRetentionDays = c.draftRetentionDays?.toString().orEmpty(),
+        )
 }

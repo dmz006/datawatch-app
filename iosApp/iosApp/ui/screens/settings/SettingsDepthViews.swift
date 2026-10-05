@@ -172,6 +172,12 @@ struct SettingsListExtras: View {
                     Label("Council runs", systemImage: "person.3.sequence")
                 }
                 .listRowBackground(DatawatchColors.surface)
+                NavigationLink {
+                    CouncilConfigView(profile: profile)
+                } label: {
+                    Label("Council settings", systemImage: "slider.horizontal.3")
+                }
+                .listRowBackground(DatawatchColors.surface)
             }
         case "compute_nodes":
             KindMigrationSection(profile: profile, onChanged: onChanged)
