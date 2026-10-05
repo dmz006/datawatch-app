@@ -48,4 +48,8 @@
     <string name="term_connect_retries_failed">Verbindung nach %1$d Versuchen fehlgeschlagen.</string>
     <string name="term_retry">Erneut versuchen</string>
     <string name="term_use_without">Ohne Terminal verwenden</string>
+    <string name="rtk_update_available">Update verfügbar (tippen, um Upgrade-Befehl zu kopieren)</string>
+    <string name="ws_history_btn">Verlauf</string>
+    <string name="ws_history_title">Websuche-Verlauf</string>
+    <string name="ws_history_empty">Noch keine Suchen.</string>
 </resources>
