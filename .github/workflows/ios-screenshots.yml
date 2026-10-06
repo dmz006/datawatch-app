@@ -89,6 +89,9 @@ jobs:
           bash scripts/screenshots/seed-demo.sh || echo "::warning::demo seed incomplete — see log above"
           echo "SESSION_ID=$(cat "$DEMO_ROOT/terminal-session-id")" >> "$GITHUB_ENV"
           echo "AUTOMATON_ID=$(cat "$DEMO_ROOT/automaton-id" 2>/dev/null || true)" >> "$GITHUB_ENV"
+          # Watch the long-running sessions so they read as running, not idle.
+          nohup python3 scripts/screenshots/keep-active.py $(cat "$DEMO_ROOT/keep-active-ids") \
+            > "$DEMO_ROOT/keep-active.log" 2>&1 &
 
       # ── Build: same recipe as ios-build.yml (Debug, simulator) ─────────────
       - name: Set up JDK 21
@@ -165,6 +168,7 @@ jobs:
         run: |
           tail -60 "$DEMO_ROOT/daemon.log" || true
           tail -20 "$DEMO_ROOT/ollama-stub.log" || true
+          tail -20 "$DEMO_ROOT/keep-active.log" || true
           curl -sk -H "Authorization: Bearer $DW_TOKEN" "$DW_URL/api/sessions" | head -c 3000 || true
 
       - name: Upload screenshots

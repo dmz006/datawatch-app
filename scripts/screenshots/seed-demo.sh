@@ -5,7 +5,9 @@
 #   DW_URL     demo server base URL   (default https://127.0.0.1:18443)
 #   DW_TOKEN   bearer token           (default: documented test token)
 #
-# Writes the session id to open for the terminal shot to $DEMO_ROOT/terminal-session-id.
+# Writes $DEMO_ROOT/terminal-session-id (session for the terminal shot),
+# $DEMO_ROOT/keep-active-ids (sessions for keep-active.py) and
+# $DEMO_ROOT/automaton-id (Automaton for the detail shot).
 set -euo pipefail
 
 : "${DEMO_ROOT:?DEMO_ROOT must be set}"
@@ -116,7 +118,30 @@ res = Result(unittest.runner._WritelnDecorator(sys.stdout), False, 0)
 suite.run(res)
 ok = len(res.failures) + len(res.errors) == 0
 print(f"\n{res.testsRun - len(res.failures) - len(res.errors)} passed in {time.time() - start:.2f}s")
+if "--watch" in sys.argv:
+    print()
+    while True:
+        for c in "|/-\\":
+            print(f"\rwatching weather_api/ for changes {c}", end="", flush=True)
+            time.sleep(1)
 sys.exit(0 if ok else 1)
+EOF
+cat > "$PROJ/serve_docs.py" <<'EOF'
+"""Serve docs/ locally with a small status line."""
+import functools
+import http.server
+import threading
+import time
+
+handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory="docs")
+handler.log_message = lambda *a: None
+srv = http.server.ThreadingHTTPServer(("127.0.0.1", 8000), handler)
+threading.Thread(target=srv.serve_forever, daemon=True).start()
+print("docs: 2 pages up to date\n")
+while True:
+    for c in "|/-\\":
+        print(f"\rserving docs/ on http://127.0.0.1:8000 {c}", end="", flush=True)
+        time.sleep(1)
 EOF
 cat > "$PROJ/docs/api.md" <<'EOF'
 # API
@@ -124,66 +149,53 @@ cat > "$PROJ/docs/api.md" <<'EOF'
 GET /forecast?city=<name>  ->  {"city", "high", "low", "sky"}
 GET /health                ->  {"status": "ok"}
 EOF
-cat > "$PROJ/deploy_check.sh" <<'EOF'
-#!/usr/bin/env bash
-echo "Deploy check: weather-api -> staging"
-echo
-echo "  [ok] unit tests      5 passed"
-echo "  [ok] lint            0 issues"
-echo "  [ok] image build     weather-api:1.4.2"
-echo "  [ok] health probe    200 OK (42 ms)"
-echo
-read -r -p "Promote weather-api:1.4.2 to staging? [y/N] " answer
-echo "answer: ${answer:-n}"
+cat > "$PROJ/deploy_check.py" <<'EOF'
+"""Pre-deploy checklist, then ask before promoting."""
+print("Deploy check: weather-api -> staging\n")
+print("  [ok] unit tests      5 passed")
+print("  [ok] lint            0 issues")
+print("  [ok] image build     weather-api:1.4.2")
+print("  [ok] health probe    200 OK (42 ms)\n")
+answer = input("Promote weather-api:1.4.2 to staging? [y/N] ")
+print("promoted" if answer.lower().startswith("y") else "skipped")
 EOF
-chmod +x "$PROJ/deploy_check.sh"
 
 # ── 2. Shell sessions ─────────────────────────────────────────────────────
+# demo-config.yaml points shell_backend.script_path at $DEMO_ROOT/bin/run-task,
+# so the daemon runs `run-task '<task>' '<project dir>'` in each session's tmux
+# pane instead of an interactive shell: no shell prompt / host / path noise,
+# and no bare prompt for the idle detector to mistake for "waiting for input".
+# Each task execs a Python program: the daemon reports a pane whose foreground
+# process is a shell as a dead agent ("zombie"). The two long-running ones
+# animate a spinner, which keep-active.py turns into "running" activity.
+mkdir -p "$DEMO_ROOT/bin"
+cat > "$DEMO_ROOT/bin/run-task" <<'EOF'
+#!/usr/bin/env bash
+# run-task <task> <project dir> — demo session commands, keyed by task text.
+cd "$2" || exit 1
+clear
+case "$1" in
+  "Run the weather-api unit tests") exec python3 run_tests.py --watch ;;
+  "Pre-deploy checks for staging")  exec python3 deploy_check.py ;;
+  "Refresh API docs")
+    wc -l README.md docs/api.md weather_api/*.py
+    echo
+    exec python3 serve_docs.py ;;
+esac
+EOF
+chmod +x "$DEMO_ROOT/bin/run-task"
+
 start_session() { # name task -> prints session id
   api POST /api/sessions/start "$(python3 -c 'import json,sys; print(json.dumps({"name": sys.argv[1], "task": sys.argv[2], "project_dir": sys.argv[3], "backend": "shell"}))' "$1" "$2" "$PROJ")" \
     | jget 'd.get("full_id") or d.get("id") or d["session"]["full_id"]'
 }
-send() { # id text
-  api POST /api/sessions/send "$(python3 -c 'import json,sys; print(json.dumps({"session_id": sys.argv[1], "text": sys.argv[2]}))' "$1" "$2")" >/dev/null
-}
-# Clean prompt (no host/user/path noise), then clear before the real command.
-PRE="export PS1='\\W \$ ' PROMPT_COMMAND=''; clear; "
 
 docs_id=$(start_session "docs refresh" "Refresh API docs")
 tests_id=$(start_session "api tests" "Run the weather-api unit tests")
 deploy_id=$(start_session "deploy check" "Pre-deploy checks for staging")
-sleep 3
-
-# docs refresh → finishes (complete); api tests → keeps running (watch mode);
-# deploy check → stops at a y/N prompt (waiting for input → Alerts).
-# The watch loop animates a small ASCII spinner: the daemon treats pane
-# changes as activity, so the session stays "running" instead of idling into
-# "waiting for input".
-cat > "$PROJ/watch.sh" <<'EOF'
-#!/usr/bin/env bash
-python3 run_tests.py
-echo
-while :; do
-  for c in '|' '/' '-' '\'; do
-    printf '\rwatching weather_api/ for changes %s' "$c"
-    sleep 1
-  done
-done
-EOF
-chmod +x "$PROJ/watch.sh"
-send "$docs_id"  "${PRE}wc -l README.md docs/api.md weather_api/*.py; echo 'docs: 2 pages up to date'; sleep 2; exit"
-send "$tests_id" "${PRE}./watch.sh"
-send "$deploy_id" "${PRE}./deploy_check.sh"
-# `exit` above leaves the docs session's outer tmux shell; close it too so the
-# session ends cleanly (complete) instead of showing the runner's login prompt.
-sleep 4
-send "$docs_id" "exit"
-# The bare shell prompt before the watch loop started was already detected as
-# "waiting for input"; the loop's keepalive output stops it re-triggering, so
-# put the tests session back to running once.
-api POST /api/sessions/state "{\"id\":\"$tests_id\",\"state\":\"running\"}" >/dev/null
 
 echo "$tests_id" > "$DEMO_ROOT/terminal-session-id"
+echo "$docs_id $tests_id" > "$DEMO_ROOT/keep-active-ids"
 echo "sessions: docs=$docs_id tests=$tests_id deploy=$deploy_id"
 
 # ── 3. Automaton: create, plan (stub LLM), then add a story + task ────────
