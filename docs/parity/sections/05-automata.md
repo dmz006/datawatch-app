@@ -15,6 +15,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | interaction | ⊞ Filter bar toggle | ✓ app:17178 | ✓ AS:256 | ✓ PrdListView "⊞ Filter" chip | aligned |  |  |
 | interaction | ⏱ History toggle (show completed/cancelled/archived) | ✓ app:17207, filter app:16482 | ✓ AS:109 historyOn, AS:267 | ✓ PrdListView "History" chip (activeStatuses gate) | aligned |  |  |
 | element | Filter bar: text search | ✓ app:16488 automata_filter_search | ✓ "Search automata…" field (title/name + id) | ✓ PrdListView search field (title/name/id) | aligned |  | iOS has it · Android done 2026-10-04 (android-missing sweep) |
+| layout | List card arrangement: no outline, pad 14, gap 14; 15px bold title + status pill; mono meta row (↗ parent, id, last activity) right-aligned; `.lifecycle-compact` strip (2×6, 10px); action row ✕ Cancel / ✗ Reject / ↺ Request Revision … ✓ Approve (amber) 👁 📍; ▶ Stories & tasks (n) | ✓ P automata card (renderAutomataCard) + C `.prd-card`, `.lifecycle-compact` | ✓ PrdRow rebuilt 2026-10-06 (emulator side-by-side vs PWA v8.59) | ✗ title shows the id, bell beside status, "0 stories · 0/0 tasks" when empty, no Cancel/👁/📍 row, chevron | misaligned | operator 2026-10-06 ("PWA is guide") | iOS fix in progress (BL411). Pause/Resume (PWA v8.57) waits for the server release (BL409). |
 | element | Filter bar: status badges draft/planning/needs_review/approved/running/blocked (+archived) | ✓ app:17219, css:504–509 | ✓ AS:585–635 FilterChip | ✓ PrdListView status chips incl. archived (filterColor = css:504–509) | aligned |  | Android chip colors vs css:504–509 (unverified) |
 | element | Filter bar: type badges software/research/operational/personal | ✓ app:17228 | ✓ AS:641 | ✓ PrdListView type chips | aligned |  |  |
 | element | Filter bar: "All" select-all checkbox (select mode) | ✓ app:16606 | ✓ filter bar "All" tri-state checkbox ticks every visible row (AutonomousScreen PrdsBody) | ✓ filter row "All" tri-state toggle (☐ / ⊟ / ☑, enters select mode); batch bar "☑ All/None (N)" like the PWA | aligned |  | Android-I 2026-10-05: Android done; iOS All/None lives in the batch bar · Task-O 2026-10-05: iOS filter-bar All added |
@@ -107,7 +108,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | string | i18n coverage | ✓ en/de/es/fr/ja `locales/*.json` | ✓ 262 keys, 4 extra locales | ✓ L() + Resources/{de,es,fr,ja}.lproj (automata strings incl.) | aligned |  | iOS localized 2026-10-04 |
 
 ## Coverage
-rows: 99 · aligned: 90 · ios-missing: 0 · android-missing: 0 · pwa-missing: 9 · misaligned: 0 · n/a: 0
+rows: 100 · aligned: 90 · ios-missing: 0 · android-missing: 0 · pwa-missing: 9 · misaligned: 1 · n/a: 0
 
 ## Decisions (resolved 2026-10-04)
 1. Terminology/tab label → **D22a** "Automata | Templates" everywhere (iOS still "PRDs").
