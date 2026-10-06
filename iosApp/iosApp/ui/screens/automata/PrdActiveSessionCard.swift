@@ -10,6 +10,8 @@ import DatawatchShared
 struct PrdActiveSessionCard: View {
     let profile: ServerProfile
     let prd: PrdDto
+    /// The live planning stream card already shows "Decomposing Automaton…".
+    var liveStreamShown: Bool = false
     let onCancel: () -> Void
 
     @State private var rows: [IosPrdActiveSessionRow]? = nil
@@ -40,10 +42,10 @@ struct PrdActiveSessionCard: View {
                     .buttonStyle(.plain)
                 }
             }
-        } else if rows != nil, status == "planning" {
+        } else if rows != nil, status == "planning", !liveStreamShown {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
-                Text("Decomposing automaton…").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Text("Decomposing Automaton…").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.onSurfaceMuted)
                 Spacer()
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
