@@ -32,6 +32,22 @@ PLAN = {
 }
 PLAN_TEXT = json.dumps(PLAN)
 
+# Second Automaton (spec mentions the 7-day endpoint).
+WEEK_PLAN_TEXT = json.dumps({
+    "title": "Weather API: 7-day forecast",
+    "stories": [
+        {
+            "title": "Add /forecast/week endpoint",
+            "description": "Return a 7-day forecast for a city with input validation.",
+            "tasks": [
+                {"title": "Implement get_week_forecast", "spec": "Add get_week_forecast(city) to weather_api/forecast.py returning 7 daily entries."},
+                {"title": "Validate city input", "spec": "Reject empty or overlong city names with a 400 response."},
+                {"title": "Tests for the week endpoint", "spec": "Cover happy path, unknown city and validation errors."},
+            ],
+        },
+    ],
+})
+
 
 class Handler(BaseHTTPRequestHandler):
     def _send(self, obj):
@@ -52,12 +68,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length") or 0)
-        if length:
-            self.rfile.read(length)
+        body = self.rfile.read(length) if length else b""
+        text = WEEK_PLAN_TEXT if b"/forecast/week" in body else PLAN_TEXT
         if self.path.startswith("/api/chat"):
-            self._send({"model": "demo-planner", "message": {"role": "assistant", "content": PLAN_TEXT}, "done": True})
+            self._send({"model": "demo-planner", "message": {"role": "assistant", "content": text}, "done": True})
         else:
-            self._send({"model": "demo-planner", "response": PLAN_TEXT, "done": True})
+            self._send({"model": "demo-planner", "response": text, "done": True})
 
     def log_message(self, fmt, *args):
         print("ollama-stub:", fmt % args, flush=True)

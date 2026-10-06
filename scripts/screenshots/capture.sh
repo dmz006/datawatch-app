@@ -27,6 +27,19 @@ launch() { # udid tab [extra args...]
     -dwTheme dark -dwSkipNotifPrompt -dwTab "$tab" "$@" >/dev/null
 }
 
+# keep-active.py's watcher can make the daemon log a no-op "running → running"
+# state alert; mark those read so the Alerts shot shows only meaningful ones.
+tidy_alerts() {
+  curl -sk -H "Authorization: Bearer $DW_TOKEN" "$DW_URL/api/alerts" | python3 -c '
+import json, sys
+for a in json.load(sys.stdin).get("alerts", []):
+    if not a.get("read") and "running → running" in a.get("title", ""):
+        print(a["id"])' | while read -r id; do
+    curl -sk -o /dev/null -X POST -H "Authorization: Bearer $DW_TOKEN" \
+      -H 'Content-Type: application/json' --data "{\"id\":\"$id\"}" "$DW_URL/api/alerts"
+  done
+}
+
 shot() { # udid file
   xcrun simctl io "$1" screenshot --type=png "$2" >/dev/null
   sips -g pixelWidth -g pixelHeight "$2" | tail -2 | tr -s ' ' | tr '\n' ' '
@@ -57,6 +70,7 @@ capture_device() { # name folder expected-WxH
   sleep $((SETTLE * 2))
 
   for tab in sessions automata alerts observer settings; do
+    [ "$tab" = alerts ] && tidy_alerts
     launch "$udid" "$tab"
     sleep "$SETTLE"
     shot "$udid" "$dir/ios-$tab.png"
