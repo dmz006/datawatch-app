@@ -1,0 +1,22 @@
+# datawatch://session/<full id> opens the session and it is live: the flow types a
+# marker into the composer and sends it; the runner asserts the marker reached tmux.
+appId: ${APP_ID}
+name: 11 deep link
+---
+- runFlow: common/home.yaml
+- tapOn:                      # start somewhere other than the session
+    text: "Settings"
+    rightOf: "Dashboard"
+- openLink: "datawatch://session/${FULL_ID}"
+- extendedWaitUntil:
+    visible: "Aa▾"
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible: "Connecting to session…"
+    timeout: 30000
+- assertVisible: "e2e-shell"
+- assertVisible: ${SESSION_ID}
+- tapOn: "Type your response…"
+- inputText: "echo ${LINK_MARKER}"
+- tapOn: "Send"
+- takeScreenshot: 11_deep_link

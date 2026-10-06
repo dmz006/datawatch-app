@@ -1,0 +1,28 @@
+# Bring the app to the foreground on a top-level tab (bottom nav visible).
+# launchApp without clearState keeps the server profile added by 01_add_server.
+appId: ${APP_ID}
+---
+- launchApp:
+    appId: ${APP_ID}
+    stopApp: false
+# Let a cold start get past the splash before deciding anything.
+- extendedWaitUntil:
+    notVisible: "starting services…"
+    timeout: 30000
+    optional: true
+# Session detail (e.g. a restored last session) has no bottom nav, and an open IME
+# hides it too. System back closes the IME / leaves the session; if a back ever lands
+# on a top-level tab the app goes to the background, so re-launch it each round.
+# (Don't use hideKeyboard here: with no IME up it sends BACK and exits the app.)
+- repeat:
+    while:
+      notVisible: "Dashboard"
+    times: 4
+    commands:
+      - back
+      - launchApp:
+          appId: ${APP_ID}
+          stopApp: false
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 30000

@@ -1,0 +1,57 @@
+# Settings › Automata › Project Profiles: + Add → fill form → YAML view (name is in
+# the YAML) → Form view (values kept) → Save. The runner then asserts via REST that
+# GET /api/profiles/projects/${PROFILE_NAME} returns the profile.
+appId: ${APP_ID}
+name: 09 project profile
+---
+- runFlow:
+    file: common/settings_automata.yaml
+    env:
+      TARGET: "PROJECT PROFILES"
+- tapOn:
+    text: "\\+ Add"
+    rightOf: "PROJECT PROFILES"
+- extendedWaitUntil:
+    visible: "New project profile"
+    timeout: 10000
+- tapOn: "Name"
+- inputText: ${PROFILE_NAME}
+- tapOn: "Git URL"
+- inputText: "https://example.com/e2e/repo.git"
+- hideKeyboard
+- tapOn: "YAML view"
+- extendedWaitUntil:
+    visible: "Form view"
+    timeout: 10000
+- assertVisible: "(?s).*name: ${PROFILE_NAME}.*"
+- takeScreenshot: 09_profile_yaml
+- tapOn: "Form view"
+- extendedWaitUntil:
+    visible: "YAML view"
+    timeout: 10000
+- assertVisible: ${PROFILE_NAME}
+- assertVisible: "https://example.com/e2e/repo.git"
+- takeScreenshot: 09_profile_form
+# In Form view the dialog's Cancel/Save row sits under the gesture bar and is not in
+# the accessibility tree (docs/testing/e2e-maestro.md › Known issues), so Save is
+# tapped by position (dw_test_phone = Pixel 6, 1080x2400) when the text isn't reachable.
+- runFlow:
+    when:
+      visible: "Save"
+    commands:
+      - tapOn: "Save"
+- runFlow:
+    when:
+      visible: "New project profile"
+    commands:
+      - tapOn:
+          point: "86%,98%"
+- extendedWaitUntil:
+    notVisible: "New project profile"
+    timeout: 15000
+# Profile row in the list (the transient "Saved <name>" status may already be gone).
+- scrollUntilVisible:
+    element: ${PROFILE_NAME}
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: 09_profile_saved
