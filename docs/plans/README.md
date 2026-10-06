@@ -154,7 +154,7 @@ Items that were still genuinely open or frozen were copied to the "Still open fr
 ##### Master parity inventory (2026-04-23)
 
 Everything below is captured with per-gap IDs (G1–G64) in the
-master inventory — see [`audit-2026-04-23/README.md`](audit-2026-04-23/README.md)
+master inventory — see [`audit-2026-04-23/README.md`](historical-plans/audit-2026-04-23/README.md)
 for the full matrix, per-screen inventories, server contract, and
 disposition of the prior 2026-04-22 audit.
 
