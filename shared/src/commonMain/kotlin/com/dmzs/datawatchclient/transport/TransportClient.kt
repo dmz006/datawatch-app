@@ -185,6 +185,7 @@ public interface TransportClient {
         appVersion: String,
         platform: DevicePlatform,
         profileHint: String,
+        apnsEnvironment: String? = null,
     ): Result<String>
 
     /** DELETE /api/devices/{id} — un-register a previously-registered push token. */

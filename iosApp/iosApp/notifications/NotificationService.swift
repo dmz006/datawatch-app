@@ -14,6 +14,19 @@ final class NotificationService: NSObject, ObservableObject {
 
     @Published private(set) var deviceToken: String?
     @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
+    /// Last APNs registration failed; retried on the next foreground.
+    var registrationFailed: Bool = false
+
+    /// APNs environment of this build — must match the token's environment so the
+    /// server picks api.push.apple.com vs api.sandbox.push.apple.com. TestFlight /
+    /// App Store builds use the production profile (aps-environment = production).
+    static var apnsEnvironment: String {
+        #if DEBUG
+        return "development"
+        #else
+        return "production"
+        #endif
+    }
 
     private override init() {}
 
@@ -25,12 +38,9 @@ final class NotificationService: NSObject, ObservableObject {
 
         guard settings.authorizationStatus == .notDetermined else { return }
         do {
+            // Alert/badge/sound permission only; the device token itself is
+            // requested on every launch from the AppDelegate.
             let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
-            if granted {
-                await MainActor.run {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            }
             authorizationStatus = granted ? .authorized : .denied
         } catch {
             // User denied or system error — not fatal.
@@ -42,7 +52,8 @@ final class NotificationService: NSObject, ObservableObject {
     func didRegister(tokenData: Data) {
         let token = tokenData.map { String(format: "%02.2hhx", $0) }.joined()
         deviceToken = token
-        IosServiceLocator.shared.registerApnsToken(token: token)
+        registrationFailed = false
+        IosServiceLocator.shared.registerApnsToken(token: token, environment: Self.apnsEnvironment)
     }
 
     /// Handle incoming push notification payload.

@@ -6,6 +6,8 @@ import platform.Foundation.NSUserDefaults
  * Persists APNs push registration state per server profile.
  *
  * - The APNs device token is shared across all profiles (one token per app install).
+ *   It is kept IN MEMORY only: Apple — "Never cache device tokens in local storage";
+ *   the app re-registers on every launch and APNs returns the current token.
  * - Each profile gets its own server-assigned `device_id` after a successful
  *   POST /api/devices/register, used to DELETE /api/devices/{id} on profile
  *   removal or token rotation.
@@ -16,11 +18,15 @@ import platform.Foundation.NSUserDefaults
 public class ApnsPushStore {
     private val defaults = NSUserDefaults.standardUserDefaults
 
-    public fun apnsToken(): String? = defaults.stringForKey(KEY_APNS_TOKEN)
+    init {
+        // Earlier builds persisted the token; drop it (must not be cached).
+        defaults.removeObjectForKey(KEY_APNS_TOKEN)
+    }
+
+    public fun apnsToken(): String? = currentToken
 
     public fun setApnsToken(token: String?) {
-        if (token == null) defaults.removeObjectForKey(KEY_APNS_TOKEN)
-        else defaults.setObject(token, KEY_APNS_TOKEN)
+        currentToken = token
     }
 
     public fun deviceIdFor(profileId: String): String? =
@@ -37,6 +43,9 @@ public class ApnsPushStore {
     }
 
     private companion object {
+        /** This launch's token from APNs (never persisted). */
+        var currentToken: String? = null
+
         const val KEY_APNS_TOKEN = "dw.push.apns_token"
         const val KEY_DEVICE_ID_PREFIX = "dw.push.device_id."
     }

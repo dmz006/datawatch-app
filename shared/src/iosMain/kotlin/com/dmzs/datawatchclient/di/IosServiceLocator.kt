@@ -644,15 +644,21 @@ public object IosServiceLocator {
      *
      * Errors are swallowed per profile — push failure never blocks the user.
      */
-    public fun registerApnsToken(token: String) {
-        val previous = pushStore.apnsToken()
+    /**
+     * APNs gave this launch's device token (Apple: register and forward the token
+     * on every launch). [environment] = "production" | "development".
+     * Forwards it to every enabled server profile.
+     */
+    public fun registerApnsToken(
+        token: String,
+        environment: String,
+    ) {
         pushStore.setApnsToken(token)
-        val tokenChanged = previous != token
+        apnsEnvironment = environment
         ioScope.launch {
             val profiles = profileRepository.observeAll().first()
                 .filter { it.enabled }
             for (profile in profiles) {
-                if (!tokenChanged && pushStore.deviceIdFor(profile.id) != null) continue
                 registerApnsForProfile(profile, token)
             }
         }
@@ -876,6 +882,9 @@ public object IosServiceLocator {
         }
     }
 
+    /** APNs environment of this build's token ("production" | "development"). */
+    private var apnsEnvironment: String? = null
+
     private suspend fun registerApnsForProfile(profile: ServerProfile, token: String) {
         runCatching {
             transportFor(profile).registerDevice(
@@ -884,6 +893,7 @@ public object IosServiceLocator {
                 appVersion = Version.VERSION,
                 platform = DevicePlatform.Ios,
                 profileHint = profile.displayName,
+                apnsEnvironment = apnsEnvironment,
             ).onSuccess { deviceId ->
                 pushStore.setDeviceIdFor(profile.id, deviceId)
             }
