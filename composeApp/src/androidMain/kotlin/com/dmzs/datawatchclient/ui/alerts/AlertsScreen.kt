@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +60,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
@@ -361,16 +361,8 @@ public fun AlertsScreen(
                 if (groups.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (state.refreshing) {
-                            // PWA loading state: spinner + "Loading…" (common_loading).
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
-                                Text(
-                                    stringResource(R.string.common_loading),
-                                    modifier = Modifier.padding(top = 8.dp),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
+                            // Loading state: animated datawatch eye + "Loading…" (common_loading).
+                            DatawatchLoadingContent(label = stringResource(R.string.common_loading))
                         } else {
                             Text(
                                 // Parity D35a — PWA single "No alerts." on every tab.

@@ -33,7 +33,6 @@ struct LlmFormSheet: View {
             Form {
                 if loading {
                     HStack(spacing: 8) {
-                        ProgressView()
                         CardSkeleton()
                     }
                 } else {
@@ -277,7 +276,7 @@ struct LlmJsonSheet: View {
                 .scrollContentBackground(.hidden)
                 .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 8))
         } else {
-            ProgressView().frame(maxWidth: .infinity)
+            CardSkeleton()
         }
     }
 

@@ -379,7 +379,7 @@ struct SettingsMcpToolsCard: View {
         List {
             Section {
                 if isLoading {
-                    ProgressView()
+                    CardSkeleton()
                 } else if let error {
                     Text(error).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.error)
                 } else {

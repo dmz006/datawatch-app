@@ -46,7 +46,7 @@ struct ComputeNodeLiveDetailSheet: View {
         } else if let json {
             ComputeNodeDetailJsonView(json: json)
         } else {
-            ProgressView()
+            CardSkeleton()
         }
     }
 

@@ -427,12 +427,7 @@ private fun PeerSnapshotDialog(
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                         )
-                    s == null ->
-                        Text(
-                            "Fetching /api/observer/peers/$name/stats …",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    s == null -> com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                     else -> {
                         val envs = snapshotEnvelopes(s)
                         if (envs.isEmpty()) {

@@ -396,7 +396,7 @@ struct AlertsView: View {
             if store.profiles.isEmpty {
                 noProfilesView
             } else if vm.isLoading && vm.alerts.isEmpty {
-                LoadingIndicator(message: "Loading…")
+                LoadingIndicator(message: L("Loading…"))
             } else if let err = vm.error, vm.alerts.isEmpty {
                 ErrorCard(message: L("Failed to load alerts.")) { vm.refresh() }
             } else {

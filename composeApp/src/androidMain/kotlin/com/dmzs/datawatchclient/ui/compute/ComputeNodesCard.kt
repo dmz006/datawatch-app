@@ -27,7 +27,6 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -785,7 +784,7 @@ private fun ComputeNodeDialog(
                         )
                     }
                     if (installedModelsLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                        com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                     } else if (installedModels.isEmpty()) {
                         Text(
                             stringResource(R.string.ollama_no_installed),
@@ -936,10 +935,7 @@ private fun OllamaMarketplaceDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (loading) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                    ) { CircularProgressIndicator() }
+                    com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                 } else {
                     val models =
                         (catalog?.models ?: emptyList())

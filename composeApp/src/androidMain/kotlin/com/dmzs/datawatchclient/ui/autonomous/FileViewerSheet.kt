@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,7 +102,11 @@ internal fun FileViewerSheet(
                 state.loading -> Box(
                     modifier = Modifier.fillMaxWidth().height(200.dp),
                     contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator() }
+                ) {
+                    com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent(
+                        label = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.common_loading),
+                    )
+                }
 
                 state.error || state.content == null -> Box(
                     modifier = Modifier.fillMaxWidth().padding(24.dp),

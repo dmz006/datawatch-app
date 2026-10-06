@@ -166,7 +166,6 @@ struct SettingsListCardView: View {
         Section {
             if isLoading && rows.isEmpty {
                 HStack(spacing: 8) {
-                    ProgressView()
                     CardSkeleton()
                 }
                 .listRowBackground(DatawatchColors.surface)

@@ -363,7 +363,7 @@ struct DashboardView: View {
                             onTarget: { handle($0) }
                         )
                     } else {
-                        ProgressView()
+                        CardSkeleton()
                             .tint(DatawatchColors.primary)
                             .padding(.top, 40)
                     }

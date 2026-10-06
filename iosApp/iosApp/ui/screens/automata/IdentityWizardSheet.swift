@@ -49,7 +49,7 @@ struct IdentityWizardSheet: View {
             .padding(16)
             .background(DatawatchColors.background)
             .disabled(!loaded || saving)
-            .overlay { if !loaded { ProgressView().tint(DatawatchColors.primary) } }
+            .overlay { if !loaded { CardSkeleton() } }
             .navigationTitle("Identity Wizard")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

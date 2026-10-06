@@ -20,7 +20,7 @@ struct SessionStatusView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 if snapshot == nil {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
+                    CardSkeleton().padding(.top, 40)
                 } else if board == nil {
                     Text(snapshot?.error ?? "Status isn't available for this session.")
                         .font(DatawatchFonts.bodyMedium)
