@@ -481,7 +481,7 @@ private fun CrossHostDialog(onDismiss: () -> Unit) {
                 val obj = data
                 when {
                     err != null -> Text("load failed: $err", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    obj == null -> DatawatchLoadingContent(verticalPadding = 12.dp)
+                    obj == null -> DatawatchLoadingContent(verticalPadding = 12.dp, label = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.common_loading))
                     else -> {
                         val byPeer = obj["by_peer"] as? kotlinx.serialization.json.JsonObject
                         if (byPeer.isNullOrEmpty()) {

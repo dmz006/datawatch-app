@@ -1605,10 +1605,10 @@ private fun TimelineSheet(
                         itemsIndexed(serverLines!!) { idx, line -> TimelineServerRow(line) }
                     }
                 loading ->
-                    Text(
-                        stringResource(R.string.timeline_loading),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent(
+                        label = stringResource(R.string.timeline_loading),
+                        eyeSize = 32.dp,
+                        verticalPadding = 12.dp,
                     )
                 else -> {
                     if (fetchFailed) {

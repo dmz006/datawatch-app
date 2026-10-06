@@ -183,7 +183,7 @@ public fun ComputeNodesCard(
             )
         }
         if (loading) {
-            DatawatchLoadingContent(modifier = Modifier.padding(horizontal = 12.dp))
+            DatawatchLoadingContent(modifier = Modifier.padding(horizontal = 12.dp), label = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.common_loading))
         } else if (nodes.isEmpty() && banner == null) {
             Text(
                 stringResource(R.string.compute_nodes_empty),

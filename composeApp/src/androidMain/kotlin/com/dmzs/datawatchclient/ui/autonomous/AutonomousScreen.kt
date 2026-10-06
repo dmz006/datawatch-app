@@ -807,7 +807,7 @@ private fun PrdsBody(
             modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.045f), // PWA `.sessions-watermark` .045
         )
         if (visible.isEmpty() && state.loading) {
-            DatawatchLoadingContent(modifier = Modifier.align(Alignment.Center))
+            DatawatchLoadingContent(modifier = Modifier.align(Alignment.Center), label = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.common_loading))
         } else if (visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
