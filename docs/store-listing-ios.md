@@ -97,7 +97,7 @@ Copy choices:
 - **No third-party trademarks in keywords.** Apple's keyword guidance rejects other
   companies' trademarks, so the keywords avoid agent and VPN product names. The
   description mentions compatible agents by name only as a factual statement.
-- **"Automata", never "PRD"** in all copy (checked by the script).
+- **Automaton / Automata terminology** in all copy (AGENT.md Terminology Rule; checked by the script).
 - The app name and subtitle words are indexed already, so keywords do not repeat
   `datawatch`, `ai` or `orchestration`.
 

@@ -1,7 +1,8 @@
 # Installation
 
-How to get the datawatch mobile app onto a phone, a Wear OS watch, or an
-Android Auto head unit. v0.10.0 is distributed as APK artefacts on the
+How to get the datawatch mobile app onto a phone, a Wear OS watch, an
+Android Auto head unit, or an iPhone / iPad (see [iPhone and iPad](#iphone-and-ipad)).
+On Android, v0.10.0 is distributed as APK artefacts on the
 [GitHub release page](https://github.com/dmz006/datawatch-app/releases/tag/v0.10.0)
 until the Play Store listing goes live. (v1.0.0 is reserved for the
 release that reaches full PWA parity — see ADR-0043.)
@@ -11,7 +12,7 @@ release that reaches full PWA parity — see ADR-0043.)
 You need a running [datawatch server](https://github.com/dmz006/datawatch)
 v3.0.0 or newer. Make a note of:
 
-1. Its base URL (e.g. `https://mymachine.taila1234.ts.net:8080`).
+1. Its base URL (e.g. `https://datawatch.example:8080`).
 2. Its bearer token — find it under `~/.datawatch/config.yaml` → `api.token`
    or whatever you set in `DATAWATCH_API_TOKEN`.
 3. Whether it uses a self-signed TLS cert (the Wizard option for local LAN
@@ -198,6 +199,36 @@ Developers can verify the Auto surface without a real car:
 ~/Android/Sdk/extras/google/auto/desktop-head-unit
 # With the phone connected and developer mode on, DHU mirrors the head-unit view.
 ```
+
+---
+
+## iPhone and iPad
+
+The iOS app is in beta on **TestFlight**. Full guide: [ios.md](ios.md).
+
+### Prerequisites
+- iOS / iPadOS 16.0 or newer (iPhone or iPad).
+- The **TestFlight** app from the App Store.
+- An HTTPS path to the datawatch server: same Wi-Fi / LAN, a VPN, or the Tailscale
+  iOS app on the same tailnet.
+
+### Installation
+1. Accept the TestFlight invite — open the invite email on the device and tap
+   **View in TestFlight**, or open the public TestFlight link — then tap **Accept**.
+2. Tap **Install** in TestFlight. The app appears as **datawatch**.
+3. New builds arrive through TestFlight; turn on **Automatic Updates** there.
+
+### First launch
+1. Settings tab › **Comms** › **Servers** › **+**.
+2. Enter the server's `https://` URL and bearer token.
+3. For a self-signed certificate, tap **Pin server certificate…**, compare the
+   SHA-256 fingerprint with the server's, then **Trust & pin** (preferred over
+   "Trust all certificates").
+4. Tap **Add** and open the **Sessions** tab.
+
+Push notifications while the app is closed arrive with an upcoming datawatch server
+update; until then alerts show while the app is open. See
+[ios.md › Known limitations](ios.md#known-limitations).
 
 ---
 
