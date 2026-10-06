@@ -76,6 +76,7 @@ Refs are `file:line` or symbol. Audited 2026-10-04 from code (no screenshots yet
 | token | Radii: `--radius` 12px cards · `--radius-sm` 8px · pills 10px | ✓ style.css:35-36 | ✓ `pwaCard` 12dp, `PwaStatePill` 10dp (PwaComponents.kt:88,156) | ✓ `DatawatchRadius` card 12 / sm 8 / pill 10 (ui/design/DatawatchRadius.swift); adopted in Automata cards, alert chips, server picker + alert pill | aligned |  | iOS needs radius tokens (no decision) · iOS-F 2026-10-05: remaining ad-hoc radii in other screens can adopt the token as they are touched |
 | token | Spacing scale: header 56 · nav 60 · input bar 60 (CSS vars); card padding 12–16 | ✓ style.css:32-34 | ~ 16dp gutters (`PwaSectionTitle`), no scale | ~ 16pt gutters, no scale | aligned | decided D4a + D32 | native density per D32/D4a |
 | token | UI font: `'JetBrains Mono','Fira Code', monospace` 14px body; nav labels system-ui 10px | ✓ style.css:69-70, 315-318 | ~ Roboto / M3 default `Typography` (none in Theme.kt) | ~ SF Pro (`DatawatchFonts`); SF Mono terminal only | aligned | decided D7b | platform font + Dynamic Type per D7b |
+| motion | Content loading state: animated datawatch eye + pulsing "Loading…" (32 px in cards, 40 px panels; static under reduced motion) | ✗ plain "Loading…" text in cards/panels → dmz006/datawatch#186 | ✓ `DatawatchLoadingContent` / `PwaLoadingText` everywhere data loads (2026-10-06) | ✓ `CardSkeleton` / `LoadingIndicator` (2026-10-06) | pwa-missing | operator 2026-10-06 | Session connect splash, button spinners and the sessions skeleton (D60a) excluded. |
 | token | Type scale: header 16/700 · splash 24/700 · section 15 · body 13–14 · labels 11–12 · badges 9–10 | ✓ style.css | ~ M3 scale (titleLarge 22, bodyMedium 14, labelSmall 11) | ~ Dynamic Type roles (title2, headline, body, callout, caption, caption2) | aligned | decided D7b | per D7b |
 | token | Icon system: emoji/Unicode (PWA) · emoji nav + Material actions (Android) · SF Symbols (iOS) | ✓ | ~ | ~ | aligned | decided D5b | per D5b / D4a |
 | token | Brand/manifest: name "Datawatch", `theme_color` #7c3aed, `background_color` #0f1117 | ✓ manifest.json name/short_name "datawatch", theme_color #7c3aed, background_color #0f1117; index.html `<title>datawatch` (v8.39.27, D9a) | ✓ `app_name` "datawatch", launcher icon | ✓ `CFBundleDisplayName` "datawatch", AppIcon | aligned | decided D9a | PWA manifest/title still capitalised · PWA shipped in v8.39.27 (2026-10-06 re-check) |
@@ -87,7 +88,7 @@ Refs are `file:line` or symbol. Audited 2026-10-04 from code (no screenshots yet
 | motion | Reduced-motion respected (`prefers-reduced-motion` disables pulses) | ✓ style.css:2356-2358, 2416-2418 | ✓ `rememberDwPulse` / `rememberRunningPulseAlpha` static when animator scale = 0 | ✓ splash, skeleton, card pulse, dashboard and the reachability dot pulse honour Reduce Motion | aligned |  | only the iOS dot pulse remains · iOS-F 2026-10-05: iOS dot pulse static under Reduce Motion |
 
 ## Coverage
-rows: 80 · aligned: 71 · ios-missing: 1 · android-missing: 0 · pwa-missing: 3 · misaligned: 0 · n/a: 5
+rows: 81 · aligned: 71 · ios-missing: 1 · android-missing: 0 · pwa-missing: 4 · misaligned: 0 · n/a: 5
 
 Re-audited 2026-10-04 against current code after the decisions + implementation pass. Where both apps lack a decided feature the row is filed `ios-missing` and the Notes say "+ Android".
 
