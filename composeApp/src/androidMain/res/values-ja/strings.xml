@@ -1388,4 +1388,5 @@
     <string name="session_council_badge">評議会</string>
     <string name="automata_action_pause">一時停止</string>
     <string name="automata_action_resume">再開</string>
+    <string name="session_watch_filter_tip">ウォッチ中のみ表示</string>
 </resources>
