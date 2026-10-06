@@ -138,7 +138,7 @@ struct SessionTimelineSheet: View {
                         .scrollContentBackground(.hidden)
                     }
                 } else {
-                    message("Loading timeline…")
+                    LoadingIndicator(message: L("Loading timeline…"))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
