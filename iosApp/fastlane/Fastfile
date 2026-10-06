@@ -32,6 +32,9 @@ platform :ios do
     match(
       type: ENV.fetch("MATCH_TYPE", "appstore"),
       readonly: false,
+      # force=true regenerates the profile so it picks up App ID capabilities
+      # enabled since it was made (e.g. Push Notifications → aps-environment).
+      force: ENV["MATCH_FORCE"] == "true",
       api_key: asc_api_key,
       **ci_keychain_opts,
     )
