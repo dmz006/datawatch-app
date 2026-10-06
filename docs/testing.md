@@ -23,6 +23,82 @@ below has a recorded real-device run yet; that pass is open in
 
 ---
 
+## Unreleased (after v1.28.0, 2026-10-06)
+
+### Sessions never connected on a slow link ("3 retries failed")
+
+- **Fixed in:** unreleased (Android + iOS)
+- **Description:** The terminal connect watchdog tore the WebSocket down and reconnected
+  every 5 s until the first screen of output arrived. On a slower route (cellular, a relayed
+  Tailscale path) the TLS + WebSocket handshake plus the first frame took longer than 5 s,
+  so each tick cancelled a connection that had just opened. The web UI worked because its
+  watchdog only re-sends `subscribe` on the open socket.
+- **Steps:** 1. Put a delay on the link (emulator: a host TCP proxy adding 0.8 s per hop in
+  front of the sandbox daemon). 2. Open a session.
+- **Expected:** The terminal shows after the slow connect; no "Connection failed after 3
+  retries".
+- **Actual:** PASS (emulator) — old build: three `JobCancellationException` connect
+  cancellations in logcat; fixed build: connected at 4 s, first frame at 6.4 s, terminal
+  shown. iOS: build only (same change in `TerminalView.swift`), simulator run pending.
+- **How verified:** Emulator A/B against the sandbox through the delay proxy. Real-device
+  check pending.
+
+### Gap above the bottom menu and band above tab titles (Android)
+
+- **Fixed in:** unreleased (Android)
+- **Description:** The tab shell and each tab both reserved the system-bar space, so after
+  the move to edge-to-edge drawing the navigation bar (~48 dp with 3-button navigation) and
+  the status bar were each added twice.
+- **Steps:** 1. Open each tab (Sessions, Automata, Alerts, Observer, Dashboard, Settings).
+  2. Scroll to the end of the list. 3. Look at the space above the title.
+- **Expected:** Content runs to the bottom menu; the title sits under the status bar.
+- **Actual:** PASS (emulator) — all six tabs checked; the ⚡ and + buttons sit above the menu.
+- **How verified:** Emulator screenshots. Real-device check pending.
+
+### Planning showed "Decomposing Automaton…" twice and no compute stats
+
+- **Fixed in:** unreleased (Android + iOS)
+- **Description:** The live planning card and the active-session card both printed the
+  status line, and the compute node was only taken from task sessions, which do not exist
+  until planning ends.
+- **Steps:** 1. Plan an automaton. 2. Open its detail while it is planning.
+- **Expected:** One "Decomposing Automaton…" line; compute stats for the planning LLM's
+  node (or the server's own stats).
+- **Actual:** PASS (unit) — `PrdComputeResolverTest` (4 cases: planning backend from the
+  server default, from the automaton, session node wins, local stats fallback). iOS built
+  on the Mac.
+- **How verified:** Unit tests + Mac build. Device check pending.
+
+### Profile editor Save hidden under the gesture bar (Android)
+
+- **Fixed in:** unreleased (Android)
+- **Description:** Cancel / Save rendered under the navigation bar and were missing from
+  the accessibility tree (found by e2e flow 09).
+- **Steps:** Settings › Profiles › add a project profile; look for Save.
+- **Expected:** Save visible and reachable by TalkBack.
+- **Actual:** PENDING (emulator) — build only; flow 09 still taps by position.
+
+### Council replies showed `_(via: node)_`
+
+- **Fixed in:** unreleased (Android)
+- **Description:** The markdown renderer had no `_italic_` support.
+- **Steps:** Run a council quick run; read a persona reply.
+- **Expected:** "(via: node)" in italics, no underscores; `snake_case` left alone.
+- **Actual:** PASS (unit) — `MarkdownInlineTest` (3 cases).
+
+### Session and Automata cards did not match the web layout (Android)
+
+- **Fixed in:** unreleased (Android; iOS in progress)
+- **Description:** Card structure differed from the web UI (actions at the bottom as large
+  buttons, backend chip and expand icon in the title row, unboxed waiting prompt, outlined
+  cards, full-size lifecycle strip, watch bell in a side column).
+- **Steps:** Same sandbox data in the web UI (phone width) and the app; compare the
+  Sessions and Automata lists.
+- **Expected:** Same rows, order and controls as the web UI.
+- **Actual:** PASS (emulator) — side-by-side screenshots against PWA v8.59 at 412 px width.
+
+---
+
 ## v1.24.0 → v1.28.0 (2026-10-04 → 2026-10-06)
 
 ### Android voice reply fails under Do Not Disturb

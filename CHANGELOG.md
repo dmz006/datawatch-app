@@ -8,6 +8,23 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Sessions failing to connect on slower links ("3 retries failed" while the web UI worked).** The connection watchdog reconnected from scratch every 5 seconds without a first screen of output. Over cellular or a relayed Tailscale route, connecting takes longer than that, so each retry cancelled a connection that had just opened. Like the web UI, the watchdog now re-sends the subscribe on the open connection; the Retry button still reconnects fully. Android and iOS.
+- **Empty gap above the bottom menu and empty band above every tab title (Android).** The navigation-bar and status-bar space was reserved twice after the app moved to edge-to-edge drawing. Both are gone on all six tabs.
+- **Automata planning showed "Decomposing Automaton…" twice and no compute stats.** One status line now; the compute card shows the planning LLM's node (the automaton's planning backend, else the server's default), falling back to the server's own stats. Android and iOS.
+- **Android profile editor:** Cancel and Save are no longer hidden under the gesture bar.
+- **Council replies** render `_italic_` markdown instead of showing the underscores (Android).
+
+### Changed
+- **Session cards match the web UI layout (Android):** name, state, 👁 watch and 🔔 mute on the first line; small Stop / ▶ / Summary / ☷ buttons under it; badges, a Response button, elapsed time and age on the meta line; the waiting prompt in the amber box. The per-card mute toggle sits next to watch (swiping still mutes).
+- **Automata cards match the web UI layout (Android):** compact lifecycle strip, Cancel / Reject / Request Revision on the action row with Approve, 👁 watch and 📍 pin on the right; no outline, as on the web.
+
+### Testing
+- **End-to-end smoke flows (Maestro)** against an isolated sandbox server with real LLM nodes: add server, sessions, terminal, scroll mode, voice with Do Not Disturb, raw config, council, profile editor, Automata tab, deep links; plus Wear OS and Android Automotive launch smoke. Run locally with `scripts/e2e-sandbox.sh` (see `docs/testing/e2e-maestro.md`).
+
+### CI
+- **App Store screenshot workflow** (`ios-screenshots.yml`): builds the app, seeds a demo server and captures iPhone 6.9" and iPad 13" screenshots for the store listing.
+
 ### Documentation
 - **iOS:** new iPhone / iPad guide (`docs/ios.md`: TestFlight install, first-run setup, permissions, known limitations, troubleshooting) and App Store Connect listing guide (`docs/store-listing-ios.md`). App Store and TestFlight listing text now lives in `iosApp/fastlane/metadata/`, with `scripts/check-ios-metadata.sh` to check App Store length limits. README, installation guide and privacy policy cover iOS (Apple push token, Keychain, Face ID, microphone and camera use).
 
