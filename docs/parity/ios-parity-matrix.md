@@ -63,15 +63,15 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 
 | # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a |
 |---|---|---|---|---|---|---|---|---|
-| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 66 | 1 | 0 | 8 | 0 | 5 |
-| 02 | [Sessions list](sections/02-sessions-list.md) | 84 | 66 | 0 | 0 | 10 | 1 | 7 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 102 | 0 | 0 | 12 | 0 | 4 |
-| 04 | [Alerts](sections/04-alerts.md) | 65 | 55 | 0 | 0 | 2 | 0 | 8 |
-| 05 | [Automata](sections/05-automata.md) | 100 | 92 | 0 | 0 | 8 | 0 | 0 |
-| 06 | [Observer](sections/06-observer.md) | 93 | 88 | 0 | 0 | 4 | 0 | 1 |
-| 07 | [Settings](sections/07-settings.md) | 97 | 90 | 0 | 0 | 4 | 1 | 2 |
-| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 62 | 0 | 0 | 4 | 0 | 5 |
-| | **Total** | **708** | **621** | **1** | **0** | **52** | **2** | **32** |
+| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 80 | 71 | 1 | 0 | 3 | 0 | 5 |
+| 02 | [Sessions list](sections/02-sessions-list.md) | 84 | 73 | 0 | 0 | 3 | 1 | 7 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 104 | 0 | 0 | 10 | 0 | 4 |
+| 04 | [Alerts](sections/04-alerts.md) | 65 | 56 | 0 | 0 | 1 | 0 | 8 |
+| 05 | [Automata](sections/05-automata.md) | 100 | 99 | 0 | 0 | 1 | 0 | 0 |
+| 06 | [Observer](sections/06-observer.md) | 93 | 90 | 0 | 0 | 2 | 0 | 1 |
+| 07 | [Settings](sections/07-settings.md) | 97 | 94 | 0 | 0 | 0 | 1 | 2 |
+| 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 66 | 0 | 0 | 0 | 0 | 5 |
+| | **Total** | **708** | **653** | **1** | **0** | **20** | **2** | **32** |
 
 Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
 means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");
@@ -306,7 +306,7 @@ is now tracked as `android-missing` / `misaligned` rows — see *Remaining work*
 - **i18n.** PWA ships 5 locales via `t()`; Android 1,363 strings × 4 extra locales; iOS now ships de/es/fr/ja `.lproj` (~1,379 keys) — new iOS work must land with string keys, not literals.
 - **WS-first data.** PWA and Android consume `sessions`, `session_state`, `stats`, `alert`, `prd_update` frames; iOS now consumes `prd_update` too — the WS `alert` frame (D51a) is the remaining iOS gap.
 - **iOS alert dock** (D3a/D41a/D47a/D51a) is now the single biggest cross-section gap: pill, dock panel, mute, WS alerts and the toast sink all hang off it.
-- **"App had a better idea" backlog.** D59–D83 sent every app-only extra to all three; the PWA half is server issue #172 (50 `pwa-missing` rows, most tagged → #172).
+- **"App had a better idea" backlog.** D59–D83 sent every app-only extra to all three; the PWA half is server issue #172 (50 `pwa-missing` rows, most tagged → #172). 2026-10-06 re-check against datawatch v8.61.5 (BL396 PWA parity sweep): 32 of 52 rows flipped to `aligned`; 20 remain `pwa-missing`.
 - **Motion and splash** decided (D10a, D18a, D23a, D36b, D37a); remaining work is iOS PRD pill pulse/colours and splash dwell timing.
 - **Alert semantics** decided (D47a–D51a); Android follows them, iOS still has per-alert read UI and no dock.
 - **Settings** is now mostly covered on iOS via the generic config/list card renderer; what remains is CRUD depth on list cards (07 `~` rows).

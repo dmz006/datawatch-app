@@ -17,7 +17,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | data | WS `alert` frame → unread++ + toast | ✓ js:879 handleAlert, showToast 4 s | ✓ WebSocketTransport `tryRouteAlertFrame` → `AlertsHub` → A:AppRoot.kt:594 `LiveAlertFeed` dock entry | ✓ `IosAlertFeed` → `LiveAlertFeed` (badge +1 with watched filter, dock entry, id de-dup) | aligned | decided D51a | D51a done on iOS |
 | data | Unread count source | state.alertUnread (WS increments, reset on page open) | ~ REST unreadCount + dock ×N pill contributions (AlertDockChannel) | ✓ REST unreadCount → `dw.alert.badge`, bumped by live WS `alert` frames (LiveAlertFeed, D51a) | aligned | decided D51a | iOS lacks the WS increment path · iOS-F 2026-10-05: already done (stale row) |
 | data | Alert rules GET/POST/DELETE /api/alert-rules, POST …/enable/disable | ✓ js:21179–21260 (Settings) | ✓ A:AlertRulesCard.kt:73–125 | ✓ I:IosAlertRules.kt list/create/delete/setEnabled | aligned | | Lives in Settings on all three |
-| data | Alert rule firings GET (listAlertRuleFirings) | ✗ | ✓ A:AlertRulesCard.kt:76,132 "Recent Firings (N)" ×20 | ✓ I:AlertRulesView.swift:67 "Recent Firings (N)" ×20 | pwa-missing | decided D70a | → #172 |
+| data | Alert rule firings GET (listAlertRuleFirings) | ✓ app.js:22413 `loadAlertRuleFirings` → /api/alert-rules/firings, list app.js:7410 (v8.40, D70) | ✓ A:AlertRulesCard.kt:76,132 "Recent Firings (N)" ×20 | ✓ I:AlertRulesView.swift:67 "Recent Firings (N)" ×20 | aligned | decided D70a | → #172 · PWA shipped in v8.40 (2026-10-06 re-check) |
 | data | Detection filters (/api/filters, detection.*_patterns, settle/repeat timing) | ✓ Settings → Detection section | ✓ A:DetectionFiltersCard.kt | ✓ I:SettingsCatalog.swift:370–377 detection.* patterns + alert_settle/repeat; `FiltersView` /api/filters CRUD | aligned | | |
 | data | Push delivery: UnifiedPush SSE self-registration (Tier 1) | n/a (browser) | ✓ A:push/UnifiedPushSseService.kt | ✗ | n/a | | Android-specific tier; iOS path is APNs |
 | data | Push delivery: ntfy fallback service | n/a | ✓ A:push/NtfyFallbackService.kt | ✗ | n/a | | FCM removed v0.33.17 |
@@ -54,7 +54,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Per-alert ✓ mark-read control / unread dot | ✗ | ✗ removed | ✗ no unread dot / read dimming (D49a) | aligned | decided D49a | iOS should drop read UI · iOS-F 2026-10-05: already removed (stale row) |
 | interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✗ removed | ✗ | aligned | decided D50d | |
 | interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ✗ removed 2026-10-04 | aligned | decided D50d | D50d done on iOS |
-| data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✓ I:AlertsView.swift:20 `LocalSessionPrefs.badgeCount` | pwa-missing | decided D61a | → #172 |
+| data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✓ I:AlertsView.swift:20 `LocalSessionPrefs.badgeCount` | pwa-missing | decided D61a | → #172 · 2026-10-06 re-check: still missing in v8.61.5: D61 (v8.50) filters the sessions list, but `updateAlertBadge` app.js:17237 still counts all unread |
 | element | Alert dock panel (header chips per type, collapse chevron, ✕, 🔕; body cards with ×N, 3-line clamp, left rail) | ✓ js:15044 | ✓ A:AlertDockOverlay.kt + AlertDockChannel.kt | ✓ `AlertDockPanel` (type ×N chips, ⌄, ✕, 🔕; cards with rail, ×N, ✕, 3-line clamp ▸ more) | aligned | decided D3a | |
 | data | Dock coalescing: family key, 60 s window, ×N, max 100 | ✓ js:15004–15040 | ✓ A:AlertDockChannel.kt:42–43 MAX_ENTRIES 100, 60 s window | ✓ `AlertDock.post` family key, 60 s, ×N, max 100 | aligned | decided D3a | |
 | data | Dock mute persisted per browser session (sessionStorage cs_alert_muted) | ✓ js:15204 | ✓ A:AlertDockChannel.kt:48,77 in-memory per app session | ✓ AlertDock.muted in-memory per app run (D47a, same as Android) | aligned | decided D47a | iOS-F 2026-10-05: already done (stale row) |
@@ -73,7 +73,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Car head-unit notification actions (CarAppExtender Play/Reply) | n/a | ✓ A:NotificationPoster.kt:235 | n/a | n/a | | |
 
 ## Coverage
-rows: 65 · aligned: 55 · ios-missing: 0 · android-missing: 0 · pwa-missing: 2 · misaligned: 0 · n/a: 8
+rows: 65 · aligned: 56 · ios-missing: 0 · android-missing: 0 · pwa-missing: 1 · misaligned: 0 · n/a: 8
 
 ## Decisions (resolved 2026-10-04)
 1. 🔕 semantics → **D47a** apps implement a real dock mute (Android done; iOS pending, needs dock).
