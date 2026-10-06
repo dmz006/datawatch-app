@@ -16,6 +16,13 @@ public data class DeviceRegisterDto(
     @SerialName("app_version") val appVersion: String,
     val platform: String,
     @SerialName("profile_hint") val profileHint: String,
+    /**
+     * APNs only: "production" (TestFlight/App Store) or "development" (debug /
+     * sandbox). The server must send to the matching APNs host
+     * (api.push.apple.com vs api.sandbox.push.apple.com) or APNs answers
+     * BadDeviceToken. Omitted for fcm/ntfy.
+     */
+    @SerialName("apns_environment") val apnsEnvironment: String? = null,
 )
 
 /** Response: `{ "device_id": "<uuid>" }`. */

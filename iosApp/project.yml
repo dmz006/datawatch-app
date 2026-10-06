@@ -60,10 +60,13 @@ targets:
       path: iosApp/DatawatchClient.entitlements
       # xcodegen regenerates this file from `properties` (it dropped the hand-written
       # keys before). Keychain group = the app's own (IosTokenStore).
-      # aps-environment is intentionally NOT set yet: push (APNs) isn't enabled on
-      # the App ID, and requesting it would break TestFlight signing. Add
-      # `aps-environment: development` here when APNs is set up.
+      # aps-environment: Push Notifications is enabled on the App ID and the match
+      # App Store profile carries aps-environment = production (verified
+      # 2026-10-06, ios-match-init.yml printout). TestFlight / App Store use
+      # production (Apple: aps-environment docs). Debug simulator builds are
+      # ad-hoc/unsigned, so this value only matters for the signed release.
       properties:
+        aps-environment: production
         keychain-access-groups:
           - $(AppIdentifierPrefix)com.dmzs.datawatchclient
     settings:

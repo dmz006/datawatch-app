@@ -13,6 +13,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Before launch completes so a notification tap that cold-starts the app
         // is delivered (D87b local notifications → open the session).
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
+        // Apple ("Registering your app with APNs"): register on EVERY launch —
+        // the token can change (restore, reinstall, new device) and must not be
+        // cached. Getting a token needs no user permission; showing alerts does.
+        application.registerForRemoteNotifications()
         return true
     }
 
@@ -29,7 +33,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
-        // Non-fatal — app works without push notifications.
+        // Apple: "set a flag and try to register again at a later time" —
+        // retried on the next foreground (see willEnterForeground below).
+        Task { @MainActor in NotificationService.shared.registrationFailed = true }
     }
 
     func application(
@@ -97,8 +103,12 @@ struct DatawatchClientApp: App {
             .onReceive(
                 NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
             ) { _ in
-                // Re-register all profiles on foreground in case a new profile was
-                // added on another device or the APNs token rotated.
+                // Retry a failed APNs registration (Apple guidance), then forward the
+                // current token to every profile (covers newly added servers).
+                if NotificationService.shared.registrationFailed {
+                    NotificationService.shared.registrationFailed = false
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
                 IosServiceLocator.shared.reregisterAllProfiles(onComplete: nil)
             }
     }

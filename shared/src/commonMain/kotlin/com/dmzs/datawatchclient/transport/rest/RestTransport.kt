@@ -504,6 +504,7 @@ public class RestTransport(
         appVersion: String,
         platform: DevicePlatform,
         profileHint: String,
+        apnsEnvironment: String?,
     ): Result<String> =
         request {
             val res: DeviceRegisterResponseDto =
@@ -517,6 +518,7 @@ public class RestTransport(
                             appVersion = appVersion,
                             platform = platform.wire,
                             profileHint = profileHint,
+                            apnsEnvironment = apnsEnvironment,
                         ),
                     )
                 }.body()
