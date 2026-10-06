@@ -23,6 +23,8 @@ Entry point for everything docs-related. Reading order:
 | [architecture.md](architecture.md) | C4 context / container / component + module tree |
 | [data-flow.md](data-flow.md) | Mermaid sequence diagrams for every major interaction (24, incl. council live runs, planning stream, scroll mode, channel-ready, APNs, profile editor) |
 | [transports.md](transports.md) | REST, WebSocket, SSE streams and MCP SSE — when each is used, fallback, limits, security |
+| [ios.md](ios.md) | iOS app: TestFlight install, first-run setup, permissions, limitations, troubleshooting |
+| [store-listing-ios.md](store-listing-ios.md) | Every App Store Connect / TestFlight field, privacy label, age rating, screenshot sizes |
 | [config-reference.md](config-reference.md) | Every setting the apps expose, its UI path, wire key and persistence |
 | [implementation.md](implementation.md) | Implementation notes and settings fields |
 | [data-model.md](data-model.md) | ER diagram + SQLDelight schema + encryption scope |

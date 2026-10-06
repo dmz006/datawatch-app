@@ -267,6 +267,7 @@ First launch (Android):
 - 🧭 [Architecture](docs/architecture.md) — module layout + dependency graph
 - 🔌 [Data flow](docs/data-flow.md) — sequence diagrams for every interaction
 - 🚚 [Transports](docs/transports.md) — REST, WebSocket, SSE streams, MCP: when each is used
+- 📱 [iOS app](docs/ios.md) — TestFlight install, setup, permissions, limitations · [App Store listing](docs/store-listing-ios.md)
 - ⚙️ [Configuration reference](docs/config-reference.md) — every setting the apps expose
 - 🧪 [Testing tracker](docs/testing-tracker.md) · [Bug test log](docs/testing.md)
 - 🎬 [Usage guide](docs/usage.md) — how every screen behaves
