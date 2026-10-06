@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.0] — 2026-10-06
+
+### Fixed
+- **iOS push registration now follows Apple's documentation:**
+  - The app registers with APNs on every launch (it used to on the first launch only).
+  - A failed registration is retried on the next foreground.
+  - The device token is no longer cached in local storage.
+  - The `aps-environment` (production) entitlement is set; the App Store profile was regenerated with it.
+  - Device registration tells the server whether the token is production or development (`apns_environment`).
+  - Delivery itself needs the server's APNs sender (dmz006/datawatch#183) and an APNs key.
+- **The reconnect status** ("Reconnecting to session… / attempt N of 3") is split over two centred lines instead of wrapping mid-phrase.
+
+### Changed
+- **Terminal size follows the server's per-session console settings** (e.g. 120 columns for Claude sessions), like the web UI, on both apps. Android's unused local "Terminal dimensions" override is gone.
+
+### CI
+- **Security dependency process (datawatch parity):** Dependabot version updates, an accepted-risks registry, and a daily check that flags when a stable release fixes an accepted risk (tracking issue #209). CodeQL uses the advanced setup for Swift, Kotlin and Actions.
+
 ### Security
 - **Dependabot triage (#208).** Ktor 2.3.12 → 2.3.13 (GHSA-8qv4-773j-c979). The phone app and Android Auto module now resolve Guava 33.3.1-android (the version the Wear app already ships) instead of 31.1-android pulled in by `androidx.car.app` (GHSA-7g45-4rm6-3mm3, GHSA-5mg8-w23w-74h3). This is a version constraint; no new dependency is added.
 - **Kotlin 2.0.20 → 2.4.20 (Dependabot alert #71, Kotlin Gradle plugin; build-time only).** First stable release containing the fix. The Compose and serialization compiler plugins move with it. Android Lint now runs the analyzer from AGP 9.3.1 and minified release builds use R8 9.1.56, because the versions bundled with AGP 8.5.2 cannot read Kotlin 2.4 class metadata. The app still builds with AGP 8.5.2. The alert is removed from `security/accepted-risks.yml`.
