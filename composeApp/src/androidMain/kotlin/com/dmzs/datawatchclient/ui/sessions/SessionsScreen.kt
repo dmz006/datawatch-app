@@ -148,6 +148,8 @@ public fun SessionsScreen(
 ) {
     val state by vm.state.collectAsState()
     val watchedIds by vm.watchedIds.collectAsState()
+    // PWA D61 `sessionWatchFilter`: show watched sessions only (not persisted).
+    var watchFilter by remember { mutableStateOf(false) }
     val alertsState by alertsVm.state.collectAsState()
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     // Parity D15a — PWA select mode: entered with the ☑ toolbar button (only
@@ -348,9 +350,13 @@ public fun SessionsScreen(
                 onToggleTreeView = vm::toggleTreeView,
                 pendingSchedules = state.pendingSchedules,
                 onCancelSchedule = vm::cancelSchedule,
+                watchFilter = watchFilter,
+                watchedCount = watchedIds.size,
+                onToggleWatchFilter = { watchFilter = !watchFilter },
             )
 
-            val visible = state.visibleSessions
+            val visible =
+                if (watchFilter) state.visibleSessions.filter { it.id in watchedIds } else state.visibleSessions
             if (visible.isEmpty()) {
                 if (state.refreshing) {
                     SessionSkeletonList()
@@ -655,6 +661,10 @@ private fun SessionsToolbar(
     onToggleTreeView: () -> Unit = {},
     pendingSchedules: List<com.dmzs.datawatchclient.domain.Schedule> = emptyList(),
     onCancelSchedule: (String) -> Unit = {},
+    // PWA D61: `👁 N` toggles the watched-only filter.
+    watchFilter: Boolean = false,
+    watchedCount: Int = 0,
+    onToggleWatchFilter: () -> Unit = {},
 ) {
     // Toolbar is rendered only when expanded (user toggled search) OR
     // something filter-related is active (stale state we don't want
@@ -662,7 +672,7 @@ private fun SessionsToolbar(
     // icon lives on the TopAppBar above.
     val show =
         expanded || filterText.isNotEmpty() ||
-            activeBackendFilter != null || showHistory || treeView
+            activeBackendFilter != null || showHistory || treeView || watchFilter
     if (!show) return
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
         run {
@@ -730,25 +740,50 @@ private fun SessionsToolbar(
             // Parity D12a — PWA `State (N) ▸` button; chips for every real
             // state with a count > 0 (plus All and the selected one).
             val stateActive = stateChip != SessionsViewModel.UiState.STATE_CHIP_ALL
-            OutlinedButton(
-                onClick = { stateExpanded = !stateExpanded },
-                modifier = Modifier.padding(top = 4.dp),
-                contentPadding =
-                    androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 8.dp,
-                        vertical = 4.dp,
-                    ),
-            ) {
-                Text(
-                    if (stateActive) "State: $stateChip" else "State (${visibleStateChips.size - 1})",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (stateActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                )
-                Icon(
-                    if (stateExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.size(12.dp),
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(
+                    onClick = { stateExpanded = !stateExpanded },
+                    modifier = Modifier.padding(top = 4.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 8.dp,
+                            vertical = 4.dp,
+                        ),
+                ) {
+                    Text(
+                        if (stateActive) "State: $stateChip" else "State (${visibleStateChips.size - 1})",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (stateActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                    Icon(
+                        if (stateExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                // PWA D61 backend-filter-badge `👁 N` (active = accent).
+                val watchDesc = stringResource(R.string.session_watch_filter_tip)
+                OutlinedButton(
+                    onClick = onToggleWatchFilter,
+                    modifier = Modifier.padding(top = 4.dp).semantics { contentDescription = watchDesc },
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 8.dp,
+                            vertical = 4.dp,
+                        ),
+                    border =
+                        androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (watchFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        ),
+                ) {
+                    Text(
+                        "👁 $watchedCount",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (watchFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
             if (stateExpanded) {
                 LazyRow(

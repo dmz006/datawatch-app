@@ -1701,4 +1701,5 @@
     <string name="session_council_badge">Council</string>
     <string name="automata_action_pause">Pause</string>
     <string name="automata_action_resume">Resume</string>
+    <string name="session_watch_filter_tip">Show watched only</string>
 </resources>

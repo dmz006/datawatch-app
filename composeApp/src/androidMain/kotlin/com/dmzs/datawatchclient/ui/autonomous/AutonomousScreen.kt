@@ -109,6 +109,8 @@ public fun AutonomousScreen(
     var typeFilter by remember { mutableStateOf<String?>(null) }
     // PWA _automataState.historyOn: false = active PRDs only; true = include terminal statuses
     var historyOn by remember { mutableStateOf(false) }
+    // PWA D61 `_automataState.watchFilter`: watched automata only (not persisted).
+    var watchFilter by remember { mutableStateOf(false) }
     var openPrdId by remember { mutableStateOf<String?>(null) }
     // Retained so the slide-out animation shows the PRD instead of a blank
     var detailPrd by remember { mutableStateOf<PrdDto?>(null) }
@@ -291,12 +293,13 @@ public fun AutonomousScreen(
                             }
                             AutomataActionBtn("⊞", active = filterOpen) { filterOpen = !filterOpen }
                             AutomataActionBtn("⏱", active = historyOn) { historyOn = !historyOn }
+                            AutomataActionBtn("👁", active = watchFilter) { watchFilter = !watchFilter }
                         }
                     }
                 }
                 when (currentTab) {
                     0 ->
-                        PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, historyOn = historyOn, watchedAutomataIds = watchedAutomataIds, onOpenPrd = {
+                        PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, historyOn = historyOn, watchedAutomataIds = watchedAutomataIds, watchFilter = watchFilter, onOpenPrd = {
                             if (!selectMode) openPrdId = it
                         }, onStatusFilter = {
                             statusFilter = it
@@ -622,6 +625,7 @@ private fun PrdsBody(
     selectMode: Boolean = false,
     historyOn: Boolean = false,
     watchedAutomataIds: Set<String> = emptySet(),
+    watchFilter: Boolean = false,
     onOpenPrd: (String) -> Unit,
     onStatusFilter: (String?) -> Unit,
     onIncludeTemplates: (Boolean) -> Unit,
@@ -653,6 +657,7 @@ private fun PrdsBody(
                     (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
                     // History filter: override when a status filter is explicitly set
                     (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses) &&
+                    (!watchFilter || prd.id in watchedAutomataIds) &&
                     matchesAutomataSearch(prd, search)
             }
             .sortedWith(

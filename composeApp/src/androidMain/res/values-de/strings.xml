@@ -1388,4 +1388,5 @@
     <string name="session_council_badge">Rat</string>
     <string name="automata_action_pause">Pausieren</string>
     <string name="automata_action_resume">Fortsetzen</string>
+    <string name="session_watch_filter_tip">Nur beobachtete anzeigen</string>
 </resources>
