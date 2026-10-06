@@ -1,0 +1,45 @@
+name: xterm.js update check
+
+# Monthly check of the bundled xterm.js + fit/search add-ons (terminal for
+# Android + iOS) against the web UI's bundled version (parity reference) and
+# the newest stable npm release (>= 72 h old). Updating xterm needs a live test
+# against a real session, so this only reports: it keeps ONE open tracking
+# issue up to date (comment) instead of opening a PR.
+on:
+  schedule:
+    - cron: "23 7 3 * *"   # 07:23 UTC on the 3rd of each month
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check bundled xterm.js
+        id: chk
+        run: |
+          python3 scripts/check-xterm-updates.py > report.md
+          cat report.md
+          echo "status=$(head -1 report.md)" >> "$GITHUB_OUTPUT"
+      - name: Open / update tracking issue
+        if: steps.chk.outputs.status == 'UPDATES_AVAILABLE'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="xterm.js update available (bundled terminal)"
+          body="$(tail -n +3 report.md)"
+          num="$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
+                 --jq ".[] | select(.title == \"$title\") | .number" | head -1)"
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body "Monthly check $(date -u +%F):
+
+          $body"
+          else
+            gh issue create --title "$title" --body "Monthly check $(date -u +%F) found the bundled terminal library behind.
+
+          $body"
+          fi

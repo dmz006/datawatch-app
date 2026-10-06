@@ -1,0 +1,6 @@
+# Bundled xterm.js files (Android + iOS share this folder). Read by
+# scripts/check-xterm-updates.py; update these lines when the files change.
+# package=version  (npm package the file came from)
+xterm=5.3.0
+xterm-addon-fit=0.8.0
+xterm-addon-search=0.13.0

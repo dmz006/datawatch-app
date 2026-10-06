@@ -228,6 +228,18 @@ licence alongside). The pinned upstream tag lives in `fonts/JetBrainsMono.VERSIO
 - To update by hand: `scripts/update-jetbrains-mono.sh` (prints `UPDATED`/`UP_TO_DATE`).
 - Never swap the font for a CDN link — the WebView loads `file://` assets offline.
 
+## xterm.js — bundled, update check (operator, 2026-10-06)
+
+The terminal's xterm.js + fit/search add-ons are bundled in
+`composeApp/src/androidMain/assets/xterm/` (shared with iOS); versions are in
+`xterm.VERSIONS`. `.github/workflows/xterm-update-check.yml` runs
+`scripts/check-xterm-updates.py` monthly against the web UI's bundled version
+(parity reference) and the newest stable npm release (≥ 72 h; packages are
+`@xterm/*` since 5.4). It only reports — one tracking issue, commented each
+month — because updating xterm needs a live test against a real session
+(DATAWATCH-APP-CONTEXT.md › Updating xterm.js). Update `xterm.VERSIONS` whenever
+the files change.
+
 ## Mermaid — bundled, kept current (operator, 2026-10-06)
 
 Automaton spec diagrams use a bundled Mermaid (ADR-0051), never a CDN:
