@@ -193,6 +193,10 @@ public fun SessionsScreen(
     }
 
     Scaffold(
+        // Tab screens sit inside the app shell Scaffold, which already
+        // reserves the system bars + bottom nav; the default systemBars
+        // insets here doubled the nav-bar gap above the bottom menu.
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
             run {
                 TopAppBar(
@@ -284,10 +288,10 @@ public fun SessionsScreen(
                 // centre now.
                 FloatingActionButton(
                     onClick = onNewSession,
-                    modifier =
-                        Modifier
-                            .offset(y = 36.dp)
-                            .padding(end = 4.dp),
+                    // The old offset(y = 36.dp) compensated for the doubled
+                    // nav-bar inset (contentWindowInsets fix above); without
+                    // it the FAB now sits at the M3 default just above the menu.
+                    modifier = Modifier.padding(end = 4.dp),
                     // PWA `.fab` fill = accent2 (D4a: M3 shape, PWA colour).
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,

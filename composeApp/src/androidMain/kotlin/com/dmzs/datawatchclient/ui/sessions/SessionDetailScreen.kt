@@ -913,7 +913,8 @@ public fun SessionDetailScreen(
                 // the WS connects (reachable != null) AND the first pane_capture arrives.
                 // Stays up through the full "WS handshake → resize_term → first frame" sequence.
                 // PWA connect watchdog (startTermConnectWatchdog): every 5 s
-                // without a first frame, re-subscribe, up to 3 times; then show
+                // without a first frame, re-send subscribe on the open socket
+                // (never reconnect — that aborted slow handshakes), up to 3 times; then show
                 // "Unable to connect…" with Retry / Use without terminal.
                 var watchdogEpoch by remember { mutableStateOf(0) }
                 var watchdogAttempt by remember { mutableStateOf(0) }
@@ -931,7 +932,7 @@ public fun SessionDetailScreen(
                             break
                         }
                         watchdogAttempt++
-                        vm.restartStream()
+                        vm.resubscribe()
                     }
                 }
                 val reconnectingLabel = stringResource(R.string.term_reconnecting_attempt, watchdogAttempt, TERM_CONNECT_MAX_RETRIES)
