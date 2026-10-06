@@ -148,17 +148,24 @@ public fun Modifier.pwaStateEdge(state: SessionState): Modifier {
  * single row.
  */
 @Composable
-public fun Modifier.pwaCard(): Modifier {
+public fun Modifier.pwaCard(bordered: Boolean = true): Modifier {
     val dw = LocalDatawatchColors.current
-    return this
-        // clip FIRST so pwaStateEdge's drawBehind rect is also rounded at the corners
-        .clip(RoundedCornerShape(12.dp))
-        .background(color = dw.bg2, shape = RoundedCornerShape(12.dp))
-        .border(
+    val base =
+        this
+            // clip FIRST so pwaStateEdge's drawBehind rect is also rounded at the corners
+            .clip(RoundedCornerShape(12.dp))
+            .background(color = dw.bg2, shape = RoundedCornerShape(12.dp))
+    // PWA `.session-card` / `.prd-card` have no outline (bg2 + 4px state edge
+    // only); `.settings-section` cards keep the 1px --border stroke.
+    return if (!bordered) {
+        base
+    } else {
+        base.border(
             width = 1.dp,
             color = dw.border,
             shape = RoundedCornerShape(12.dp),
         )
+    }
 }
 
 /**

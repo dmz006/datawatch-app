@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,6 +9,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,12 +22,14 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,15 +40,16 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
@@ -83,13 +86,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -111,14 +120,9 @@ import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaStatePill
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaStateEdge
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.filled.Fullscreen
 
 /**
  * Approximate session-row height in dp — used by the long-press drag
@@ -1107,11 +1111,41 @@ private fun SessionRow(
     // cannot lift a parent's CSS group opacity, so the whole card renders dimmed.)
     val doneAlpha = sessionCardAlpha(session.state)
 
+    // One fetch path for the inline current status (button, 🤖 Summary on
+    // running rows, and the ↻ refresh) — PWA fetchCurrentStatus.
+    val refreshCurrentStatus: () -> Unit = {
+        if (!currentStatusLoading) {
+            currentStatusLoading = true
+            currentStatusScope.launch {
+                try {
+                    val dto = fetchCurrentStatus()
+                    currentStatusText =
+                        when {
+                            dto == null -> "($unavailableStr)"
+                            dto.noChange -> "($noChangeStr)"
+                            else -> dto.currentStatus
+                        }
+                    currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
+                    currentStatusAtMs = System.currentTimeMillis()
+                    currentStatusLongExpanded = false
+                } finally {
+                    currentStatusLoading = false
+                }
+            }
+        }
+    }
+    val isActive =
+        session.state == SessionState.Running || session.state == SessionState.Waiting ||
+            session.state == SessionState.RateLimited
+    val isDone =
+        session.state == SessionState.Completed || session.state == SessionState.Killed ||
+            session.state == SessionState.Error
+
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
                 .alpha(doneAlpha)
                 .graphicsLayer {
                     // While being dragged, the row floats vertically
@@ -1132,7 +1166,8 @@ private fun SessionRow(
                         onDrag = { _, delta -> onDrag(delta.y) },
                     )
                 }
-                .pwaCard()
+                // PWA `.session-card`: bg2, radius 12, 4px state edge, no outline.
+                .pwaCard(bordered = false)
                 .pwaStateEdge(session.state)
                 .then(
                     if (isSelected) {
@@ -1145,11 +1180,6 @@ private fun SessionRow(
                 )
                 // v0.33.15 (B3): pointerInput BEFORE combinedClickable
                 // so the horizontal-drag detector sees events first.
-                // combinedClickable's internal pointerInput consumed
-                // drag gestures on the main-pass in the previous order,
-                // so swipe-to-mute never fired — the finger-up just
-                // looked like a tap that Compose swallowed via the
-                // press-release cycle.
                 .pointerInput(session.id, selectionMode) {
                     if (selectionMode) return@pointerInput
                     var dx = 0f
@@ -1163,12 +1193,11 @@ private fun SessionRow(
                     onClick = onClick,
                     onLongClick = onLongPress,
                 )
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                // PWA `.session-card { padding: 12px 14px }` (+4dp for the edge).
+                .padding(start = 18.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
     ) {
-        // Header row: name/id + state pill + mute/more actions.
+        // ── Line 1 — PWA header row (phone width): task | STATE 👁 🔔 ⋮⋮ ──
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // PWA parity: show checkbox for non-active sessions when in select mode
-            val isActive = session.state == SessionState.Running || session.state == SessionState.Waiting || session.state == SessionState.RateLimited
             if (selectionMode && !isActive) {
                 Checkbox(
                     checked = isSelected,
@@ -1177,35 +1206,19 @@ private fun SessionRow(
                 )
             }
             // Parity D16a — PWA line 1: name, else task (80 chars), else "(no task)".
-            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                val line1 =
-                    (session.name?.takeIf { it.isNotBlank() } ?: session.taskSummary?.takeIf { it.isNotBlank() })
-                        ?.let { if (it.length > 80) it.take(80) + "…" else it }
-                        ?: "(no task)"
-                Text(
-                    line1,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
-                )
-            }
-            PwaStatePill(session.state)
-            if (!backend.isNullOrBlank()) {
-                Spacer(modifier = Modifier.width(6.dp))
-                PwaMetaBadge(text = backend)
-            }
-            // v0.42.6 — Container Workers provenance chip (PWA v5.26.58).
-            // Purple ⬡ when this session was spawned by a worker agent.
-            // Hidden for user-spawned sessions (the common case).
-            if (!session.agentId.isNullOrBlank()) {
-                Spacer(modifier = Modifier.width(6.dp))
-                WorkerPill(agentId = session.agentId!!)
-            }
-            // v0.74.0 S5-7 — Council virtual session badge
-            val isCouncil = backend == "council-virtual" || session.fullId.startsWith("council-")
-            if (isCouncil) {
-                Spacer(modifier = Modifier.width(6.dp))
-                PwaMetaBadge(text = "🎭")
-            }
+            val line1 =
+                (session.name?.takeIf { it.isNotBlank() } ?: session.taskSummary?.takeIf { it.isNotBlank() })
+                    ?.let { if (it.length > 80) it.take(80) + "…" else it }
+                    ?: "(no task)"
+            Text(
+                line1,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+            )
             if (reorderMode) {
                 IconButton(onClick = onMoveUp, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.ArrowUpward, contentDescription = stringResource(R.string.sessions_move_up))
@@ -1214,27 +1227,39 @@ private fun SessionRow(
                     Icon(Icons.Filled.ArrowDownward, contentDescription = stringResource(R.string.sessions_move_down))
                 }
             }
+            // PWA `|` divider between the action group and the state pill.
+            Text(
+                "|",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            PwaStatePill(session.state)
             if (!reorderMode && !selectionMode) {
-                // BL303 — PWA `sess-maximize-btn`: open in Dashboard expand mode.
-                IconButton(onClick = onExpand, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Filled.Fullscreen,
-                        contentDescription = stringResource(R.string.dash_expand_session),
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                IconButton(
-                    onClick = onWatchToggle,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        if (isWatched) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
-                        contentDescription = stringResource(if (isWatched) R.string.session_watch_on else R.string.session_watch_off),
-                        modifier = Modifier.size(18.dp),
-                        tint = if (isWatched) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    )
-                }
+                // PWA 👁 watch toggle (accent2 when on, .4 opacity when off).
+                val watchDesc = stringResource(if (isWatched) R.string.session_watch_on else R.string.session_watch_off)
+                Text(
+                    "👁",
+                    fontSize = 14.sp,
+                    color = if (isWatched) colors.accent2 else MaterialTheme.colorScheme.onSurface,
+                    modifier =
+                        Modifier
+                            .padding(start = 8.dp)
+                            .alpha(if (isWatched) 1f else 0.4f)
+                            .clickable(onClick = onWatchToggle)
+                            .semantics { contentDescription = watchDesc },
+                )
+                // PWA 🔔/🔕 mute toggle (warning tint when muted). Swipe still mutes too.
+                val muteDesc = stringResource(if (session.muted) R.string.sessions_unmute else R.string.sessions_mute)
+                Text(
+                    if (session.muted) "🔕" else "🔔",
+                    fontSize = 14.sp,
+                    modifier =
+                        Modifier
+                            .padding(start = 8.dp)
+                            .alpha(if (session.muted) 1f else 0.4f)
+                            .clickable(onClick = onSwipeMute)
+                            .semantics { contentDescription = muteDesc },
+                )
             }
             SessionDragHandle(
                 enabled = !selectionMode,
@@ -1244,14 +1269,74 @@ private fun SessionRow(
             )
         }
 
-        // Meta row: short-id pill (+ hostname only with several servers);
-        // [📄 Response] + time on the right (parity D16a, PWA layout).
+        // ── Line 2 — PWA `.card-actions` (wraps under the header on phones) ──
+        if (!selectionMode) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isActive) {
+                    PwaCardActionButton(
+                        "■ " + stringResource(R.string.action_stop),
+                        color = MaterialTheme.colorScheme.error,
+                        onClick = { killConfirmOpen = true },
+                    )
+                    if (session.state == SessionState.Waiting) {
+                        PwaCardActionButton(
+                            "▶",
+                            contentDescription = stringResource(R.string.sessions_quick_commands),
+                            onClick = { quickCmdsOpen = true },
+                        )
+                    }
+                } else if (isDone) {
+                    PwaCardActionButton(
+                        "↻ " + stringResource(R.string.action_restart),
+                        onClick = { restartConfirmOpen = true },
+                    )
+                    if (deleteSupported) {
+                        PwaCardActionButton(
+                            "🗑",
+                            color = MaterialTheme.colorScheme.error,
+                            contentDescription = stringResource(R.string.action_delete),
+                            onClick = { deleteConfirmOpen = true },
+                        )
+                    }
+                }
+                // Parity D43a — PWA `🤖 Summary` (only when session.summarizer is
+                // enabled). Running sessions take the current-status path.
+                if (summarizerEnabled) {
+                    val busy = summarizing || (session.state == SessionState.Running && currentStatusLoading)
+                    PwaCardActionButton(
+                        if (busy) {
+                            "⏳ " + stringResource(R.string.current_status_summarizing)
+                        } else {
+                            "🤖 " + stringResource(R.string.session_summary_btn)
+                        },
+                        fontSize = 10,
+                        enabled = !busy,
+                        onClick = {
+                            if (session.state == SessionState.Running) refreshCurrentStatus() else onManualSummarize()
+                        },
+                    )
+                }
+                // BL303 — PWA `sess-maximize-btn` ☷: open in Dashboard expand mode.
+                PwaCardActionButton(
+                    "☷",
+                    fontSize = 12,
+                    contentDescription = stringResource(R.string.dash_expand_session),
+                    onClick = onExpand,
+                )
+            }
+        }
+
+        // ── Line 3 — PWA meta row: id, badges … [📄 Response] elapsed ago ──
         Row(
-            modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+            modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             SessionIdPill(session.id)
-            Spacer(modifier = Modifier.width(6.dp))
             val hostname = session.hostnamePrefix
             if (showHostname && !hostname.isNullOrBlank()) {
                 Text(
@@ -1259,18 +1344,15 @@ private fun SessionRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    "  ·  ",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
+            val isCouncil = backend == "council-virtual" || session.fullId.startsWith("council-")
+            if (isCouncil) OutlineBadge("🎭 " + stringResource(R.string.session_council_badge), Color(0xFFF59E0B))
+            if (!backend.isNullOrBlank() && !isCouncil) OutlineBadge(backend, colors.accent2)
             // PWA server badge (federated row from a non-local server).
             val serverName = session.server
-            if (!serverName.isNullOrBlank() && serverName != "local") {
-                OutlineBadge(serverName, colors.accent2)
-                Spacer(modifier = Modifier.width(4.dp))
-            }
+            if (!serverName.isNullOrBlank() && serverName != "local") OutlineBadge(serverName, colors.accent2)
+            // v0.42.6 — Container Workers provenance chip (PWA `⬡ worker`).
+            if (!session.agentId.isNullOrBlank()) WorkerPill(agentId = session.agentId!!)
             // PWA `↳ child of [host]` parent badge (BL347 lineage).
             val parentId = session.parentId
             if (!parentId.isNullOrBlank()) {
@@ -1279,20 +1361,20 @@ private fun SessionRow(
                     MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.alpha(0.7f),
                 )
-                Spacer(modifier = Modifier.width(4.dp))
             }
             // PWA `⚠ zombie` (claude_alive === false).
-            if (session.claudeAlive == false) {
-                OutlineBadge("⚠ zombie", Color(0xFFF59E0B))
-                Spacer(modifier = Modifier.width(4.dp))
-            }
+            if (session.claudeAlive == false) OutlineBadge("⚠ zombie", Color(0xFFF59E0B))
             Spacer(modifier = Modifier.weight(1f))
+            if (!session.lastResponse.isNullOrBlank()) {
+                PwaCardActionButton(
+                    "📄 " + stringResource(R.string.sessions_response_btn),
+                    fontSize = 10,
+                    onClick = { responseOpen = true },
+                )
+            }
             // BL383 live elapsed clock on active cards (1 s tick, tabular, accent2).
-            val isActiveRow =
-                session.state == SessionState.Running || session.state == SessionState.Waiting ||
-                    session.state == SessionState.RateLimited
             val createdMs = session.createdAt.toEpochMilliseconds()
-            if (isActiveRow && createdMs > 0L) {
+            if (isActive && createdMs > 0L) {
                 val nowMs by androidx.compose.runtime.produceState(System.currentTimeMillis(), session.id) {
                     while (true) {
                         kotlinx.coroutines.delay(1000)
@@ -1307,41 +1389,16 @@ private fun SessionRow(
                         color = colors.accent2.copy(alpha = 0.85f),
                         style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
                 }
-            }
-            if (!session.lastResponse.isNullOrBlank()) {
-                TextButton(
-                    onClick = { responseOpen = true },
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 6.dp,
-                            vertical = 0.dp,
-                        ),
-                    modifier = Modifier.height(20.dp),
-                ) {
-                    Icon(
-                        Icons.Filled.Description,
-                        contentDescription = stringResource(R.string.sessions_view_response),
-                        modifier = Modifier.size(11.dp),
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(stringResource(R.string.sessions_view_response), style = MaterialTheme.typography.labelSmall)
-                }
-                Spacer(modifier = Modifier.width(4.dp))
             }
             Text(
                 timeLabel,
-                style = MaterialTheme.typography.labelSmall,
+                fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        // Waiting-input context preview — PWA-style quote block under rows
-        // that block on user input. Prefers the multi-line
-        // `prompt_context` payload (PWA behaviour) so trust prompts show
-        // the imperative line *and* the action line; falls back to
-        // `last_prompt` on older servers. Last 4 lines, 100 chars per.
+        // ── PWA `.card-waiting-row` — amber-tinted prompt box ──
         val ctxLines: List<String> =
             when {
                 !session.promptContext.isNullOrBlank() ->
@@ -1353,315 +1410,120 @@ private fun SessionRow(
                 else -> emptyList()
             }
         if (session.state == SessionState.Waiting) {
-            // PWA `card-waiting-label`: last 4 context lines, or "Input needed".
+            val warning = Color(0xFFF59E0B)
+            // PWA `card-waiting-label`: last 4 context lines (≤100 chars), or "Input needed".
             val shownLines =
                 ctxLines.takeLast(4).map { if (it.length > 100) it.take(100) + "…" else it }
                     .ifEmpty { listOf(stringResource(R.string.sessions_input_needed)) }
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
+            Column(
+                modifier =
+                    Modifier
+                        .padding(top = 8.dp)
+                        .fillMaxWidth()
+                        .background(warning.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                        .border(1.dp, warning.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .width(3.dp)
-                            .wrapContentHeight()
-                            .padding(end = 8.dp),
-                ) {
-                    Surface(
-                        color = colors.waiting,
-                        modifier = Modifier.fillMaxSize(),
-                    ) {}
-                }
-                Column {
-                    shownLines.forEach { line ->
-                        Text(
-                            line,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-
-            // PWA waiting row: short summary (`last_response`, italic, ≤180
-            // chars) with a ▼/▲ toggle for `last_summary_long` and a ✕ panel.
-            val shortSummary = session.lastResponse?.takeIf { it.isNotBlank() }
-            val longSummary = session.lastSummaryLong?.takeIf { it.isNotBlank() }
-            if (shortSummary != null) {
-                Row(
-                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                shownLines.forEach { line ->
                     Text(
-                        if (shortSummary.length > 180) shortSummary.take(180) + "…" else shortSummary,
-                        fontSize = 10.sp,
-                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f, fill = false),
+                        line,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = warning,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    if (longSummary != null) {
-                        val toggleDesc =
-                            stringResource(
-                                if (summaryExpanded) R.string.sessions_summary_collapse else R.string.sessions_summary_show,
-                            )
-                        TextButton(
-                            onClick = { summaryExpanded = !summaryExpanded },
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 2.dp,
-                                    vertical = 0.dp,
-                                ),
-                            modifier =
-                                Modifier
-                                    .height(20.dp)
-                                    .semantics { contentDescription = toggleDesc },
-                        ) {
+                }
+                // PWA waiting row: short summary (`last_response`, italic, ≤180
+                // chars) with a ▼/▲ toggle for `last_summary_long` and a ✕ panel.
+                // The PWA renders it in a <span>, so HTML collapses newlines and
+                // runs of whitespace into one wrapped paragraph — mirror that.
+                val shortSummary =
+                    session.lastResponse?.takeIf { it.isNotBlank() }
+                        ?.replace(Regex("\\s+"), " ")?.trim()
+                val longSummary = session.lastSummaryLong?.takeIf { it.isNotBlank() }
+                if (shortSummary != null) {
+                    Row(
+                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            if (shortSummary.length > 180) shortSummary.take(180) + "…" else shortSummary,
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (longSummary != null) {
+                            val toggleDesc =
+                                stringResource(
+                                    if (summaryExpanded) R.string.sessions_summary_collapse else R.string.sessions_summary_show,
+                                )
                             Text(
                                 if (summaryExpanded) "▲" else "▼",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier =
+                                    Modifier
+                                        .padding(horizontal = 2.dp)
+                                        .clickable { summaryExpanded = !summaryExpanded }
+                                        .semantics { contentDescription = toggleDesc },
+                            )
+                        }
+                        // PWA: `AI <age>` after the toggle (9px, text2 @ .7).
+                        val summaryAt = session.summaryGeneratedAt
+                        if (summaryAt != null) {
+                            Text(
+                                "AI " + relativeTimeLabel(summaryAt.toEpochMilliseconds()),
+                                fontSize = 9.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(start = 4.dp),
                             )
                         }
                     }
-                    // PWA waiting row: `AI <age>` after the toggle (9px, text2 @ .7).
-                    val summaryAt = session.summaryGeneratedAt
-                    if (summaryAt != null) {
-                        Text(
-                            "AI " + relativeTimeLabel(summaryAt.toEpochMilliseconds()),
-                            fontSize = 9.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(start = 4.dp),
-                        )
-                    }
-                }
-                if (longSummary != null && summaryExpanded) {
-                    Row(
-                        modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Text(
-                            longSummary,
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                        IconButton(
-                            onClick = { summaryExpanded = false },
-                            modifier = Modifier.size(24.dp),
+                    if (longSummary != null && summaryExpanded) {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .padding(top = 6.dp)
+                                    .fillMaxWidth()
+                                    .background(colors.bg3, RoundedCornerShape(4.dp))
+                                    .drawBehind {
+                                        drawRect(
+                                            color = colors.accent2,
+                                            size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height),
+                                        )
+                                    }
+                                    .padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.Top,
                         ) {
-                            Icon(
-                                Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.sessions_summary_collapse),
-                                modifier = Modifier.size(14.dp),
+                            Text(
+                                longSummary,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
                             )
+                            IconButton(
+                                onClick = { summaryExpanded = false },
+                                modifier = Modifier.size(24.dp),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = stringResource(R.string.sessions_summary_collapse),
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Inline quick-actions — Stop for running, Restart+Delete for done.
-        if (!selectionMode) {
-            Row(
-                modifier = Modifier.padding(top = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                when (session.state) {
-                    SessionState.Running -> {
-                        OutlinedButton(
-                            onClick = { killConfirmOpen = true },
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
-                        ) {
-                            Icon(
-                                Icons.Filled.Stop,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_stop), color = MaterialTheme.colorScheme.error)
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        if (currentStatusText == null && !currentStatusLoading) OutlinedButton(
-                            onClick = {
-                                if (!currentStatusLoading) {
-                                    currentStatusLoading = true
-                                    currentStatusScope.launch {
-                                        try {
-                                            val dto = fetchCurrentStatus()
-                                            currentStatusText =
-                                                when {
-                                                    dto == null -> "($unavailableStr)"
-                                                    dto.noChange -> "($noChangeStr)"
-                                                    else -> dto.currentStatus
-                                                }
-                                            currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
-                                            currentStatusAtMs = System.currentTimeMillis()
-                                            currentStatusLongExpanded = false
-                                        } finally {
-                                            currentStatusLoading = false
-                                        }
-                                    }
-                                }
-                            },
-                            enabled = !currentStatusLoading,
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
-                        ) {
-                            if (currentStatusLoading) {
-                                androidx.compose.material3.CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
-                                    strokeWidth = 1.5.dp,
-                                )
-                            } else {
-                                Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(14.dp))
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.sessions_current_status_btn))
-                        }
-                    }
-                    SessionState.Waiting -> {
-                        OutlinedButton(
-                            onClick = { killConfirmOpen = true },
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
-                        ) {
-                            Icon(
-                                Icons.Filled.Stop,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_stop), color = MaterialTheme.colorScheme.error)
-                        }
-                        // Quick commands — only visible on waiting_input
-                        // rows (PWA shows the ▶ triangle only when a
-                        // prompt is actually blocking).
-                        Spacer(modifier = Modifier.width(4.dp))
-                        OutlinedButton(
-                            onClick = { quickCmdsOpen = true },
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
-                        ) {
-                            Icon(
-                                Icons.Filled.Keyboard,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.sessions_quick_commands))
-                        }
-                    }
-                    SessionState.Completed,
-                    SessionState.Killed,
-                    SessionState.Error,
-                    -> {
-                        OutlinedButton(
-                            onClick = { restartConfirmOpen = true },
-                            modifier = Modifier.alpha(1.0f),
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
-                        ) {
-                            Icon(
-                                Icons.Filled.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_restart))
-                        }
-                        if (deleteSupported) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            OutlinedButton(
-                                onClick = { deleteConfirmOpen = true },
-                                modifier = Modifier.alpha(1.0f),
-                                contentPadding =
-                                    androidx.compose.foundation.layout.PaddingValues(
-                                        horizontal = 10.dp,
-                                        vertical = 4.dp,
-                                    ),
-                            ) {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.error,
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
-                            }
-                        }
-                    }
-                    else -> Unit
-                }
-                // Parity D43a — PWA `🤖 Summary` (only when session.summarizer
-                // is enabled). Running sessions take the current-status path.
-                if (summarizerEnabled) {
-                    val busy = summarizing || (session.state == SessionState.Running && currentStatusLoading)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    OutlinedButton(
-                        onClick = {
-                            if (session.state == SessionState.Running) {
-                                if (!currentStatusLoading) {
-                                    currentStatusLoading = true
-                                    currentStatusScope.launch {
-                                        try {
-                                            val dto = fetchCurrentStatus()
-                                            currentStatusText =
-                                                when {
-                                                    dto == null -> "($unavailableStr)"
-                                                    dto.noChange -> "($noChangeStr)"
-                                                    else -> dto.currentStatus
-                                                }
-                                            currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
-                                            currentStatusAtMs = System.currentTimeMillis()
-                                            currentStatusLongExpanded = false
-                                        } finally {
-                                            currentStatusLoading = false
-                                        }
-                                    }
-                                }
-                            } else {
-                                onManualSummarize()
-                            }
-                        },
-                        enabled = !busy,
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 8.dp,
-                                vertical = 4.dp,
-                            ),
-                    ) {
-                        Text(
-                            if (busy) {
-                                "⏳ " + stringResource(R.string.current_status_summarizing)
-                            } else {
-                                "🤖 " + stringResource(R.string.session_summary_btn)
-                            },
-                            fontSize = 11.sp,
-                        )
-                    }
-                }
-            }
-            if (session.state == SessionState.Running && (currentStatusLoading || currentStatusText != null)) {
+        // ── PWA running row: `▶ What's it doing?` or the inline current status ──
+        if (!selectionMode && session.state == SessionState.Running) {
+            if (currentStatusLoading || currentStatusText != null) {
                 InlineCurrentStatus(
                     loading = currentStatusLoading,
                     text = currentStatusText.orEmpty(),
@@ -1669,28 +1531,16 @@ private fun SessionRow(
                     generatedAtMs = currentStatusAtMs,
                     longExpanded = currentStatusLongExpanded,
                     onToggleLong = { currentStatusLongExpanded = !currentStatusLongExpanded },
-                    onRefresh = {
-                        if (!currentStatusLoading) {
-                            currentStatusLoading = true
-                            currentStatusScope.launch {
-                                try {
-                                    val dto = fetchCurrentStatus()
-                                    currentStatusText =
-                                        when {
-                                            dto == null -> "($unavailableStr)"
-                                            dto.noChange -> "($noChangeStr)"
-                                            else -> dto.currentStatus
-                                        }
-                                    currentStatusLongText = dto?.currentStatusLong?.takeIf { it.isNotBlank() }
-                                    currentStatusAtMs = System.currentTimeMillis()
-                                    currentStatusLongExpanded = false
-                                } finally {
-                                    currentStatusLoading = false
-                                }
-                            }
-                        }
-                    },
+                    onRefresh = refreshCurrentStatus,
                 )
+            } else {
+                Box(modifier = Modifier.padding(top = 8.dp)) {
+                    PwaCardActionButton(
+                        "▶ " + stringResource(R.string.sessions_current_status_btn),
+                        fontSize = 10,
+                        onClick = refreshCurrentStatus,
+                    )
+                }
             }
         }
     }
@@ -2429,6 +2279,38 @@ internal fun QuickCommandsSheet(
  * the neutral `accent2`-tinted bg so it reads as informational rather
  * than state-bearing.
  */
+/**
+ * PWA card action button (`btnStyle` in renderSessionCard): 1px --border,
+ * bg2 fill, 4px radius, 11px text, 3px×8px padding. [color] tints border +
+ * text (Stop/Delete use --error).
+ */
+@Composable
+private fun PwaCardActionButton(
+    text: String,
+    onClick: () -> Unit,
+    color: Color? = null,
+    fontSize: Int = 11,
+    enabled: Boolean = true,
+    contentDescription: String? = null,
+) {
+    val dw = LocalDatawatchColors.current
+    val fg = color ?: MaterialTheme.colorScheme.onSurface
+    Box(
+        modifier =
+            Modifier
+                .alpha(if (enabled) 1f else 0.5f)
+                .clip(RoundedCornerShape(4.dp))
+                .background(dw.bg2)
+                .border(1.dp, color ?: dw.border, RoundedCornerShape(4.dp))
+                .clickable(enabled = enabled, onClick = onClick)
+                .then(if (contentDescription != null) Modifier.semantics { this.contentDescription = contentDescription } else Modifier)
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, fontSize = fontSize.sp, lineHeight = (fontSize + 2).sp, color = fg, maxLines = 1)
+    }
+}
+
 @Composable
 private fun PwaMetaBadge(text: String) {
     val colors = LocalDatawatchColors.current

@@ -1698,4 +1698,8 @@
     <string name="compute_detail_unavailable">detail unavailable</string>
     <string name="compute_detail_fix_label">Fix:</string>
     <string name="compute_detail_fix_hint">Edit this Compute Node and set monitoring_endpoint to the URL of a datawatch-stats --listen sidecar running on the node. Without it, the daemon has nothing to poll for live detail.</string>
+    <string name="sessions_response_btn">Response</string>
+    <string name="sessions_mute">Mute notifications for this session</string>
+    <string name="sessions_unmute">Unmute notifications</string>
+    <string name="session_council_badge">Council</string>
 </resources>

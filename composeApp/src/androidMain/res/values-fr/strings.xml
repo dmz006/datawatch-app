@@ -1384,4 +1384,8 @@
     <string name="compute_detail_unavailable">détail indisponible</string>
     <string name="compute_detail_fix_label">Correctif :</string>
     <string name="compute_detail_fix_hint">Modifiez ce nœud de calcul et définissez monitoring_endpoint sur l\'URL d\'un sidecar datawatch-stats --listen exécuté sur le nœud. Sans lui, le démon n\'a rien à interroger pour le détail en direct.</string>
+    <string name="sessions_response_btn">Réponse</string>
+    <string name="sessions_mute">Couper les notifications de cette session</string>
+    <string name="sessions_unmute">Réactiver les notifications</string>
+    <string name="session_council_badge">Conseil</string>
 </resources>
