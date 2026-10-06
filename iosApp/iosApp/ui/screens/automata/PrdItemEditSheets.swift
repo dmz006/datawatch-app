@@ -158,7 +158,7 @@ struct PrdFileChips: View {
     var body: some View {
         if !files.isEmpty {
             VStack(alignment: .leading, spacing: 3) {
-                Text(label).font(DatawatchFonts.badge).foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Text(L(label)).font(DatawatchFonts.badge).foregroundStyle(DatawatchColors.onSurfaceMuted)
                 FlowLayout(spacing: 4) {
                     ForEach(files, id: \.self) { f in chip(f) }
                 }
