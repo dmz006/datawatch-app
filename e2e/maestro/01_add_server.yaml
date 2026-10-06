@@ -1,0 +1,36 @@
+# Fresh state → onboarding → Add server (sandbox URL/token from env) with the
+# "Trust all certificates" switch on (the sandbox uses an auto-generated self-signed cert).
+appId: ${APP_ID}
+name: 01 add server
+---
+- launchApp:
+    appId: ${APP_ID}
+    clearState: true
+- extendedWaitUntil:
+    visible: "Add server…"
+    timeout: 60000          # splash "starting services…" first
+- tapOn: "Add server…"
+- tapOn: "Display name"
+- inputText: ${SERVER_NAME}
+- tapOn: "Base URL"
+- inputText: ${SERVER_URL}
+- tapOn: "Bearer token"
+- inputText: ${SERVER_TOKEN}
+- hideKeyboard
+# The Switch has no text: it is the control left of its label, below the pin button.
+- tapOn:
+    leftOf: ".*Trust all certificates.*"
+    below: ".*Pin server certificate.*"
+- assertVisible: "Disables certificate validation.*"
+- tapOn:
+    text: "Add server"
+    below: "Pinning trusts.*"
+- extendedWaitUntil:
+    notVisible: "Checking…"
+    timeout: 30000
+# Back on the shell with the new server active.
+- extendedWaitUntil:
+    visible: ${SERVER_NAME}
+    timeout: 30000
+- assertNotVisible: "No server connected"
+- takeScreenshot: 01_add_server
