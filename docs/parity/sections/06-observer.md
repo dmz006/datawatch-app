@@ -35,12 +35,12 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | element | RTK Token Savings (version, saved tokens, update badge → copy cmd) | ✓ app.js:20542 | ✓ RtkCard StatsScreen.kt:231 (version, hooks, saved, avg %, commands; no update badge) | ✓ (latest version from raw /api/stats) | aligned |  | update badge tracked next row |
 | interaction | RTK update badge click → copy upgrade command (toast) | ✓ data-cmd BL223 | ✓ "→ update available" in RtkCard, tap copies the upgrade one-liner (no latest-version text: StatsDto lacks it) | ✓ tap → UIPasteboard + toast (ObserverStatsSection.swift:128) | aligned |  |  |
 | element | Episodic Memory stats inside stats panel | ✓ app.js:20555 | ✓ MemoryStatsCard | ✓ | aligned | | |
-| element | Server info card (hostname, version, host, port) | ✗ (lives in Settings → About) | ✓ ServerInfoCard StatsScreen.kt:461 | ✓ (IosObserver.loadServerContext) | pwa-missing | decided D78a | → #172 (PWA Observer) |
+| element | Server info card (hostname, version, host, port) | ~ host:port in Observer Infrastructure stat-card (app.js:21706 `renderStatsData`); no hostname/version | ✓ ServerInfoCard StatsScreen.kt:461 | ✓ (IosObserver.loadServerContext) | pwa-missing | decided D78a | → #172 (PWA Observer) · 2026-10-06 re-check: server team counted D78 server info as already shipped (Daemon + Infrastructure cards); hostname + version still missing in v8.61.5 |
 | element | Session Statistics ring (total/max_sessions) + running/waiting/complete/failed counts | ✓ donut in renderStatsData (app.js:20659) | ✓ ring success colour | ✓ donut active/max + counts (PWA success colour) | aligned | decided D78a | Android ring colours by threshold; PWA/iOS do not |
 | data | `session.max_sessions` from /api/config for ring denominator | ✓ state._maxSessions (used elsewhere) | ✓ StatsViewModel maxSessions | ✓ loadServerContext | aligned | | |
 | element | Ollama Server card | ✓ renderStatsData Ollama card (app.js:20756) | ✓ OllamaStatsCard | ✓ inside stats panel (IosObserver.kt:484) | aligned | decided D78a |  |
-| element | Process envelopes card | ✗ | ✓ EnvelopesCard StatsScreen.kt:352 | ✓ Process Envelopes card (IosObserver.kt:495) | pwa-missing | decided D78a | → #172 |
-| element | Backend health card | ✗ | ✓ BackendHealthCard StatsScreen.kt:387 | ✓ Backend Health card (IosObserver.kt:506) | pwa-missing | decided D78a | → #172 |
+| element | Process envelopes card | ✓ app.js:24579 `envelopesBlock` → /api/observer/envelopes (v8.58, D78) | ✓ EnvelopesCard StatsScreen.kt:352 | ✓ Process Envelopes card (IosObserver.kt:495) | aligned | decided D78a | → #172 · PWA shipped in v8.58 (2026-10-06 re-check) |
+| element | Backend health card | ✓ app.js:24573 `backendHealthBlock` → /api/backends (v8.58, D78) | ✓ BackendHealthCard StatsScreen.kt:387 | ✓ Backend Health card (IosObserver.kt:506) | aligned | decided D78a | → #172 · PWA shipped in v8.58 (2026-10-06 re-check) |
 | element | eBPF "Degraded" banner (built without eBPF / not active) | ✓ renderStatsData banner (app.js:20672) | ✓ StatsScreen:67–92 | ✓ EbpfBanner | aligned | decided D78a |  |
 | element | eBPF status line (live / configured+cap / cap missing / off, colored dot) | ✓ loadEBPFStatus app.js:19905 (`/api/stats?v=2`) | ✓ EBpfStatusCard | ✓ ObserverEbpfBlocks | aligned | | |
 | element | Network Traffic per-process table (Process / In / Out) | ✓ loadEBPFNetworkTraffic | ✓ EBpfNetworkCard "Network (by process)" | ✓ NetTrafficTable (top 10) | aligned | | |
@@ -70,7 +70,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | element | Search input + role filter (All/Manual/Session/Learning/Chunks) + since (All/7d/30d/90d) | ✓ app.js:23402 | ✓ role + since filters on the List tab | ✓ PWA role/since filters | aligned |  | Android lacks role + since filters |
 | interaction | Search / List / Export buttons | ✓ | ✓ Text("Search"), Text("Export…"), Text("Test") | ✓ (Export → share sheet) | aligned | | Android adds "Test" |
 | element | Memory stats cards: Total Memories / Manual / Session / Learnings / Chunks / DB Size | ✓ loadMemoryStats app.js:14276 | ✓ MemoryCard StatsGrid | ✓ | aligned | | |
-| interaction | Add memory dialog (text, tags) | ✗ in Observer | ✓ memory_add_title AlertDialog (MemoryCard.kt:692) | ✓ alert text + tags (D78a) | pwa-missing | decided D78a | → #172 |
+| interaction | Add memory dialog (text, tags) | ~ inline quick-add app.js:24638 `addMemoryQuick` → /api/memory/save, text only (v8.58, D78) | ✓ memory_add_title AlertDialog (MemoryCard.kt:692) | ✓ alert text + tags (D78a) | pwa-missing | decided D78a | → #172 · 2026-10-06 re-check: v8.58 adds a text-only inline add; tags field still missing in v8.61.5 |
 | element | Results list max-height 400 scroll | ✓ | n/a (LazyColumn) | ✓ | aligned | | |
 | **7.3 Memory Maintenance** | | | | | | | |
 | element | 2×2 grid: Similarity-stale eviction (days, Dry-run/Apply), Spellcheck, Extract facts, Schema version check | ✓ app.js:23425–23456 | ✓ eviction dry-run only + "Apply … web UI only" | ✓ Dry-run only ("Apply … web UI only") | aligned | decided D89b | per D89b iOS correct; Android still allows Apply · per D89b (2026-10-04) |
@@ -112,7 +112,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | string | Empty copy "Add a server in Settings to monitor metrics." | n/a | ✓ "Add a server in Settings to monitor metrics." (observer_no_server) | ✓ | aligned |  | no PWA string; unify app copy (D35a spirit) · Android-I 2026-10-05: Android copy unified with iOS |
 
 ## Coverage
-rows: 93 · aligned: 88 · ios-missing: 0 · android-missing: 0 · pwa-missing: 4 · misaligned: 0 · n/a: 1
+rows: 93 · aligned: 90 · ios-missing: 0 · android-missing: 0 · pwa-missing: 2 · misaligned: 0 · n/a: 1
 
 ## Decisions (resolved 2026-10-04)
 1. Docs links → D26a: per-card docs links on both apps.
