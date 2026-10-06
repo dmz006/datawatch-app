@@ -278,11 +278,21 @@ run_flow() { # run_flow <name> [extra maestro env...]
   return $rc
 }
 
+# Remove EVERY datawatch app from a test AVD before installing the build under test:
+# old release / dev builds kept a saved profile for a real (production) server, and a
+# stray tap could open them. Emulators boot -read-only, so this runs every time.
+purge_dw_apps() {
+  local serial="$1" p
+  for p in $("$ADB" -s "$serial" shell pm list packages 2>/dev/null | tr -d '\r' | sed -n 's/^package://p' | grep '^com\.dmzs\.'); do
+    "$ADB" -s "$serial" uninstall "$p" >/dev/null 2>&1 && log "removed stale $p from $serial"
+  done
+}
+
 phone_stage() {
   boot_avd dw_test_phone || { result phone-boot FAIL; return 1; }
   PHONE="$BOOTED_SERIAL"
   "$ADB" -s "$PHONE" reverse "tcp:$TLS_PORT" "tcp:$TLS_PORT"
-  "$ADB" -s "$PHONE" uninstall "$PKG" >/dev/null 2>&1
+  purge_dw_apps "$PHONE"
   "$ADB" -s "$PHONE" install -r -g "$(PHONE_APK)" >> "$LOG" 2>&1 || { result phone-install FAIL; return 1; }
   "$ADB" -s "$PHONE" shell pm grant "$PKG" android.permission.RECORD_AUDIO 2>/dev/null
   "$ADB" -s "$PHONE" shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS 2>/dev/null
@@ -391,7 +401,7 @@ smoke_surface() { # smoke_surface <avd> <apk> <label>
   serial="$BOOTED_SERIAL"
   # Uninstall first: the AVDs may carry an older install whose saved server profile
   # points at a real (production) daemon — never launch the app with that state.
-  "$ADB" -s "$serial" uninstall "$PKG" >/dev/null 2>&1
+  purge_dw_apps "$serial"
   "$ADB" -s "$serial" install -g "$apk" >> "$LOG" 2>&1 || { result "$label" FAIL "install"; return 1; }
   "$ADB" -s "$serial" logcat -c
   "$ADB" -s "$serial" shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
