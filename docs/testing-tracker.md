@@ -202,3 +202,116 @@ unit tests alone.
 | Auto | Automata empty state "Show completed" row when active-only filter is on | No | No | v1.23.1 | No unit test | DHU: filter to active; verify "Show completed automata" row appears when list is empty |
 | Auto | PRD detail error retry button | No | No | v1.23.1 | No unit test | DHU: trigger load error; verify Retry button present |
 | Phone | Settings General — `ConfigViewerCard` structured config viewer (one card per section, alphabetical) | No | No | v1.23.2 | No unit test | Manual: Settings → General; verify structured config sections render above raw-config card |
+
+## v1.23.3 → v1.28.0 (2026-09-17 → 2026-10-06)
+
+Rows added 2026-10-06 (retroactive). **Tested** = a JVM / common unit test or MockWebServer
+integration test exists for the feature's logic (named in *Test Conditions*); UI-only
+changes are `No`. **Validated** stays `No` everywhere: nothing below has been confirmed on a
+real device against a real server yet (the open "real-device validation pass" item in
+`docs/plans/README.md`). Where an emulator or simulator run against the sandbox test daemon
+was recorded, it is noted as *emulator/simulator — sandbox* evidence; that is useful but does
+not make a row Validated=Yes under the "real device" rule. There is no iOS XCTest target, so
+iOS-only SwiftUI changes are `Tested = No`. Shared Kotlin logic used by iOS is covered by the
+shared tests.
+
+Wear OS and Android Auto rows above are untouched. The Android Auto fixes in
+v1.23.6–v1.23.125 (MESSAGING-template compliance, ActionStrip limits) have no new rows here
+and still need DHU / head-unit passes.
+
+### Sessions and session detail
+
+| Surface | Feature | Tested | Validated | Version | Test Conditions | Notes |
+|---------|---------|--------|-----------|---------|-----------------|-------|
+| Shared | `Session.fullId` keeps hyphenated hostnames | Yes | No | v1.25.0 | `MappersTest`: hyphenated hostname keeps the whole prefix | Stop / Restart / Rename / Delete + deep links on hosts like `build-box-2` |
+| Android | `datawatch://session/<full id>` links + restored session open the short id | Yes | No | v1.27.1 | `ShellParityTest`: session links with a full id open the short id | |
+| Android | `datawatch://` scheme (old `dwclient://` alias), last-tab restore, long-press dot reconnect | Yes | No | v1.25.0 | `ShellParityTest` (5 tests) | |
+| Android + iOS | `datawatch://alert/<id>` deep links focus the alert | Yes (Android) | No | v1.27.1 | `ShellParityTest`: alert deep links resolve to an alert target | iOS: Swift only, no test |
+| Android + iOS | Scroll mode enter / exit over REST `/api/command`, WS fallback, exit on leave | Yes (transport) | No | v1.25.1 | `RestTransportRunCommandTest`: runCommand posts text / surfaces errors | The view-model state flip is untested |
+| Shared | "Waiting for MCP channel…" clears on WS `channel_ready` + output markers (`ChannelReadyHub`) | Yes | No | v1.25.1 | `ChannelReadyHubTest`: 14 tests (markers, ANSI strip, frame routing, sticky cache) | Server side: datawatch#174 |
+| Android + iOS | Terminal min size from server `console_cols` / `console_rows` | Yes | No | v1.28.0 | `MappersTest`: console size decode + fallback to the per-backend default | DB migration 9 |
+| Android + iOS | Terminal font: bundled JetBrains Mono | No | No | v1.25.0 | Manual: open a tmux session, check glyphs | Monthly `font-update.yml` |
+| Android + iOS | Reconnect status on two centred lines | No | No | v1.28.0 | Manual: stop the server, watch the overlay | All locales |
+| Android | Voice reply works under Do Not Disturb / silent mode | No | No | v1.27.1 | *Emulator* with DND on (recorded in the fix commit) | Ringer mute is best-effort |
+| Android + iOS | Live mic-level waveform while recording | No | No | v1.26.0 | Manual | |
+| Android + iOS | Chat: collapsible thinking blocks + inline images | Yes | No | v1.27.1 | `ChatContentSplitterTest`: 7 tests | |
+| Android | Chat bubbles in the web-UI palette with markdown | Yes | No | v1.26.0 | `AndroidParitySweepTest`: chat bubbles use the PWA palette | iOS: Swift only |
+| Android | Session detail: log-mode colours, arrow repeat, chat collapse, stats bar, state override list | Yes | No | v1.25.0 | `SessionDetailParityTest`: 6 tests | |
+| Android | Terminal search + copy; connect watchdog (3 × 5 s, Retry / Use without terminal) | No | No | v1.25.0 | Manual | |
+| Android + iOS | Guardrail verdict approve + run a built-in guardrail | Yes | No | v1.25.0 | `RestTransportParityRemainingTest`: runNamedSessionGuardrail, approveGuardrailVerdict | |
+| Android + iOS | Response viewer always fetches the latest response | Yes | No | v1.25.0 | `RestTransportIosSessionDetailTest`, `RestTransportParityRemainingTest.getSessionResponse*` | |
+| Android | A session that started waiting while you were away shows its prompt in the dock | Yes | No | v1.25.0 | `SessionStateWatcherTest`: stashed once, expires after an hour | |
+| Android | New Session backend-not-installed hint | Yes | No | v1.25.0 | `BackendSetupHintTest` | |
+| Android | Sessions list: state chips, select bar, manual order, Tree view, elapsed clock | Yes | No | v1.24.0–v1.25.0 | `SessionsViewModelTest`: state chips, ordering, tree + orphans, formatElapsed | |
+| Android + iOS | Session card ⋮⋮ drag handle | No | No | v1.26.0 | Manual | iOS reorder still needs press-and-hold (platform limit) |
+| iOS | Session card header / badge row wrap (no mid-word wrap) | No | No | v1.25.0 / v1.26.0 | Manual (simulator) | DEBUG `-dwOpenSession` launch hook added for simulator passes |
+| Android + iOS | Status dot red / green from the live WebSocket | Yes | No | v1.26.0 / v1.27.1 | `WsConnectionHubTest`: connected while any socket is open | |
+
+### Automata
+
+| Surface | Feature | Tested | Validated | Version | Test Conditions | Notes |
+|---------|---------|--------|-----------|---------|-----------------|-------|
+| Shared | Live planning stream (`…/decompose/stream`, Last-Event-ID retry) | Yes | No | v1.26.0 | `DecomposeStreamTest` (5) + `RestTransportDecomposeStreamTest` (3: stream, reconnect with Last-Event-ID, 404 ends quietly) | Planning confirmed with real LLM replies on the *sandbox* daemon (v1.27.0) |
+| Shared | Story / task LLM + profile overrides, spawn badges, template built-in / use count | Yes | No | v1.26.0 | `PrdLlmOverrideDtoTest`: 5 tests | |
+| Shared | Per-story resource cards (CPU / RSS / GPU) | Yes | No | v1.26.0 | `PrdStoryResourcesTest` | |
+| Shared | `scope_warnings` decodes as a list | Yes | No | v1.27.1 | `CouncilPersonaDtoTest`: scope_warnings decodes as a list of strings | |
+| Shared | Automaton concurrency (`max_concurrent_tasks`, `set_concurrency`) | Yes | No | v1.27.1 | `RestTransportTaskSTest`: decode + set | |
+| Shared | Story verdict badges | Yes | No | v1.27.1 | `RestTransportParityExtrasTest`: story verdicts decode | |
+| Shared | Dependency graph layout (DAG card) | Yes | No | v1.27.1 | `PrdDagLayoutTest` | |
+| Shared | Automata tab gated on the live `/api/autonomous/config` | Yes | No | v1.27.0 | `RestTransportRunCommandTest`: autonomous gating reads the live config | |
+| Android | Search, current position, list progress bar, sort, template variables | Yes | No | v1.25.0 | `AutomataParityTest`, `PrdListParityTest`, `PrdTemplateVarsTest`, `AndroidParitySweepTest` (state rank) | |
+| Android + iOS | Detail tabs, header search, live planning card, Templates ＋, story progress / worker link | No | No | v1.25.0–v1.27.1 | Manual | |
+| Android + iOS | Extra Automata settings (decomposition backend / effort, verification effort, stale-task timeout) | Yes (Android schema) | No | v1.27.1 | `SettingsParityTest`: config schemas carry the PWA keys | iOS: Swift catalog only |
+
+### Settings, council and profiles
+
+| Surface | Feature | Tested | Validated | Version | Test Conditions | Notes |
+|---------|---------|--------|-----------|---------|-----------------|-------|
+| Shared | Council live runs: start, SSE events, cancel, replay, poll fallback | Yes | No | v1.26.0 | `CouncilLiveTest` (7) + `RestTransportCouncilLiveTest` (6) | Council runs confirmed with real replies on the *sandbox* daemon (v1.27.0) |
+| Shared | Council persona `role` / `system_prompt` wire names | Yes | No | v1.26.0 | `CouncilPersonaDtoTest` | |
+| Android + iOS | Council replies / consensus / dissent as markdown | No | No | v1.27.0 | Manual | |
+| Shared | Profile editor: form ↔ YAML round-trip, unknown keys kept, secrets masked, validation | Yes | No | v1.27.0 | `ProfileEditorTest` (10) + `ProfileYamlTest` (14) | Create = POST: `RestTransportIosSettingsDepthTest.createKindProfilePostsToCollection` |
+| Shared | Literal API keys masked in forms / raw editors | Yes | No | v1.27.0 | `SecretMaskTest` | |
+| Shared | LLM form field names (`timeout_seconds`, `max_inflight`, `models[].node`); `auto_created` never sent | Yes | No | v1.27.1 | `RestTransportTaskSTest`, `RestTransportParityExtrasTest` | |
+| Android + iOS | LLM form "</> YAML" view | No | No | v1.26.0 | Manual | |
+| Shared | Docs Search trust queue, Export YAML, Discussion Recall | Yes | No | v1.26.0 | `RestTransportIosHTest`: docsTrust*, docsTrustExportYaml, recallDiscussion | |
+| Shared | Guardrail Library type badge, schedule cron badge | Yes | No | v1.26.0 | `RestTransportIosHTest`: guardrailLibraryReadsTypeAsKind, scheduleMapsCronExprAndSessionName; `ScheduleRowLabelTest` | |
+| Android | Exit Hooks + Work Queue cards | Yes | No | v1.25.0 | `ExitHooksWorkQueueTest`, `RestTransportAndroidParityTest` | |
+| Android | Plugin Manager, inline restart hint, Goose / OpenCode cards | Yes | No | v1.25.0–v1.26.0 | `SettingsParityTest`, `AndroidParitySweepTest` | |
+| Android | Collapsible cards with docs links (remembered per card) | Yes | No | v1.25.0 | `PwaCardTest` | |
+| Shared | Compute node 📡 live detail; model-list envelope | Yes | No | v1.27.1 | `RestTransportParityExtrasTest`, `RestTransportAndroidParityTest` | |
+| Shared | Remote-server test / enable; federation peers | Yes | No | v1.25.0 | `RestTransportIosETest`, `RestTransportIosSettingsDepthTest` | |
+| Android + iOS | Config Viewer removed (Raw config stays); splash "Updated to vX" badge removed | No | No | v1.25.1 | Code removal; manual check | |
+
+### Shell, alerts, observer, dashboard
+
+| Surface | Feature | Tested | Validated | Version | Test Conditions | Notes |
+|---------|---------|--------|-----------|---------|-----------------|-------|
+| Android | Splash gating (first launch / after update / 24 h) | Yes | No | v1.24.0 | `SplashGateTest` | |
+| Android | Alert dock replaces toasts; tab badge caps at 99+ | Yes | No | v1.24.0 / v1.25.0 | `AlertDockChannelTest`, `AlertBadgeLabelTest` | |
+| Android | Alerts: waiting groups first; quick reply via saved commands | Yes | No | v1.25.0 | `AlertsParityTest` | |
+| iOS | Alert group header wraps to two lines | No | No | v1.26.0 | Manual (simulator) | |
+| Android | Observer: thresholds, channel diagnostics, peer snapshot, filters, web-search history, cross-host view | Yes | No | v1.25.0 | `ObserverParityTest` (7), `CrossHostViewTest` | |
+| Android | Dashboard stat strip | Yes | No | v1.25.0 | `DashboardStatStripTest` | |
+| Shared (iOS) | Dashboard card-grid engine | Yes | No | v1.24.0 | `IosDashEngineTest` (10) | |
+| Android | Light theme + reduced motion | No | No | v1.25.0 | Manual | |
+| iOS | Biometric lock toggle actually locks the app | No | No | v1.24.0 | *Simulator — sandbox*: found in a screenshot pass, fix re-checked there | |
+
+### Security and push
+
+| Surface | Feature | Tested | Validated | Version | Test Conditions | Notes |
+|---------|---------|--------|-----------|---------|-----------------|-------|
+| Shared (Android) | Certificate pinning per server (fetch, show SHA-256, pin) | Yes | No | v1.24.0 | `CertPinningTest` (8) | |
+| Shared (Android) | Trust-all limited to the opted-in host | Yes | No | v1.27.0 | `TrustAllScopeTest` (6) | iOS: Swift URLSession delegate, no test |
+| Android | Biometric gate bound to a Keystore key, system-prompt fallback | No | No | v1.27.0 | Needs an instrumented test / device | |
+| Android | Explicit notification PendingIntents | No | No | v1.27.0 | Code review | |
+| iOS | APNs registration: every launch, retry on failure, token not cached, `apns_environment` sent | No | No | v1.28.0 | Checked against Apple's registration docs; needs a real iPhone (no APNs on Simulator) | Delivery blocked on datawatch#183 |
+
+### Earlier v1.23.x phone fixes
+
+| Surface | Feature | Tested | Validated | Version | Test Conditions | Notes |
+|---------|---------|--------|-----------|---------|-----------------|-------|
+| Phone | Observer peer rows: no gap between name and chips; local compute node in Peer Resources | No | No | v1.23.3 | Manual | |
+| Phone | Observer peer push age shown as relative time; compute-node filter by bound peer | No | No | v1.23.4 | Manual | |
+| Phone | Council persona wizard "→" AI refine (`POST /api/council/personas/refine-step`) | No | No | v1.23.5 | Manual: needs a server with an LLM | |
+| Phone | Whisper mic enabled from `/api/info` `whisper_configured` | No | No | v1.23.5 | Manual | |
