@@ -1,0 +1,170 @@
+name: iOS Screenshots
+
+# App Store / TestFlight screenshots, generated on an Apple-silicon runner (the
+# Intel-Mac simulator can't render emoji). Starts a throwaway datawatch demo
+# server on the runner, seeds non-sensitive demo content
+# (scripts/screenshots/seed-demo.sh), builds the Debug simulator app (DEBUG
+# launch hooks: -dwSeedURL/-dwTab/-dwOpenSession…) and captures the iPhone 6.9"
+# and iPad 13" sets. Output: the `ios-screenshots` artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_version:
+        description: 'datawatch server version (e.g. 8.39.2); empty = latest release'
+        required: false
+        default: ''
+
+concurrency:
+  group: ios-screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    name: Capture screenshots
+    runs-on: macos-26
+    timeout-minutes: 75
+    env:
+      DEMO_ROOT: ${{ runner.temp }}/dw-demo
+      DW_URL: https://127.0.0.1:18443
+      DW_TOKEN: dw-test-token-12345   # documented public test token, demo server only
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
+
+      # The Observer tab shows the server host's name; use a neutral one.
+      - name: Neutral host name
+        run: |
+          sudo scutil --set HostName demo
+          sudo scutil --set LocalHostName demo
+          sudo scutil --set ComputerName demo
+          hostname
+
+      - name: Install tmux (datawatch session backend)
+        run: brew install tmux
+
+      - name: Download datawatch server
+        run: |
+          set -euo pipefail
+          ver="${{ inputs.server_version }}"
+          if [ -z "$ver" ]; then
+            ver=$(gh release view -R dmz006/datawatch --json tagName -q .tagName)
+          fi
+          ver="${ver#v}"
+          echo "datawatch server v$ver"
+          mkdir -p "$RUNNER_TEMP/dw-bin"
+          gh release download "v$ver" -R dmz006/datawatch \
+            -p "datawatch_${ver}_darwin_arm64.tar.gz" -D "$RUNNER_TEMP/dw-bin"
+          tar -xzf "$RUNNER_TEMP/dw-bin/datawatch_${ver}_darwin_arm64.tar.gz" -C "$RUNNER_TEMP/dw-bin" datawatch
+          "$RUNNER_TEMP/dw-bin/datawatch" version
+
+      - name: Start demo server
+        run: |
+          set -euo pipefail
+          mkdir -p "$DEMO_ROOT/projects/weather-api"
+          sed "s|__DEMO_ROOT__|$DEMO_ROOT|g" scripts/screenshots/demo-config.yaml > "$DEMO_ROOT/config.yaml"
+          nohup python3 scripts/screenshots/ollama-stub.py > "$DEMO_ROOT/ollama-stub.log" 2>&1 &
+          # Clean shell environment for the demo sessions (no runner user/host in prompts).
+          (cd "$DEMO_ROOT" && nohup env -i HOME="$DEMO_ROOT" PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
+              SHELL=/bin/bash TERM=xterm-256color LANG=en_US.UTF-8 USER=demo \
+              "$RUNNER_TEMP/dw-bin/datawatch" --config "$DEMO_ROOT/config.yaml" start --foreground \
+              > "$DEMO_ROOT/daemon.log" 2>&1 &)
+          for i in $(seq 1 60); do
+            if curl -sfk "$DW_URL/api/health"; then echo; exit 0; fi
+            sleep 1
+          done
+          echo "::error::demo server did not come up"; cat "$DEMO_ROOT/daemon.log"; exit 1
+
+      - name: Seed demo content
+        run: |
+          set -euo pipefail
+          bash scripts/screenshots/seed-demo.sh
+          echo "SESSION_ID=$(cat "$DEMO_ROOT/terminal-session-id")" >> "$GITHUB_ENV"
+
+      # ── Build: same recipe as ios-build.yml (Debug, simulator) ─────────────
+      - name: Set up JDK 21
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3  # v4.9.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a  # v4.4.3
+        with:
+          cache-read-only: true
+
+      - name: Cache Kotlin/Native artifacts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
+      - name: Assemble KMP XCFramework (debug)
+        run: ./gradlew :shared:assembleDatawatchSharedDebugXCFramework --no-daemon --stacktrace
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Export version env vars
+        run: |
+          set -euo pipefail
+          v=$(sed -n 's/^DATAWATCH_APP_VERSION=//p' gradle.properties)
+          c=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)
+          [ -n "$v" ] && [ -n "$c" ] || { echo "::error::version not found in gradle.properties"; exit 1; }
+          echo "DATAWATCH_APP_VERSION=$v" >> "$GITHUB_ENV"
+          echo "DATAWATCH_APP_VERSION_CODE=$c" >> "$GITHUB_ENV"
+
+      - name: Generate Xcode project
+        working-directory: iosApp
+        run: xcodegen generate --spec project.yml
+
+      - name: Build for iOS Simulator (Debug)
+        working-directory: iosApp
+        run: |
+          set -uo pipefail
+          if xcodebuild build \
+              -project DatawatchClient.xcodeproj \
+              -scheme DatawatchClient \
+              -destination 'generic/platform=iOS Simulator' \
+              -configuration Debug \
+              -derivedDataPath "$RUNNER_TEMP/dd" \
+              CODE_SIGNING_ALLOWED=NO \
+              ONLY_ACTIVE_ARCH=NO \
+              > xcodebuild.log 2>&1; then
+            echo "BUILD SUCCEEDED"
+          else
+            grep -E '(\.swift|\.m|\.h):[0-9]+:[0-9]+: error: ' xcodebuild.log | sort -u || true
+            tail -40 xcodebuild.log
+            exit 1
+          fi
+          app=$(find "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator" -maxdepth 1 -name '*.app' | head -1)
+          [ -n "$app" ] || { echo "::error::no .app produced"; exit 1; }
+          echo "APP_PATH=$app" >> "$GITHUB_ENV"
+
+      - name: Capture screenshots
+        run: |
+          set -euo pipefail
+          xcrun simctl list runtimes
+          OUT_DIR="$RUNNER_TEMP/screenshots" bash scripts/screenshots/capture.sh
+
+      - name: Server log tail
+        if: always()
+        run: |
+          tail -60 "$DEMO_ROOT/daemon.log" || true
+          curl -sk -H "Authorization: Bearer $DW_TOKEN" "$DW_URL/api/sessions" | head -c 3000 || true
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: ios-screenshots
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: warn
+          retention-days: 14
