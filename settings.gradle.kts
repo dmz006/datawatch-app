@@ -55,6 +55,9 @@ val toolingSecurityFloors: Map<String, String> = listOf(
     "org.bitbucket.b_c:jose4j" to "0.9.6",
     "com.google.protobuf:protobuf-java" to "3.25.9",
     "com.google.protobuf:protobuf-java-util" to "3.25.9",
+    // Kotlin 2.4 Swift-export tooling (shared `swiftExportClasspathResolvable`) — build-time only.
+    "io.opentelemetry:opentelemetry-api" to "1.62.0",
+    "io.opentelemetry:opentelemetry-context" to "1.62.0",
 )
 
 fun numericVersion(v: String): List<Int> =
