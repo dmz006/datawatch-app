@@ -31,7 +31,6 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 75
     env:
-      DEMO_ROOT: ${{ runner.temp }}/dw-demo
       DW_URL: https://127.0.0.1:18443
       DW_TOKEN: dw-test-token-12345   # documented public test token, demo server only
       GH_TOKEN: ${{ github.token }}
@@ -41,6 +40,7 @@ jobs:
       # The Observer tab shows the server host's name; use a neutral one.
       - name: Neutral host name
         run: |
+          echo "DEMO_ROOT=$RUNNER_TEMP/dw-demo" >> "$GITHUB_ENV"
           sudo scutil --set HostName demo
           sudo scutil --set LocalHostName demo
           sudo scutil --set ComputerName demo
