@@ -520,7 +520,7 @@ struct AlertsView: View {
         VStack(spacing: 0) {
             // Row 1: 🔔 count + ✕ dismiss-all + 🔕 mute + ↻ refresh
             HStack(spacing: 8) {
-                Text("🔔 \(vm.tabAlerts.count) \(vm.tabAlerts.count == 1 ? "alert" : "alerts")")
+                (Text(verbatim: "🔔 ") + Text(vm.tabAlerts.count == 1 ? "\(vm.tabAlerts.count) alert" : "\(vm.tabAlerts.count) alerts"))
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
                 Spacer()
@@ -775,7 +775,7 @@ struct AlertsView: View {
                 Text(state.text)
                     .foregroundStyle(state.color)
             }
-            Text("\(group.alerts.count) \(group.alerts.count == 1 ? "alert" : "alerts")")
+            Text(group.alerts.count == 1 ? "\(group.alerts.count) alert" : "\(group.alerts.count) alerts")
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
             if promptCount > 0 {
                 Text("· 🟡 \(promptCount)")
@@ -959,7 +959,7 @@ private struct AlertRow: View {
     }
 
     private func badgeLabel(_ text: String, fg: Color, bg: Color) -> some View {
-        Text(text)
+        Text(L(text))
             .font(DatawatchFonts.badge)
             .foregroundStyle(fg)
             .padding(.horizontal, 6)

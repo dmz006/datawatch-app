@@ -1838,3 +1838,7 @@
 "🤖 Persona wizard" = "🤖 Asistente de Persona";
 "🤖 Summary" = "🤖 Resumen";
 "🧠 Thinking..." = "🧠 Pensando...";
+"%lld alert" = "%lld alerta";
+"%lld alerts" = "%lld alertas";
+"PLANNED" = "PREVISTO";
+"OUTPUT" = "SALIDA";

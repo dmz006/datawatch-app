@@ -1838,3 +1838,7 @@
 "🤖 Persona wizard" = "🤖 ペルソナウィザード";
 "🤖 Summary" = "🤖 要約";
 "🧠 Thinking..." = "🧠 思考中...";
+"%lld alert" = "%lld 件のアラート";
+"%lld alerts" = "%lld 件のアラート";
+"PLANNED" = "予定";
+"OUTPUT" = "出力";

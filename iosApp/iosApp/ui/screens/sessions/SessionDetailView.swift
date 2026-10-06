@@ -356,7 +356,7 @@ struct SessionDetailView: View {
     }
 
     private func metaBadge(_ text: String, color: Color) -> some View {
-        Text(text)
+        Text(L(text))
             .font(DatawatchFonts.badge)
             .foregroundStyle(color)
             .padding(.horizontal, 8)
