@@ -391,6 +391,7 @@ internal fun PrdDetailDialog(
                             activeSessions = prdActiveSessions,
                             computeNodeDetail = prdComputeNodeDetail,
                             computeNodeRef = prdComputeNodeRef,
+                            liveStreamShown = decomposeLive != null,
                         )
                     }
 
@@ -2907,6 +2908,8 @@ private fun PrdActiveSessionsCard(
     activeSessions: List<com.dmzs.datawatchclient.ui.autonomous.AutonomousViewModel.PrdActiveSessionInfo>,
     computeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto?,
     computeNodeRef: String?,
+    /** The live planning stream card already shows "Decomposing Automaton…". */
+    liveStreamShown: Boolean = false,
 ) {
     val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
 
@@ -3015,31 +3018,21 @@ private fun PrdActiveSessionsCard(
                         status = prdStatus,
                         computeNodeDetail = computeNodeDetail,
                         computeNodeRef = computeNodeRef,
+                        showStatusLine = false,
                     )
                 }
             }
         }
         prdStatus in setOf("planning", "decomposing") -> {
-            // Decomposing state — spinner + compute bars
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .drawBehind {
-                        drawRect(color = accent2, topLeft = Offset.Zero, size = Size(3.dp.toPx(), size.height))
-                    }
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
-                    .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
-                        Text("Decomposing Automaton…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (computeNodeDetail != null) {
-                        Spacer(Modifier.height(8.dp))
-                        PrdActiveComputeCard(status = prdStatus, computeNodeDetail = computeNodeDetail, computeNodeRef = computeNodeRef)
-                    }
-                }
+            // One status line only: the live stream card owns it when shown;
+            // the compute card then renders just the node + resource bars.
+            if (!liveStreamShown || computeNodeDetail != null) {
+                PrdActiveComputeCard(
+                    status = prdStatus,
+                    computeNodeDetail = computeNodeDetail,
+                    computeNodeRef = computeNodeRef,
+                    showStatusLine = !liveStreamShown,
+                )
             }
         }
         prdStatus == "running" -> {
@@ -3358,6 +3351,7 @@ private fun PrdActiveComputeCard(
     status: String,
     computeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto?,
     computeNodeRef: String?,
+    showStatusLine: Boolean = true,
 ) {
     val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
     Box(
@@ -3381,16 +3375,18 @@ private fun PrdActiveComputeCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
-                Text(
-                    when (status) {
-                        "planning", "decomposing" -> "Decomposing Automaton..."
-                        "running" -> "Running..."
-                        else -> status
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (showStatusLine) {
+                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                    Text(
+                        when (status) {
+                            "planning", "decomposing" -> stringResource(R.string.decompose_in_progress)
+                            "running" -> "Running…"
+                            else -> status
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (computeNodeRef != null) {
                     Spacer(Modifier.weight(1f))
                     Text(
@@ -3401,7 +3397,7 @@ private fun PrdActiveComputeCard(
                 }
             }
             if (computeNodeDetail != null) {
-                Spacer(Modifier.height(8.dp))
+                if (showStatusLine || computeNodeRef != null) Spacer(Modifier.height(8.dp))
                 val cpuPct = (computeNodeDetail.cpu?.pct ?: computeNodeDetail.cpuPct ?: 0.0).toFloat()
                 if (cpuPct > 0f) {
                     PrdResourceBar(

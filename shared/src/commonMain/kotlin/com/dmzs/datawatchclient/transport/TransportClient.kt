@@ -1962,6 +1962,14 @@ public interface TransportClient {
     public suspend fun fetchAutonomousEnabled(): Result<Boolean> =
         Result.failure(UnsupportedOperationException("fetchAutonomousEnabled"))
 
+    /**
+     * `GET /api/autonomous/config` → `planning_backend`: the LLM the daemon
+     * plans with when an automaton has no `decomposition_profile`. Read-only
+     * so a config PUT never round-trips (and blanks) the field. Null = unset.
+     */
+    public suspend fun fetchAutonomousPlanningBackend(): Result<String?> =
+        Result.failure(UnsupportedOperationException("fetchAutonomousPlanningBackend"))
+
     // ---- Parity extras: compute-node 📡 live detail (2026-10-05) ----
 
     /**

@@ -1,6 +1,8 @@
 package com.dmzs.datawatchclient.di
 
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.transport.PrdComputeResolution
+import com.dmzs.datawatchclient.transport.PrdComputeResolver
 import com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryResourceRow
@@ -86,12 +88,21 @@ public object IosPrdResources {
             if (ref == null && taskSessionIds.isNotEmpty()) {
                 ref = sessions.firstOrNull { s -> linked(s.fullId, s.id) && s.computeNodeRef != null }?.computeNodeRef
             }
-            val node: ComputeNodeDetailDto? = ref?.let { r -> t.getComputeNodeDetail(r).getOrNull() }
+            // Session ref > backend LLM's node > local stats (PWA order) — planning
+            // has no task sessions yet but still shows the planner's node.
+            val taskBackend: String? =
+                prd.stories.flatMap { st -> st.tasks.map { tk -> Pair(tk, st) } }
+                    .firstOrNull { (tk, _) ->
+                        val sid: String? = tk.sessionId
+                        sid != null && active.any { s -> s.fullId == sid || s.id == sid || s.fullId.endsWith(sid) }
+                    }?.let { (tk, st) -> tk.backend ?: st.backend }
+            val resolved: PrdComputeResolution =
+                PrdComputeResolver.resolve(transport = t, prd = prd, sessionRef = ref, taskBackend = taskBackend)
             onResult(
                 IosPrdResourceSnapshot(
                     stories = PrdStoryResources.rows(prd, envelopes),
-                    nodeRef = ref,
-                    node = node,
+                    nodeRef = resolved.ref,
+                    node = resolved.detail,
                 ),
             )
         }

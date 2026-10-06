@@ -4411,6 +4411,16 @@ public class RestTransport(
 
     // ---- Automata tab gating (2026-10-05) ----
 
+    override suspend fun fetchAutonomousPlanningBackend(): Result<String?> =
+        request {
+            val obj: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/autonomous/config") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            (obj["planning_backend"] as? kotlinx.serialization.json.JsonPrimitive)
+                ?.content?.takeIf { it.isNotBlank() && it != "null" }
+        }
+
     override suspend fun fetchAutonomousEnabled(): Result<Boolean> {
         val live =
             request {

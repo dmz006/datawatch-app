@@ -1137,11 +1137,22 @@ public class AutonomousViewModel(
                     val boardJobs = activeSessionMatches.map { sess ->
                         async { transport.getSessionStatus(sess.fullId).getOrNull() to sess }
                     }
-                    val cnDetailJob = if (cnRef != null) async { transport.getComputeNodeDetail(cnRef!!).getOrNull() } else null
+                    // Session ref > backend LLM's node > local stats (PWA order) — so
+                    // planning (no task sessions yet) still shows compute stats.
+                    val taskBackend = prd.stories.flatMap { st -> st.tasks.map { it to st } }
+                        .firstOrNull { (t, _) ->
+                            val sid = t.sessionId ?: return@firstOrNull false
+                            activeSessionMatches.any { it.fullId == sid || it.id == sid || it.fullId.endsWith(sid) }
+                        }?.let { (t, st) -> t.backend ?: st.backend }
+                    val sessionRef = cnRef
+                    val cnDetailJob = async {
+                        com.dmzs.datawatchclient.transport.PrdComputeResolver.resolve(transport, prd, sessionRef, taskBackend)
+                    }
                     val capacityJob = async { transport.getCapacity(prdId).getOrNull() }
 
                     val boards = boardJobs.map { it.await() }
-                    val detail = cnDetailJob?.await()
+                    val resolved = cnDetailJob.await()
+                    val detail = resolved.detail
                     val capacity = capacityJob.await()
 
                     val activeInfos = boards.map { (board, sess) ->
@@ -1161,7 +1172,7 @@ public class AutonomousViewModel(
                         prdActiveSessions = activeInfos,
                         prdCapacity = capacity,
                         prdComputeNodeDetail = detail ?: _state.value.prdComputeNodeDetail,
-                        prdComputeNodeRef = cnRef ?: _state.value.prdComputeNodeRef,
+                        prdComputeNodeRef = if (detail != null) resolved.ref else _state.value.prdComputeNodeRef,
                     )
                 }
                 delay(5_000L)

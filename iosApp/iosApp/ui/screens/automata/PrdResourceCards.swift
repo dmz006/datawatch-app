@@ -149,10 +149,14 @@ struct PrdComputeNodeCard: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            ProgressView().controlSize(.mini)
-            Text(L(statusLabel))
-                .font(DatawatchFonts.labelSmall)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            // Planning: the live-stream / active-session card already shows
+            // "Decomposing Automaton…" — this card adds only the node + bars.
+            if let label = statusLabel {
+                ProgressView().controlSize(.mini)
+                Text(L(label))
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
             Spacer(minLength: 4)
             if let ref = nodeRef {
                 Text(ref)
@@ -163,9 +167,9 @@ struct PrdComputeNodeCard: View {
         }
     }
 
-    private var statusLabel: String {
+    private var statusLabel: String? {
         switch status {
-        case "planning", "decomposing": return "Decomposing Automaton…"
+        case "planning", "decomposing": return nil
         case "running": return "Running…"
         default: return status
         }

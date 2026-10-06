@@ -354,7 +354,7 @@ struct PrdDetailView: View {
     private var overviewTab: some View {
         VStack(alignment: .leading, spacing: 16) {
             if !prd.scopeWarnings.isEmpty { scopeWarningsBanner }
-            PrdActiveSessionCard(profile: vm.profile, prd: prd) { showCancel = true }
+            PrdActiveSessionCard(profile: vm.profile, prd: prd, liveStreamShown: live.state != nil) { showCancel = true }
             statusGraphs
             // Android Graph card — Automaton DAG (#184 / PWA #182).
             PrdDagCard(profile: vm.profile, prdId: prd.id)
