@@ -1,0 +1,7 @@
+-- Migration 9 -> 10 (PWA parity: server-resolved terminal size).
+--
+-- console_cols / console_rows — session's tmux console size (PWA initXterm
+-- configCols / configRows). 0 = not reported; existing rows are unaffected.
+
+ALTER TABLE session ADD COLUMN console_cols INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE session ADD COLUMN console_rows INTEGER NOT NULL DEFAULT 0;

@@ -82,6 +82,8 @@ public class SessionRepository(
             claude_alive = session.claudeAlive?.let { if (it) 1L else 0L },
             server_name = session.server,
             channel_ready = if (session.channelReady) 1L else 0L,
+            console_cols = session.consoleCols.toLong(),
+            console_rows = session.consoleRows.toLong(),
         )
     }
 
@@ -109,5 +111,7 @@ public class SessionRepository(
             claudeAlive = claude_alive?.let { it != 0L },
             server = server_name,
             channelReady = channel_ready != 0L,
+            consoleCols = console_cols.toInt(),
+            consoleRows = console_rows.toInt(),
         )
 }

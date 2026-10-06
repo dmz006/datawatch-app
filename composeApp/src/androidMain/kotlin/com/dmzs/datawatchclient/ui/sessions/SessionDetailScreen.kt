@@ -849,29 +849,27 @@ public fun SessionDetailScreen(
                         )
                         TerminalSearchBar(toolbarState)
                         TerminalScrollModeStrip(toolbarState)
-                        // Backend-specific minimum cols/rows. Matches parent
-                        // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
-                        // Without this, claude's TUI wraps on phone widths.
+                        // Minimum cols from the session's server-resolved console
+                        // size — PWA initXterm(configCols = sess.console_cols,
+                        // configRows = sess.console_rows); minCols = configCols || 80.
+                        // Falls back to the server's per-backend default (claude-code
+                        // 120×40) when the server doesn't report it. Without this,
+                        // claude's TUI wraps on phone widths.
                         // Sprint 3 S3-2 (#65): resolved cols/rows are also written to
                         // vm.terminalCols/terminalRows so the reconnect handler can send
                         // resize_term with current dimensions as the first outbound WS frame.
-                        androidx.compose.runtime.LaunchedEffect(state.session?.backend) {
-                            val backend = state.session?.backend?.lowercase()
-                            // BL13 — user override from SharedPreferences, fallback to backend defaults
-                            val termPrefs =
-                                context.getSharedPreferences(
-                                    "settings",
-                                    android.content.Context.MODE_PRIVATE,
-                                )
-                            val prefCols = termPrefs.getInt(com.dmzs.datawatchclient.prefs.TerminalPrefs.KEY_COLS, 0)
-                            val prefRows = termPrefs.getInt(com.dmzs.datawatchclient.prefs.TerminalPrefs.KEY_ROWS, 0)
-                            val (defaultCols, defaultRows) =
-                                when (backend) {
-                                    "claude-code", "claude" -> 120 to 40
-                                    else -> 80 to 24
-                                }
-                            val resolvedCols = if (prefCols > 0) prefCols else defaultCols
-                            val resolvedRows = if (prefRows > 0) prefRows else defaultRows
+                        val termSession = state.session
+                        androidx.compose.runtime.LaunchedEffect(
+                            termSession?.backend,
+                            termSession?.consoleCols,
+                            termSession?.consoleRows,
+                        ) {
+                            val resolvedCols =
+                                termSession?.terminalMinCols
+                                    ?: com.dmzs.datawatchclient.domain.Session.defaultConsoleSize(null).first
+                            val resolvedRows =
+                                termSession?.terminalRows
+                                    ?: com.dmzs.datawatchclient.domain.Session.defaultConsoleSize(null).second
                             // Enforce MIN COLS only (TUIs like Claude Code need 120 cols
                             // for their layout). Rows are NOT enforced as a minimum on
                             // mobile — when the keyboard opens, the WebView area can
@@ -879,6 +877,7 @@ public fun SessionDetailScreen(
                             // 40 rows would render content TALLER than the viewport,
                             // clipping the live tail (the bottom rows) off-screen and
                             // making it impossible to see the cursor while typing.
+                            // (The PWA likewise only enforces cols after fit().)
                             // Pass 0 for rows so dwSetMinCols treats it as "no minimum".
                             terminalController.setMinSize(resolvedCols, 0)
                             // VM still tracks the configured row count for the
