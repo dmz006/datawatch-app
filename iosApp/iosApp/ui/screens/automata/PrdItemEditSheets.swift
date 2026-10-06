@@ -185,6 +185,9 @@ struct PrdFileChips: View {
 /// Minimal flow layout for chips (iOS 16 Layout).
 struct FlowLayout: Layout {
     var spacing: CGFloat = 4
+    /// Pin the last subview to the trailing edge of its row (CSS
+    /// `margin-left:auto` in a `flex-wrap` row — the PWA card meta row).
+    var trailingLast: Bool = false
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let maxW = proposal.width ?? .infinity
@@ -196,17 +199,33 @@ struct FlowLayout: Layout {
             rowH = max(rowH, s.height)
             widest = max(widest, x - spacing)
         }
+        if trailingLast, maxW.isFinite { widest = maxW }
         return CGSize(width: min(widest, maxW), height: y + rowH)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var x = bounds.minX, y = bounds.minY, rowH: CGFloat = 0
-        for v in subviews {
+        // Break into rows first so each row's height is known before placing.
+        var rows: [[(Int, CGSize)]] = [[]]
+        for (i, v) in subviews.enumerated() {
             let s = v.sizeThatFits(.unspecified)
-            if x > bounds.minX && x + s.width > bounds.maxX { x = bounds.minX; y += rowH + spacing; rowH = 0 }
-            v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
+            if x > bounds.minX && x + s.width > bounds.maxX { x = bounds.minX; rows.append([]) }
+            rows[rows.count - 1].append((i, s))
             x += s.width + spacing
-            rowH = max(rowH, s.height)
+        }
+        for row in rows {
+            rowH = row.map { $0.1.height }.max() ?? 0
+            x = bounds.minX
+            for (i, s) in row {
+                var px = x
+                if trailingLast && i == subviews.count - 1 { px = max(x, bounds.maxX - s.width) }
+                // Meta rows centre items vertically (CSS align-items:center);
+                // other flow uses keep their top alignment.
+                let dy: CGFloat = trailingLast ? (rowH - s.height) / 2 : 0
+                subviews[i].place(at: CGPoint(x: px, y: y + dy), proposal: ProposedViewSize(s))
+                x += s.width + spacing
+            }
+            y += rowH + spacing
         }
     }
 }

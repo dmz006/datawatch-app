@@ -107,6 +107,12 @@ extension PrdDto {
         if let t = title, !t.isEmpty { return t }
         return name.isEmpty ? id : name
     }
+    /// List-card title: title, else name, else "(no title)" (PWA renderAutomataCard
+    /// never falls back to the id — that already sits on the meta row).
+    var cardTitle: String {
+        if let t = title, !t.isEmpty { return t }
+        return name.isEmpty ? L("(no title)") : name
+    }
     var allTasks: [PrdTaskDto] { stories.flatMap { $0.tasks } }
     var doneTaskCount: Int { allTasks.filter { PrdStatusStyle.isDone($0.status) }.count }
 }
@@ -494,10 +500,12 @@ struct PrdListView: View {
         var watchToggle: (() -> Void)? = nil
         var parent: (() -> Void)? = nil
         var action: ((String) -> Void)? = nil
+        var pinToggle: (() -> Void)? = nil
         if !vm.selectMode {
             watchToggle = { toggleWatch(prd) }
             parent = parentTap(prd)
             action = { (a: String) in cardAction(prd, a) }
+            pinToggle = { vm.togglePin(prd.id) }
         }
         return PrdRow(
             prd: prd,
@@ -506,7 +514,8 @@ struct PrdListView: View {
             onWatchToggle: watchToggle,
             onParent: parent,
             onAction: action,
-            serverName: vm.serverName(ofPrd: prd.id)
+            serverName: vm.serverName(ofPrd: prd.id),
+            onPinToggle: pinToggle
         )
     }
 
@@ -683,10 +692,12 @@ struct PrdListView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        NavigationLink {
-                            PrdDetailView(profile: vm.owner(ofPrd: prd.id) ?? profile, initial: prd)
-                        } label: {
-                            row(prd)
+                        // No disclosure chevron (PWA card): hidden link, whole card taps through.
+                        row(prd).background {
+                            NavigationLink {
+                                PrdDetailView(profile: vm.owner(ofPrd: prd.id) ?? profile, initial: prd)
+                            } label: { EmptyView() }
+                            .opacity(0)
                         }
                     }
                 }
@@ -703,8 +714,9 @@ struct PrdListView: View {
                         }
                     }
                 }
+                .listRowInsets(PrdRowBackground.insets)
                 .listRowBackground(PrdRowBackground(status: prd.status))
-                .listRowSeparatorTint(DatawatchColors.border)
+                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.plain)
@@ -754,57 +766,132 @@ struct PrdRow: View {
     /// D2a: owning server, shown when the list aggregates every server.
     var serverName: String? = nil
 
+    /// 📌/📍 pin toggle in the action row (nil hides it, e.g. in select mode).
+    var onPinToggle: (() -> Void)? = nil
+
+    private var status: String { prd.status.isEmpty ? "draft" : prd.status.lowercased() }
+    /// PWA isApprovalState → ✗ Reject / ↺ Request Revision / ✓ Approve.
+    private var isApprovalState: Bool { ["needs_review", "revisions_asked", "waiting_input"].contains(status) }
+    /// PWA isCancelable → ✕ Cancel.
+    private var isCancelable: Bool { !["completed", "cancelled", "rejected", "archived"].contains(status) }
+
+    /// PWA `.prd-card` (renderAutomataCard): title row, right-aligned id/activity row,
+    /// progress + position (only with tasks), compact lifecycle strip, action row,
+    /// `▶ Stories & tasks (n)` disclosure.
     var body: some View {
-        let total = prd.allTasks.count
-        let done = prd.doneTaskCount
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                if pinned { Text("📌").font(DatawatchFonts.labelSmall).accessibilityLabel("Pinned") }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 8) {
                 if let t = prd.type, !t.isEmpty { PrdTypeBadge(type: t) }
                 if prd.isTemplate { PrdTemplateBadge() }
-                Text(prd.displayTitle)
-                    .font(DatawatchFonts.titleMedium)
+                Text(prd.cardTitle)
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(DatawatchColors.onSurface)
                     .lineLimit(2)
-                Spacer(minLength: 8)
-                if let onWatchToggle { watchButton(onWatchToggle) }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 PrdStatusChip(status: prd.status)
             }
-            // PWA card meta row: id + last activity, mono, right-justified.
-            PrdIdMetaRow(prd: prd)
-            HStack(spacing: 6) {
+            // PWA card meta row: ↗ parent · id · last activity, mono 11, right-justified.
+            HStack(spacing: 10) {
                 if let serverName { serverChip(serverName) }
-                if let pid = prd.parentPrdId, !pid.isEmpty { parentChip(pid) }
-                Text(metaLine)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    .lineLimit(1)
+                PrdIdMetaRow(prd: prd, cardStyle: true, onParent: onParent)
             }
+            .padding(.top, 4)
+            progress
             if let pos = PrdCardStyle.positionLine(prd) {
                 Text(pos)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.success)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DatawatchColors.primary)
                     .lineLimit(2)
+                    .padding(.top, 2)
             }
-            if total > 0 {
-                ProgressView(value: Double(done), total: Double(total))
-                    .tint(PrdStatusStyle.color(prd.status))
-                    .accessibilityLabel("\(done) of \(total) tasks complete")
-            }
-            PrdLifecycleStrip(prd: prd, onAction: onAction)
+            PrdLifecycleStrip(prd: prd, compact: true, onAction: onAction)
+                .padding(.top, 8)
+            if onAction != nil || onWatchToggle != nil || onPinToggle != nil { actionRow }
             PrdStoriesTree(prd: prd)
+                .padding(.top, 8)
         }
-        .padding(.vertical, 6)
     }
 
+    /// PWA renderProgressBar: bar + "done/total tasks · pct%" (10 px text2); nothing without tasks.
+    @ViewBuilder
+    private var progress: some View {
+        let total: Int = prd.allTasks.count
+        if total > 0 {
+            let done: Int = prd.doneTaskCount
+            let pct: Int = Int((Double(done) / Double(total) * 100).rounded())
+            VStack(alignment: .leading, spacing: 2) {
+                ProgressView(value: Double(done), total: Double(total))
+                    .tint(pct == 100 ? DatawatchColors.success : DatawatchColors.primary)
+                Text(verbatim: "\(done)/\(total) " + L("tasks") + " · \(pct)%")
+                    .font(.system(size: 10))
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            .padding(.top, 6)
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// PWA card action row (border-top): ✕ Cancel · ✗ Reject · ↺ Request Revision ·
+    /// ⏸ Pause / ▶ Resume … ✓ Approve · 👁 watch · 📍 pin.
+    private var actionRow: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(DatawatchColors.border).frame(height: 1)
+            HStack(spacing: 6) {
+                if let onAction {
+                    if isCancelable { PrdCardButton(title: "✕ " + L("Cancel")) { onAction("cancel") } }
+                    if isApprovalState {
+                        PrdCardButton(title: "✗ " + L("Reject"), fg: DatawatchColors.error, stroke: DatawatchColors.error) {
+                            onAction("reject")
+                        }
+                        PrdCardButton(title: "↺ " + L("Request Revision"), fg: SessionCardView.amber,
+                                      bg: SessionCardView.amber.opacity(0.15), bold: true) {
+                            onAction("request_revision")
+                        }
+                    }
+                    if status == "running" { PrdCardButton(title: "⏸ " + L("Pause")) { onAction("pause") } }
+                    if status == "paused" {
+                        PrdCardButton(title: "▶ " + L("Resume"), fg: .white, bg: DatawatchColors.primary,
+                                      stroke: DatawatchColors.primary) { onAction("resume") }
+                    }
+                }
+                Spacer(minLength: 0)
+                if let onAction, isApprovalState {
+                    PrdCardButton(title: "✓ " + L("Approve"), fg: DatawatchColors.background, bg: SessionCardView.amber,
+                                  stroke: SessionCardView.amber, bold: true) { onAction("approve") }
+                }
+                if let onWatchToggle { watchButton(onWatchToggle) }
+                if let onPinToggle { pinButton(onPinToggle) }
+            }
+            .padding(.top, 10)
+        }
+        .padding(.top, 10)
+    }
+
+    /// PWA watchBtn 👁: accent2 when watching, .4 opacity when not.
     private func watchButton(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: watched ? "bell.fill" : "bell.slash")
-                .font(.system(size: 12))
-                .foregroundStyle(watched ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted.opacity(0.5))
+            Text(verbatim: "👁")
+                .font(.system(size: 14))
+                .foregroundStyle(watched ? DatawatchColors.secondary : DatawatchColors.onSurface)
+                .opacity(watched ? 1 : 0.4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
         }
         .buttonStyle(.borderless)
-        .accessibilityLabel(watched ? "Watching" : "Not watching")
+        .accessibilityLabel(L(watched ? "Watching" : "Not watching"))
+    }
+
+    /// PWA pinBtn: 📌 (warning) when pinned, 📍 at .4 opacity when not.
+    private func pinButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(verbatim: pinned ? "📌" : "📍")
+                .font(.system(size: 14))
+                .opacity(pinned ? 1 : 0.4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(L(pinned ? "Unpin" : "Pin"))
     }
 
     private func serverChip(_ name: String) -> some View {
@@ -818,30 +905,29 @@ struct PrdRow: View {
             .accessibilityLabel("Server \(name)")
     }
 
-    /// Android `↗ <parent id prefix>` chip (accent2 @16 %), tappable here.
-    @ViewBuilder
-    private func parentChip(_ pid: String) -> some View {
-        let chip = Text("↗ " + String(pid.prefix(8)))
-            .font(DatawatchFonts.labelSmall)
-            .foregroundStyle(DatawatchColors.secondary)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            .background(DatawatchColors.secondary.opacity(0.16), in: RoundedRectangle(cornerRadius: 6))
-        if let onParent {
-            Button(action: onParent) { chip }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Open parent automaton \(pid)")
-        } else {
-            chip.accessibilityLabel("Parent automaton \(pid)")
-        }
-    }
+}
 
-    private var metaLine: String {
-        var parts: [String] = []
-        if let b = prd.backend, !b.isEmpty {
-            parts.append((prd.model?.isEmpty == false) ? "\(b)/\(prd.model!)" : b)
+/// PWA list-card `btn-secondary` / `btn-primary` (11 px, 3×10 padding, r4, 1 px --border).
+struct PrdCardButton: View {
+    let title: String
+    var fg: Color = DatawatchColors.onSurface
+    var bg: Color = DatawatchColors.surface2
+    var stroke: Color = DatawatchColors.border
+    var bold: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(verbatim: title)
+                .font(.system(size: 11, weight: bold ? .bold : .regular))
+                .lineLimit(1)
+                .fixedSize()
+                .foregroundStyle(fg)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 3)
+                .background(bg, in: RoundedRectangle(cornerRadius: 4))
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(stroke, lineWidth: 1))
         }
-        parts.append("\(prd.stories.count) stories · \(prd.doneTaskCount)/\(prd.allTasks.count) tasks")
-        return parts.joined(separator: "  ·  ")
+        .buttonStyle(.borderless)
     }
 }
