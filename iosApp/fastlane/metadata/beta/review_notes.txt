@@ -1,0 +1,22 @@
+datawatch is a client for a self-hosted server. It has no account system and no backend run by the developer. Everything the app shows comes from a datawatch server that the user installs and runs on their own computer (https://github.com/dmz006/datawatch, open source). Without a server the app only shows its empty "No servers configured" state.
+
+To review the app, use the demo server supplied in the "Sign-in information" fields of this submission:
+• User name field: the demo server's https:// URL.
+• Password field: the demo server's API bearer token.
+
+How to connect:
+1. Launch the app and allow notifications (optional).
+2. Open the Settings tab › Comms › Servers and tap +.
+3. Enter any display name, paste the URL into "Base URL" and the token into "Bearer token", then tap Add.
+4. Go back to the Sessions tab. The demo server's sessions appear within a few seconds.
+
+What to try:
+• Sessions: open a session to see its live terminal and chat. Type a reply and send it. Tap the mic to record a voice reply; the demo server transcribes it (the mic button appears only when voice input is enabled on the server).
+• Alerts tab: alerts raised by the demo server's sessions.
+• Automata tab: open an automaton to see its stories and tasks.
+• Observer and Dashboard tabs: live host metrics from the demo server.
+• Settings: server configuration pages and About.
+
+Permissions are requested only when needed: notifications (alerts), microphone (voice reply), camera (attach a photo to a reply), Face ID (optional app lock, Settings › General › Security), local network (servers on the user's LAN).
+
+The app uses only standard HTTPS/TLS and the iOS Keychain (ITSAppUsesNonExemptEncryption = NO). It contains no ads, analytics or tracking.

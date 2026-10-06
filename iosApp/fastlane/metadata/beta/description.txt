@@ -1,0 +1,12 @@
+datawatch is the iPhone and iPad client for datawatch, the open-source server that runs and supervises AI coding sessions on machines you own.
+
+This beta needs your own datawatch server (https://github.com/dmz006/datawatch), reachable from your device over your LAN, a VPN or Tailscale, and its API bearer token. The app has no cloud service of its own and sends nothing to the developer.
+
+With the app you can:
+• See every session on every server you add, open its live terminal and chat, and reply by typing, voice or quick commands.
+• Get alerts when a session needs input, and jump straight to it.
+• Create, approve and follow automata (multi-story plans the server runs with your agents).
+• Watch host and process metrics in the Observer and Dashboard tabs.
+• Manage server settings: LLM backends, profiles, council personas, guardrails, alert rules and more.
+
+Setup guide: https://github.com/dmz006/datawatch-app/blob/main/docs/ios.md

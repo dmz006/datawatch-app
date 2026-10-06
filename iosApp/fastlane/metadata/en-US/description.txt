@@ -1,0 +1,46 @@
+datawatch is the mobile client for datawatch, the open-source server that runs and supervises AI coding sessions (Claude Code, Aider and other agents) on machines you own. Keep an eye on every session, answer prompts the moment an agent needs you, and steer long-running work from your iPhone or iPad.
+
+You need your own datawatch server. The app has no cloud service of its own: it talks only to the servers you add, over your LAN, VPN or Tailscale. Get the server at https://github.com/dmz006/datawatch
+
+SESSIONS
+• Every running session on every server you add, with live state, filters, search and a tree view for child sessions.
+• Open a session for its live terminal, chat transcript, channel messages and per-session CPU, memory and network stats.
+• Reply by typing, by voice, or with saved quick commands. Arrow keys, Page Up/Down and Escape sit one tap away.
+• Start new sessions from templates or by picking a project folder on the server; rename, stop, restart or delete them with one tap.
+• Attach a photo from the camera to a reply.
+
+VOICE
+• Tap the mic, speak, review the text, send. Your datawatch server transcribes the audio with its own Whisper backend.
+
+ALERTS
+• One inbox for every server: input needed, completed, rate limited, errors and guardrail verdicts.
+• Reply in place, mute the alert dock, or jump straight to the session that raised the alert.
+
+AUTOMATA
+• Create, review and approve automata: multi-story plans that the server breaks into tasks and runs with your agents.
+• Follow progress story by story, with the dependency graph, verdicts, decisions, memory and the worker sessions doing the work.
+• Use templates, guided mode and per-story or per-task model overrides.
+
+OBSERVER AND DASHBOARD
+• Host and process metrics, GPU usage, federated peers and compute nodes at a glance.
+• Session analytics, audit log, knowledge graph and daemon log.
+• A dashboard of live cards you choose and arrange.
+
+SETTINGS AND CONTROL
+• Manage the server from the phone: LLM backends and models, agent profiles, the council of reviewer personas, guardrails, alert rules, routing, plugins, skills and more.
+• Several servers side by side. Switch with the server picker or a three-finger swipe up.
+
+BUILT FOR iPHONE AND iPAD
+• Native SwiftUI app with a split layout on iPad and landscape support.
+• English, German, Spanish, French and Japanese.
+• Deep links open a session, an alert or a tab directly.
+
+PRIVATE BY DESIGN
+• No ads, no analytics, no tracking and no third-party crash reporting.
+• Bearer tokens are stored in the iOS Keychain on this device only.
+• Cached session data is protected by iOS Data Protection and is unreadable while the device is locked.
+• Optional Face ID or Touch ID lock.
+• HTTPS only. Pin a self-signed server certificate by its fingerprint instead of turning validation off.
+
+Source: https://github.com/dmz006/datawatch-app
+Privacy policy: https://dmzs.com/datawatch-client/privacy
