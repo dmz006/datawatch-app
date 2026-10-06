@@ -1,9 +1,11 @@
 [versions]
 zxing = "3.5.3"
 agp = "8.5.2"
-kotlin = "2.0.20"
+# R8 override: AGP 8.5.2 bundles R8 8.5, which cannot parse Kotlin 2.4 metadata.
+# Kotlin 2.4 needs R8 >= 9.1.29 (developer.android.com/build/kotlin-support).
+r8 = "9.1.56"
+kotlin = "2.4.20"
 compose-multiplatform = "1.6.11"
-compose-compiler = "1.5.15"
 coroutines = "1.9.0"
 serialization = "1.7.3"
 datetime = "0.6.1"
@@ -33,6 +35,8 @@ turbine = "1.1.0"
 mockwebserver = "4.12.0"
 
 [libraries]
+# Build tooling (root buildscript classpath) — overrides the R8 bundled with AGP.
+r8 = { module = "com.android.tools:r8", version.ref = "r8" }
 # QR rendering for Signal device linking (ZXing core only; no Play Services)
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 # Kotlin + stdlib

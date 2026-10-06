@@ -1,3 +1,11 @@
+// Kotlin 2.4 class-file metadata needs R8 >= 9.1.29; AGP 8.5.2 bundles R8 8.5.
+// Putting a newer R8 on the root buildscript classpath makes AGP use it for
+// minified release builds (documented override, see developer.android.com/build/kotlin-support).
+buildscript {
+    repositories { google() }
+    dependencies { classpath(libs.r8) }
+}
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false

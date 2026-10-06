@@ -15,7 +15,7 @@ val appVersion: String by rootProject.extra(
 
 kotlin {
     androidTarget {
-        compilations.all { kotlinOptions.jvmTarget = "17" }
+        compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
     }
     val xcf = XCFramework("DatawatchShared")
     listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->

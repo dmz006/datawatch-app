@@ -71,18 +71,18 @@ public object IosTls {
             val space = challenge.protectionSpace
             val trust = space.serverTrust
             if (space.authenticationMethod != NSURLAuthenticationMethodServerTrust || trust == null) {
-                completion(NSURLSessionAuthChallengePerformDefaultHandling, null)
+                completion(NSURLSessionAuthChallengePerformDefaultHandling.convert(), null)
             } else if (trustAll && IosCertPins.isTrustAll(space.host)) {
-                completion(NSURLSessionAuthChallengeUseCredential, NSURLCredential.credentialForTrust(trust))
+                completion(NSURLSessionAuthChallengeUseCredential.convert(), NSURLCredential.credentialForTrust(trust))
             } else {
                 val pin = IosCertPins.pinFor(space.host)
                 when {
                     pin == null ->
-                        completion(NSURLSessionAuthChallengePerformDefaultHandling, null)
+                        completion(NSURLSessionAuthChallengePerformDefaultHandling.convert(), null)
                     leafSha256Hex(trust) == pin ->
-                        completion(NSURLSessionAuthChallengeUseCredential, NSURLCredential.credentialForTrust(trust))
+                        completion(NSURLSessionAuthChallengeUseCredential.convert(), NSURLCredential.credentialForTrust(trust))
                     else ->
-                        completion(NSURLSessionAuthChallengeCancelAuthenticationChallenge, null)
+                        completion(NSURLSessionAuthChallengeCancelAuthenticationChallenge.convert(), null)
                 }
             }
         }

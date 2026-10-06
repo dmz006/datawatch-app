@@ -90,7 +90,7 @@ class EventMapperTest {
     }
 
     @Test
-    fun `unknown type falls back to Unknown event (forward-compat)`() {
+    fun `unknown type falls back to Unknown event - forward-compat`() {
         val dto =
             WsFrameDto(
                 type = "future_type_xyz",
@@ -102,7 +102,7 @@ class EventMapperTest {
     }
 
     @Test
-    fun `sessions frame is skipped (UI sources it from REST)`() {
+    fun `sessions frame is skipped - UI sources it from REST`() {
         val dto =
             WsFrameDto(
                 type = "sessions",
