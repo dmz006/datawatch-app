@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Security
+- **Dependabot triage (#208).** Ktor 2.3.12 → 2.3.13 (GHSA-8qv4-773j-c979). The phone app and Android Auto module now resolve Guava 33.3.1-android (the version the Wear app already ships) instead of 31.1-android pulled in by `androidx.car.app` (GHSA-7g45-4rm6-3mm3, GHSA-5mg8-w23w-74h3). This is a version constraint; no new dependency is added.
+- **Build tooling only:** `settings.gradle.kts` now raises vulnerable transitive build-tool dependencies to patched versions without changing their release line: netty 4.1.138, bouncycastle 1.86, commons-compress 1.28.0, commons-io 2.17.0, logback 1.5.38, jdom2 2.0.6.1, jose4j 0.9.6 and protobuf-java 3.25.9. They come from AGP, the Unified Test Platform and ktlint, and none of them ship in the APK/AAB or the XCFramework.
+
 ## [1.27.1] — 2026-10-05
 
 ### Fixed

@@ -52,4 +52,12 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testImplementation(libs.junit5.api)
     testRuntimeOnly(libs.junit5.engine)
+    constraints {
+        // androidx.car.app pulls guava 31.1-android, which is affected by
+        // GHSA-7g45-4rm6-3mm3 / GHSA-5mg8-w23w-74h3 (fixed in 32.0.0-android).
+        // Align with the version the Wear app already ships (issue #208).
+        implementation(libs.guava) {
+            because("guava < 32.0.0-android: GHSA-7g45-4rm6-3mm3, GHSA-5mg8-w23w-74h3")
+        }
+    }
 }

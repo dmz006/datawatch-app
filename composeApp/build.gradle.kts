@@ -71,6 +71,17 @@ kotlin {
     }
 }
 
+dependencies {
+    constraints {
+        // androidx.car.app pulls guava 31.1-android, which is affected by
+        // GHSA-7g45-4rm6-3mm3 / GHSA-5mg8-w23w-74h3 (fixed in 32.0.0-android).
+        // Align with the version the Wear app already ships (issue #208).
+        add("androidMainImplementation", libs.guava) {
+            because("guava < 32.0.0-android: GHSA-7g45-4rm6-3mm3, GHSA-5mg8-w23w-74h3")
+        }
+    }
+}
+
 android {
     namespace = "com.dmzs.datawatchclient"
     compileSdk = 36
