@@ -30,7 +30,7 @@ jobs:
           java-version: '21'
       - name: Setup Gradle
         if: hashFiles('gradlew') != ''
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: Run OWASP dependency check
         if: hashFiles('gradlew') != ''
         run: ./gradlew dependencyCheckAnalyze --no-daemon
