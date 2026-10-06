@@ -227,8 +227,9 @@ Same column meaning as the section below. Validated stays `No` until a real-devi
 | Phone + iOS | Terminal connect watchdog re-sends `subscribe` on the open socket (no reconnect) | No | No | unreleased | Emulator — sandbox through a 0.8 s/hop delay proxy: old build cancelled 3 connects, new build connected (first frame 6.4 s) | iOS same change, build only |
 | Phone | No doubled system-bar insets on the six tabs (bottom gap, top band) | No | No | unreleased | Emulator — all six tabs, scrolled to the end | |
 | Phone + iOS | Automata planning: one status line; compute stats from the planning LLM's node | Yes | No | unreleased | `PrdComputeResolverTest` (MockWebServer, 4 cases); emulator — sandbox (node without monitoring → local stats) | |
-| Phone | Session list card in the web layout | No | No | unreleased | Emulator — side-by-side with PWA v8.59 at 412 px, same sandbox data | iOS in progress |
-| Phone | Automata list card in the web layout | No | No | unreleased | Emulator — side-by-side with PWA v8.59 at 412 px | iOS in progress |
+| Phone + iOS | Session list card in the web layout (incl. running row in the amber box) | No | No | unreleased | Emulator + simulator — side-by-side with PWA v8.59 at phone width, same sandbox data | |
+| Phone + iOS | Automata list card in the web layout | No | No | unreleased | Emulator + simulator — side-by-side with PWA v8.59 | |
+| Phone | Automata Pause / Resume (card + detail) | Yes | No | unreleased | `RestTransportAutonomousTest` pause + resume paths | Live check needs a server ≥ v8.57 |
 | Phone | Profile editor Save above the gesture bar | No | No | unreleased | Build only | e2e flow 09 still taps by position |
 | Phone | Markdown `_italic_` (council replies) | Yes | No | unreleased | `MarkdownInlineTest` (3 cases) | |
 | Phone + Wear + AAOS | Maestro e2e smoke suite (`scripts/e2e-sandbox.sh`) | Yes | No | unreleased | 21/21 PASS on emulators against the sandbox with real LLM nodes | Local only; no emulator in CI |

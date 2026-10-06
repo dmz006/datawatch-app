@@ -88,14 +88,15 @@ below has a recorded real-device run yet; that pass is open in
 
 ### Session and Automata cards did not match the web layout (Android)
 
-- **Fixed in:** unreleased (Android; iOS in progress)
+- **Fixed in:** unreleased (Android + iOS)
 - **Description:** Card structure differed from the web UI (actions at the bottom as large
   buttons, backend chip and expand icon in the title row, unboxed waiting prompt, outlined
   cards, full-size lifecycle strip, watch bell in a side column).
 - **Steps:** Same sandbox data in the web UI (phone width) and the app; compare the
   Sessions and Automata lists.
 - **Expected:** Same rows, order and controls as the web UI.
-- **Actual:** PASS (emulator) — side-by-side screenshots against PWA v8.59 at 412 px width.
+- **Actual:** PASS (emulator) and PASS (simulator) — side-by-side screenshots against PWA
+  v8.59 at phone width (Android emulator; iOS simulator after the Mac build).
 
 ---
 
