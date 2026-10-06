@@ -1,0 +1,6 @@
+What's new in 1.28.0
+
+• Push notifications: the app now registers for notifications every time it starts and retries if registration fails. Delivery to your device arrives with an upcoming datawatch server update.
+• Terminal size now follows each session's console settings on the server, matching the web app.
+• The reconnect message no longer wraps in the middle of a phrase.
+• Security and build tooling updates.

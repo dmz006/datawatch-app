@@ -1,0 +1,1 @@
+coding agent,llm,terminal,tmux,ssh,self-hosted,devops,developer,remote,monitor,voice,mcp,agents

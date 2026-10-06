@@ -1,0 +1,17 @@
+Version 1.28.0 — thank you for testing!
+
+Please try:
+1. Add your server: Settings › Comms › Servers › +. Enter the https:// URL and bearer token. If the server uses a self-signed certificate, use "Pin server certificate…" (check the fingerprint, then "Trust & pin") rather than "Trust all certificates".
+2. Sessions: open a running session, check the terminal fills the screen at the server's console size, rotate the device, and send a reply with the keyboard and with the mic.
+3. Alerts: leave the app open while a session waits for input. You should get an alert after about 45 seconds.
+4. Automata: create a small automaton, approve it and follow it through its stories.
+5. Observer and Dashboard: check the numbers match the web app.
+6. iPad: try the split layout in portrait and landscape.
+7. Settings › General › Security: turn on Face ID / Touch ID lock and relaunch the app.
+
+Known limitations in this build:
+• Push notifications while the app is closed arrive with an upcoming datawatch server update. The app already asks for permission and registers; alerts show only while the app is open for now.
+• To reorder sessions, press and hold a session, then drag.
+• No Siri shortcuts or home-screen widgets yet.
+
+Send feedback with a screenshot from TestFlight (take a screenshot in the app) or by email. Please include your iOS version, device model and datawatch server version. Never include your server address or token.
