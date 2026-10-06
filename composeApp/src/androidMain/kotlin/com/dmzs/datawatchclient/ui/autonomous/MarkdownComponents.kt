@@ -128,7 +128,7 @@ internal fun parseMd(raw: String): List<MdBlock> {
     return blocks
 }
 
-/** Apply **bold**, *italic*, `code` inline spans to an AnnotatedString. */
+/** Apply **bold**, *italic* / _italic_, `code` inline spans to an AnnotatedString. */
 internal fun buildInline(text: String) = buildAnnotatedString {
     var idx = 0
     while (idx < text.length) {
@@ -144,6 +144,16 @@ internal fun buildInline(text: String) = buildAnnotatedString {
             text[idx] == '*' && idx + 1 < text.length && text[idx + 1] != '*' -> {
                 val end = text.indexOf('*', idx + 1)
                 if (end == -1 || text.getOrNull(end + 1) == '*') { append(text[idx]); idx++; continue }
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(text.substring(idx + 1, end)) }
+                idx = end + 1
+            }
+            // Italic _..._ — word-bounded so snake_case stays literal
+            // (council replies end with "_(via: node)_").
+            text[idx] == '_' && !text.getOrElse(idx - 1) { ' ' }.isLetterOrDigit() &&
+                text.getOrNull(idx + 1)?.isWhitespace() == false -> {
+                var end = text.indexOf('_', idx + 1)
+                while (end != -1 && text.getOrElse(end + 1) { ' ' }.isLetterOrDigit()) end = text.indexOf('_', end + 1)
+                if (end == -1 || end == idx + 1) { append(text[idx]); idx++; continue }
                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(text.substring(idx + 1, end)) }
                 idx = end + 1
             }
