@@ -7,7 +7,41 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Current release: v1.23.4 (2026-09-17).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.27.0+` (`v8.9.5+` for baseline; `v8.8.3+` for Chrome integration). **Production-ready** — full platform parity across Android phone, Wear OS, Android Automotive OS, and iOS with comprehensive testing and Play Store integration. Now in closed testing on the Play Store.
+**Current release: v1.28.0 (2026-10-06).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.39.x` (the line it is tested against; servers back to v8.27 still work, but newer screens hide or fall back where an endpoint is missing). Android phone, Wear OS, Android Auto and iOS from one shared Kotlin core; Android is in closed testing on the Play Store; iOS goes out through TestFlight (no public App Store listing yet).
+
+
+### Highlights since v1.23
+
+- **Three-way parity** — the Android and iOS apps now match the datawatch web UI screen for
+  screen (sessions, session detail, alerts, Automata, Observer, Dashboard, Settings), in
+  English, German, Spanish, French and Japanese.
+- **Council live runs** — start a Quick or Debate council from Settings › Council, watch each
+  round and persona reply stream in, cancel it, or replay a past run. Replies, consensus and
+  dissent render as markdown.
+- **Automata extras** — per-story and per-task LLM / profile overrides, spawn badges,
+  templates with built-in and "Used N×" badges, stories that appear live while an automaton
+  is being planned, story verdict badges, depth / created / concurrency, a dependency graph,
+  and the extra planning settings (decomposition backend and effort, verification effort,
+  stale-task timeout).
+- **Profile editor with YAML view** — project and cluster profiles have a full form plus a
+  "YAML view" toggle on the same editor; edits round-trip without losing unknown keys and
+  secrets stay masked.
+- **Chat** — collapsible thinking blocks and inline images; web-UI bubble colours with
+  markdown.
+- **Terminal** — bundled JetBrains Mono font; the terminal size follows the server's
+  per-session console settings; scroll mode waits for the server to confirm, so the terminal
+  can no longer get stuck in it.
+- **Push on iOS** — the app registers with Apple Push Notification service on every launch
+  and tells the server which APNs environment the token belongs to (delivery needs the
+  server's APNs sender, still in progress upstream).
+- **Security** — certificate pinning per server, "trust all certificates" limited to the one
+  server that opted in, API keys never shown in forms or raw editors, biometric unlock bound
+  to a hardware-backed key on Android.
+- **Smaller things** — an alert dock instead of toasts, a "Server:" picker bar, collapsible
+  Settings / Observer cards with links to the manual, light theme, reduced motion, alert and
+  session deep links (`datawatch://`), voice replies that work under Do Not Disturb.
+
+See [CHANGELOG.md](CHANGELOG.md) for every release.
 
 ---
 
@@ -75,14 +109,19 @@ phone, watch, or car display:
 - **Push when attention is needed** — ntfy + Wear OS alert notification when a
   session enters waiting-input state; inline RemoteInput reply from the shade.
 - **Voice reply** — tap, speak, confirm — no typing on a two-inch keyboard.
-- **Multi-server** — Tailscale, LAN, and public hosts side-by-side; 3-finger
-  swipe to switch; "All servers" fan-out via `/api/federation/sessions`.
+- **Multi-server** — Tailscale, LAN, and public hosts side-by-side; a "Server:"
+  picker bar on every tab, 3-finger swipe to switch, and an "All servers" view.
+- **Automata** — create, plan, approve and run automata; watch planning live; edit
+  stories and tasks; templates, dependency graph, verdicts and per-story resources.
+- **Council** — run a multi-persona council debate and watch it live.
+- **Server settings** — every web-UI settings card, including the project / cluster
+  profile editor with a YAML view, LLM registry, compute nodes and plugins.
 - **Glance surfaces** — home-screen widget, Wear Tile, Wear complications (CPU /
   mem / session counts / server switch), and Android Auto list screen.
 - **Foldable + tablet two-pane** — sessions list and session detail render
   side-by-side on screens ≥ 600 dp (Pixel Fold, Galaxy Z Fold, tablets).
 - **Secure at rest** — SQLCipher-backed storage + Android Keystore for bearer
-  tokens + optional biometric unlock.
+  tokens + optional biometric unlock; optional per-server certificate pinning.
 
 Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
 
@@ -178,9 +217,10 @@ adb -s <watch-serial> install -r wear-release.apk
 ```
 
 First launch:
-1. Onboarding → Add server.
-2. Enter your datawatch server URL (e.g. `https://host.taila1234.ts.net:8080`),
-   bearer token, and the self-signed-TLS toggle if applicable.
+1. With no server configured, the Sessions tab offers **Add server**.
+2. Enter your datawatch server URL (e.g. `https://host.example.com:8443`),
+   bearer token, and either pin the server's certificate or (insecure) trust
+   all certificates for that server if it uses a self-signed certificate.
 3. Sessions tab shows a live view of every running session on that server.
 
 ## Documentation
@@ -188,19 +228,24 @@ First launch:
 - 📖 [Installation guide](docs/installation.md) — detailed walkthrough
   (phone, Wear, Auto, troubleshooting)
 - 🧭 [Architecture](docs/architecture.md) — module layout + dependency graph
-- 🔌 [Data flow](docs/data-flow.md) — REST + WebSocket + FCM/ntfy pipes
+- 🔌 [Data flow](docs/data-flow.md) — sequence diagrams for every interaction
+- 🚚 [Transports](docs/transports.md) — REST, WebSocket, SSE streams, MCP: when each is used
+- ⚙️ [Configuration reference](docs/config-reference.md) — every setting the apps expose
+- 🧪 [Testing tracker](docs/testing-tracker.md) · [Bug test log](docs/testing.md)
 - 🎬 [Usage guide](docs/usage.md) — how every screen behaves
 - 🛡 [Security model](docs/security-model.md) · [Threat model](docs/threat-model.md)
 - 🧩 [Architecture decisions (ADRs)](docs/decisions/README.md)
-- 🔄 [Parity status vs. the PWA](docs/parity-status.md)
+- 🔄 [Parity status vs. the PWA](docs/parity-status.md) · [three-way parity matrix](docs/parity/README.md)
+- 📋 [Plans, bugs and backlog](docs/plans/README.md)
+- 📚 [Full documentation index](docs/README.md)
 - 🗺 [Sprint plan](docs/sprint-plan.md)
 - 🤝 [AGENT.md](AGENT.md) — operating rules for contributors (human + AI)
 - 🔐 [SECURITY.md](SECURITY.md)
 
 ## Build
 
-Requires **JDK 21** (AGP 8.5.2's bundled Kotlin compiler rejects JDK 25+)
-and the Android SDK.
+Requires **JDK 21** and the Android SDK (AGP 8.5.2, Kotlin 2.4.20). iOS builds
+need a Mac with Xcode — see [docs/plans/ios-mac-build-host.md](docs/plans/ios-mac-build-host.md).
 
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
@@ -210,7 +255,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 ./gradlew :composeApp:assemblePublicTrackRelease  # phone release (needs keystore)
 ./gradlew :wear:assembleDebug                     # Wear
 ./gradlew :auto:assemblePublicMessagingDebug      # Auto Messaging
-./gradlew :shared:testDebugUnitTest               # shared unit tests (33)
+./gradlew :shared:testDebugUnitTest               # shared unit tests
 ./gradlew detekt ktlintCheck lintDebug            # linters
 ```
 
@@ -223,17 +268,20 @@ composeApp/   phone app — Compose UI, WebView terminal, push, gestures
 wear/         Wear OS app + Tile + complications
 auto/         Android Auto (publicMessaging + devPassenger flavors)
 shared/       KMP: transport (REST + WS + MCP-SSE), DTOs, storage, domain
-iosApp/       iOS skeleton
+iosApp/       iOS app (SwiftUI) consuming the shared XCFramework
 docs/         design package + ADRs + runbooks
 gradle/       Gradle wrapper + version catalog
 ```
 
 ## Server requirements
 
-- **datawatch** daemon >= v3.0.0 (for `/api/devices/register`,
-  `/api/voice/transcribe`, `/api/federation/sessions`). Earlier versions
-  still work for basic REST + WebSocket flows; voice and FCM wake degrade
-  to the server's ntfy fallback.
+- **datawatch** daemon v8.39.x recommended — the release line the apps are
+  tested against. Council live runs, the live planning stream, `channel_ready`
+  events and `console_cols`/`console_rows` all come from recent servers; on
+  older servers those screens hide or fall back. Basic REST + WebSocket flows
+  work back to v3.0.0.
+- **iOS push** needs the server's APNs sender (upstream
+  [dmz006/datawatch#183](https://github.com/dmz006/datawatch/issues/183)).
 - Reachable over one of: Tailscale, LAN, public DNS + TLS, or the
   datawatch channel relay.
 
