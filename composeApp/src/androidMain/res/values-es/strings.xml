@@ -1384,4 +1384,8 @@
     <string name="compute_detail_unavailable">detalle no disponible</string>
     <string name="compute_detail_fix_label">Solución:</string>
     <string name="compute_detail_fix_hint">Edita este nodo de cómputo y establece monitoring_endpoint con la URL de un sidecar datawatch-stats --listen que se ejecute en el nodo. Sin él, el daemon no tiene nada que sondear para el detalle en vivo.</string>
+    <string name="sessions_response_btn">Respuesta</string>
+    <string name="sessions_mute">Silenciar notificaciones de esta sesión</string>
+    <string name="sessions_unmute">Reactivar notificaciones</string>
+    <string name="session_council_badge">Consejo</string>
 </resources>

@@ -27,8 +27,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -63,6 +66,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,8 +85,6 @@ import com.dmzs.datawatchclient.ui.settings.IdentityWizardSheet
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -221,7 +224,9 @@ public fun AutonomousScreen(
             AnimatedVisibility(visible = openPrdId == null && state.selectedIds.isEmpty()) {
                 FloatingActionButton(
                     onClick = { if (currentTab == 1) tmplCreateOpen = true else newOpen = true },
-                    modifier = Modifier.offset(y = 36.dp).padding(end = 4.dp),
+                    // Old offset(y = 36.dp) compensated for the doubled nav-bar
+                    // inset (fixed); it now hid half the FAB behind the menu.
+                    modifier = Modifier.padding(end = 4.dp),
                     // PWA `.fab` fill = accent2 (D4a: M3 shape, PWA colour).
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,
@@ -858,6 +863,7 @@ private fun PrdRow(
         PrdInstantiateTemplateDialog(onDismiss = { instantiateOpen = false }, onSubmit = onInstantiate)
     }
     val statusColor = prdStatusColor(prd.status)
+    val dwBorder = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.border
     val statusLower = prd.status.lowercase()
     val isTerminal = statusLower in setOf("completed", "complete", "cancelled", "canceled", "rejected", "archived")
     val showCancel = !isTerminal
@@ -875,8 +881,9 @@ private fun PrdRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
+                .padding(start = 12.dp, end = 12.dp, top = 0.dp, bottom = 14.dp)
+                // PWA `.prd-card`: bg2, radius 12, 4px status edge, no outline.
+                .pwaCard(bordered = false)
                 .let { mod ->
                     if (selected) {
                         mod.background(
@@ -900,8 +907,9 @@ private fun PrdRow(
                 ),
     ) {
         Row(
-            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            // PWA card `padding:14px` (+4dp for the status edge).
+            modifier = Modifier.padding(start = 18.dp, end = 14.dp, top = 14.dp, bottom = 14.dp),
+            verticalAlignment = Alignment.Top,
         ) {
             // Selection indicator dot (only visible in selectMode)
             if (selectMode) {
@@ -944,7 +952,8 @@ private fun PrdRow(
                     }
                     Text(
                         prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "(no title)",
-                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 15.sp,
+                        lineHeight = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
@@ -1075,85 +1084,83 @@ private fun PrdRow(
                     onCancel = if (showCancel) onCancel else null,
                     isTemplate = prd.isTemplate,
                     onInstantiate = { instantiateOpen = true },
+                    compact = true,
                 )
                 // Action row: cancel left | approve+pin right — border-top separator mirrors PWA
                 Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
+                            .padding(top = 10.dp)
                             .drawBehind {
                                 drawLine(
-                                    color = androidx.compose.ui.graphics.Color(0xFF333333),
+                                    color = dwBorder,
                                     start = Offset(0f, 0f),
                                     end = Offset(size.width, 0f),
                                     strokeWidth = 0.5.dp.toPx(),
                                 )
                             }
-                            .padding(top = 6.dp),
+                            .padding(top = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     if (showCancel) {
                         // PWA uses btn-secondary: bg3 background, border, normal text — not red
-                        val dw2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
-                        Box(
-                            modifier =
-                                Modifier
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                        RoundedCornerShape(6.dp),
-                                    )
-                                    .border(1.dp, dw2.border, RoundedCornerShape(6.dp))
-                                    .clickable(onClick = onCancel)
-                                    .padding(horizontal = 10.dp, vertical = 3.dp),
-                        ) {
-                            Text(
-                                "✕ ${stringResource(R.string.action_cancel)}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
+                        PrdCardButton("✕ ${stringResource(R.string.action_cancel)}", onClick = onCancel)
+                    }
+                    if (showRejectRevise) {
+                        PrdCardButton(
+                            "✗ " + stringResource(R.string.prd_action_reject),
+                            fg = MaterialTheme.colorScheme.error,
+                            borderColor = MaterialTheme.colorScheme.error,
+                            onClick = { rejectDialogOpen = true },
+                        )
+                        PrdCardButton(
+                            "↺ " + stringResource(R.string.prd_btn_request_revision),
+                            fg = Color(0xFFF59E0B),
+                            bg = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                            bold = true,
+                            onClick = { reviseDialogOpen = true },
+                        )
                     }
                     Spacer(Modifier.weight(1f))
                     if (showApprove) {
-                        TextButton(
+                        // PWA approveBtn: warning fill, --bg text, bold.
+                        PrdCardButton(
+                            "✓ " + stringResource(R.string.action_approve),
+                            fg = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.bg,
+                            bg = Color(0xFFF59E0B),
+                            borderColor = Color(0xFFF59E0B),
+                            bold = true,
                             onClick = onApprove,
-                            contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 2.dp,
-                                ),
-                        ) {
-                            Text(
-                                "✓ ${stringResource(R.string.action_approve)}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFFF59E0B),
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-                    // Pin button — 📌 when pinned (yellow), 📍 when not (dim)
-                    TextButton(
-                        onClick = onTogglePin,
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 8.dp,
-                                vertical = 2.dp,
-                            ),
-                    ) {
-                        Text(
-                            if (pinned) "📌" else "📍",
-                            style = MaterialTheme.typography.labelMedium,
-                            color =
-                                if (pinned) {
-                                    Color(
-                                        0xFFF59E0B,
-                                    )
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                },
                         )
                     }
+                    if (!selectMode) {
+                        // PWA watchBtn 👁 (accent2 when watching, .4 opacity when not).
+                        val watchDesc = stringResource(if (isWatched) R.string.automata_watch_on else R.string.automata_watch_off)
+                        Text(
+                            "👁",
+                            fontSize = 14.sp,
+                            color = if (isWatched) com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2 else MaterialTheme.colorScheme.onSurface,
+                            modifier =
+                                Modifier
+                                    .alpha(if (isWatched) 1f else 0.4f)
+                                    .clickable(onClick = onWatchToggle)
+                                    .semantics { contentDescription = watchDesc }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                    // Pin button — 📌 when pinned (warning), 📍 when not (.4 opacity)
+                    Text(
+                        if (pinned) "📌" else "📍",
+                        fontSize = 14.sp,
+                        color = if (pinned) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface,
+                        modifier =
+                            Modifier
+                                .alpha(if (pinned) 1f else 0.4f)
+                                .clickable(onClick = onTogglePin)
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
                 }
                 // Stories envelope — always visible, matches PWA <details> (shows "no stories yet" when empty)
                 var storiesExpanded by remember(prd.id) { mutableStateOf(false) }
@@ -1161,14 +1168,15 @@ private fun PrdRow(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(top = 6.dp)
+                            .padding(top = 8.dp)
                             .clickable { storiesExpanded = !storiesExpanded }
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                            .padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "${if (storiesExpanded) "▾" else "▸"} Stories & tasks (${prd.stories.size})",
-                        style = MaterialTheme.typography.labelSmall,
+                        "${if (storiesExpanded) "▼" else "▶"} ${stringResource(R.string.prd_stories_tasks)} (${prd.stories.size})",
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -1217,19 +1225,6 @@ private fun PrdRow(
                             }
                         }
                     }
-                }
-            }
-            if (!selectMode) {
-                IconButton(
-                    onClick = onWatchToggle,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        if (isWatched) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
-                        contentDescription = stringResource(if (isWatched) R.string.automata_watch_on else R.string.automata_watch_off),
-                        modifier = Modifier.size(18.dp),
-                        tint = if (isWatched) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    )
                 }
             }
         }
@@ -1368,6 +1363,8 @@ internal fun LifecycleStrip(
     /** PWA renderLifecycleStrip: template automata get a single "Instantiate" step. */
     isTemplate: Boolean = false,
     onInstantiate: (() -> Unit)? = null,
+    /** PWA `.lifecycle-compact` (list cards): 2×6 px padding, 10 px text, 4 px radius. */
+    compact: Boolean = false,
 ) {
     if (isTemplate) {
         val accent = MaterialTheme.colorScheme.primary
@@ -1447,10 +1444,13 @@ internal fun LifecycleStrip(
                 Step("Run", if (isRunning) "■ Cancel" else "▶ Run", if (isRunning) onCancel else onRun),
                 Step("Done", "Done", null),
             )
-        val shape = RoundedCornerShape(6.dp)
+        val shape = RoundedCornerShape(if (compact) 4.dp else 6.dp)
+        val stepFont = if (compact) 10 else 11
+        val stepPadH = if (compact) 6.dp else 8.dp
+        val stepPadV = if (compact) 2.dp else 4.dp
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 3.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             steps.forEachIndexed { idx, step ->
@@ -1521,11 +1521,12 @@ internal fun LifecycleStrip(
                             .background(bgColor, shape)
                             .then(if (borderColor != null) Modifier.border(1.dp, borderColor, shape) else Modifier)
                             .then(if (clickHandler != null) Modifier.clickable(onClick = clickHandler) else Modifier)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = stepPadH, vertical = stepPadV),
                 ) {
                     Text(
                         label,
-                        fontSize = 11.sp,
+                        fontSize = stepFont.sp,
+                        lineHeight = (stepFont + 3).sp,
                         color = textColor,
                         fontWeight = if (isActive || isPast || isDangerPast) FontWeight.SemiBold else FontWeight.Normal,
                     )
@@ -1616,6 +1617,36 @@ internal fun prdStatusColor(status: String): Color =
         "draft", "cancelled", "canceled", "archived" -> Color(0xFF94A3B8)
         else -> Color(0xFF94A3B8)
     }
+
+/** PWA list-card `btn-secondary` (11 px, 3×10 px padding, 4 px radius, --border). */
+@Composable
+private fun PrdCardButton(
+    text: String,
+    onClick: () -> Unit,
+    fg: Color = MaterialTheme.colorScheme.onSurface,
+    bg: Color = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.bg3,
+    borderColor: Color = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.border,
+    bold: Boolean = false,
+) {
+    Box(
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(bg)
+                .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+    ) {
+        Text(
+            text,
+            fontSize = 11.sp,
+            lineHeight = 14.sp,
+            color = fg,
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1,
+        )
+    }
+}
 
 /** Action button matching PWA .automata-action-btn — border pill, accent when active. */
 @Composable

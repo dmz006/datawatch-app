@@ -1384,4 +1384,8 @@
     <string name="compute_detail_unavailable">詳細を取得できません</string>
     <string name="compute_detail_fix_label">対処:</string>
     <string name="compute_detail_fix_hint">このコンピュートノードを編集し、monitoring_endpoint にノード上で動作する datawatch-stats --listen サイドカーの URL を設定してください。設定しない場合、デーモンはライブ詳細を取得できません。</string>
+    <string name="sessions_response_btn">応答</string>
+    <string name="sessions_mute">このセッションの通知をミュート</string>
+    <string name="sessions_unmute">通知のミュートを解除</string>
+    <string name="session_council_badge">評議会</string>
 </resources>
