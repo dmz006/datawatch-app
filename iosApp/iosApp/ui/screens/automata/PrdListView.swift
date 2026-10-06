@@ -387,6 +387,8 @@ struct PrdListView: View {
     var headerFilterOpen: Binding<Bool>? = nil
     @StateObject private var vm = PrdListViewModel()
     @State private var showWizard = false
+    /// PWA D61 `_automataState.watchFilter`: watched automata only (not persisted).
+    @State private var watchFilter = false
     @State private var confirmBatchDelete = false
     /// D72a / D74a review dialogs raised from a card's lifecycle strip.
     @State private var review: PrdReviewRequest? = nil
@@ -478,6 +480,11 @@ struct PrdListView: View {
         }
     }
 
+    /// `vm.visible` narrowed by the 👁 watched-only filter.
+    private var shownPrds: [PrdDto] {
+        watchFilter ? vm.visible.filter { isWatched($0) } : vm.visible
+    }
+
     private func isWatched(_ prd: PrdDto) -> Bool {
         _ = localPrefs.revision
         guard let pid = vm.owner(ofPrd: prd.id)?.id else { return false }
@@ -545,10 +552,10 @@ struct PrdListView: View {
     }
 
     private var batchBar: some View {
-        let allSelected = !vm.visible.isEmpty && vm.visible.allSatisfy { vm.selected.contains($0.id) }
+        let allSelected = !shownPrds.isEmpty && shownPrds.allSatisfy { vm.selected.contains($0.id) }
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                batchButton(allSelected ? "☑ None" : "☑ All", count: vm.visible.count) { vm.selectAllVisible(!allSelected) }
+                batchButton(allSelected ? "☑ None" : "☑ All", count: shownPrds.count) { vm.selectAllVisible(!allSelected) }
                 batchButton("Run", count: vm.eligibleIds("run").count) { Task { await vm.runBatch("run") } }
                 batchButton("Approve", count: vm.eligibleIds("approve").count) { Task { await vm.runBatch("approve") } }
                 batchButton("Cancel run", count: vm.eligibleIds("cancel").count) { Task { await vm.runBatch("cancel") } }
@@ -583,11 +590,14 @@ struct PrdListView: View {
 
     private var listToolbar: some View {
         VStack(spacing: 6) {
-            HStack(spacing: 8) {
-                chip("⊞ Filter", on: vm.filterOpen) { vm.filterOpen.toggle() }
-                chip("History", on: vm.historyOn) { vm.historyOn.toggle() }
-                chip("☑ Select", on: vm.selectMode) { vm.selectMode.toggle() }
+            // PWA automata toolbar: square icon buttons ☑ ⊞ ⏱ 👁, right-aligned
+            // (.automata-action-btn — 1pt border, accent + tint when active).
+            HStack(spacing: 6) {
                 Spacer(minLength: 0)
+                actionBtn("☑", on: vm.selectMode, label: "Select") { vm.selectMode.toggle() }
+                actionBtn("⊞", on: vm.filterOpen, label: "Filter") { vm.filterOpen.toggle() }
+                actionBtn("⏱", on: vm.historyOn, label: "History") { vm.historyOn.toggle() }
+                actionBtn("👁", on: watchFilter, label: "Show watched only") { watchFilter.toggle() }
             }
             // PWA filter row (search + chips) is toggled, not always shown;
             // Android keeps the search behind ⊞ the same way.
@@ -618,7 +628,7 @@ struct PrdListView: View {
     /// PWA `#automataSelectAll` "All" checkbox at the end of the filter bar
     /// (Android TriStateCheckbox): ticks every visible row; mixed when some are.
     private var selectAllToggle: some View {
-        let ids: [String] = vm.visible.map { $0.id }
+        let ids: [String] = shownPrds.map { $0.id }
         let n: Int = ids.filter { vm.selected.contains($0) }.count
         let all: Bool = !ids.isEmpty && n == ids.count
         let icon: String = all ? "checkmark.square.fill" : (n > 0 ? "minus.square.fill" : "square")
@@ -658,6 +668,22 @@ struct PrdListView: View {
         .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: DatawatchRadius.sm))
     }
 
+    private func actionBtn(_ glyph: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(verbatim: glyph)
+                .font(.system(size: 13))
+                .foregroundStyle(on ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                .frame(width: 32, height: 28)
+                .background(on ? Color(red: 0.376, green: 0.647, blue: 0.98).opacity(0.1) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6)
+                    .stroke(on ? DatawatchColors.primary : DatawatchColors.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L(label))
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
     private func chip(_ title: String, on: Bool, tint: Color = DatawatchColors.primary, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(L(title))
@@ -672,13 +698,13 @@ struct PrdListView: View {
 
     private var list: some View {
         List {
-            if vm.visible.isEmpty {
+            if shownPrds.isEmpty {
                 Text(L(vm.historyOn ? "No cancelled, rejected or archived automata." : "No automata. Launch one with ⚡."))
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .listRowBackground(Color.clear)
             }
-            ForEach(vm.visible, id: \.id) { prd in
+            ForEach(shownPrds, id: \.id) { prd in
                 Group {
                     if vm.selectMode {
                         Button {

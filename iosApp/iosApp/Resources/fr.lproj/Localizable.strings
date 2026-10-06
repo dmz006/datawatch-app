@@ -1848,3 +1848,5 @@
 "Mute notifications for this session" = "Couper les notifications de cette session";
 "Unmute notifications" = "Réactiver les notifications";
 "Quick commands" = "Commandes rapides";
+"Show watched only" = "Afficher uniquement les suivis";
+"Filter" = "Filtrer";
