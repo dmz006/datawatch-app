@@ -17,6 +17,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Changed
 - **Session cards match the web UI layout (Android):** name, state, 👁 watch and 🔔 mute on the first line; small Stop / ▶ / Summary / ☷ buttons under it; badges, a Response button, elapsed time and age on the meta line; the waiting prompt in the amber box. The per-card mute toggle sits next to watch (swiping still mutes).
+- **Session and Automata cards on iOS** match the web UI layout the same way (single-line name, actions under the header, amber waiting box, title instead of ID, Cancel / Reject / Revise / Approve / 👁 / 📍 row, no chevrons).
+- **Automata Pause / Resume on Android:** ⏸ Pause on running and ▶ Resume on paused automata, on the list card and the detail view (needs a server with the pause actions; iOS already had them).
 - **Automata cards match the web UI layout (Android):** compact lifecycle strip, Cancel / Reject / Request Revision on the action row with Approve, 👁 watch and 📍 pin on the right; no outline, as on the web.
 
 ### Testing

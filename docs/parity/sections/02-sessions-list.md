@@ -40,7 +40,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | interaction | Bulk delete: confirm → `POST /api/sessions/delete` per id → toast | ✓ P:2298 | ✓ dialog, `deleteMany` | ✓ I:132 confirm alert → I:225 `performBulkDelete` per id | aligned | | iOS reports failures inline, no toast |
 | interaction | FAB hidden while select bar shown | ✓ C:2149 | ✓ A:294 | ✓ I:61 | aligned | | |
 | element | Line 1 text: `name`, else `task` (80 chars, "(no task)") | ✓ P:2391 | ✓ A:1128 | ✓ IC:117 `displayText` | aligned | decided D16a | |
-| layout | Card row arrangement at phone width: line 1 name `\|` STATE 👁 🔔 ⋮⋮; line 2 right-aligned small actions (■ Stop, ▶, 🤖 Summary, ☷); line 3 id + badges … 📄 Response, elapsed, age; amber `.card-waiting-row` box (last 4 lines, mono 11px) | ✓ P sessionCard (flex-wrap) + C `.card-waiting-row` | ✓ SessionRow rebuilt 2026-10-06 (emulator side-by-side vs PWA v8.59 at 412px) | ✗ actions beside the name (name wraps), mute in meta row, navy waiting box ~8 lines, chevron | misaligned | operator 2026-10-06 ("PWA is guide") | Missed by the element-level rows above — they checked presence, not arrangement. iOS fix in progress (BL411). |
+| layout | Card row arrangement at phone width: line 1 name `\|` STATE 👁 🔔 ⋮⋮; line 2 right-aligned small actions (■ Stop, ▶, 🤖 Summary, ☷); line 3 id + badges … 📄 Response, elapsed, age; amber `.card-waiting-row` box (last 4 lines, mono 11px) | ✓ P sessionCard (flex-wrap) + C `.card-waiting-row` | ✓ SessionRow rebuilt 2026-10-06 (emulator side-by-side vs PWA v8.59 at 412px) | ✓ SessionCardView rebuilt 2026-10-06 (simulator side-by-side vs PWA v8.59) | aligned | operator 2026-10-06 ("PWA is guide") | Missed by the element-level rows above — they checked presence, not arrangement. Both apps fixed 2026-10-06 (BL411). |
 | element | Short-id pill (mono, bg3, border, accent2) | ✓ P:2507, C:2316 | ✓ `SessionIdPill` (mono) | ✓ IC:177 mono pill, surface2 + border | aligned | decided D16a | iOS text colour onSurface, not accent2 (minor) |
 | token | State badge style: uppercase text, 1px currentColor border, radius 10, 11px/600, .15 tint | ✓ P:2517 inline border + C:2327 `text-transform: uppercase` | ✓ `PwaStatePill` .15 bg + 1dp border, UPPERCASE wire label, 11sp/600 | ✓ IC `SessionStatePill` .15 bg + border, UPPERCASE wire label, 11/600 | aligned |  | iOS still lowercase · Android copy aligned 2026-10-04 · iOS uppercased (iOS-G 2026-10-05) |
 | motion | Running badge pulse | ✓ C:2343 700 ms .55↔1.0 ease-in-out alternate; reduced-motion | ✓ `rememberRunningPulseAlpha` 700 ms .55↔1.0 | ✓ IC:57 700 ms .55↔1.0, off under Reduce Motion | aligned | decided D18a | |
@@ -94,7 +94,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Refresh-in-progress spinner in header | ✗ | ✓ A:229 | ✓ I:151 | n/a | | PWA uses header daemon light (§01); no decision |
 
 ## Coverage
-rows: 84 · aligned: 65 · ios-missing: 0 · android-missing: 0 · pwa-missing: 10 · misaligned: 2 · n/a: 7
+rows: 84 · aligned: 66 · ios-missing: 0 · android-missing: 0 · pwa-missing: 10 · misaligned: 1 · n/a: 7
 
 Re-audited 2026-10-04 against current code (iOS commits cdc228c7, 3e04d88e, c682851e, d52892a2; Android 3e6197eb, 85d42058). Two former pwa-missing rows with no decision (REST fallback poll, header refresh spinner) are now n/a.
 
