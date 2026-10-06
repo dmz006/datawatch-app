@@ -24,7 +24,7 @@ session:
   max_sessions: 10
   input_idle_timeout: 5
   tail_lines: 20
-  alert_context_lines: 10
+  alert_context_lines: 5
   claude_enabled: false
   llm_backend: shell
   default_project_dir: __DEMO_ROOT__/projects/weather-api
@@ -34,9 +34,10 @@ session:
   kill_sessions_on_exit: true
   log_level: info
 
+# Sessions run seed-demo.sh's task runner instead of an interactive shell.
 shell_backend:
   enabled: true
-  script_path: ""
+  script_path: __DEMO_ROOT__/bin/run-task
 
 mcp:
   enabled: false

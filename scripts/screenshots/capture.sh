@@ -24,7 +24,6 @@ launch() { # udid tab [extra args...]
   mkdir -p "$OUT_DIR/logs"
   xcrun simctl launch --terminate-running-process \
     --stdout="$OUT_DIR/logs/$udid-$tab.log" --stderr="$OUT_DIR/logs/$udid-$tab.log" "$udid" "$BID" \
-    -dwSeedURL "$DW_URL" -dwSeedToken "$DW_TOKEN" -dwSeedName workstation \
     -dwTheme dark -dwSkipNotifPrompt -dwTab "$tab" "$@" >/dev/null
 }
 
@@ -52,13 +51,10 @@ capture_device() { # name folder expected-WxH
   # Pre-grant notifications so no permission sheet can cover content.
   xcrun simctl privacy "$udid" grant notifications "$BID" 2>/dev/null || true
 
-  # First launch seeds the "workstation" profile; give it time to connect.
-  launch "$udid" sessions
+  # First launch only: seed the "workstation" profile (passing the seed args on
+  # every launch raced the profile store's load and added duplicates).
+  launch "$udid" sessions -dwSeedURL "$DW_URL" -dwSeedToken "$DW_TOKEN" -dwSeedName workstation
   sleep $((SETTLE * 2))
-  codesign -d --entitlements - "$APP_PATH" 2>&1 | head -20 || true
-  xcrun simctl spawn "$udid" log show --last 3m --style compact \
-    --predicate 'process == "DatawatchClient"' > "$OUT_DIR/logs/$folder-oslog.txt" 2>&1 || true
-  grep -iE "seed|keychain|OSStatus|-34018|error" "$OUT_DIR/logs/$folder-oslog.txt" | tail -20 || true
 
   for tab in sessions automata alerts observer settings; do
     launch "$udid" "$tab"
@@ -66,15 +62,16 @@ capture_device() { # name folder expected-WxH
     shot "$udid" "$dir/ios-$tab.png"
   done
 
-  launch "$udid" sessions -dwOpenSession "$SESSION_ID"
-  sleep $((SETTLE + 6))
-  shot "$udid" "$dir/ios-terminal.png"
-
   if [ -n "${AUTOMATON_ID:-}" ]; then
     launch "$udid" automata -dwOpenAutomaton "$AUTOMATON_ID"
     sleep "$SETTLE"
     shot "$udid" "$dir/ios-automaton-detail.png"
   fi
+
+  # Last: opening a session makes later launches restore it.
+  launch "$udid" sessions -dwOpenSession "$SESSION_ID"
+  sleep $((SETTLE * 2 + 6))
+  shot "$udid" "$dir/ios-terminal.png"
 
   # Size check.
   local bad=0 f w h
