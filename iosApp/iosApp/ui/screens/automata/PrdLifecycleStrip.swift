@@ -44,6 +44,8 @@ struct PrdLifecycleStrip: View {
                 HStack(spacing: 0) {
                     planStep; sep; reviewStep; sep; approveStep; sep; runStep; sep; doneStep
                 }
+                // PWA `.lifecycle-strip { padding: 8px 0 }`.
+                .padding(.vertical, 8)
             }
         }
     }
@@ -69,7 +71,7 @@ struct PrdLifecycleStrip: View {
     }
 
     private var sep: some View {
-        Text("›").font(.system(size: compact ? 10 : 11)).foregroundStyle(DatawatchColors.onSurfaceMuted).padding(.horizontal, 3)
+        Text("›").font(.system(size: compact ? 10 : 11)).foregroundStyle(DatawatchColors.onSurfaceMuted).padding(.horizontal, compact ? 2 : 3)
     }
 
     @ViewBuilder private var planStep: some View {

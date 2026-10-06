@@ -804,8 +804,9 @@ struct PrdRow: View {
                     .lineLimit(2)
                     .padding(.top, 2)
             }
+            // PWA `.lifecycle-strip-current { margin-top: 6px }`.
             PrdLifecycleStrip(prd: prd, compact: true, onAction: onAction)
-                .padding(.top, 8)
+                .padding(.top, 6)
             if onAction != nil || onWatchToggle != nil || onPinToggle != nil { actionRow }
             PrdStoriesTree(prd: prd)
                 .padding(.top, 8)

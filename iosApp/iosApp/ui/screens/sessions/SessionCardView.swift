@@ -390,7 +390,7 @@ struct SessionCardView: View {
     private var waitingRow: some View {
         let shown: [String] = SessionCardView.promptLines(session.promptContext ?? session.lastPrompt)
         return waitingBox {
-            Group {
+            VStack(alignment: .leading, spacing: 1) {
                 if shown.isEmpty {
                     Text(L("Input needed"))
                 } else {
