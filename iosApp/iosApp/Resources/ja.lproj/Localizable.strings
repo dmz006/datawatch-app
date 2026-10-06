@@ -1848,3 +1848,5 @@
 "Mute notifications for this session" = "このセッションの通知をミュート";
 "Unmute notifications" = "通知のミュートを解除";
 "Quick commands" = "クイックコマンド";
+"Show watched only" = "ウォッチ中のみ表示";
+"Filter" = "フィルター";

@@ -843,21 +843,9 @@ public object IosObserver {
                 onResult(listOf(IosObsLine("unavailable", "muted")))
                 return@launch
             }
-            val lines = mutableListOf<IosObsLine>()
-            val kind = if (info.str("kind") == "go") "Go" else "JS (fallback)"
-            val ready = info.bool("ready") == true
-            lines.add(IosObsLine("Bridge: $kind ${if (ready) "✓" else "⚠"}", if (info.str("kind") == "go") "success" else "warning"))
-            info.str("path")?.takeIf { it.isNotBlank() }?.let { lines.add(IosObsLine(it, "muted")) }
-            if (!ready) info.str("hint")?.takeIf { it.isNotBlank() }?.let { lines.add(IosObsLine(it, "warning")) }
-            if (info.str("kind") == "js") info.str("node_path")?.takeIf { it.isNotBlank() }?.let { lines.add(IosObsLine("node: $it", "muted")) }
-            val modes = listOfNotNull(if (info.bool("stdio_enabled") == true) "stdio" else null, if (info.bool("sse_enabled") == true) "SSE" else null)
-            if (modes.isNotEmpty()) lines.add(IosObsLine("MCP: " + modes.joinToString(" + "), "success"))
-            val stale = info.arr("stale_mcp_json")?.mapNotNull { it as? JsonObject }.orEmpty()
-            if (stale.isNotEmpty()) {
-                lines.add(IosObsLine("Stale .mcp.json files (point at missing channel.js):", "warning"))
-                stale.forEach { e -> lines.add(IosObsLine("• ${e.str("path").orEmpty()} → ${e.str("missing_channel_js").orEmpty()}", "text")) }
-                lines.add(IosObsLine("Run datawatch channel cleanup-stale-mcp-json to remove.", "muted"))
-            }
+            val lines: List<IosObsLine> =
+                com.dmzs.datawatchclient.transport.ChannelBridgeFormat.lines(info)
+                    .map { l -> IosObsLine(l.text, l.tone) }
             onResult(lines)
         }
     }

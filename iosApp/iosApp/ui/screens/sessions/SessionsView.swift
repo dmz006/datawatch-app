@@ -43,6 +43,8 @@ struct SessionsView: View {
     @State private var quickCmdSession: DwSession? = nil
     /// PWA `state.showHistory`: off = active sessions + those finished in the last few minutes.
     @State private var showHistory = false
+    /// PWA D61 `sessionWatchFilter`: watched sessions only (not persisted).
+    @State private var watchFilter = false
     /// PWA `cs_session_tree_view` (BL348): parent/child lineage grouping.
     @AppStorage("dw.sessions.tree_view") private var treeView: Bool = false
     /// PWA `recent_session_minutes` default.
@@ -415,6 +417,9 @@ struct SessionsView: View {
                         toggleBadge(llmButtonLabel, active: llmFilterOpen || llmActive != nil) { llmFilterOpen.toggle() }
                     }
                     toggleBadge(stateButtonLabel, active: stateFilterOpen || stateChip != "all") { stateFilterOpen.toggle() }
+                    // PWA D61 backend-filter-badge `👁 N`.
+                    toggleBadge("👁 \(watchedCount)", active: watchFilter, chevron: false) { watchFilter.toggle() }
+                        .accessibilityLabel(L("Show watched only"))
                     toggleBadge(L("Tree"), active: treeView, chevron: false) { treeView.toggle() }
                         .accessibilityHint("Groups sessions by parent/child lineage")
                     if !viewModel.pendingSchedules.isEmpty { schedulesMenu }
@@ -586,12 +591,17 @@ struct SessionsView: View {
         withAnimation { showFilter = true }
     }
 
+    private var watchedCount: Int {
+        viewModel.sessions.filter { isLocal(.watchedSessions, $0) }.count
+    }
+
     private var filteredSessions: [DwSession] {
         var result = showHistory ? viewModel.sessions : visiblePool
         switch stateChip {
         case "all": break
         default: result = result.filter { SessionStateStyle.key($0.state) == stateChip }
         }
+        if watchFilter { result = result.filter { isLocal(.watchedSessions, $0) } }
         if !filterText.isEmpty {
             let q = filterText.lowercased()
             result = result.filter { s in

@@ -427,32 +427,26 @@ struct SettingsMcpToolsCard: View {
 
 struct SettingsMcpChannelCard: View {
     let profile: ServerProfile
-    @State private var text: String?
-    @State private var error: String?
+    @State private var lines: [IosObsLine]?
 
+    /// Same lines as the Observer bridge card and the web UI's
+    /// `loadChannelBridge` (shared ChannelBridgeFormat) — was a raw JSON dump.
     var body: some View {
         ScrollView {
-            Group {
-                if let text {
-                    Text(verbatim: text)
-                        .font(DatawatchFonts.terminalSmall)
-                        .foregroundStyle(DatawatchColors.onSurface)
-                        .textSelection(.enabled)
-                } else if let error {
-                    Text(error).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.error)
+            VStack(alignment: .leading, spacing: 4) {
+                if let lines {
+                    ForEach(Array(lines.enumerated()), id: \.offset) { _, l in ObsLineView(line: l) }
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
         }
         .task {
-            IosSettingsConfig.shared.channelInfo(profile: profile, onSuccess: { s in
-                DispatchQueue.main.async { text = s }
-            }, onError: { msg in
-                DispatchQueue.main.async { error = msg }
-            })
+            IosObserver.shared.loadChannelBridge(profile: profile) { result in
+                DispatchQueue.main.async { lines = result }
+            }
         }
     }
 }
