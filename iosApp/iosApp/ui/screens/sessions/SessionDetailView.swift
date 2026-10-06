@@ -189,7 +189,7 @@ struct SessionDetailView: View {
     private func onAppear() {
         applyDetailExtras()
         terminal.onAutoFontSize = { px in termFontSize = px }
-        terminal.setMinCols(TerminalController.defaultMinCols(backend: session.backend))
+        terminal.setMinCols(TerminalController.minCols(for: session))
         IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
             DispatchQueue.main.async { self.whisperEnabled = enabled.boolValue }
         }

@@ -703,11 +703,6 @@
     <string name="skills_registry_branch_label">Branch: %1$s</string>
 
     <!-- ── BL13 Terminal dimensions (v0.67.0) ── -->
-    <string name="terminal_dims_title">Terminaldimensionen</string>
-    <string name="terminal_dims_hint">0 = Backend-Standard verwenden (80×24, oder 120×40 für claude-code)</string>
-    <string name="terminal_dims_cols">Spalten</string>
-    <string name="terminal_dims_rows">Zeilen</string>
-    <string name="terminal_dims_auto">auto</string>
 
     <!-- ── BL12 Memory Add + Timeline + Research (v0.69.0) ── -->
     <string name="memory_add_title">Erinnerung hinzufügen</string>

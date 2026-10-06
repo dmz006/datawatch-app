@@ -85,4 +85,36 @@ class MappersTest {
         assertEquals(Instant.DISTANT_PAST, session.createdAt)
         assertEquals(Instant.DISTANT_PAST, session.lastActivityAt)
     }
+
+    @Test
+    fun `console_cols and console_rows decode from session JSON and map to the domain`() {
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val dto =
+            json.decodeFromString(
+                SessionDto.serializer(),
+                """{"id":"a1","state":"running","backend_family":"shell","console_cols":132,"console_rows":50}""",
+            )
+        val session = dto.toDomain("srv-1")
+        assertEquals(132, session.consoleCols)
+        assertEquals(50, session.consoleRows)
+        // PWA initXterm: minCols = configCols || 80 — the server value wins.
+        assertEquals(132, session.terminalMinCols)
+        assertEquals(50, session.terminalRows)
+    }
+
+    @Test
+    fun `missing console size defaults to 0 and falls back to the server per-backend default`() {
+        val claude = SessionDto(id = "c", state = "running", backendFamily = "claude-code").toDomain("p")
+        assertEquals(0, claude.consoleCols)
+        assertEquals(0, claude.consoleRows)
+        assertEquals(120, claude.terminalMinCols)
+        assertEquals(40, claude.terminalRows)
+        val shell = SessionDto(id = "s", state = "running", backendFamily = "shell", consoleCols = 0).toDomain("p")
+        assertEquals(80, shell.terminalMinCols)
+        assertEquals(24, shell.terminalRows)
+        // Negative / zero values are treated as "not reported".
+        val bogus = SessionDto(id = "b", state = "running", consoleCols = -1, consoleRows = 0).toDomain("p")
+        assertEquals(0, bogus.consoleCols)
+        assertEquals(80, bogus.terminalMinCols)
+    }
 }

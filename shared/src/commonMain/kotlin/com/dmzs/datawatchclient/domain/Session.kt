@@ -126,6 +126,15 @@ public data class Session(
      * is connected. Drives the PWA "Waiting for MCP channel…" banner.
      */
     val channelReady: Boolean = false,
+    /**
+     * Server-resolved tmux console size (`console_cols` / `console_rows`):
+     * LLM-registry entry > per-backend config > `session.console_*` > 80×24,
+     * fixed at session start. 0 = not reported (older server / non-tmux
+     * session). The PWA passes these into `initXterm` as `configCols` /
+     * `configRows`; use [terminalMinCols] / [terminalRows] to read them.
+     */
+    val consoleCols: Int = 0,
+    val consoleRows: Int = 0,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =
@@ -144,4 +153,30 @@ public data class Session(
 
     /** True when the session uses structured chat bubbles instead of a tmux pane. */
     public val isChatMode: Boolean get() = outputMode == "chat"
+
+    /**
+     * Minimum xterm width — PWA `initXterm`: `minCols = configCols || 80`
+     * where `configCols = sess.console_cols`. When the server didn't report a
+     * size, fall back to the server's own per-backend default
+     * (`config.GetConsoleSize`: claude-code 120, otherwise 80).
+     */
+    public val terminalMinCols: Int
+        get() = if (consoleCols > 0) consoleCols else defaultConsoleSize(backend).first
+
+    /**
+     * Configured row count (PWA `configRows`). Only seeds the initial
+     * `resize_term`; mobile never enforces it as a minimum (the keyboard
+     * would clip the live tail) — the server clamps to it anyway.
+     */
+    public val terminalRows: Int
+        get() = if (consoleRows > 0) consoleRows else defaultConsoleSize(backend).second
+
+    public companion object {
+        /** Server `config.GetConsoleSize` built-in defaults: claude-code 120×40, else 80×24. */
+        public fun defaultConsoleSize(backend: String?): Pair<Int, Int> =
+            when (backend?.lowercase()) {
+                "claude-code", "claude" -> 120 to 40
+                else -> 80 to 24
+            }
+    }
 }
