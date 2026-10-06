@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -155,7 +154,7 @@ public fun FilePickerDialog(
                                 .heightIn(min = 240.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
+                        com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                     }
                 } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {

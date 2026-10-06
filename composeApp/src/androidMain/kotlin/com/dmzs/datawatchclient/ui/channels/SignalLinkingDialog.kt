@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -138,7 +137,11 @@ public fun SignalLinkingDialog(
                         Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     linkUri == null -> {
                         Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                            com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent(
+                                label = null,
+                                eyeSize = 48.dp,
+                                verticalPadding = 0.dp,
+                            )
                         }
                         Text(
                             stringResource(R.string.signal_link_waiting),

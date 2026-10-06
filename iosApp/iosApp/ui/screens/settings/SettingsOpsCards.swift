@@ -64,7 +64,6 @@ struct SettingsExitHooksCard: View {
     private var hookRows: some View {
         if !loaded {
             HStack(spacing: 8) {
-                ProgressView()
                 CardSkeleton()
             }
             .listRowBackground(DatawatchColors.surface)
@@ -321,7 +320,6 @@ struct SettingsWorkQueueCard: View {
     private var itemRows: some View {
         if !loaded {
             HStack(spacing: 8) {
-                ProgressView()
                 CardSkeleton()
             }
             .listRowBackground(DatawatchColors.surface)

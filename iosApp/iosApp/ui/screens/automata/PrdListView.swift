@@ -529,7 +529,7 @@ struct PrdListView: View {
     private var listContent: some View {
         Group {
             if vm.isLoading && vm.prds.isEmpty {
-                LoadingIndicator(message: "Loading automata…")
+                LoadingIndicator(message: L("Loading automata…"))
             } else if let err = vm.error, vm.prds.isEmpty {
                 ErrorCard(message: err) { vm.start(profile: profile, all: allProfiles) }
             } else if vm.prds.isEmpty {

@@ -309,7 +309,7 @@ private struct WebSearchHistorySheet: View {
                 } else if let error {
                     Text(error).foregroundStyle(DatawatchColors.error)
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                 }
             }
             .listRowBackground(DatawatchColors.surface)

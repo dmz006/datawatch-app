@@ -34,7 +34,7 @@ struct ComputeModelsSection: View {
     @ViewBuilder
     private var content: some View {
         if loading {
-            ProgressView()
+            CardSkeleton()
         } else if let error {
             Text(verbatim: error).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.error)
         } else if models.isEmpty {
