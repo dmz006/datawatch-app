@@ -25,6 +25,10 @@ on:
         type: choice
         default: appstore
         options: [appstore, development]
+      force:
+        description: 'Regenerate the profile (picks up new App ID capabilities, e.g. Push)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -77,6 +81,7 @@ jobs:
         working-directory: iosApp
         env:
           MATCH_TYPE: ${{ inputs.type }}
+          MATCH_FORCE: ${{ inputs.force }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
@@ -94,3 +99,12 @@ jobs:
       - name: Remove temporary keychain
         if: always()
         run: security delete-keychain build.keychain || true
+
+      - name: Show profile entitlements (aps-environment check)
+        if: always()
+        run: |
+          for p in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+            [ -f "$p" ] || continue
+            echo "== $(basename "$p")"
+            security cms -D -i "$p" | plutil -extract Entitlements xml1 -o - - | grep -A1 -E "aps-environment|application-identifier" || true
+          done
