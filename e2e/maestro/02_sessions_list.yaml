@@ -1,0 +1,13 @@
+# Sessions tab lists the sandbox's shell session (started by the runner).
+appId: ${APP_ID}
+name: 02 sessions list
+---
+- runFlow: common/home.yaml
+- tapOn: "Sessions"
+- extendedWaitUntil:
+    visible: "e2e-shell"
+    timeout: 30000
+- assertVisible: ${SESSION_ID}
+- assertVisible: "shell"
+- assertNotVisible: "No server connected"
+- takeScreenshot: 02_sessions_list

@@ -1,0 +1,21 @@
+# Bring the app to the foreground on a top-level tab (bottom nav visible).
+# launchApp without clearState keeps the server profile added by 01_add_server.
+appId: ${APP_ID}
+---
+- launchApp:
+    appId: ${APP_ID}
+    stopApp: false
+# Session detail (e.g. a restored last session) has no bottom nav — leave it.
+# System back: the first press may only close the IME (focused composer), so repeat
+# until the terminal toolbar is gone.
+- hideKeyboard            # an open IME hides the bottom nav
+- repeat:
+    while:
+      visible: "Aa▾"
+    times: 4
+    commands:
+      - back
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 30000

@@ -1,0 +1,22 @@
+# Open the session: header, terminal toolbar and composer render and the
+# "Connecting to session…" overlay clears. xterm draws on a canvas Maestro cannot
+# read, so the runner also checks the screenshot's terminal area has rendered text.
+appId: ${APP_ID}
+name: 03 open session
+---
+- runFlow: common/home.yaml
+- tapOn: "Sessions"
+- extendedWaitUntil:
+    visible: "e2e-shell"
+    timeout: 30000
+- tapOn: "e2e-shell"
+- extendedWaitUntil:
+    visible: "Aa▾"
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible: "Connecting to session…"
+    timeout: 30000
+- assertVisible: ${SESSION_ID}
+- assertVisible: "⤒"
+- assertVisible: "Type your response…"
+- takeScreenshot: 03_terminal

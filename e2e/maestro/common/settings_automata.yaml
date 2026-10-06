@@ -1,0 +1,23 @@
+# Settings › Automata sub-tab, scrolled to ${TARGET}. The Settings pager keeps its
+# scroll offset across sub-tabs (e.g. after 07 scrolled General to the end), so look
+# upward first, then downward.
+appId: ${APP_ID}
+---
+- runFlow: home.yaml
+- tapOn:
+    text: "Settings"
+    rightOf: "Dashboard"
+- tapOn:
+    text: "Automata"
+    rightOf: "Compute"
+- scrollUntilVisible:
+    element: ${TARGET}
+    direction: UP
+    centerElement: true
+    timeout: 15000
+    optional: true
+- scrollUntilVisible:
+    element: ${TARGET}
+    direction: DOWN
+    centerElement: true
+    timeout: 20000
