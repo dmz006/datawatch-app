@@ -284,7 +284,7 @@ public class SessionDetailViewModel(
     /**
      * Sprint 3 S3-2 (#62, #64, #65, #66, #67) — terminal dimensions for
      * resize_term first-frame send on reconnect. Updated by the SessionDetailScreen
-     * whenever `TerminalPrefs` changes or the backend min-size is applied.
+     * whenever the session's server-resolved console size (`console_cols`/`console_rows`) is applied.
      */
     public var terminalCols: Int = 80
     public var terminalRows: Int = 24

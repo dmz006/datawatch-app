@@ -51,6 +51,8 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         claudeAlive = claudeAlive,
         server = server?.takeIf { it.isNotBlank() },
         channelReady = channelReady == true,
+        consoleCols = consoleCols?.takeIf { it > 0 } ?: 0,
+        consoleRows = consoleRows?.takeIf { it > 0 } ?: 0,
     )
 
 private fun SessionDto.extractHostnamePrefix(): String? {

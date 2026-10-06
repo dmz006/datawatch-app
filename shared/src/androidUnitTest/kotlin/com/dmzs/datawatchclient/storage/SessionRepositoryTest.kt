@@ -105,6 +105,19 @@ class SessionRepositoryTest {
         }
 
     @Test
+    fun `console size round-trips through the cache`() =
+        runTest(dispatcher) {
+            seedProfile()
+            sessionRepo.upsert(session().copy(consoleCols = 132, consoleRows = 50))
+            sessionRepo.observeForProfile("srv-1").test {
+                val s = awaitItem().first()
+                assertEquals(132, s.consoleCols)
+                assertEquals(50, s.consoleRows)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `upsert replaces existing session`() =
         runTest(dispatcher) {
             seedProfile()
