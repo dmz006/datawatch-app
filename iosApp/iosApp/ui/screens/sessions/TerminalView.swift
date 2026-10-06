@@ -113,6 +113,8 @@ struct TerminalView: View {
     @State private var disconnected = false
     @State private var hasContent = false
     @State private var reconnectGeneration = 0
+    /// Watchdog tick: re-send `subscribe` on the open socket (no reconnect).
+    @State private var resubscribeTick = 0
     /// PWA startTermConnectWatchdog: 5 s per attempt, 3 re-subscribes, then the
     /// "Unable to connect…" panel (Retry / Use without terminal).
     @State private var watchdogEpoch = 0
@@ -136,6 +138,7 @@ struct TerminalView: View {
                 profile: profile,
                 fontSize: fontSize,
                 reconnectGeneration: reconnectGeneration,
+                resubscribeTick: resubscribeTick,
                 connected: $connected,
                 disconnected: $disconnected,
                 hasContent: $hasContent,
@@ -174,8 +177,8 @@ struct TerminalView: View {
         .task(id: watchdogEpoch) { await runConnectWatchdog() }
     }
 
-    /// Every 5 s without a first frame, re-subscribe (bumps the coordinator's
-    /// generation), up to 3 times; then show the failure panel.
+    /// Every 5 s without a first frame, re-send `subscribe` on the open socket
+    /// (never reconnect), up to 3 times; then show the failure panel.
     private func runConnectWatchdog() async {
         watchdogAttempt = 0
         watchdogFailed = false
@@ -187,7 +190,9 @@ struct TerminalView: View {
                 break
             }
             watchdogAttempt += 1
-            reconnectGeneration += 1
+            // PWA re-sends subscribe on the live socket. Reconnecting here
+            // aborted slow handshakes (cellular / Tailscale relay > 5 s).
+            resubscribeTick += 1
         }
     }
 
@@ -233,6 +238,7 @@ private struct TerminalWebView: UIViewRepresentable {
     let profile: ServerProfile
     let fontSize: Int
     let reconnectGeneration: Int
+    let resubscribeTick: Int
     @Binding var connected: Bool
     @Binding var disconnected: Bool
     @Binding var hasContent: Bool
@@ -292,6 +298,7 @@ private struct TerminalWebView: UIViewRepresentable {
         controller?.webView = webView
         context.coordinator.requestedFontSize = fontSize
         context.coordinator.generation = reconnectGeneration
+        context.coordinator.resubscribeTick = resubscribeTick
         webView.onLayout = { [weak coordinator = context.coordinator] size in
             coordinator?.onFrameChanged(size: size)
         }
@@ -313,6 +320,10 @@ private struct TerminalWebView: UIViewRepresentable {
         if context.coordinator.generation != reconnectGeneration {
             context.coordinator.generation = reconnectGeneration
             context.coordinator.start()
+        }
+        if context.coordinator.resubscribeTick != resubscribeTick {
+            context.coordinator.resubscribeTick = resubscribeTick
+            context.coordinator.resubscribe()
         }
     }
 
@@ -346,6 +357,7 @@ extension TerminalWebView {
         weak var webView: WKWebView?
         var controller: TerminalController?
         var generation = 0
+        var resubscribeTick = 0
         var requestedFontSize = 9
 
         private let session: DwSession
@@ -391,6 +403,15 @@ extension TerminalWebView {
         func stop() {
             subscription?.cancel()
             subscription = nil
+        }
+
+        /// PWA watchdog `send('subscribe', …)`: queued for the open socket's
+        /// writer; dropped if the socket isn't up yet so an in-flight connect
+        /// is never interrupted.
+        func resubscribe() {
+            let fullId: String = session.fullId.isEmpty ? session.id : session.fullId
+            let frame: String = "{\"type\":\"subscribe\",\"data\":{\"session_id\":\"\(fullId)\"}}"
+            _ = WsOutbound.shared.tryEmit(sessionId: storageId, jsonText: frame)
         }
 
         // MARK: Inbound (Kotlin → xterm)

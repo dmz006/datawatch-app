@@ -182,6 +182,10 @@ public fun AutonomousScreen(
     }
 
     Scaffold(
+        // Tab screens sit inside the app shell Scaffold, which already
+        // reserves the system bars + bottom nav; the default systemBars
+        // insets here doubled the nav-bar gap above the bottom menu.
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_automata)) },

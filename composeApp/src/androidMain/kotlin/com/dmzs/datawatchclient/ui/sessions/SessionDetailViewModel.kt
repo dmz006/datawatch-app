@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * ViewModel for a single session's detail screen. Subscribes to the
@@ -261,7 +263,25 @@ public class SessionDetailViewModel(
         paneCaptureArrived = false
     }
 
-    /** PWA connect watchdog re-subscribe: drop and reopen the session stream. */
+    /**
+     * PWA connect watchdog (`startTermConnectWatchdog`): re-send `subscribe` on
+     * the live socket. Never tears the socket down — on a slow link (cellular,
+     * Tailscale relay) the TLS + WS handshake + first pane_capture can exceed
+     * the 5 s tick, and reconnecting each tick meant it never finished.
+     * If the socket isn't open yet the frame is dropped (no WsOutbound
+     * collector) and the in-flight connect continues; the transport's own
+     * backoff loop handles real failures.
+     */
+    public fun resubscribe() {
+        val frame =
+            buildJsonObject {
+                put("type", "subscribe")
+                put("data", buildJsonObject { put("session_id", fullIdOrShort()) })
+            }
+        com.dmzs.datawatchclient.transport.ws.WsOutbound.tryEmit(sessionId, frame.toString())
+    }
+
+    /** Manual Retry: drop and reopen the session stream. */
     public fun restartStream() {
         pauseStream()
         resumeStream()
