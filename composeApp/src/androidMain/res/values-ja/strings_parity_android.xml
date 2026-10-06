@@ -22,7 +22,6 @@
     <string name="channel_diag_title">チャンネル診断</string>
     <string name="channel_diag_unavailable">利用不可</string>
     <string name="channel_diag_no_sessions">（アクティブなセッションはありません）</string>
-    <string name="loading_ellipsis_short">読み込み中…</string>
     <string name="observer_peer_snapshot_title">ピアのスナップショット</string>
     <string name="observer_peer_snapshot_unavailable">スナップショットを取得できません: %1$s</string>
     <string name="observer_peer_snapshot_empty">エンベロープは報告されていません。</string>

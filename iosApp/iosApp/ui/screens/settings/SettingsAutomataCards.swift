@@ -44,7 +44,7 @@ struct SettingsAlgorithmModeCard: View {
             if isLoading && rows.isEmpty {
                 HStack(spacing: 8) {
                     ProgressView()
-                    Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    CardSkeleton()
                 }
             } else if rows.isEmpty {
                 Text("No sessions in Algorithm Mode. Use the API to start one.")
@@ -218,7 +218,7 @@ struct ScanDefaultsSection: View {
             if !loaded {
                 HStack(spacing: 8) {
                     ProgressView()
-                    Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    CardSkeleton()
                 }
             } else {
                 ForEach(Self.toggles) { item in

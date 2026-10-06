@@ -91,7 +91,7 @@ struct ObserverPeerResourcesBlock: View {
                     }
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
     }
@@ -182,7 +182,7 @@ struct ObserverPeersBlock: View {
                 }
             }
         } else {
-            ObsMuted(text: L("Loading…"))
+            CardSkeleton()
         }
     }
 
@@ -288,7 +288,7 @@ struct ObserverPeersBlock: View {
                 .padding(.vertical, 4)
             }
         } else {
-            ObsMuted(text: L("Loading…"))
+            CardSkeleton()
         }
     }
 
@@ -476,7 +476,7 @@ struct ObserverFederatedPeersCard: View {
                     peerRow(p)
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
         .task(id: profile.id) {

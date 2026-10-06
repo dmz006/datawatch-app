@@ -476,7 +476,7 @@ struct DashHeatmapCard: View {
             let narrow: Bool = geo.size.width < 300 || effectiveSpan <= 3
             let model = engine.heatmap(narrow: narrow)
             if !model.loaded {
-                DashMutedLine(text: "Loading…")
+                CardSkeleton()
             } else if model.bars {
                 DashHeatBars(model: model)
             } else {
@@ -755,7 +755,7 @@ struct DashSmokeCard: View {
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if view.loading {
-            DashMutedLine(text: "Loading…")
+            CardSkeleton()
         } else {
             DashSmokeDetailView(view: view, vm: vm)
         }

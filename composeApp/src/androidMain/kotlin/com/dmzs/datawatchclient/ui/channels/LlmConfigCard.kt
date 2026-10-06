@@ -126,12 +126,7 @@ public fun LlmConfigCard() {
             )
         }
         if (backends.isEmpty() && banner == null) {
-            Text(
-                stringResource(R.string.common_loading),
-                modifier = Modifier.padding(12.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
         }
         backends.forEachIndexed { idx, name ->
             if (idx > 0) HorizontalDivider()

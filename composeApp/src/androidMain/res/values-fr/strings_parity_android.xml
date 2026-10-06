@@ -22,7 +22,6 @@
     <string name="channel_diag_title">Diagnostic des canaux</string>
     <string name="channel_diag_unavailable">indisponible</string>
     <string name="channel_diag_no_sessions">(aucune session active)</string>
-    <string name="loading_ellipsis_short">Chargement…</string>
     <string name="observer_peer_snapshot_title">Instantané du pair</string>
     <string name="observer_peer_snapshot_unavailable">Instantané indisponible : %1$s</string>
     <string name="observer_peer_snapshot_empty">Aucune enveloppe signalée.</string>

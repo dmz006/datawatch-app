@@ -181,12 +181,7 @@ public fun InterfacesCard() {
             )
         }
         if (interfaces.isEmpty() && banner == null) {
-            Text(
-                stringResource(R.string.common_loading),
-                modifier = Modifier.padding(12.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
         }
         interfaces.forEach { iface ->
             val name = iface.stringField("name") ?: "?"

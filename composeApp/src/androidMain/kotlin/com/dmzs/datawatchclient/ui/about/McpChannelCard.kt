@@ -88,12 +88,7 @@ public fun McpChannelCard() {
         }
         if (banner == null) {
             if (kind == null && ready == null) {
-                Text(
-                    stringResource(R.string.common_loading),
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             } else {
                 val dw = LocalDatawatchColors.current
                 // Kind row

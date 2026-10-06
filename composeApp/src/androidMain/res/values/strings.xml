@@ -769,7 +769,6 @@
     <string name="tailscale_generated_key_label">Generated pre-auth key (copy now):</string>
     <string name="tailscale_image_label">Sidecar image</string>
     <string name="tailscale_key_expires">Expires</string>
-    <string name="tailscale_loading">Loading…</string>
     <string name="tailscale_no_nodes">No nodes found (api_key required)</string>
     <string name="tailscale_nodes_label">Nodes</string>
     <string name="tailscale_refresh_btn">Refresh</string>
@@ -1365,7 +1364,6 @@
     <string name="dash_guardrails_running">%d session(s) running cleanly</string>
     <string name="dash_health_ok">System healthy</string>
     <string name="dash_health_warn">High resource usage</string>
-    <string name="dash_loading">Loading…</string>
 
     <!-- ── Dashboard Cards (alpha.75 issue #132) ── -->
     <string name="dash_cards_title">Dashboard Cards</string>
@@ -1544,7 +1542,6 @@
     <string name="observer_cross_host_empty">No envelopes anywhere — local observer empty and no peers pushed yet.</string>
     <string name="observer_remove_peer_title">Remove peer \"%1$s\"?</string>
     <string name="observer_remove_peer_body">It will auto-re-register on next push (token rotates).</string>
-    <string name="loading_ellipsis">Loading…</string>
     <string name="action_refresh">Refresh</string>
     <string name="settings_profile_pinned_badge">certificate pinned</string>
     <string name="exit_hooks_title">Exit Hooks</string>

@@ -619,7 +619,6 @@
     <string name="tailscale_generated_key_label">生成されたプリオースキー（今すぐコピー）：</string>
     <string name="tailscale_image_label">サイドカーイメージ</string>
     <string name="tailscale_key_expires">有効期限</string>
-    <string name="tailscale_loading">読み込み中…</string>
     <string name="tailscale_no_nodes">ノードが見つかりません（api_keyが必要）</string>
     <string name="tailscale_nodes_label">ノード</string>
     <string name="tailscale_refresh_btn">更新</string>
@@ -1231,7 +1230,6 @@
     <string name="observer_remove_peer_title">ピア「%1$s」を削除しますか?</string>
     <string name="observer_remove_peer_body">次回のプッシュで自動的に再登録されます (トークンはローテーションされます)。</string>
     <string name="action_remove">削除</string>
-    <string name="loading_ellipsis">読み込み中…</string>
     <string name="action_refresh">更新</string>
     <string name="settings_profile_pinned_badge">証明書をピン留め済み</string>
     <string name="exit_hooks_title">終了フック</string>

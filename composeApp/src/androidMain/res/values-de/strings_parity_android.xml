@@ -22,7 +22,6 @@
     <string name="channel_diag_title">Kanaldiagnose</string>
     <string name="channel_diag_unavailable">nicht verfügbar</string>
     <string name="channel_diag_no_sessions">(keine aktiven Sitzungen)</string>
-    <string name="loading_ellipsis_short">Wird geladen…</string>
     <string name="observer_peer_snapshot_title">Peer-Snapshot</string>
     <string name="observer_peer_snapshot_unavailable">Snapshot nicht verfügbar: %1$s</string>
     <string name="observer_peer_snapshot_empty">Keine Envelopes gemeldet.</string>

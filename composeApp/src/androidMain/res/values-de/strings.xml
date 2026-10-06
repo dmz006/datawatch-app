@@ -619,7 +619,6 @@
     <string name="tailscale_generated_key_label">Generierter Pre-Auth-Schlüssel (jetzt kopieren):</string>
     <string name="tailscale_image_label">Sidecar-Image</string>
     <string name="tailscale_key_expires">Läuft ab</string>
-    <string name="tailscale_loading">Wird geladen…</string>
     <string name="tailscale_no_nodes">Keine Knoten gefunden (api_key erforderlich)</string>
     <string name="tailscale_nodes_label">Knoten</string>
     <string name="tailscale_refresh_btn">Aktualisieren</string>
@@ -1231,7 +1230,6 @@
     <string name="observer_remove_peer_title">Peer „%1$s“ entfernen?</string>
     <string name="observer_remove_peer_body">Er registriert sich beim nächsten Push automatisch neu (Token wird rotiert).</string>
     <string name="action_remove">Entfernen</string>
-    <string name="loading_ellipsis">Wird geladen…</string>
     <string name="action_refresh">Aktualisieren</string>
     <string name="settings_profile_pinned_badge">Zertifikat gepinnt</string>
     <string name="exit_hooks_title">Exit-Hooks</string>

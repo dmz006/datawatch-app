@@ -123,7 +123,7 @@ struct SettingsConfigCardView: View {
                 Section {
                     HStack(spacing: 8) {
                         ProgressView()
-                        Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        CardSkeleton()
                     }
                     .listRowBackground(DatawatchColors.surface)
                 }

@@ -79,11 +79,7 @@ public fun CooldownCard() {
 
         val s = status
         if (s == null) {
-            Text(
-                "Loading…",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             return@PwaCard
         }
 

@@ -73,7 +73,7 @@ public fun InstalledPluginsCard() {
             val d = data
             when {
                 error != null -> Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                d == null -> Text(stringResource(R.string.loading_ellipsis_short), style = MaterialTheme.typography.bodySmall)
+                d == null -> com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                 else -> {
                     if (d.native.isNotEmpty()) {
                         PluginGroupLabel(stringResource(R.string.plugins_native))

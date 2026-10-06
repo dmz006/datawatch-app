@@ -87,12 +87,7 @@ public fun TailscaleMeshCard() {
             }
             val s =
                 status ?: run {
-                    Text(
-                        stringResource(R.string.tailscale_loading),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
+                    com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                     return@Column
                 }
 

@@ -97,11 +97,7 @@ public fun SessionAnalyticsCard() {
 
         val d = data
         if (d == null) {
-            Text(
-                "Loading…",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             return@PwaCard
         }
         if (d.buckets.isEmpty()) {

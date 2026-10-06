@@ -378,8 +378,11 @@ struct OllamaMarketplaceView: View {
 
     @ViewBuilder
     private var nodePicker: some View {
-        if nodes.isEmpty {
-            Text(loaded ? L("No enabled Ollama compute nodes.") : L("Loading…"))
+        if nodes.isEmpty && !loaded {
+            CardSkeleton()
+                .listRowBackground(DatawatchColors.surface)
+        } else if nodes.isEmpty {
+            Text(L("No enabled Ollama compute nodes."))
                 .font(DatawatchFonts.bodyMedium)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .listRowBackground(DatawatchColors.surface)
