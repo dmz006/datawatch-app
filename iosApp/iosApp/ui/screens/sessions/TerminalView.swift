@@ -20,10 +20,11 @@ final class TerminalController: ObservableObject {
     /// Accept the next pane_capture while scrolled (PWA 700 ms window).
     func scrollPendingRefresh(ms: Int = 700) { eval("window.dwScrollPendingRefresh && window.dwScrollPendingRefresh(\(ms));") }
 
-    /// Per-backend minimum columns (PWA configCols; Android setMinSize):
-    /// claude-code needs 120 cols for its TUI layout, others 80. Rows are not
-    /// enforced on mobile (the keyboard would clip the live tail). Re-applied
-    /// when the page reports ready.
+    /// Minimum columns from the session's server-resolved console size (PWA
+    /// initXterm `configCols = sess.console_cols`, `minCols = configCols || 80`;
+    /// Android setMinSize). claude-code defaults to 120 for its TUI layout. Rows
+    /// are not enforced on mobile (the keyboard would clip the live tail).
+    /// Re-applied when the page reports ready.
     private(set) var minCols = 0
     func setMinCols(_ cols: Int) {
         minCols = cols
@@ -80,11 +81,12 @@ final class TerminalController: ObservableObject {
         }
     }
 
-    static func defaultMinCols(backend: String?) -> Int {
-        switch backend?.lowercased() {
-        case "claude-code", "claude": return 120
-        default: return 80
-        }
+    /// `session.console_cols` when the server reports it, else the server's
+    /// per-backend default (claude-code 120, otherwise 80) — shared
+    /// `Session.terminalMinCols`.
+    static func minCols(for session: DwSession) -> Int {
+        let cols: Int = Int(session.terminalMinCols)
+        return cols
     }
 }
 

@@ -703,11 +703,6 @@
     <string name="skills_registry_branch_label">ブランチ: %1$s</string>
 
     <!-- ── BL13 Terminal dimensions (v0.67.0) ── -->
-    <string name="terminal_dims_title">ターミナルの寸法</string>
-    <string name="terminal_dims_hint">0 = バックエンドのデフォルトを使用 (80×24、またはclaude-codeは120×40)</string>
-    <string name="terminal_dims_cols">列</string>
-    <string name="terminal_dims_rows">行</string>
-    <string name="terminal_dims_auto">自動</string>
 
     <!-- ── BL12 Memory Add + Timeline + Research (v0.69.0) ── -->
     <string name="memory_add_title">メモリを追加</string>

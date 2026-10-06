@@ -96,6 +96,9 @@ public data class SessionDto(
     @SerialName("claude_alive") val claudeAlive: Boolean? = null,
     /** True once the MCP channel / ACP server for this session is connected. */
     @SerialName("channel_ready") val channelReady: Boolean? = null,
+    /** Server-resolved tmux console size (PWA `initXterm` configCols / configRows). */
+    @SerialName("console_cols") val consoleCols: Int? = null,
+    @SerialName("console_rows") val consoleRows: Int? = null,
 )
 
 @Serializable
