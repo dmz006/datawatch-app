@@ -1,0 +1,26 @@
+# Version-update PRs for stable releases (Dependabot does not propose
+# pre-releases while the current version is stable). Security fixes that
+# are only available as pre-releases are tracked in
+# security/accepted-risks.yml and re-checked daily by sca-fix-watch.yml.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    labels: [dependencies]
+    groups:
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin-compose:
+        patterns: ["org.jetbrains.kotlin*", "org.jetbrains.compose*", "com.google.devtools.ksp*"]
+      ktor:
+        patterns: ["io.ktor*"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, ci]

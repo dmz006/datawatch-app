@@ -209,6 +209,14 @@ voice/TTS strings, store listings, user-facing docs, release notes, error messag
 - Before shipping UI copy, grep user-visible strings (string resources, `Text("…")`,
   locale files) for `\bPRDs?\b` and fix any hit.
 
+## Security dependency fixes — stable-release watch (operator, 2026-10-05)
+
+Same process as datawatch's `recheck-ignored-cves`:
+- `.github/dependabot.yml` opens weekly version-update PRs (stable releases only) for Gradle and GitHub Actions.
+- Any Dependabot / code-scanning alert that is dismissed while waiting for an upstream fix MUST be added to `security/accepted-risks.yml` (package, advisory's first patched version, catalog key, reason).
+- `.github/workflows/sca-fix-watch.yml` runs daily, checks Maven Central for a **stable** (non-alpha/beta/RC/milestone) release ≥ the patched version, updates the `security: accepted-risk stable-fix watch` tracking issue, and comments when a fix is adoptable. Adopt it, remove the registry entry, release.
+- Never adopt a pre-release just to clear an alert.
+
 ## Terminal Font — JetBrains Mono, kept current (operator, 2026-10-04)
 
 The xterm terminal (Android + iOS share `composeApp/src/androidMain/assets/xterm/`)

@@ -1,0 +1,22 @@
+# Accepted / dismissed security findings — the app's equivalent of datawatch's
+# .trivyignore. Every Dependabot / code-scanning dismissal that waits on an
+# upstream fix MUST have an entry here so .github/workflows/sca-fix-watch.yml
+# can tell us when a STABLE (non-alpha/beta/RC/milestone) release containing the
+# fix ships. Remove the entry once the fix is adopted.
+#
+# fields:
+#   id          GitHub alert reference (dependabot/<n> or code-scanning/<n>)
+#   group/artifact  Maven coordinates checked on Maven Central
+#   fixed_in    first patched version per the advisory (may be a pre-release)
+#   catalog     gradle/libs.versions.toml version key to bump (if direct)
+#   reason      why it's accepted until then
+risks:
+  - id: dependabot/71
+    group: org.jetbrains.kotlin
+    artifact: kotlin-gradle-plugin
+    fixed_in: 2.4.20-Beta1
+    catalog: kotlin
+    reason: >-
+      Build-time only (Kotlin Gradle plugin, not shipped). Only fix is a Beta;
+      adopting needs a Kotlin + Compose Multiplatform + AGP upgrade. Adopt the
+      first stable Kotlin release >= 2.4.20. Tracked in #208.

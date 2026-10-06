@@ -1,0 +1,47 @@
+# Daily check: has a STABLE (non-alpha/beta/RC) upstream release shipped that
+# fixes an accepted/dismissed security finding? (datawatch parity: its
+# image-refresh `recheck-ignored-cves` job does the same for .trivyignore.)
+#
+# Registry: security/accepted-risks.yml. When a stable fix exists this opens
+# (or updates) a `security` issue naming the version to adopt; it also keeps a
+# single tracking issue updated every run as an audit trail.
+name: SCA stable-fix watch
+
+on:
+  schedule:
+    - cron: '17 6 * * *'   # daily 06:17 UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['security/accepted-risks.yml', 'scripts/sca_fix_watch.py', '.github/workflows/sca-fix-watch.yml']
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
+      - name: Check accepted risks for stable fixes
+        id: check
+        run: |
+          python3 scripts/sca_fix_watch.py security/accepted-risks.yml > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Update tracking issue (audit trail) and alert on stable fixes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FIXABLE: ${{ steps.check.outputs.fixable }}
+        run: |
+          set -euo pipefail
+          gh label create security --color B60205 --force >/dev/null 2>&1 || true
+          title="security: accepted-risk stable-fix watch"
+          body=$(printf 'Daily run %s (%s).\n\n%s\n\nRegistry: `security/accepted-risks.yml`. When a row says **YES**, adopt that stable version, remove the entry, and release.\n' \
+            "$(date -u +%Y-%m-%d)" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" "$(cat report.md)")
+          num=$(gh issue list --state open --label security --search "\"$title\" in:title" --json number -q '.[0].number')
+          if [ -n "$num" ]; then gh issue edit "$num" --body "$body"; else num=$(gh issue create --title "$title" --label security --body "$body" | grep -o '[0-9]*$'); fi
+          if [ "${FIXABLE:-0}" -gt 0 ]; then
+            gh issue comment "$num" --body "⚠️ ${FIXABLE} accepted risk(s) now have a **stable** upstream fix — see the table above."
+          fi
