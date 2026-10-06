@@ -450,6 +450,15 @@ struct PrdListView: View {
                 PrdDetailView(profile: vm.owner(ofPrd: parent.id) ?? profile, initial: parent)
             }
         }
+        #if DEBUG
+        .onChange(of: vm.prds.map(\.id)) { _ in
+            // Simulator screenshot passes (DebugLaunchHooks): open one Automaton.
+            guard !DebugLaunchHooks.automatonOpened, let id = DebugLaunchHooks.openAutomatonId,
+                  let prd = vm.prds.first(where: { $0.id == id }) else { return }
+            DebugLaunchHooks.automatonOpened = true
+            openParent = prd
+        }
+        #endif
     }
 
     /// Lifecycle strip taps on a card: Plan / Run go straight through; Approve,

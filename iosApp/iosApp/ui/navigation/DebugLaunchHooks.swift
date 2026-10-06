@@ -12,6 +12,7 @@ import DatawatchShared
 ///   -dwTheme dark|light|system
 ///   -dwOpenSession <id>               open that session (same path as a
 ///                                     datawatch://session/<id> link, no OS prompt)
+///   -dwOpenAutomaton <id>             open that Automaton's detail (with -dwTab automata)
 ///
 /// Values come from the `xcrun simctl launch` command line only; nothing is
 /// stored in the repo.
@@ -52,6 +53,11 @@ enum DebugLaunchHooks {
     static var openSessionURL: URL? {
         arg("-dwOpenSession").flatMap { URL(string: "datawatch://session/\($0)") }
     }
+
+    /// `-dwOpenAutomaton <prd id>`: push that Automaton's detail once the
+    /// Automata list has loaded it (one-shot per launch).
+    static var openAutomatonId: String? { arg("-dwOpenAutomaton") }
+    @MainActor static var automatonOpened = false
 
     static func applyTheme() {
         if let t = arg("-dwTheme") { UserDefaults.standard.set(t, forKey: "dw.theme") }
