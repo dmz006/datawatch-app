@@ -1,0 +1,27 @@
+# Settings › Automata › Council: a Quick (1 round) run against the sandbox's real LLM
+# nodes completes with persona replies and a consensus. The runner also checks the
+# run via REST (every persona response non-empty).
+appId: ${APP_ID}
+name: 08 council quick run
+---
+- runFlow:
+    file: common/settings_automata.yaml
+    env:
+      TARGET: "Proposal"
+- tapOn: "Proposal"
+- inputText: "Should a CLI tool print a version banner on every run? Answer in one sentence."
+- hideKeyboard
+- tapOn: "Quick (1 round)"
+- tapOn: "Run Council"
+- extendedWaitUntil:
+    visible: "completed"
+    timeout: 420000        # small model, many personas on CPU nodes
+- assertVisible: "Consensus"
+# Persona replies (✓ <persona>) sit above the consensus; the sheet may open scrolled.
+- scrollUntilVisible:
+    element: "✓"
+    direction: UP
+    timeout: 20000
+- assertNotVisible: "Lost connection to the council run."
+- takeScreenshot: 08_council_completed
+- back

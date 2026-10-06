@@ -1,0 +1,13 @@
+# Enter scroll mode (tmux copy-mode). The runner then asserts
+# `tmux display -p -t <tmux_session> '#{pane_in_mode}'` == 1.
+appId: ${APP_ID}
+name: 04 scroll mode enter
+---
+- runFlow: common/open_session.yaml
+- tapOn: "⤒"
+- extendedWaitUntil:
+    visible: "Page Up"
+    timeout: 15000
+- assertVisible: "Page Down"
+- assertVisible: "⏹"
+- takeScreenshot: 04_scroll_mode

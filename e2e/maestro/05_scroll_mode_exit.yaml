@@ -1,0 +1,13 @@
+# Exit scroll mode (continues from 04). The runner then asserts #{pane_in_mode} == 0.
+appId: ${APP_ID}
+name: 05 scroll mode exit
+---
+- extendedWaitUntil:
+    visible: "⏹"
+    timeout: 10000
+- tapOn: "⏹"
+- extendedWaitUntil:
+    notVisible: "Page Up"
+    timeout: 15000
+- assertVisible: "⤒"
+- assertVisible: "Type your response…"

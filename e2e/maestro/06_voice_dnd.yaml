@@ -1,0 +1,22 @@
+# Voice dialog opens while Do Not Disturb is ON (runner: `cmd notification set_dnd on`).
+# Regression: muting the ringer under DND threw "Not allowed to change Do Not Disturb
+# state" and aborted recording. The sandbox's whisper is openai_compat pointed at a
+# dead local port, so the flow only opens + cancels; no audio is sent anywhere.
+# (Don't assert on "Do Not Disturb" itself: the status-bar DND icon carries that
+# accessibility text. Maestro text matching is case-insensitive full-match regex.)
+appId: ${APP_ID}
+name: 06 voice under DND
+---
+- runFlow: common/open_session.yaml
+- tapOn: "Voice input"
+- extendedWaitUntil:
+    visible: "Recording…"
+    timeout: 10000
+- assertVisible: "Send"
+- assertNotVisible: "(?i).*not allowed to change.*"
+- takeScreenshot: 06_voice_recording
+- tapOn: "Cancel"
+- extendedWaitUntil:
+    notVisible: "Recording…"
+    timeout: 10000
+- assertNotVisible: "(?i).*not allowed to change.*"

@@ -1,0 +1,17 @@
+# Bottom-nav Automata tab is shown (the sandbox has autonomous.enabled=true — the
+# runner confirms that via REST) and opens the Automata list.
+appId: ${APP_ID}
+name: 10 automata tab
+---
+- runFlow: common/home.yaml
+- assertVisible:
+    text: "Automata"
+    leftOf: "Alerts"
+- tapOn:
+    text: "Automata"
+    leftOf: "Alerts"
+- extendedWaitUntil:
+    visible: "Templates"
+    timeout: 15000
+- assertVisible: "⚡"
+- takeScreenshot: 10_automata

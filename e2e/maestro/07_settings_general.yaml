@@ -1,0 +1,34 @@
+# Settings › General: the Raw config card is present and its editor opens; the old
+# "Config Viewer" card is gone (checked on every screen while scrolling to the end).
+appId: ${APP_ID}
+name: 07 settings general
+---
+- runFlow: common/home.yaml
+- tapOn:
+    text: "Settings"
+    rightOf: "Dashboard"
+- tapOn: "General"
+- extendedWaitUntil:
+    visible: "RAW CONFIG"
+    timeout: 15000
+- assertVisible: "Edit raw config"
+- assertNotVisible: "(?i).*config viewer.*"
+- takeScreenshot: 07_general_top
+- tapOn: "Edit raw config"
+# Dialog = title "Raw config" + a "JSON" field (the card title "RAW CONFIG" also
+# matches "Raw config" — Maestro matching is case-insensitive — so key on "JSON").
+- extendedWaitUntil:
+    visible: "JSON"
+    timeout: 15000
+- takeScreenshot: 07_raw_config_dialog
+- tapOn:
+    text: "Cancel"
+    below: "JSON"
+- extendedWaitUntil:
+    notVisible: "JSON"
+    timeout: 10000
+- repeat:
+    times: 14
+    commands:
+      - scroll
+      - assertNotVisible: "(?i).*config viewer.*"
