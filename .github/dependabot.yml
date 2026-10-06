@@ -11,16 +11,24 @@ updates:
       day: monday
     open-pull-requests-limit: 10
     labels: [dependencies]
+    # Each open Dependabot PR runs the iOS build + CodeQL on macOS runners,
+    # and Dependabot used to rebase every PR on each push to main — on busy
+    # days that starved the release workflow's TestFlight job (2026-10-06).
+    # So: no automatic rebases (comment "@dependabot rebase" when needed) and
+    # all minor/patch updates in one grouped PR; majors stay separate PRs
+    # because they need individual review.
+    rebase-strategy: disabled
     groups:
-      androidx:
-        patterns: ["androidx.*"]
-      kotlin-compose:
-        patterns: ["org.jetbrains.kotlin*", "org.jetbrains.compose*", "com.google.devtools.ksp*"]
-      ktor:
-        patterns: ["io.ktor*"]
+      gradle-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
       day: monday
     labels: [dependencies, ci]
+    rebase-strategy: disabled
+    groups:
+      actions:
+        patterns: ["*"]
