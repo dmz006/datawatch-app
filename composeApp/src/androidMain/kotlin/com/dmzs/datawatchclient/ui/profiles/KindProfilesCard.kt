@@ -166,10 +166,15 @@ public fun KindProfilesCard(
                 }
             },
             onSaved = { name ->
-                creating = false
-                editing = null
-                banner = context.getString(R.string.pfe_saved, name) to true
-                scope.launch { refresh() }
+                // Reload the list before closing the dialog so the saved row is
+                // already there when it disappears (e2e flow 09: it used to pop in
+                // a moment later).
+                scope.launch {
+                    refresh()
+                    creating = false
+                    editing = null
+                    banner = context.getString(R.string.pfe_saved, name) to true
+                }
             },
         )
     }

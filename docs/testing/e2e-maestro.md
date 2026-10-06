@@ -147,7 +147,7 @@ lands on the "No server" screen and talks to nothing.
 
 - ~~**Profile editor Save is outside the accessibility tree (Form view).**~~ Fixed in
   v1.28.1 (the dialog pads for the system bars and keyboard); `09` taps Save by name.
-- **Profile list refresh lags the save**: the new row can appear a moment after the
+- ~~**Profile list refresh lags the save**~~ — fixed (the list reloads before the dialog closes); the new row could appear a moment after the
   dialog closes (flow scrolls/waits for it).
 - ~~Council persona replies show a literal `_(via: <node>)_`~~ — fixed in v1.28.1
   (`_italic_` markdown).
