@@ -94,7 +94,7 @@ internal fun ChannelDiagnosticsCard() {
             val d = diag
             when {
                 failed -> Text(stringResource(R.string.channel_diag_unavailable), style = small, color = dim)
-                d == null -> Text(stringResource(R.string.loading_ellipsis_short), style = small, color = dim)
+                d == null -> com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                 d.rows.isEmpty() -> Text(stringResource(R.string.channel_diag_no_sessions), style = small, color = dim)
                 else ->
                     d.rows.forEach { r ->

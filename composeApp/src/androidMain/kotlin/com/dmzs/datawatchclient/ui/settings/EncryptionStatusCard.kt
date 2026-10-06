@@ -74,12 +74,7 @@ public fun EncryptionStatusCard() {
                         modifier = Modifier.padding(top = 8.dp),
                     )
                 status == null ->
-                    Text(
-                        stringResource(R.string.common_loading),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+                    com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                 else -> {
                     val s = status!!
                     // Secure mode row

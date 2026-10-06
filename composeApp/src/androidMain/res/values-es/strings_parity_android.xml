@@ -22,7 +22,6 @@
     <string name="channel_diag_title">Diagnóstico de canales</string>
     <string name="channel_diag_unavailable">no disponible</string>
     <string name="channel_diag_no_sessions">(no hay sesiones activas)</string>
-    <string name="loading_ellipsis_short">Cargando…</string>
     <string name="observer_peer_snapshot_title">Instantánea del par</string>
     <string name="observer_peer_snapshot_unavailable">Instantánea no disponible: %1$s</string>
     <string name="observer_peer_snapshot_empty">No se informaron envelopes.</string>

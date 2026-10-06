@@ -103,7 +103,7 @@ struct ObserverStatsPanelView: View {
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.error)
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
     }
@@ -251,7 +251,7 @@ private struct WebSearchUsageCard: View {
             } else if let err = vm.webSearchError {
                 ObsMuted(text: L(err))
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
         .padding(10)
@@ -374,7 +374,7 @@ struct ObserverEbpfBlocks: View {
                         .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.8))
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
         ObsBlock {
@@ -386,7 +386,7 @@ struct ObserverEbpfBlocks: View {
                     NetTrafficTable(procs: s.procs)
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
     }
@@ -448,7 +448,7 @@ struct ObserverPluginsBlock: View {
             } else if let error {
                 ObsMuted(text: L(error))
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
     }
@@ -546,7 +546,7 @@ struct ObserverChannelBlocks: View {
                     if let lines = vm.bridge {
                         ForEach(Array(lines.enumerated()), id: \.offset) { _, l in ObsLineView(line: l) }
                     } else {
-                        ObsMuted(text: L("Loading…"))
+                        CardSkeleton()
                     }
                 }
                 .padding(.top, 4)
@@ -598,7 +598,7 @@ struct ObserverChannelBlocks: View {
                 }
             }
         } else {
-            ObsMuted(text: L("Loading…"))
+            CardSkeleton()
         }
     }
 }
@@ -621,7 +621,7 @@ struct ObserverCommBlock: View {
                     backendRow(name)
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
     }

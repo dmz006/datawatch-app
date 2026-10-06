@@ -116,7 +116,7 @@ public fun WorkQueueCard() {
         val dw = LocalDatawatchColors.current
         when {
             error != null -> Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            list == null -> Text(stringResource(R.string.loading_ellipsis), style = MaterialTheme.typography.bodySmall)
+            list == null -> com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             list.isEmpty() ->
                 Text(
                     stringResource(R.string.work_queue_empty),

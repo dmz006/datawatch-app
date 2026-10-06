@@ -65,12 +65,7 @@ public fun CommunityPluginsCard() {
             )
         }
         if (plugins.isEmpty() && banner == null) {
-            Text(
-                "Loading…",
-                modifier = Modifier.padding(12.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
         }
         plugins.forEachIndexed { idx, plugin ->
             if (idx > 0) HorizontalDivider()

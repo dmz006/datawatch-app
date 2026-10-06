@@ -212,7 +212,7 @@ struct DocsTrustSections: View {
     @ViewBuilder
     private var pendingRows: some View {
         if !loaded {
-            Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            CardSkeleton()
         } else if pending.isEmpty {
             Text("none").italic().foregroundStyle(DatawatchColors.onSurfaceMuted)
         } else {
@@ -457,7 +457,7 @@ struct SettingsFileServiceCard: View {
                 countRow(L("Discussions"), info.discussions.count)
                 countRow(L("Peers"), info.peers.count)
             } else {
-                Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                CardSkeleton()
             }
         } header: {
             Text("Storage overview")
@@ -676,7 +676,7 @@ struct LlmInUseSheet: View {
         if let error {
             Text(verbatim: error).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.error)
         } else if loading && sessions.isEmpty {
-            Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+            CardSkeleton()
         } else if sessions.isEmpty {
             Text("No sessions are using this LLM.").foregroundStyle(DatawatchColors.onSurfaceMuted)
         } else {

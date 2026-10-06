@@ -99,12 +99,7 @@ public fun FileServiceCard() {
                     modifier = Modifier.padding(top = 8.dp),
                 )
             meta == null ->
-                Text(
-                    stringResource(R.string.common_loading),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+                com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             else -> {
                 val m = meta!!
 

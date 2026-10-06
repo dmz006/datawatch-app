@@ -80,7 +80,13 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
     val info = state.info
 
     if (s == null && info == null && state.banner == null) {
-        com.dmzs.datawatchclient.ui.common.PwaLoadingText(Modifier.padding(horizontal = 12.dp))
+        // Inside a card shell so the skeleton doesn't float between cards.
+        androidx.compose.foundation.layout.Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .pwaCard(),
+        ) { com.dmzs.datawatchclient.ui.common.PwaLoadingText(Modifier.padding(vertical = 6.dp)) }
         return
     }
 
@@ -1101,7 +1107,7 @@ private fun WebSearchHistoryDialog(onDismiss: () -> Unit) {
                 val list = rows
                 when {
                     failed -> Text(stringResource(R.string.channel_diag_unavailable), style = MaterialTheme.typography.bodySmall)
-                    list == null -> Text(stringResource(R.string.loading_ellipsis_short), style = MaterialTheme.typography.bodySmall)
+                    list == null -> com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                     list.isEmpty() -> Text(stringResource(R.string.ws_history_empty), style = MaterialTheme.typography.bodySmall)
                     else ->
                         list.forEach { e ->

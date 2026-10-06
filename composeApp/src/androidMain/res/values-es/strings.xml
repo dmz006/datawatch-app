@@ -619,7 +619,6 @@
     <string name="tailscale_generated_key_label">Clave pre-auth generada (copiar ahora):</string>
     <string name="tailscale_image_label">Imagen del sidecar</string>
     <string name="tailscale_key_expires">Caduca</string>
-    <string name="tailscale_loading">Cargando…</string>
     <string name="tailscale_no_nodes">No se encontraron nodos (se requiere api_key)</string>
     <string name="tailscale_nodes_label">Nodos</string>
     <string name="tailscale_refresh_btn">Actualizar</string>
@@ -1231,7 +1230,6 @@
     <string name="observer_remove_peer_title">¿Eliminar el par \"%1$s\"?</string>
     <string name="observer_remove_peer_body">Se volverá a registrar automáticamente en el próximo envío (el token rota).</string>
     <string name="action_remove">Eliminar</string>
-    <string name="loading_ellipsis">Cargando…</string>
     <string name="action_refresh">Actualizar</string>
     <string name="settings_profile_pinned_badge">certificado fijado</string>
     <string name="exit_hooks_title">Hooks de salida</string>

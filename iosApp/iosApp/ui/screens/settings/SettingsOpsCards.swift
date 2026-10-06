@@ -65,7 +65,7 @@ struct SettingsExitHooksCard: View {
         if !loaded {
             HStack(spacing: 8) {
                 ProgressView()
-                Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                CardSkeleton()
             }
             .listRowBackground(DatawatchColors.surface)
         } else if hooks.isEmpty {
@@ -322,7 +322,7 @@ struct SettingsWorkQueueCard: View {
         if !loaded {
             HStack(spacing: 8) {
                 ProgressView()
-                Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                CardSkeleton()
             }
             .listRowBackground(DatawatchColors.surface)
         } else if items.isEmpty {

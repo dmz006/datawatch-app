@@ -116,7 +116,7 @@ struct ComputeNodeFormSheet: View {
                 if loading {
                     HStack(spacing: 8) {
                         ProgressView()
-                        Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        CardSkeleton()
                     }
                 } else {
                     ComputeIdentitySection(v: $v, isEdit: isEdit)

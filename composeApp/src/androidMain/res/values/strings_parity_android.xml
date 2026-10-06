@@ -22,7 +22,6 @@
     <string name="channel_diag_title">Channel diagnostics</string>
     <string name="channel_diag_unavailable">unavailable</string>
     <string name="channel_diag_no_sessions">(no active sessions)</string>
-    <string name="loading_ellipsis_short">Loading…</string>
     <string name="observer_peer_snapshot_title">Peer snapshot</string>
     <string name="observer_peer_snapshot_unavailable">Snapshot unavailable: %1$s</string>
     <string name="observer_peer_snapshot_empty">No envelopes reported.</string>

@@ -150,12 +150,7 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
             )
         }
         if (rawConfig == null && banner == null) {
-            Text(
-                stringResource(R.string.common_loading),
-                modifier = Modifier.padding(12.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             return@PwaCard
         }
         section.fields.forEach { field ->

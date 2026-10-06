@@ -619,7 +619,6 @@
     <string name="tailscale_generated_key_label">Clé pré-auth générée (copier maintenant) :</string>
     <string name="tailscale_image_label">Image sidecar</string>
     <string name="tailscale_key_expires">Expire</string>
-    <string name="tailscale_loading">Chargement…</string>
     <string name="tailscale_no_nodes">Aucun nœud trouvé (api_key requis)</string>
     <string name="tailscale_nodes_label">Nœuds</string>
     <string name="tailscale_refresh_btn">Actualiser</string>
@@ -1231,7 +1230,6 @@
     <string name="observer_remove_peer_title">Supprimer le pair « %1$s » ?</string>
     <string name="observer_remove_peer_body">Il se réenregistrera automatiquement au prochain envoi (le jeton est renouvelé).</string>
     <string name="action_remove">Supprimer</string>
-    <string name="loading_ellipsis">Chargement…</string>
     <string name="action_refresh">Actualiser</string>
     <string name="settings_profile_pinned_badge">certificat épinglé</string>
     <string name="exit_hooks_title">Hooks de sortie</string>

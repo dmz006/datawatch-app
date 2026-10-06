@@ -34,7 +34,7 @@ struct LlmFormSheet: View {
                 if loading {
                     HStack(spacing: 8) {
                         ProgressView()
-                        Text("Loading…").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        CardSkeleton()
                     }
                 } else {
                     identitySection

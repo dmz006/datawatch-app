@@ -437,7 +437,7 @@ struct ObserverSchedulesCard: View {
                     if totalPages > 1 { pager }
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
         .task(id: profile.id) { load() }
@@ -617,7 +617,7 @@ struct ObserverCooldownCard: View {
             } else if let error {
                 Text(L(error)).font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.error)
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
             ObsFlowLayout(spacing: 6) {
                 Text("Set for:")
@@ -697,7 +697,7 @@ struct ObserverAnalyticsCard: View {
                     table(d.rows)
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
         .task(id: "\(profile.id)-\(range)") { load() }
@@ -786,7 +786,7 @@ struct ObserverAuditCard: View {
                     auditRow(e)
                 }
             } else {
-                ObsMuted(text: L("Loading…"))
+                CardSkeleton()
             }
         }
         .task(id: profile.id) { load() }
@@ -940,9 +940,11 @@ struct ObserverDaemonLogCard: View {
                                 .foregroundStyle(ObsTone.color(line.tone))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                    } else {
-                        Text(error.map { L($0) } ?? L("Loading…"))
+                    } else if let error {
+                        Text(L(error))
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    } else {
+                        CardSkeleton()
                     }
                 }
                 .font(.system(.caption2, design: .monospaced))

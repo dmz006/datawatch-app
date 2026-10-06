@@ -648,11 +648,7 @@ private fun HeatmapCard(analytics: AnalyticsDto?) {
     val dw = LocalDatawatchColors.current
     CardWrapper(title = stringResource(R.string.dash_card_heatmap)) {
         if (analytics == null) {
-            Text(
-                stringResource(R.string.dash_loading),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             return@CardWrapper
         }
 
