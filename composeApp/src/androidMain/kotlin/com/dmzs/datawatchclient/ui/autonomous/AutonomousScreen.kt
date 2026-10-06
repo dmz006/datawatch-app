@@ -318,7 +318,8 @@ public fun AutonomousScreen(
                             vm.approve(
                                 it,
                             )
-                        }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = {
+                        }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) },
+                            onPause = { vm.pausePrd(it) }, onResume = { vm.resumePrd(it) }, onReject = {
                                 id,
                                 reason,
                             ->
@@ -499,6 +500,8 @@ public fun AutonomousScreen(
                 extraBackendModels = state.extraBackendModels,
                 onRun = { vm.runPrd(id) },
                 onCancel = { vm.cancelPrd(id) },
+                onPause = { vm.pausePrd(id) },
+                onResume = { vm.resumePrd(id) },
                 onRequestRevision = { note -> vm.requestRevision(id, note) },
                 onEditPrd = { title, spec, pm -> vm.editPrd(id, title, spec, pm) },
                 onDelete = { vm.hardDeletePrd(id) },
@@ -631,6 +634,8 @@ private fun PrdsBody(
     onApprove: (String) -> Unit = {},
     onPlan: (String) -> Unit = {},
     onRun: (String) -> Unit = {},
+    onPause: (String) -> Unit = {},
+    onResume: (String) -> Unit = {},
     onReject: (String, String) -> Unit = { _, _ -> },
     onRevise: (String, String) -> Unit = { _, _ -> },
     onInstantiate: (String, Map<String, String>) -> Unit = { _, _ -> },
@@ -827,6 +832,8 @@ private fun PrdsBody(
                         onApprove = { onApprove(prd.id) },
                         onPlan = { onPlan(prd.id) },
                         onRun = { onRun(prd.id) },
+                        onPause = { onPause(prd.id) },
+                        onResume = { onResume(prd.id) },
                         onReject = { reason -> onReject(prd.id, reason) },
                         onRevise = { note -> onRevise(prd.id, note) },
                         onInstantiate = { vars -> onInstantiate(prd.id, vars) },
@@ -854,6 +861,8 @@ private fun PrdRow(
     onApprove: () -> Unit = {},
     onPlan: () -> Unit = {},
     onRun: () -> Unit = {},
+    onPause: () -> Unit = {},
+    onResume: () -> Unit = {},
     onReject: (String) -> Unit = {},
     onRevise: (String) -> Unit = {},
     onInstantiate: (Map<String, String>) -> Unit = {},
@@ -1121,6 +1130,19 @@ private fun PrdRow(
                             bg = Color(0xFFF59E0B).copy(alpha = 0.15f),
                             bold = true,
                             onClick = { reviseDialogOpen = true },
+                        )
+                    }
+                    // PWA D52 pauseBtn / resumeBtn (decided D52b).
+                    if (statusLower == "running") {
+                        PrdCardButton("⏸ " + stringResource(R.string.automata_action_pause), onClick = onPause)
+                    }
+                    if (statusLower == "paused") {
+                        PrdCardButton(
+                            "▶ " + stringResource(R.string.automata_action_resume),
+                            fg = Color.White,
+                            bg = MaterialTheme.colorScheme.primary,
+                            borderColor = MaterialTheme.colorScheme.primary,
+                            onClick = onResume,
                         )
                     }
                     Spacer(Modifier.weight(1f))
@@ -1610,7 +1632,7 @@ internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {
         "running" -> Color(0xFF10B981)
         "approved" -> com.dmzs.datawatchclient.ui.theme.DwAccent // PWA .prd-card-status-approved = var(--accent)
-        "needs_review", "revisions_asked", "awaiting_approval" -> Color(0xFFF59E0B)
+        "needs_review", "revisions_asked", "awaiting_approval", "paused" -> Color(0xFFF59E0B)
         "blocked", "rejected" -> Color(0xFFEF4444)
         "decomposing", "planning" -> Color(0xFFA855F7)
         "complete", "completed" -> Color(0xFF059669)

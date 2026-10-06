@@ -164,6 +164,21 @@ class RestTransportAutonomousTest {
             assertEquals(0L, sent.bodySize)
         }
 
+    /** Parity D52b — Automata Pause / Resume (server v8.57+, PWA automataPause/Resume). */
+    @Test
+    fun prdActionPauseAndResumePostCorrectPaths() =
+        runTest {
+            server.enqueue(jsonResponse("", 204))
+            server.enqueue(jsonResponse("", 204))
+            assertTrue(transport.prdAction("prd-1", "pause").isSuccess)
+            assertTrue(transport.prdAction("prd-1", "resume").isSuccess)
+            val pause = server.takeRequest()
+            assertEquals("POST", pause.method)
+            assertEquals("/api/autonomous/prds/prd-1/pause", pause.path)
+            assertEquals(0L, pause.bodySize)
+            assertEquals("/api/autonomous/prds/prd-1/resume", server.takeRequest().path)
+        }
+
     @Test
     fun prdActionRejectSendsReasonBody() =
         runTest {

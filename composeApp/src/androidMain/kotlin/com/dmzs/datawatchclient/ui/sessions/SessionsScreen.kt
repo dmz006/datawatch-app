@@ -1522,19 +1522,29 @@ private fun SessionRow(
         }
 
         // ── PWA running row: `▶ What's it doing?` or the inline current status ──
+        // Same `.card-waiting-row` amber box as the waiting prompt (PWA wraps both).
         if (!selectionMode && session.state == SessionState.Running) {
-            if (currentStatusLoading || currentStatusText != null) {
-                InlineCurrentStatus(
-                    loading = currentStatusLoading,
-                    text = currentStatusText.orEmpty(),
-                    longText = currentStatusLongText,
-                    generatedAtMs = currentStatusAtMs,
-                    longExpanded = currentStatusLongExpanded,
-                    onToggleLong = { currentStatusLongExpanded = !currentStatusLongExpanded },
-                    onRefresh = refreshCurrentStatus,
-                )
-            } else {
-                Box(modifier = Modifier.padding(top = 8.dp)) {
+            val warning = Color(0xFFF59E0B)
+            Column(
+                modifier =
+                    Modifier
+                        .padding(top = 8.dp)
+                        .fillMaxWidth()
+                        .background(warning.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                        .border(1.dp, warning.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                if (currentStatusLoading || currentStatusText != null) {
+                    InlineCurrentStatus(
+                        loading = currentStatusLoading,
+                        text = currentStatusText.orEmpty(),
+                        longText = currentStatusLongText,
+                        generatedAtMs = currentStatusAtMs,
+                        longExpanded = currentStatusLongExpanded,
+                        onToggleLong = { currentStatusLongExpanded = !currentStatusLongExpanded },
+                        onRefresh = refreshCurrentStatus,
+                    )
+                } else {
                     PwaCardActionButton(
                         "▶ " + stringResource(R.string.sessions_current_status_btn),
                         fontSize = 10,
