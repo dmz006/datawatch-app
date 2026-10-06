@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ## [Unreleased]
 
 ### Fixed
+- **Everything that loads now shows the animated datawatch eye** with "Loading…" — besides the cards: the Dashboard, Alerts, Automata graph and file viewer, compute-node models and Ollama catalog, file picker, the server edit screen, the Signal QR wait, the council live-run and cross-host sheets, and the session timeline. Connecting to a session keeps its own splash. Android and iOS.
 - **Card loading shows the animated datawatch eye again.** Observer, Settings and Dashboard cards show the animated eye with a pulsing "Loading…" while their data loads (the icon these cards had before a parity change replaced it with plain text; v1.28.2's shimmer bars are replaced too). Android and iOS.
 
 ## [1.28.2] — 2026-10-06
@@ -20,6 +21,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 - **Watched-only filters:** a "👁 N" button in the session filter row and a 👁 button on the Automata toolbar show only the sessions / automata you watch. Android and iOS.
+
+### CI
+- **Monthly xterm.js update check** (`xterm-update-check.yml`): compares the terminal library bundled in the apps with the web UI's version and the newest stable release, and keeps one tracking issue up to date. Updating stays a manual, live-tested step.
 
 ### Changed
 - **Mermaid diagrams in Automaton specs render from a copy bundled in the app** (Mermaid 12.1.0) instead of a public CDN, so they work offline and the app makes no third-party request for them. A monthly check opens an update when a newer stable Mermaid has been out for 72 hours. On Android the diagram view now sizes itself to the whole diagram instead of cutting it off at a fixed height.
