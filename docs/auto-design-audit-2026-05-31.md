@@ -1,7 +1,7 @@
 # Android Auto Design Audit — 2026-05-31
 
 **Scope:** Full review of every Auto screen class against `docs/android-auto.md`,
-`docs/plans/2026-05-31-auto-ux-overhaul.md`, ADR-0031, `docs/ux-voice.md`, and
+`docs/plans/historical-plans/2026-05-31-auto-ux-overhaul.md`, ADR-0031, `docs/ux-voice.md`, and
 `docs/ux-navigation.md`.
 
 **Outcome:** 4 dead-code files deleted; docs rewritten; no functional regressions.

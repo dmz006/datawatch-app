@@ -238,7 +238,7 @@ Deliberately skipped, matched against the parent's own PWA non-goals:
 
 ## iOS Parity (added 2026-05-27)
 
-iOS client shipped in v1.0.4. The parity standard is **capability match** (what the user can do), not implementation match. See `docs/plans/2026-05-27-ios-client.md` §Story 14 for the full audit table.
+iOS client shipped in v1.0.4. The parity standard is **capability match** (what the user can do), not implementation match. See `docs/plans/historical-plans/2026-05-27-ios-client.md` §Story 14 for the full audit table.
 
 ### iOS v1.0.4 summary
 

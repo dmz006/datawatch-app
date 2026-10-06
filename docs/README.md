@@ -8,16 +8,35 @@ Entry point for everything docs-related. Reading order:
 4. [decisions/README.md](decisions/README.md) — ADRs, the "why" behind architecture.
 5. Technical, UX, surface, and delivery packages below.
 
+## User guides
+
+| Doc | Purpose |
+|-----|---------|
+| [installation.md](installation.md) | Install on phone, Wear and Auto; troubleshooting |
+| [usage.md](usage.md) | How every screen behaves |
+| [features.md](features.md) | Feature list |
+
 ## Technical package
 
 | Doc | Purpose |
 |-----|---------|
 | [architecture.md](architecture.md) | C4 context / container / component + module tree |
-| [data-flow.md](data-flow.md) | 14 Mermaid sequence diagrams for every major interaction |
+| [data-flow.md](data-flow.md) | Mermaid sequence diagrams for every major interaction (24, incl. council live runs, planning stream, scroll mode, channel-ready, APNs, profile editor) |
+| [transports.md](transports.md) | REST, WebSocket, SSE streams and MCP SSE — when each is used, fallback, limits, security |
+| [config-reference.md](config-reference.md) | Every setting the apps expose, its UI path, wire key and persistence |
+| [implementation.md](implementation.md) | Implementation notes and settings fields |
 | [data-model.md](data-model.md) | ER diagram + SQLDelight schema + encryption scope |
 | [api-parity.md](api-parity.md) | REST + MCP coverage matrix. Mobile → parent endpoint refs |
 | [security-model.md](security-model.md) | Trust boundaries, keys, FCM payload contract |
 | [threat-model.md](threat-model.md) | STRIDE analysis + residual risks |
+
+## Testing package
+
+| Doc | Purpose |
+|-----|---------|
+| [testing-tracker.md](testing-tracker.md) | Per-feature Tested / Validated matrix |
+| [testing.md](testing.md) | Per-bug test log (description, steps, expected, actual, how verified) |
+| [testing/](testing/) | QA cookbook, master plan, test-isolation guide, release test runs |
 
 ## UX package
 
@@ -42,6 +61,9 @@ Entry point for everything docs-related. Reading order:
 | [sprint-plan.md](sprint-plan.md) | Sprint history + upcoming backlog |
 | [parity-plan.md](parity-plan.md) | PWA ↔ mobile parity matrix (row-by-row) |
 | [parity-status.md](parity-status.md) | Current-release parity snapshot |
+| [parity/README.md](parity/README.md) | Three-way parity matrix (PWA ↔ Android ↔ iOS), section files and decisions |
+| [plans/README.md](plans/README.md) | Bugs, backlog and plans tracker (open items on top) |
+| [operations.md](operations.md) | Release, signing and distribution runbook |
 | [play-store-registration.md](play-store-registration.md) | Console recreation + submission |
 | [privacy-policy.md](privacy-policy.md) | Draft for `https://dmzs.com/datawatch-client/privacy` |
 | [store-listing.md](store-listing.md) | Short / tagline / full descriptions |
@@ -50,15 +72,31 @@ Entry point for everything docs-related. Reading order:
 ## Operational folders
 
 - [decisions/](decisions/) — ADRs (one file per decision, MADR-ish)
-- [plans/](plans/) — dated plan documents (`YYYY-MM-DD-<slug>.md`).
-  Recent: [2026-04-21-pwa-audit-sprint.md](plans/2026-04-21-pwa-audit-sprint.md),
-  [2026-04-21-terminal-audit.md](plans/2026-04-21-terminal-audit.md),
-  [2026-04-21-auto-audit.md](plans/2026-04-21-auto-audit.md).
+- [plans/](plans/) — dated plan documents (`YYYY-MM-DD-<slug>.md`) and the
+  tracker [plans/README.md](plans/README.md). Fully shipped plans move to
+  [plans/historical-plans/](plans/historical-plans/). iOS runbooks:
+  [plans/ios-mac-build-host.md](plans/ios-mac-build-host.md),
+  [plans/ios-testflight-setup.md](plans/ios-testflight-setup.md).
 
 ## Parent-project cross-references
 
 Parent [dmz006/datawatch](https://github.com/dmz006/datawatch) tracked
-issues. All eighteen mobile-filed issues are closed:
+issues.
+
+**Open as of 2026-10-06** (tracked in [plans/README.md](plans/README.md)):
+
+- [#183](https://github.com/dmz006/datawatch/issues/183) — APNs delivery for
+  iOS devices (the app side shipped in v1.28.0).
+- [#174](https://github.com/dmz006/datawatch/issues/174) — MCP channel bridges
+  don't re-register after a daemon restart ("Waiting for MCP channel" never
+  clears).
+- [#172](https://github.com/dmz006/datawatch/issues/172),
+  [#177](https://github.com/dmz006/datawatch/issues/177),
+  [#181](https://github.com/dmz006/datawatch/issues/181),
+  [#182](https://github.com/dmz006/datawatch/issues/182) — web UI parity
+  follow-ups from the 2026-10-04 / 2026-10-05 decisions.
+
+**Early mobile-filed issues** (all eighteen closed):
 
 - **#1–#3** shipped (devices/register, voice/transcribe, federation).
 - **#5–#13** shipped in parent v4.0.3 (sessions delete, cert, backends/
@@ -71,4 +109,4 @@ issues. All eighteen mobile-filed issues are closed:
 - **#4** remains open — parent's own meta-parity tracker, not a
   mobile-blocker.
 
-Zero open upstream items block mobile today.
+None of the early issues block mobile; the open items above limit iOS push and the MCP-channel banner only.

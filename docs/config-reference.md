@@ -1,6 +1,6 @@
 # Configuration reference
 
-*Last updated 2026-04-22 for v0.33.0.*
+*Last updated 2026-10-06 for v1.28.0 (see "Added in v1.24–v1.28" near the end).*
 
 Per [AGENT.md](../AGENT.md) Configuration Accessibility Rule, every
 user-settable value has:
@@ -52,12 +52,26 @@ Two storage tiers:
 
 ### profile.trustAllTls
 
-- **UI path:** Settings → Servers → Add / Edit → **Trust self-signed**
-  switch.
-- **Type:** Boolean.
+- **UI path:** Settings → Servers → Add / Edit → Security → **Trust all
+  certificates** (insecure).
+- **Type:** Boolean (stored as a sentinel in `trustAnchorSha256`).
 - **Default:** `false`.
 - **Persisted in:** SQLCipher `server_profiles` row.
 - **Server echo:** no.
+- **Scope (v1.27.0):** applies to **that profile's host only**; every other
+  host (including the docs viewer) uses the system trust store. Both apps.
+
+### profile.trustAnchorSha256 (certificate pin)
+
+- **UI path:** Settings → Servers → Add / Edit → Security → **Fetch
+  certificate** → confirm the SHA-256 fingerprint → **Pin**.
+- **Type:** Hex SHA-256 of the server's leaf certificate (DER), or null.
+- **Default:** null (system trust store).
+- **Persisted in:** SQLCipher `server_profiles.trust_anchor_sha256`.
+- **Server echo:** no.
+- **Effect:** only the pinned certificate is accepted for that server, and the
+  hostname must still match. Android v1.24.0; iOS v1.23.x. Probing refuses
+  `http://` URLs.
 
 ### profile.enabled
 
@@ -219,10 +233,16 @@ Settings → Profiles.
 
 ### profiles.<kind>.<name>
 
+- **UI path (v1.27.0):** Settings → Profiles → row or ＋ → profile editor.
+  Full form with every web-UI field, defaults and validation, plus a
+  **YAML view / Form view** toggle on the same editor (both apps).
 - **Type:** Structured object (name, description, nested blocks).
 - **Kinds:** `project`, `cluster`.
-- **Wire:** `PUT /api/profiles/<kind>s/<name>` (v0.32.0) — keeps
-  nested blocks intact.
+- **Wire:** new profiles `POST /api/profiles/<kind>s`; edits
+  `PUT /api/profiles/<kind>s/<name>`. Unknown keys round-trip unchanged.
+- **Secrets:** literal secret values are shown as a placeholder and restored
+  from the stored copy on save; `${secret:…}` references stay visible.
+- **Errors:** invalid YAML shows a line-numbered message and keeps your text.
 
 ---
 
@@ -357,6 +377,109 @@ Settings → Autonomous (ConfigFieldsPanel / ConfigSection `Autonomous`).
 - **Wire:** `/api/config` — key `autonomous.default_quality_gates.block_on_regression`.
 - **Effect:** When `true`, a failing quality-gate blocks PRD progression and moves the
   session to the waiting-input state so a human can intervene.
+
+---
+
+## Added in v1.24–v1.28 (2026-10-04 → 2026-10-06)
+
+Server-round-trip settings read and written by both apps unless marked
+otherwise. Android keys live in `ui/configfields/ConfigFieldSchemas.kt`; iOS
+in `iosApp/iosApp/ui/screens/settings/SettingsCatalog.swift`.
+
+### Automaton concurrency (per automaton)
+
+- **UI path:** Automata → automaton → Overview meta row and the automaton's
+  settings sheet → **Concurrency**.
+- **Type:** Integer ≥ 0. `0` = use the global
+  `autonomous.max_concurrent_tasks` default.
+- **Default:** `0`.
+- **Wire:** read from `max_concurrent_tasks` on
+  `GET /api/autonomous/prds/{id}`; written with
+  `POST /api/autonomous/prds/{id}/set_concurrency {max_concurrent_tasks}`.
+- **Since:** v1.27.1.
+
+### autonomous.decomposition_backend / decomposition_effort / verification_effort / stale_task_seconds
+
+- **UI path:** Settings → Automata → **Automaton decomposition** card.
+  Android has had these since v0.33.11; iOS gained them in v1.27.1.
+- **Types / defaults:**
+  - `decomposition_backend` — String; empty = inherit.
+  - `decomposition_effort` — `quick` / `normal` / `thorough`; empty = server
+    default.
+  - `verification_effort` — `quick` / `normal` / `thorough`; empty = server
+    default.
+  - `stale_task_seconds` — Integer seconds; placeholder `600`.
+- **Wire:** `PUT /api/config` with `autonomous.<key>`.
+
+### council.llm_ref (and other council settings)
+
+- **UI path:** Settings → Council → council settings (iOS v1.25.0; Android
+  `CouncilCard`).
+- **Fields:**
+  - `llm_ref` — String: the LLM registry entry council personas run on; empty
+    = server default.
+  - `max_parallel` — Int.
+  - `comm_firehose` — Bool.
+  - `spawn_real_sessions` — Bool.
+  - `draft_retention_days` — Int.
+- **Wire:** `GET` / `PUT /api/council/config`.
+- **Use:** a council run (`POST /api/council/run {proposal, mode, personas,
+  spawn_real_sessions}`) uses the configured `llm_ref`. If no LLM is
+  reachable, the run ends with an error in the live sheet.
+
+### LLM registry form: timeout_seconds / max_inflight / models[].node
+
+- **UI path:** Settings → Compute → LLMs → add / edit (form or "</> YAML").
+- **Fields:**
+  - `timeout_seconds` — Int; `0` = adapter default. The legacy `timeout` key
+    is still read.
+  - `max_inflight` — Int; autonomous sessions in flight on this LLM;
+    `0` = unlimited.
+  - `models[].node` — String: the compute node for each enabled model row.
+- **Wire:** `POST /api/llms` (create) / `PUT /api/llms/{name}` (full replace).
+  `auto_created` is read-only and never sent.
+- **Since:** v1.27.1. Before that, Android sent the wrong names and the
+  server dropped these values.
+
+### Terminal size — console_cols / console_rows (server-resolved)
+
+- **UI path:** none in the apps. Set it on the server (LLM registry entry →
+  per-backend config → `session.console_cols` / `console_rows`), or in the
+  LLM form's session-backend section (`console_cols`, `console_rows`).
+- **Type:** Int columns / rows. `0` = not reported.
+- **Effect (v1.28.0):** the xterm minimum width is the session's
+  `console_cols`. If that is missing, the app uses the server's per-backend
+  default (claude-code 120×40, otherwise 80×24). Rows only seed the first
+  `resize_term`; the server clamps.
+- **Persisted in:** session cache (DB migration 9) from `GET /api/sessions`.
+- **Removed:** Android's local "Terminal dimensions" override card (it was
+  never mounted, and the web UI has no client-side override).
+
+### apns_environment (iOS device registration)
+
+- **UI path:** none — set automatically by the build. Debug builds send
+  `development`; TestFlight / App Store builds send `production`.
+- **Wire:** `POST /api/devices/register {device_token, kind:"apns",
+  app_version, platform:"ios", profile_hint, apns_environment}` on every
+  launch, for every enabled server profile. Omitted for FCM / ntfy.
+- **Effect:** tells the server which APNs host to send to
+  (`api.push.apple.com` or `api.sandbox.push.apple.com`). A mismatch gets
+  `BadDeviceToken`. Server sender:
+  [dmz006/datawatch#183](https://github.com/dmz006/datawatch/issues/183).
+- **Persisted in:** not persisted. The token is kept in memory only (v1.28.0).
+
+### Mobile-only preferences added in this range
+
+| Preference | UI path | Persisted in | Notes |
+|---|---|---|---|
+| Theme (Dark / Light / System) | Settings → Theme | Device prefs | Light uses the web UI's light palette (Android v1.25.0, iOS v1.25.0) |
+| Collapsed cards | Chevron on an Observer / Settings card header | Device prefs, per card id | All cards start expanded |
+| Last tab + last session | Implicit | Device prefs | Reopened on launch |
+| Alert dock mute (🔕) | Alert dock | In memory (app session) | |
+| Splash last-shown time / version | Implicit | Device prefs | Splash shows on first launch, after an update, or after 24 h |
+
+Reduced motion follows the system animation setting; the app has no separate
+toggle.
 
 ---
 
