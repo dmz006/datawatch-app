@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -122,19 +121,23 @@ internal fun ProfileEditorDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        // Keep Cancel/Save above the gesture bar and keyboard (e2e flow 09:
-        // they rendered under the nav bar and were unreachable for TalkBack).
+        // Keep Cancel/Save on screen (e2e flow 09: a long form pushed them under
+        // the gesture bar, out of reach for TalkBack/Maestro). Insets don't apply
+        // inside this dialog window, so cap the height at 90 % of the screen;
+        // the form's scroll area (weight, fill = false) shrinks to fit and the
+        // button row always stays visible.
+        val maxDialogHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.9f).dp
         Surface(
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface,
             modifier =
                 Modifier
-                    .systemBarsPadding()
                     .imePadding()
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 24.dp),
+                    .padding(horizontal = 12.dp, vertical = 24.dp)
+                    .heightIn(max = maxDialogHeight),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

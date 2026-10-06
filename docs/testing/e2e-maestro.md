@@ -145,13 +145,9 @@ lands on the "No server" screen and talks to nothing.
 
 ## 6. Known issues found by these flows
 
-- **Profile editor Save is outside the accessibility tree (Form view).** In the
-  project-profile dialog's Form view the Cancel/Save row is drawn under the gesture
-  bar (bottom ~2 % of a 1080x2400 screen) and is not exposed to accessibility, so
-  Maestro/TalkBack cannot find "Save". YAML view (shorter content) is fine. `09`
-  falls back to a position tap (`86%,98%`, Pixel 6 only). The dialog should cap its
-  height / keep the button row inside the window.
+- ~~**Profile editor Save is outside the accessibility tree (Form view).**~~ Fixed in
+  v1.28.1 (the dialog pads for the system bars and keyboard); `09` taps Save by name.
 - **Profile list refresh lags the save**: the new row can appear a moment after the
   dialog closes (flow scrolls/waits for it).
-- Council persona replies show a literal `_(via: <node>)_` (markdown italics not
-  rendered inside the reply footer).
+- ~~Council persona replies show a literal `_(via: <node>)_`~~ — fixed in v1.28.1
+  (`_italic_` markdown).

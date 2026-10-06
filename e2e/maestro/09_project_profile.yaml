@@ -32,20 +32,10 @@ name: 09 project profile
 - assertVisible: ${PROFILE_NAME}
 - assertVisible: "https://example.com/e2e/repo.git"
 - takeScreenshot: 09_profile_form
-# In Form view the dialog's Cancel/Save row sits under the gesture bar and is not in
-# the accessibility tree (docs/testing/e2e-maestro.md › Known issues), so Save is
-# tapped by position (dw_test_phone = Pixel 6, 1080x2400) when the text isn't reachable.
-- runFlow:
-    when:
-      visible: "Save"
-    commands:
-      - tapOn: "Save"
-- runFlow:
-    when:
-      visible: "New project profile"
-    commands:
-      - tapOn:
-          point: "86%,98%"
+# Save is above the gesture bar and in the accessibility tree since the
+# profile-editor inset fix (v1.28.1), so it is tapped by name on any device.
+- assertVisible: "Save"
+- tapOn: "Save"
 - extendedWaitUntil:
     notVisible: "New project profile"
     timeout: 15000
