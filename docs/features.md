@@ -1,4 +1,4 @@
-# Feature Ideas — datawatch + Android/Wear OS/Android Auto
+# Feature Ideas — datawatch + Android/Wear OS/Android Auto/iOS
 
 Living list of improvements, enhancements, and fun ideas. Add as they come up during testing.
 
@@ -61,6 +61,20 @@ Living list of improvements, enhancements, and fun ideas. Add as they come up du
 - **Traffic-light session status** — green/yellow/red indicator per session on summary screen
 - **Turn-by-turn style alerts** — interrupt music briefly to announce critical session alerts
 - **Auto-launch on drive start** — optionally open datawatch Auto screen when CarPlay/AA connects
+
+---
+
+## iOS (iPhone / iPad)
+
+Shipped today: the same six tabs as Android and the PWA — see [ios.md](ios.md). Ideas:
+
+- **Background push** — APNs delivery once the datawatch server ships its Apple push sender (the app already registers)
+- **Siri / Shortcuts** — "What's waiting in datawatch?", reply to the waiting session, run a saved command
+- **Home-screen and Lock Screen widgets** — running / waiting counts per server
+- **Live Activities** — a running automaton's progress on the Lock Screen and Dynamic Island
+- **Notification actions** — reply or approve straight from the notification
+- **Apple Watch companion** — glanceable session list and dictated replies
+- **iPad keyboard shortcuts** — hardware-keyboard commands for tab switching and the terminal key bar
 
 ---
 

@@ -155,17 +155,54 @@ light sensor or time-of-day). Day/night is AAOS-controlled, not app-controlled.*
 
 Surfaces available on AAOS: **Sessions**, **Alerts** (grouped by session, inline reply/schedule/open), and **Settings** (Monitor · General · Comms · LLM · About). The eye watermark and server-selector dropdown carry over from the phone layout.
 
+## iOS (iPhone and iPad)
+
+A native SwiftUI app with the same six tabs as Android and the web app — **Sessions**
+(live terminal, chat, voice and quick-command replies), **Automata**, **Alerts**,
+**Observer**, **Dashboard** and **Settings** (including profiles and the council) — with
+a split layout on iPad. It is in beta on **TestFlight**; every release tag uploads a new
+build.
+
+**Install:** accept the TestFlight invite (email, or the public link) on your device →
+install **TestFlight** from the App Store → **Accept** → **Install**. Then add your server
+under Settings › Comms › Servers. Full guide: [docs/ios.md](docs/ios.md).
+
+**Requirements:** iOS / iPadOS 16.0+, and your own datawatch server reachable over HTTPS
+(same LAN, a VPN, or Tailscale). The app has no cloud service of its own.
+
+**Not yet:** push notifications while the app is closed arrive with an upcoming datawatch
+server update (until then alerts show while the app is open); no Siri shortcuts or widgets
+yet.
+
+<!-- iOS screenshots: images go in docs/media/ios/ -->
+<table>
+<tr>
+<td align="center"><img src="docs/media/ios/ios-sessions.png" width="180"/><br/><sub>Sessions</sub></td>
+<td align="center"><img src="docs/media/ios/ios-terminal.png" width="180"/><br/><sub>Terminal</sub></td>
+<td align="center"><img src="docs/media/ios/ios-automata.png" width="180"/><br/><sub>Automata</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/media/ios/ios-alerts.png" width="180"/><br/><sub>Alerts</sub></td>
+<td align="center"><img src="docs/media/ios/ios-observer.png" width="180"/><br/><sub>Observer</sub></td>
+<td align="center"><img src="docs/media/ios/ios-settings.png" width="180"/><br/><sub>Settings</sub></td>
+</tr>
+</table>
+
 ## Platforms
 
 - Android phone / tablet / foldable (minSdk 29 — Android 10 — target 35; two-pane layout on ≥ 600 dp)
 - Wear OS 3+ (minSdk 30)
 - Android Auto (MESSAGING category — conversation-context screens + MessagingStyle notifications; ADR-0049)
-- iOS 16.0+ (iPhone and iPad; SwiftUI native; Keychain + Secure Enclave; Face ID / Touch ID)
+- iOS / iPadOS 16.0+ (iPhone and iPad; SwiftUI native; tokens in the Keychain, cache under iOS Data Protection; optional Face ID / Touch ID lock; distributed through TestFlight — see [docs/ios.md](docs/ios.md))
 
 ## Install
 
 See [docs/installation.md](docs/installation.md) for the full walkthrough.
-Quick version (fetch the APKs from the [latest release](https://github.com/dmz006/datawatch-app/releases/latest)):
+
+**iPhone / iPad:** install through TestFlight — see [iOS](#ios-iphone-and-ipad) above and
+[docs/ios.md](docs/ios.md).
+
+**Android** quick version (fetch the APKs from the [latest release](https://github.com/dmz006/datawatch-app/releases/latest)):
 
 ```bash
 # Phone — always use `install -r`. NEVER `adb uninstall` to upgrade:
@@ -177,9 +214,9 @@ adb install -r composeApp-publicTrack-release.apk
 adb -s <watch-serial> install -r wear-release.apk
 ```
 
-First launch:
+First launch (Android):
 1. Onboarding → Add server.
-2. Enter your datawatch server URL (e.g. `https://host.taila1234.ts.net:8080`),
+2. Enter your datawatch server URL (e.g. `https://datawatch.example:8080`),
    bearer token, and the self-signed-TLS toggle if applicable.
 3. Sessions tab shows a live view of every running session on that server.
 
@@ -236,6 +273,9 @@ gradle/       Gradle wrapper + version catalog
   to the server's ntfy fallback.
 - Reachable over one of: Tailscale, LAN, public DNS + TLS, or the
   datawatch channel relay.
+- iOS push notifications while the app is closed need a datawatch server
+  release with Apple push (APNs) support, coming in a server update; the iOS
+  app already registers its device token.
 
 ## License
 

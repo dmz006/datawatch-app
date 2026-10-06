@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Documentation
+- **iOS:** new iPhone / iPad guide (`docs/ios.md`: TestFlight install, first-run setup, permissions, known limitations, troubleshooting) and App Store Connect listing guide (`docs/store-listing-ios.md`). App Store and TestFlight listing text now lives in `iosApp/fastlane/metadata/`, with `scripts/check-ios-metadata.sh` to check App Store length limits. README, installation guide and privacy policy cover iOS (Apple push token, Keychain, Face ID, microphone and camera use).
+
 ## [1.28.0] — 2026-10-06
 
 ### Fixed
