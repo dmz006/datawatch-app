@@ -1,0 +1,67 @@
+# Demo datawatch server for App Store / TestFlight screenshots
+# (.github/workflows/ios-screenshots.yml). Throwaway: runs on a CI runner only.
+#
+# __DEMO_ROOT__ is replaced with a per-run directory (under $RUNNER_TEMP) before
+# the server starts. The token is the documented public test token, not a secret.
+# Written by hand on purpose: `datawatch config generate` emits list fields as
+# the string "[]", which the daemon then rejects.
+hostname: demo
+data_dir: __DEMO_ROOT__/data
+
+server:
+  enabled: true
+  host: 127.0.0.1
+  port: 18080
+  token: dw-test-token-12345
+  tls_enabled: true
+  tls_auto_generate: true
+  tls_port: 18443
+  channel_port: 0
+  proxy_sandbox_port: -1
+  recent_session_minutes: 600
+
+session:
+  max_sessions: 10
+  input_idle_timeout: 5
+  tail_lines: 20
+  alert_context_lines: 10
+  claude_enabled: false
+  llm_backend: shell
+  default_project_dir: __DEMO_ROOT__/projects/weather-api
+  root_path: __DEMO_ROOT__/projects
+  auto_git_commit: false
+  auto_git_init: false
+  kill_sessions_on_exit: true
+  log_level: info
+
+shell_backend:
+  enabled: true
+  script_path: ""
+
+mcp:
+  enabled: false
+  sse_enabled: false
+
+ollama:
+  enabled: false
+
+# Planning uses the registry LLM "demo-planner", which seed-demo.sh registers
+# on a compute node backed by scripts/screenshots/ollama-stub.py (a canned
+# plan), so the Automaton decomposes into stories/tasks without a real model.
+autonomous:
+  enabled: true
+  planning_backend: demo-planner
+  planning_model: demo-planner
+  planning_timeout_seconds: 60
+
+memory:
+  enabled: false
+
+update:
+  enabled: false
+
+stats:
+  ebpf_enabled: false
+
+rtk:
+  enabled: false
