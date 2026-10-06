@@ -233,6 +233,685 @@ Three-way parity release (PWA ↔ Android ↔ iOS) following the 2026-10-04 pari
 ### Added (Android)
 - **Certificate pinning**: Add/Edit server has a Security section that fetches the server certificate, shows its SHA-256 fingerprint, and pins it once you confirm. A pinned server is trusted for exactly that certificate, and its name must still match the host. "Trust all certificates" stays available as a separate, insecure option.
 
+## [1.23.125] — 2026-10-04
+
+### Added (iOS)
+- **Session detail Tmux | Status tabs**: the session screen is no longer terminal-only. The Status tab shows the hook status board (hook health, current focus, live task tree, tests, git, guardrail verdicts); the terminal stays connected while you switch tabs.
+- **Session Stats sub-tab**: Host, Container, Compute Node and LLM cards with CPU/RSS and GPU sparklines, matching the web UI.
+- **Terminal tools**: Fit-to-width, scroll mode (Page Up / Page Down / Exit), and a keys strip (Esc, arrows, Enter) above the composer.
+- **Automata list**: filter bar with status and type badges, history toggle, search, long-press to pin, and the web UI's sort order.
+- **Automata batch mode**: select several automata and Run, Approve, Cancel, Archive or Delete them in one go; each button shows how many selected items it applies to.
+- **Automata Templates tab**: create, edit, delete and use templates (with a field per `{{var}}` placeholder); "Save as template" from an automaton's menu.
+- **Story and task operations**: approve/reject/cancel stories; retry, cancel, re-run and remove tasks, with the same visibility rules as the web UI.
+- **Automaton status graphs and capacity card** while decomposing, planning or running.
+- **Set LLM** on an automaton (execution and planning backend/model/effort).
+- **Live updates**: the Automata list and detail update in place from the server's push stream; polling drops to a 30 s fallback.
+
+## [1.23.124] — 2026-10-04
+
+### Fixed
+- **Android Auto — Automata views rejected by the car**: the automaton and task views used a custom header button the car host does not allow, which showed "click listener for a custom action is disallowed". They now use the standard back button and step back in place (task → automaton → list).
+
+### Added (iOS)
+- **New Session** form behind a `+` button on the Sessions tab (name, task, directory or profile, LLM, compute node, permission mode, model, effort, recently finished sessions with Restart). Before this, iOS could not start a session.
+- **Sessions list**: History toggle with a 5-minute recent window, quick commands on waiting cards, and live single-session updates.
+- **Session detail**: state override menu, delete with a keep/purge/archive memory choice, and the session timeline.
+- **Alerts** grouped by session with Active/Historical tabs that follow the web UI's rule, a sort toggle, persisted filters, and quick reply on waiting sessions.
+- **Launch Automaton wizard**, plus Edit, Reset to Draft and Delete (with the memory choice) on an automaton.
+
+## [1.23.123] — 2026-10-04
+
+### Fixed (iOS)
+- **App Store upload**: required Info.plist entries (microphone, Face ID and local-network usage text, background push, export compliance, supported orientations) are now kept in the build configuration so they are no longer dropped from built apps. CI fails if any required key is missing.
+
+## [1.23.122] — 2026-10-04
+
+### Fixed (iOS)
+- **App Store Connect validation**: declares supported orientations (all four on iPad) and builds with the iOS 26 SDK, which uploads now require.
+
+## [1.23.121] — 2026-10-04
+
+### Fixed (iOS)
+- **First iOS build that compiles cleanly**: resolved the remaining Swift compile and link errors (including a session type name clash and a missing SQLite link).
+
+### CI
+- iOS simulator CI now fails on compile errors instead of reporting green; compiler errors are shown as annotations with the full log attached.
+
+### Documentation
+- Three-way web UI / Android / iOS parity matrix.
+
+## [1.23.120] — 2026-10-03
+
+### CI
+- TestFlight archive fixed (version numbers were exported empty on macOS, and the release framework was staged at the wrong path).
+
+## [1.23.119] — 2026-10-03
+
+### CI
+- First TestFlight release attempt. Signing-certificate repository credentials are checked before the run, and a plain access-token option is supported; the check never prints secret values.
+
+## [1.23.118] — 2026-10-03
+
+### Added (iOS)
+- **Certificate pinning**: Add/Edit Server can fetch the server certificate, show its fingerprint and pin it once you confirm. This is the supported path for self-signed servers; "trust all" is labelled insecure and cleared when a pin is set.
+- **Session connecting overlay**: the datawatch eye animation with "connecting…" / "waiting for terminal…" stage text, as on Android.
+
+### CI
+- TestFlight release pipeline (certificate setup workflow, TestFlight job in the release workflow, App Store Connect API-key sign-in).
+
+## [1.23.117] — 2026-10-03
+
+### Added (iOS)
+- **Automata list and detail**: status, type, story/task counts and progress; detail with lifecycle actions (approve, request revision, reject, run, decompose, cancel), collapsible spec, and a stories accordion with task rows.
+
+## [1.23.116] — 2026-10-03
+
+### Fixed (iOS)
+- **Polling pile-up**: Sessions, Observer and Alerts no longer stack requests when the server is slow. Sessions and Observer now take live updates from the push stream and poll every 30 s as a fallback.
+
+### CI
+- Play Store publishing now runs the same tests and lint checks as CI first; the unit-test suite and lint are green again.
+
+## [1.23.115] — 2026-10-03
+
+### Fixed (iOS)
+- **Terminal** now uses the shared server connection (credentials in a header, not the URL) and bundled terminal libraries, so it works offline and matches Android and the web UI.
+- **TLS hardening**: HTTPS-only servers; the "trust all" option actually takes effect; Edit Server can download the server's CA certificate for installation.
+
+### Security
+- Removed committed third-party test-harness dependencies and pinned patched versions.
+
+## [1.23.114] — 2026-10-03
+
+### Changed
+- **Stats polling** only runs while the Stats screen is visible; live push updates continue in the background.
+
+## [1.23.113] — 2026-10-03
+
+### Changed
+- **Stats updates are push-first** like the web UI: background polling relaxed from 5 s to 30 s and web-search usage refreshed about every 3 minutes — roughly five times fewer requests when idle.
+
+## [1.23.112] — 2026-10-03
+
+### Fixed
+- **UI lag on the Stats screen**: refreshes could pile up when the server was slow, saturating the connection and making scrolling and typing sluggish. Refreshes are now strictly one at a time.
+
+## [1.23.111] — 2026-10-03
+
+### Fixed
+- **Android Auto — Automata views**: restored a header back button on the task and story views, which the car requires on every non-root screen.
+
+## [1.23.110] — 2026-10-03
+
+### Fixed
+- **Android Auto — task tap while driving**: background refreshes no longer count against the car's navigation-step limit, so tapping a task stays allowed.
+- **Android Auto — notification tap** now opens the session it refers to instead of the summary screen.
+
+### Added
+- **Android Auto — hear a story**: tap a story header to have its title, status and first tasks read aloud.
+
+## [1.23.109] — 2026-10-03
+
+### Fixed
+- **Android Auto — back navigation** in the automaton and task views steps back in place instead of leaving the Automata screen; tasks are indented under their story.
+
+## [1.23.108] — 2026-10-02
+
+### Fixed
+- **Session Statistics card** no longer flickers between the server's lifetime session count and the live count.
+
+## [1.23.107] — 2026-10-02
+
+### Added
+- **Web search providers** (datawatch v8.39.0): Settings › Compute lists named providers (SearXNG, Brave) with enable/disable, test, edit, delete and priority; the Monitor tab shows web-search usage totals.
+
+## [1.23.106] — 2026-10-02
+
+### Fixed
+- **Android Auto — task tap blocked while driving**: stories and tasks are shown in one flat list so a task can be opened within the car's navigation-step limit.
+
+## [1.23.105] — 2026-10-02
+
+### Fixed
+- **Android Auto — session summaries**: finished sessions show the AI session summary rather than a raw output fragment, and the session list shows a short preview (the waiting prompt, or the latest summary).
+
+## [1.23.104] — 2026-10-02
+
+### Fixed
+- **Android Auto — task tap blocked while driving**: the Automata list opens with data already loaded, saving a navigation step.
+
+## [1.23.103] — 2026-10-02
+
+### Fixed
+- **Android Auto — task tap blocked while driving**: opening an automaton no longer spends an extra step on a loading row.
+
+## [1.23.102] — 2026-10-01
+
+### Fixed
+- **Android Auto — stories stuck on "Loading stories…"**: load failures are now shown, and the loading row clears when loading finishes.
+
+## [1.23.101] — 2026-10-01
+
+### Fixed
+- **Android Auto — stories blocked while driving**: automaton, story and task navigation all happen in place on the Automata screen, staying within the car's depth limit.
+
+## [1.23.100] — 2026-10-01
+
+### Fixed
+- **Android Auto — stories blocked while driving**: the summary screen keeps the same layout while loading, so it no longer uses up an extra navigation step.
+
+## [1.23.99] — 2026-10-01
+
+### Fixed
+- **Black screen after leaving a session**: the terminal view is torn down in the correct order, so the app no longer needs a force-quit.
+
+## [1.23.98] — 2026-10-01
+
+### Fixed
+- **Markdown tables** that follow a paragraph now render, and table cells are no longer zero-width; the file viewer scrolls again.
+
+## [1.23.97] — 2026-09-30
+
+### Fixed
+- **Android Auto — error screens** on seven screens now carry the action buttons the car requires, so an error no longer shows "can't do that while driving".
+
+## [1.23.96] — 2026-09-30
+
+### Fixed
+- **Android Auto — opening a story crashed while driving**: story and task detail now open in place within the automaton screen.
+- **Android Auto — voice reply playback icon** now updates correctly when playback ends.
+
+## [1.23.95] — 2026-09-30
+
+### Changed
+- **Session loading overlay** shows the live stage ("connecting…", then "waiting for terminal…").
+
+## [1.23.94] — 2026-09-30
+
+### Changed
+- **Animated loading states**: the splash shows what is starting up, and cards show a small animated datawatch eye with "connecting…" instead of a bare spinner.
+
+## [1.23.93] — 2026-09-30
+
+### Fixed
+- **Android Auto — Automata screens blocked while driving**: automaton, story and task screens now carry the action buttons the car requires on every path.
+
+## [1.23.92] — 2026-09-30
+
+### Changed
+- **Live sessions list**: the list updates from the server's push stream; polling relaxed from 5 s to 30 s as a fallback.
+
+## [1.23.91] — 2026-09-30
+
+### Fixed
+- **File viewer** scrolls again.
+
+### Changed
+- **Sessions list** shows animated placeholder rows while the first load is in progress.
+
+## [1.23.90] — 2026-09-30
+
+### Fixed
+- **Crash opening an automaton** with a non-empty spec.
+
+## [1.23.89] — 2026-09-30
+
+### Added
+- **Verification backends editor** in Settings › Automata: an ordered list of verifier backends for load-balancing.
+
+## [1.23.88] — 2026-09-30
+
+### Added
+- **Automaton spec rendering**: specs render as Markdown, including tables and Mermaid diagrams.
+
+## [1.23.87] — 2026-09-30
+
+### Fixed
+- **Android Auto — story browser blocked while driving**: removed the overview row that opened a screen the car rejected.
+
+## [1.23.86] — 2026-09-30
+
+### Added
+- **Repair Dependencies** action on an automaton (datawatch v8.36.6).
+
+## [1.23.85] — 2026-09-30
+
+### Added
+- **Delete session with memory strategy**: choose keep, purge or archive (with an optional role filter).
+- **Capacity-aware Automata**: tasks waiting for capacity show a ⏳ marker and the reason; per-automaton priority and read/write directory settings; scope warnings banner.
+
+## [1.23.84] — 2026-09-30
+
+### Added
+- **Capacity card** is scoped to the automaton and shows idle compute nodes with no limit set.
+- **Markdown tables and Mermaid diagrams** in the file viewer.
+- **Last-activity dot** on the session info bar (green/amber/red with "Xs/Xm ago").
+
+## [1.23.83] — 2026-09-29
+
+### Added
+- **Automaton detail parity with the web UI**: a Session Status card listing up to three active sessions (state, hook health, tests, current focus) with a stuck warning, and a new Capacity card showing pools, limits and the wait queue.
+
+## [1.23.82] — 2026-09-29
+
+### Fixed
+- **Settings › About links** (project, mobile app, Play Store) now open in the browser.
+
+## [1.23.81] — 2026-09-29
+
+### Added
+- **Story Approve / Reject** for stories awaiting approval (guided mode), as in the web UI.
+
+## [1.23.80] — 2026-09-29
+
+### Added
+- **Add and remove stories and tasks** on an editable automaton.
+
+### Changed
+- The planning backend in New Automaton follows the execution backend until you change it.
+- Cancelled automata can be edited and their tasks retried.
+
+## [1.23.79] — 2026-09-29
+
+### Added
+- **Model picker for every registered LLM backend** in New Automaton and Set LLM, not only Ollama, OpenWebUI and OpenCode.
+
+## [1.23.78] — 2026-09-29
+
+### Added
+- **GPU probe errors** are shown on Stats and Monitor when the GPU can't be read.
+- **Continue on story failure** setting for Automata.
+
+### Fixed
+- **Task retry** is available when an automaton is blocked, and progress keeps updating while blocked.
+
+## [1.23.77] — 2026-09-29
+
+### Fixed
+- **Android Auto — Automata blocked while driving**: removed the labelled buttons the car rejected; approval hints appear in the text instead.
+
+## [1.23.76] — 2026-09-29
+
+### Fixed
+- **Terminal keyboard input**: tapping the terminal now sends keystrokes to the terminal rather than the reply field.
+
+## [1.23.75] — 2026-09-29
+
+### Fixed
+- **Samsung keyboard extra Enter**: also suppressed on the keyboard's composing-text path.
+
+## [1.23.74] — 2026-09-29
+
+### Fixed
+- **Samsung keyboard extra Enter**: typing in the terminal no longer sends an Enter after every character.
+
+## [1.23.73] — 2026-09-29
+
+### Fixed
+- **Automata tab** appears immediately on launch instead of after 10–15 seconds.
+
+## [1.23.72] — 2026-09-29
+
+### Changed
+- **Android Auto — Automata screens**: action buttons temporarily removed while a driving-mode rejection was investigated; back navigation unchanged.
+
+## [1.23.71] — 2026-09-28
+
+### Fixed
+- **Session Stats**: the Compute Node card now appears for sessions whose compute node comes from the LLM registry.
+
+## [1.23.69] — 2026-09-28
+
+### Fixed
+- **Faster, more reliable session open** (avoids a connection race on first open).
+- **Session Stats** now find the right process data more reliably.
+
+### Changed
+- Terminal shortcut buttons (Esc, arrows, Enter) are brighter and easier to read on the dark background.
+
+## [1.23.67] — 2026-09-28
+
+### Changed
+- **Faster session open on slow or remote connections**: the live connection and data refresh start in parallel instead of one after the other.
+
+## [1.23.66] — 2026-09-28
+
+### Fixed
+- **Session Stats — Compute Node card** renders even when process stats are missing.
+
+### Added
+- GPU utilisation, GPU temperature and Ollama CPU sparklines, and an "LLM ref" row, matching the web UI.
+
+## [1.23.65] — 2026-09-28
+
+### Fixed
+- **Android Auto**: nine more screens now show an error instead of "can't do that while driving" when something goes wrong.
+
+## [1.23.64] — 2026-09-28
+
+### Fixed
+- **Session Stats always showed "No process stats"**: the server's response is now read correctly.
+
+## [1.23.63] — 2026-09-28
+
+### Fixed
+- **Session Stats** shows backend process data, and the PID line shows the root PID plus child count like the web UI.
+
+## [1.23.62] — 2026-09-28
+
+### Added
+- **Android Auto — compute node detail**: unified-memory GPUs show memory use, and GPUs without live telemetry show their declared VRAM.
+
+## [1.23.61] — 2026-09-28
+
+### Added
+- **Android Auto — per-node monitor cards**: one row per physical host; tap for CPU, memory, disks, GPUs, Ollama and uptime.
+
+### Fixed
+- Session Stats backend card title matches the web UI.
+
+## [1.23.60] — 2026-09-28
+
+### Changed
+- **Android Auto — monitor**: host CPU/memory/disk first, then GPU and Ollama, without duplicate rows.
+- **Android Auto — voice reply** uses a send (paper-plane) icon on the confirm screen.
+
+## [1.23.59] — 2026-09-27
+
+### Fixed
+- **Session Stats tab** shows live data matching the web UI.
+
+## [1.23.58] — 2026-09-27
+
+### Fixed
+- **Session Stats — Host card** no longer shows zeros when process stats are unavailable; a single clear "no process stats" message appears instead.
+
+## [1.23.57] — 2026-09-27
+
+### Fixed
+- **Duplicate notifications**: the same server event delivered by both push channels now produces one notification.
+- **Card left edge** no longer clips at the rounded corner.
+
+## [1.23.56] — 2026-09-27
+
+### Added
+- **Session Stats — Compute Node card** shows CPU (ring, load, cores) and RAM.
+
+## [1.23.55] — 2026-09-27
+
+### Changed
+- **Android Auto — automaton detail** is a list with an Overview row and one row per story.
+- **Android Auto — voice confirm**: instructions in the title, only the transcript in the body.
+
+## [1.23.54] — 2026-09-27
+
+### Fixed
+- **Android Auto — automaton progress bar** matches the "Story N/M" label, and story lists are no longer cut off.
+
+## [1.23.53] — 2026-09-27
+
+### Fixed
+- **Android Auto — messaging-category compliance**: automaton detail rebuilt as a readable message view; voice send no longer exceeds the car's two-action limit.
+
+## [1.23.52] — 2026-09-27
+
+### Changed
+- **Android Auto — compute node cards** show full CPU, RAM, per-GPU, Ollama and disk rows instead of one cramped line.
+
+## [1.23.51] — 2026-09-27
+
+### Fixed
+- **Android Auto — story detail** uses only speaker and close buttons, which the car accepts.
+
+## [1.23.50] — 2026-09-27
+
+### Fixed
+- **Android Auto — story detail blocked while driving**: story detail opens in place.
+- **Android Auto — voice reply** Send/Cancel buttons are labelled.
+
+## [1.23.49] — 2026-09-26
+
+### Added
+- **Planning backend and model pickers** in New Automaton and Set LLM; OpenCode models are grouped by provider.
+
+## [1.23.48] — 2026-09-25
+
+### Fixed
+- **Android Auto — story and task detail** show an error screen instead of "can't do that while driving" if something goes wrong.
+
+## [1.23.47] — 2026-09-25
+
+### Fixed
+- **Observer stats cards**: more spacing and larger text so nothing clips or overlaps.
+- **Android Auto — story list error screen** keeps the same layout type, which the car requires.
+
+## [1.23.46] — 2026-09-25
+
+### Fixed
+- **Android Auto — voice reply and quick replies blocked while driving**: these screens now use the layout the car allows from a session screen.
+
+## [1.23.45] — 2026-09-25
+
+### Fixed
+- **Android Auto — sessions failed to open** after 1.23.44 (too many action buttons for Samsung head units).
+
+## [1.23.44] — 2026-09-25
+
+### Fixed
+- **Android Auto — voice reply blocked while driving**: the voice screen keeps one layout type throughout.
+
+## [1.23.43] — 2026-09-24
+
+### Fixed
+- Re-release of 1.23.42 so Settings › About shows the correct version.
+
+## [1.23.42] — 2026-09-24
+
+### Added
+- **Planning model** can be set for automaton decomposition.
+
+### Changed
+- **Android Auto — monitor**: compute node tiles with CPU, memory, GPU, VRAM, temperature, power and Ollama memory.
+- **Session detail**: the connection-lost notice moved to the top, and the loading overlay no longer flashes when going back.
+
+### Fixed
+- Settings › About showed a stale version.
+
+## [1.23.41] — 2026-09-24
+
+### Fixed
+- **Duplicate "waiting for input" notifications**: notifications alert once, wait for the session to settle, and don't repeat for the same prompt.
+
+## [1.23.40] — 2026-09-24
+
+### Changed
+- **Session connecting overlay** uses the datawatch splash animation and stays until the first terminal frame arrives.
+
+## [1.23.39] — 2026-09-24
+
+### Fixed
+- **Connection stability**: brief network blips no longer flash the "unreachable" banner, and the banner no longer makes the terminal jump.
+- **Black screen on session load** replaced by a connecting overlay.
+- **Android Auto — voice reply** no longer blocks the automaton screens while driving.
+
+## [1.23.38] — 2026-09-23
+
+### Added
+- **Android Auto — Review Gate** opens the guardrail block details (read aloud) instead of approving everything blind.
+
+### Fixed
+- **Android Auto — session list filter** works while driving.
+
+## [1.23.37] — 2026-09-23
+
+### Fixed
+- **Android Auto — messaging-category compliance** on the About and last-output screens.
+
+### Changed
+- **Android Auto — monitor**: compute node GPU usage and temperature on their own line.
+
+## [1.23.36] — 2026-09-23
+
+### Fixed
+- **Push service crash loop** on Android 14+ (reported by Samsung Device Care as "crashing frequently").
+
+## [1.23.35] — 2026-09-22
+
+### Fixed
+- **Android Auto — sessions and stages** can be viewed while driving.
+
+### Added
+- **Android Auto — monitor** shows every enabled compute node, not just the first.
+
+## [1.23.34] — 2026-09-22
+
+### Fixed
+- **Android Auto — Automata filter button** restored; voice recording meets the car's driving rules.
+
+## [1.23.33] — 2026-09-22
+
+### Fixed
+- **Android Auto — automata could not be opened while driving.**
+
+## [1.23.32] — 2026-09-21
+
+### Fixed
+- **Story and task rows**: only the header toggles expand/collapse, so tapping a file no longer collapses the row and scrolling is smooth.
+
+## [1.23.31] — 2026-09-21
+
+### Fixed
+- **Android Auto — automaton → story → task navigation** works while driving.
+
+## [1.23.30] — 2026-09-21
+
+### Fixed
+- **Android Auto — Stories** can be opened from an automaton while driving.
+
+## [1.23.29] — 2026-09-21
+
+### Added
+- **Inline compute stats** (CPU, RAM, GPU, VRAM bars) in the automaton overview while planning, decomposing or running.
+
+## [1.23.28] — 2026-09-21
+
+### Added
+- **Automaton Progress tab**: per-story status, CPU and memory, plus compute node stats while running.
+
+## [1.23.27] — 2026-09-20
+
+### Fixed
+- **Android Auto — read-aloud** was silent (now requests audio focus).
+- **Android Auto — story detail** stays within the car's two-action limit.
+
+## [1.23.26] — 2026-09-20
+
+### Added
+- **Reset to Draft** for automata, and a **decomposition model** setting in Set LLM with Ollama/OpenWebUI model lists.
+
+### Fixed
+- **Android Auto — automaton and task screens** stay within the car's two-action limit.
+
+## [1.23.25] — 2026-09-20
+
+### Added
+- **Android Auto — read-aloud and voice** for automata, stories and tasks: hear the spec, and dictate story or task updates.
+
+### Changed
+- Camera icon in session detail uses the accent colour.
+
+## [1.23.24] — 2026-09-20
+
+### Added
+- **"Transcribing voice message…" banner** while voice input is being transcribed.
+
+## [1.23.23] — 2026-09-20
+
+### Added
+- **"Image sent — processing…" banner** after sending an image, until the session responds.
+
+## [1.23.22] — 2026-09-20
+
+### Fixed
+- **"What's it doing?"** shows a spinner and can't be tapped repeatedly while loading.
+
+## [1.23.21] — 2026-09-19
+
+### Added
+- **Observer — System Stats grid**: CPU, RAM and GPU bars for the local system and each observer peer, matching the web UI.
+
+## [1.23.20] — 2026-09-19
+
+### Fixed
+- **Task titles were blank** in automaton detail.
+
+### Added
+- Story and task rows auto-expand when active and show progress, files touched, session links, full task specs and planned files, matching the web UI.
+
+## [1.23.19] — 2026-09-19
+
+### Fixed
+- **Android Auto — crash when tapping a story.**
+
+## [1.23.18] — 2026-09-19
+
+### Fixed
+- **Android Auto — automaton detail** buttons are icon-only, which the car accepts while driving.
+
+### Changed
+- Task rows in automaton detail expand and collapse like story rows.
+
+## [1.23.17] — 2026-09-19
+
+### Fixed
+- **Observer — Peer Resources**: removed a gap caused by a node being listed twice.
+
+## [1.23.16] — 2026-09-19
+
+### Fixed
+- **Observer — Peer Resources** shows the local datawatch server, as the web UI does.
+
+## [1.23.15] — 2026-09-19
+
+### Security
+- **Docs viewer no longer ignores certificate errors** (Play Store policy). Self-signed servers still work through the app's per-server trust setting.
+
+## [1.23.14] — 2026-09-18
+
+### Fixed
+- **Android Auto — voice reply crashed immediately** on some Bluetooth setups.
+- **Android Auto — Listen** uses a speaker icon so it is not confused with voice reply.
+
+## [1.23.13] — 2026-09-18
+
+### Fixed
+- **Android Auto — crash when voice recording finished.**
+
+## [1.23.12] — 2026-09-18
+
+### Fixed
+- **Android Auto — crash on Play and on voice reply** in session detail.
+
+## [1.23.11] — 2026-09-18
+
+### Fixed
+- **Android Auto — Play button restored** and a voice-reply crash fixed in session detail.
+
+## [1.23.10] — 2026-09-18
+
+### Fixed
+- **Android Auto — Play Long** reads the rest of the current response, not an older summary.
+
+## [1.23.9] — 2026-09-18
+
+### Fixed
+- **Android Auto — session and last-output screens** no longer exceed the car's one-labelled-button limit ("can't be completed while driving", crash on voice reply).
+
+## [1.23.8] — 2026-09-18
+
+### Fixed
+- **Android Auto — seven more screens** (task, story, stages, about, guardrail blocks, voice confirm/error) no longer exceed the car's one-labelled-button limit.
+
 ## [1.23.7] — 2026-09-18
 
 ### Fixed
