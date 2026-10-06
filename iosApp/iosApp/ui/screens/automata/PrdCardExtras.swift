@@ -73,7 +73,8 @@ struct PrdTemplateBadge: View {
     }
 }
 
-/// List-row background: surface with the 4 pt status edge.
+/// List-row background: PWA `.prd-card` — bg2, radius 12, 4 pt status edge,
+/// no outline, 14 pt gap between cards (7 pt above + below each row).
 struct PrdRowBackground: View {
     let status: String
     var body: some View {
@@ -81,7 +82,14 @@ struct PrdRowBackground: View {
             Rectangle().fill(PrdCardStyle.edgeColor(status)).frame(width: 4)
             DatawatchColors.surface
         }
+        .clipShape(RoundedRectangle(cornerRadius: DatawatchRadius.card))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(DatawatchColors.background)
     }
+
+    /// Row insets matching the background: PWA card `padding:14px` + 4 pt edge + outer gap.
+    static let insets = EdgeInsets(top: 21, leading: 30, bottom: 21, trailing: 26)
 }
 
 /// PWA card `<details>` "Stories & tasks (N)" → renderDetailStoriesTree (compact).
@@ -94,8 +102,9 @@ struct PrdStoriesTree: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Button { open.toggle() } label: {
-                Text((open ? "▾ " : "▸ ") + "\(L("Stories & tasks")) (\(prd.stories.count))")
-                    .font(DatawatchFonts.labelSmall)
+                // PWA `<details><summary>`: 12 px accent, ▶ closed / ▼ open marker.
+                Text(verbatim: (open ? "▼ " : "▶ ") + "\(L("Stories & tasks")) (\(prd.stories.count))")
+                    .font(.system(size: 12))
                     .foregroundStyle(DatawatchColors.primary)
             }
             .buttonStyle(.borderless)

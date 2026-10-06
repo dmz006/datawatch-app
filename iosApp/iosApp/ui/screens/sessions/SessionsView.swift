@@ -726,7 +726,7 @@ struct SessionsView: View {
             Text("⚠ " + L("orphaned — parent no longer exists"))
                 .font(.system(size: 10))
                 .foregroundStyle(DatawatchColors.warning)
-                .listRowInsets(SessionRowBackground.insets(indent: indent))
+                .listRowInsets(EdgeInsets(top: 4, leading: 12 + indent, bottom: 0, trailing: 12))
                 .listRowBackground(DatawatchColors.background)
                 .listRowSeparator(.hidden)
         }
@@ -754,6 +754,7 @@ struct SessionsView: View {
             watched: isLocal(.watchedSessions, session),
             onWatchToggle: { toggleLocal(.watchedSessions, session) },
             muted: isLocal(.mutedSessions, session),
+            onMuteToggle: { toggleLocal(.mutedSessions, session) },
             summarizerEnabled: summarizerOn(session),
             summarizing: summarizing.contains(session.fullId),
             onSummarize: { manualSummarize(session) }
@@ -762,11 +763,17 @@ struct SessionsView: View {
             if selectMode {
                 card.onTapGesture { if SessionStateStyle.isDone(session.state) { toggleSelect(session) } }
             } else {
-                NavigationLink {
-                    if let profile = profileFor(session) {
-                        SessionDetailView(session: session, profile: profile)
-                    }
-                } label: { card }
+                // PWA cards have no disclosure chevron — the whole card opens the
+                // session. A hidden NavigationLink keeps the List row tappable
+                // without the trailing `>` a visible link label adds.
+                card.background {
+                    NavigationLink {
+                        if let profile = profileFor(session) {
+                            SessionDetailView(session: session, profile: profile)
+                        }
+                    } label: { EmptyView() }
+                    .opacity(0)
+                }
             }
         }
         .listRowInsets(SessionRowBackground.insets(indent: indent))
