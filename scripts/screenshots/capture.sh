@@ -21,7 +21,9 @@ BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.pli
 launch() { # udid tab [extra args...]
   local udid=$1 tab=$2; shift 2
   xcrun simctl terminate "$udid" "$BID" >/dev/null 2>&1 || true
-  xcrun simctl launch "$udid" "$BID" \
+  mkdir -p "$OUT_DIR/logs"
+  xcrun simctl launch --terminate-running-process \
+    --stdout="$OUT_DIR/logs/$udid-$tab.log" --stderr="$OUT_DIR/logs/$udid-$tab.log" "$udid" "$BID" \
     -dwSeedURL "$DW_URL" -dwSeedToken "$DW_TOKEN" -dwSeedName workstation \
     -dwTheme dark -dwSkipNotifPrompt -dwTab "$tab" "$@" >/dev/null
 }
@@ -53,6 +55,10 @@ capture_device() { # name folder expected-WxH
   # First launch seeds the "workstation" profile; give it time to connect.
   launch "$udid" sessions
   sleep $((SETTLE * 2))
+  codesign -d --entitlements - "$APP_PATH" 2>&1 | head -20 || true
+  xcrun simctl spawn "$udid" log show --last 3m --style compact \
+    --predicate 'process == "DatawatchClient"' > "$OUT_DIR/logs/$folder-oslog.txt" 2>&1 || true
+  grep -iE "seed|keychain|OSStatus|-34018|error" "$OUT_DIR/logs/$folder-oslog.txt" | tail -20 || true
 
   for tab in sessions automata alerts observer settings; do
     launch "$udid" "$tab"
