@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.2] — 2026-10-06
+
 ### Fixed
 - **Card loading states animate.** Observer, Settings and Dashboard cards used to show a still "Loading…" line; they now show the web UI's shimmering skeleton bars (static when the system's reduce-motion / remove-animations setting is on). Android and iOS.
 - **MCP channel card shows the full bridge status** on Android (Observer and Settings › About): the not-ready hint, the JS node path, "MCP: stdio + SSE" and the stale `.mcp.json` list with the cleanup command, which Android never showed. The iOS About card shows the same lines instead of raw JSON.
