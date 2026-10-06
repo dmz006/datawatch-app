@@ -118,7 +118,7 @@ jobs:
 
       - name: Create GitHub release
         if: hashFiles('gradlew') != ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag_name || github.ref_name }}
           files: |
@@ -132,7 +132,7 @@ jobs:
 
       - name: Placeholder release (pre-scaffold tags)
         if: hashFiles('gradlew') == ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           body: |
@@ -326,7 +326,7 @@ jobs:
           fastlane beta
 
       - name: Attach IPA to GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag_name || github.ref_name }}
           files: iosApp/build/DatawatchClient.ipa
