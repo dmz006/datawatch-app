@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Card loading shows the animated datawatch eye again.** Observer, Settings and Dashboard cards show the animated eye with a pulsing "Loading…" while their data loads (the icon these cards had before a parity change replaced it with plain text; v1.28.2's shimmer bars are replaced too). Android and iOS.
+
 ## [1.28.2] — 2026-10-06
 
 ### Fixed
