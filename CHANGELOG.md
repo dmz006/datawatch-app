@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.3] — 2026-10-06
+
 ### Fixed
 - **Everything that loads now shows the animated datawatch eye** with "Loading…" — besides the cards: the Dashboard, Alerts, Automata graph and file viewer, compute-node models and Ollama catalog, file picker, the server edit screen, the Signal QR wait, the council live-run and cross-host sheets, and the session timeline. Connecting to a session keeps its own splash. Android and iOS.
 - **Card loading shows the animated datawatch eye again.** Observer, Settings and Dashboard cards show the animated eye with a pulsing "Loading…" while their data loads (the icon these cards had before a parity change replaced it with plain text; v1.28.2's shimmer bars are replaced too). Android and iOS.
