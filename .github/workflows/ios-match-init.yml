@@ -103,8 +103,11 @@ jobs:
       - name: Show profile entitlements (aps-environment check)
         if: always()
         run: |
-          for p in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+          for p in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision \
+                   "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"/*.mobileprovision; do
             [ -f "$p" ] || continue
             echo "== $(basename "$p")"
-            security cms -D -i "$p" | plutil -extract Entitlements xml1 -o - - | grep -A1 -E "aps-environment|application-identifier" || true
+            security cms -D -i "$p" > /tmp/prof.plist
+            /usr/libexec/PlistBuddy -c "Print :Entitlements" /tmp/prof.plist | grep -E "aps-environment|application-identifier|Name" || true
+            /usr/libexec/PlistBuddy -c "Print :Name" /tmp/prof.plist || true
           done
