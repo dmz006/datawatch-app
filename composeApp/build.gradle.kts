@@ -30,7 +30,7 @@ kotlin {
                 // every method of a 60-method interface that mostly
                 // doesn't matter for the test under run.
                 implementation("io.mockk:mockk:1.13.13")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
                 implementation(libs.turbine)
             }
         }
