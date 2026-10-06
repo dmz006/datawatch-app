@@ -111,9 +111,16 @@ Flows 02–11 assume 01 ran first (they keep app state). Each one navigates from
 
 ### Wear / Auto smoke
 
+Both stages **uninstall first**: the shared AVDs can carry an older debug install whose
+saved server profile points at a real daemon, and `install -r` would keep it (an early
+run of this script launched the automotive app with such state). A clean install
+lands on the "No server" screen and talks to nothing.
+
 - `--wear`: boots `dw_test_watch`, installs `wear/build/outputs/apk/debug/*.apk`
   (same `.debug` application id), launches it via the launcher intent, screenshots,
   and passes if the process is alive and logcat has no `FATAL EXCEPTION` for it.
+  (The screenshot is often still the watch app's "Starting…" splash — no phone is
+  paired, so this is a launch/no-crash check only.)
 - `--auto`: there is **no separate automotive build** — `:auto` is a library inside
   the phone APK (Android Auto *projection*). The stage boots `dw_test_auto`
   (Android Automotive OS), installs the phone debug APK and does the same launch +

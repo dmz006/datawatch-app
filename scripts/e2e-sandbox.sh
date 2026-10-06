@@ -389,7 +389,10 @@ smoke_surface() { # smoke_surface <avd> <apk> <label>
   [ -f "$apk" ] || { result "$label" FAIL "apk missing"; return 1; }
   boot_avd "$avd" || { result "$label" FAIL "boot"; return 1; }
   serial="$BOOTED_SERIAL"
-  "$ADB" -s "$serial" install -r -g "$apk" >> "$LOG" 2>&1 || { result "$label" FAIL "install"; return 1; }
+  # Uninstall first: the AVDs may carry an older install whose saved server profile
+  # points at a real (production) daemon — never launch the app with that state.
+  "$ADB" -s "$serial" uninstall "$PKG" >/dev/null 2>&1
+  "$ADB" -s "$serial" install -g "$apk" >> "$LOG" 2>&1 || { result "$label" FAIL "install"; return 1; }
   "$ADB" -s "$serial" logcat -c
   "$ADB" -s "$serial" shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
   local pid=""
