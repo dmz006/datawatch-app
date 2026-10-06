@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Card loading states animate.** Observer, Settings and Dashboard cards used to show a still "Loading…" line; they now show the web UI's shimmering skeleton bars (static when the system's reduce-motion / remove-animations setting is on). Android and iOS.
+- **MCP channel card shows the full bridge status** on Android (Observer and Settings › About): the not-ready hint, the JS node path, "MCP: stdio + SSE" and the stale `.mcp.json` list with the cleanup command, which Android never showed. The iOS About card shows the same lines instead of raw JSON.
+- **Android profile editor:** Save and Cancel stay on screen for long forms (the dialog now caps its height).
+
+### Added
+- **Watched-only filters:** a "👁 N" button in the session filter row and a 👁 button on the Automata toolbar show only the sessions / automata you watch. Android and iOS.
+
+### Changed
+- **iOS Automata toolbar** uses the web UI's square icon buttons (☑ select, ⊞ filter, ⏱ history, 👁 watched) instead of text chips.
+
 ## [1.28.1] — 2026-10-06
 
 ### Fixed
