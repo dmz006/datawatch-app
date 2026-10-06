@@ -40,7 +40,10 @@ jobs:
       # The Observer tab shows the server host's name; use a neutral one.
       - name: Neutral host name
         run: |
-          echo "DEMO_ROOT=$RUNNER_TEMP/dw-demo" >> "$GITHUB_ENV"
+          # Neutral demo home: project paths show as /Users/demo/projects/… in the app.
+          sudo mkdir -p /Users/demo
+          sudo chown "$(id -un)" /Users/demo
+          echo "DEMO_ROOT=/Users/demo" >> "$GITHUB_ENV"
           sudo scutil --set HostName demo
           sudo scutil --set LocalHostName demo
           sudo scutil --set ComputerName demo
@@ -70,9 +73,10 @@ jobs:
           mkdir -p "$DEMO_ROOT/projects/weather-api"
           sed "s|__DEMO_ROOT__|$DEMO_ROOT|g" scripts/screenshots/demo-config.yaml > "$DEMO_ROOT/config.yaml"
           nohup python3 scripts/screenshots/ollama-stub.py > "$DEMO_ROOT/ollama-stub.log" 2>&1 &
-          # Clean shell environment for the demo sessions (no runner user/host in prompts).
+          # Clean environment for the demo sessions; tmux panes start quiet-shell.sh
+          # (no prompt/echo, so no runner user/host/paths in previews or alerts).
           (cd "$DEMO_ROOT" && nohup env -i HOME="$DEMO_ROOT" PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
-              SHELL=/bin/bash TERM=xterm-256color LANG=en_US.UTF-8 USER=demo \
+              SHELL="$GITHUB_WORKSPACE/scripts/screenshots/quiet-shell.sh" TERM=xterm-256color LANG=en_US.UTF-8 USER=demo \
               BASH_SILENCE_DEPRECATION_WARNING=1 \
               "$RUNNER_TEMP/dw-bin/datawatch" --config "$DEMO_ROOT/config.yaml" start --foreground \
               > "$DEMO_ROOT/daemon.log" 2>&1 &)
