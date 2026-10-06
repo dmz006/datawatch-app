@@ -87,7 +87,7 @@ evidence per bug: [`../testing.md`](../testing.md).
 | B74 | Signal device linking used wrong endpoints, never produced a link | ✅ Closed in v1.25.0 | Follows the web UI stream-id flow; QR + Copy / Open in Signal. |
 | B75 | Compute-node model list failed to load (`{models: …}` envelope) | ✅ Closed in v1.25.0 | `RestTransportAndroidParityTest.getComputeNodeModelsUnwrapsServerEnvelope`. |
 | B76 | Scan settings sent under names the server ignores | ✅ Closed in v1.25.0 | `RestTransportAndroidParityTest.scanConfigUsesServerKeys`. |
-| B77 | Session actions + deep links missed on hostnames containing '-' (`Session.fullId`) | ✅ Closed in v1.25.0 | Prefix taken by removing the `-<id>` suffix. `SessionMapperTest`. |
+| B77 | Session actions + deep links missed on hostnames containing '-' (`Session.fullId`) | ✅ Closed in v1.25.0 | Prefix taken by removing the `-<id>` suffix. `MappersTest`. |
 | B78 | iOS session-card badge row truncated (`⚠ zombie`, `📄 Response`) | ✅ Closed in v1.25.0 | Wraps instead. |
 | B79 | Scroll mode could leave the terminal looking hung | ✅ Closed in v1.25.1 | REST `/api/command` with WS fallback; UI flips on confirmation; leaving the session exits copy-mode. Both apps. |
 | B80 | "Waiting for MCP channel…" banner didn't clear on `channel_ready` / ready markers | ✅ Closed in v1.25.1 | `ChannelReadyHub`, both apps. Server residue tracked as BL404. |
