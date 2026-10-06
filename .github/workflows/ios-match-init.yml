@@ -107,7 +107,7 @@ jobs:
                    "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"/*.mobileprovision; do
             [ -f "$p" ] || continue
             echo "== $(basename "$p")"
-            security cms -D -i "$p" > /tmp/prof.plist
+            openssl smime -inform der -verify -noverify -in "$p" > /tmp/prof.plist 2>/dev/null || { echo "decode failed"; continue; }
             /usr/libexec/PlistBuddy -c "Print :Entitlements" /tmp/prof.plist | grep -E "aps-environment|application-identifier|Name" || true
             /usr/libexec/PlistBuddy -c "Print :Name" /tmp/prof.plist || true
           done
