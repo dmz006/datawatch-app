@@ -85,7 +85,7 @@ struct CouncilLiveRunSheet: View {
                 .foregroundStyle(DatawatchColors.error)
                 .padding()
         } else {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            LoadingIndicator(message: L("Loading…"))
         }
     }
 

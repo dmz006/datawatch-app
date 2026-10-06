@@ -1361,12 +1361,7 @@ private fun LlmDetailDialog(
                             }
                         }
                         if (sessionsLoading) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                                horizontalArrangement = Arrangement.Center,
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                            }
+                            com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                         } else if (sessions.isEmpty()) {
                             Text(
                                 stringResource(R.string.llm_in_use_none),

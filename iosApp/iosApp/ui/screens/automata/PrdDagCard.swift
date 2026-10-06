@@ -57,7 +57,8 @@ private struct PrdDagCardFrame<Content: View>: View {
 private struct PrdDagLoadingBody: View {
     var body: some View {
         VStack(spacing: 8) {
-            ProgressView()
+            SplashEyeView()
+                .frame(width: 32, height: 32)
             Text("Loading graph…")
                 .font(DatawatchFonts.labelSmall)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)

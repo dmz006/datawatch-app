@@ -43,7 +43,7 @@ struct CrossHostSheet: View {
                 peerList(peers)
             }
         } else {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            LoadingIndicator(message: L("Loading…"))
         }
     }
 

@@ -45,7 +45,7 @@ struct SavedCommandsView: View {
                 } else if let loadError {
                     Text(loadError).font(DatawatchFonts.bodyMedium).foregroundStyle(DatawatchColors.error)
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                 }
             }
             .listRowBackground(DatawatchColors.surface)
@@ -131,7 +131,7 @@ struct FiltersView: View {
                 } else if let loadError {
                     Text(loadError).font(DatawatchFonts.bodyMedium).foregroundStyle(DatawatchColors.error)
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                 }
             }
             .listRowBackground(DatawatchColors.surface)

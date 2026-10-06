@@ -59,7 +59,7 @@ struct TemplatesView: View {
             } else if let error {
                 ErrorCard(message: error) { Task { await reload() } }
             } else {
-                LoadingIndicator(message: "Loading templates…")
+                LoadingIndicator(message: L("Loading templates…"))
             }
         }
         .background(DatawatchColors.background)

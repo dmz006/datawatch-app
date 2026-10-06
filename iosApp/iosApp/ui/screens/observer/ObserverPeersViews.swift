@@ -405,7 +405,7 @@ struct PeerSnapshotSheet: View {
                         .foregroundStyle(DatawatchColors.error)
                         .listRowBackground(DatawatchColors.surface)
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                         .listRowBackground(DatawatchColors.surface)
                 }
             }

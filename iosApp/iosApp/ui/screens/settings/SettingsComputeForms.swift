@@ -115,7 +115,6 @@ struct ComputeNodeFormSheet: View {
             Form {
                 if loading {
                     HStack(spacing: 8) {
-                        ProgressView()
                         CardSkeleton()
                     }
                 } else {

@@ -46,7 +46,7 @@ struct SettingsCrudEditSheet: View {
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.error)
             } else {
-                ProgressView()
+                CardSkeleton()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -411,7 +411,7 @@ struct OllamaMarketplaceView: View {
     @ViewBuilder
     private var modelRows: some View {
         if !loaded {
-            ProgressView().listRowBackground(DatawatchColors.surface)
+            CardSkeleton().listRowBackground(DatawatchColors.surface)
         } else if filtered.isEmpty {
             Text("Nothing here yet.")
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -575,7 +575,7 @@ struct SettingsCouncilRunsView: View {
     @ViewBuilder
     private var runRows: some View {
         if !loaded {
-            ProgressView().listRowBackground(DatawatchColors.surface)
+            CardSkeleton().listRowBackground(DatawatchColors.surface)
         } else if runs.isEmpty {
             Text("No council runs yet.")
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)

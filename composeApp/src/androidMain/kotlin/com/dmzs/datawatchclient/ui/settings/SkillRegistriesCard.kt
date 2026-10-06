@@ -485,7 +485,7 @@ private fun BrowseSkillsDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth().height(320.dp).verticalScroll(rememberScrollState())) {
                 if (loading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    com.dmzs.datawatchclient.ui.common.PwaLoadingText()
                 } else if (available.isEmpty()) {
                     Text(stringResource(R.string.skills_browse_empty), style = MaterialTheme.typography.bodySmall)
                 } else {

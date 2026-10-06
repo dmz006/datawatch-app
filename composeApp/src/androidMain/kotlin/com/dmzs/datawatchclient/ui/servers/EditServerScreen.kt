@@ -69,7 +69,9 @@ public fun EditServerScreen(
     ) { padding ->
         if (state.loading) {
             Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent(
+                    label = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.common_loading),
+                )
             }
             return@Scaffold
         }

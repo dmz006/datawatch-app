@@ -785,15 +785,10 @@ internal fun PrdDetailDialog(
                             // Graph tab — orchestrator DAG (#184)
                             when {
                                 prdGraphLoading -> {
-                                    androidx.compose.material3.CircularProgressIndicator(
-                                        modifier = androidx.compose.ui.Modifier
-                                            .padding(24.dp)
-                                            .align(androidx.compose.ui.Alignment.CenterHorizontally),
-                                    )
-                                    Text(
-                                        stringResource(R.string.prd_tab_graph_loading),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent(
+                                        label = stringResource(R.string.prd_tab_graph_loading),
+                                        eyeSize = 32.dp,
+                                        verticalPadding = 16.dp,
                                     )
                                 }
                                 prdGraph == null || prdGraph.nodes.isEmpty() -> {

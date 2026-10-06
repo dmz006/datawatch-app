@@ -11,7 +11,7 @@ struct ServerProfileListView: View {
     var body: some View {
         Group {
             if store.isLoading {
-                LoadingIndicator(message: "Loading servers…")
+                LoadingIndicator(message: L("Loading servers…"))
             } else if store.profiles.isEmpty {
                 emptyState
             } else {

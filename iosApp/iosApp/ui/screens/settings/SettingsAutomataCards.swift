@@ -43,7 +43,6 @@ struct SettingsAlgorithmModeCard: View {
         Section {
             if isLoading && rows.isEmpty {
                 HStack(spacing: 8) {
-                    ProgressView()
                     CardSkeleton()
                 }
             } else if rows.isEmpty {
@@ -217,7 +216,6 @@ struct ScanDefaultsSection: View {
         Section {
             if !loaded {
                 HStack(spacing: 8) {
-                    ProgressView()
                     CardSkeleton()
                 }
             } else {
