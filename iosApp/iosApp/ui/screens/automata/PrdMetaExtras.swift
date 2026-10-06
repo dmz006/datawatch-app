@@ -31,27 +31,61 @@ enum PrdDates {
     static func lastActivity(_ prd: PrdDto) -> String? {
         display(prd.updatedAt) ?? display(prd.createdAt)
     }
+
+    /// PWA list card: `toLocaleString('en-GB', { hour12: false })` → `dd/MM/yyyy, HH:mm:ss`.
+    private static let enGB: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.dateFormat = "dd/MM/yyyy, HH:mm:ss"
+        return f
+    }()
+
+    static func cardActivity(_ prd: PrdDto) -> String? {
+        for raw in [prd.updatedAt, prd.createdAt] {
+            guard let raw, !raw.isEmpty, !raw.hasPrefix("0001-") else { continue }
+            if let d = isoFrac.date(from: raw) ?? iso.date(from: raw) { return enGB.string(from: d) }
+            return raw
+        }
+        return nil
+    }
 }
 
 /// PWA card / detail meta row: `<code>id</code>` + last activity, mono,
-/// right-justified (app.js automata card + `prd-detail-row2`).
+/// right-justified (app.js automata card + `prd-detail-row2`). The list card
+/// (`cardStyle`) is 11 pt with the `↗ parent` link first and the en-GB timestamp.
 struct PrdIdMetaRow: View {
     let prd: PrdDto
+    var cardStyle: Bool = false
+    var onParent: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 10) {
             Spacer(minLength: 0)
+            if cardStyle, let pid = prd.parentPrdId, !pid.isEmpty { parentLink(pid) }
             Text(verbatim: prd.id)
                 .lineLimit(1)
                 .truncationMode(.middle)
-            if let ts = PrdDates.lastActivity(prd) {
+            if let ts = cardStyle ? PrdDates.cardActivity(prd) : PrdDates.lastActivity(prd) {
                 Text(verbatim: ts)
                     .lineLimit(1)
                     .accessibilityLabel(L("Last activity") + " " + ts)
             }
         }
-        .font(DatawatchFonts.terminalSmall)
+        .font(cardStyle ? .system(size: 11, design: .monospaced) : DatawatchFonts.terminalSmall)
         .foregroundStyle(DatawatchColors.onSurfaceMuted)
+    }
+
+    /// PWA `↗ parent` link (accent2) — opens the parent automaton.
+    @ViewBuilder
+    private func parentLink(_ pid: String) -> some View {
+        let label = Text(verbatim: "↗ " + L("parent")).foregroundStyle(DatawatchColors.secondary)
+        if let onParent {
+            Button(action: onParent) { label }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(String(format: L("Parent automaton %@"), pid))
+        } else {
+            label.accessibilityLabel(String(format: L("Parent automaton %@"), pid))
+        }
     }
 }
 

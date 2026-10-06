@@ -1842,3 +1842,9 @@
 "%lld alerts" = "%lld 件のアラート";
 "PLANNED" = "予定";
 "OUTPUT" = "出力";
+"(no title)" = "(タイトルなし)";
+"Request Revision" = "修正をリクエスト";
+"Council" = "評議会";
+"Mute notifications for this session" = "このセッションの通知をミュート";
+"Unmute notifications" = "通知のミュートを解除";
+"Quick commands" = "クイックコマンド";

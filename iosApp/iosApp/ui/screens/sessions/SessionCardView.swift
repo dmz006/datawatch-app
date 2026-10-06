@@ -82,10 +82,12 @@ struct SessionStatePill: View {
     }
 }
 
-/// Session card (parity D13a / D14a / D16a; PWA sessionCard app.js).
-/// Header: name/task (80 chars, 13/600) · inline actions (■ Stop / ▶ / ↻ Restart / 🗑) · | · state pill.
-/// Line 2: id pill · LLM badge · worker · host (multi-server) · 📄 Response · elapsed · age.
-/// Then the waiting prompt (last 4 lines) or the inline current-status row.
+/// Session card (parity D13a / D14a / D16a; PWA renderSessionCard app.js + `.session-card`).
+/// Line 1: name/task (80 chars, 13/600, one line) · `|` · state pill · 👁 watch · 🔔 mute · ⋮⋮.
+/// Line 2: right-aligned small actions (■ Stop / ▶ / ↻ Restart / 🗑 / 🤖 Summary / ☷) — the
+/// PWA `.card-actions` group wraps under the header at phone width.
+/// Line 3: id pill · badges … 📄 Response · elapsed · age.
+/// Then the amber `.card-waiting-row` (last 4 prompt lines) or the running status row.
 struct SessionCardView: View {
     let session: DwSession
     var showHost: Bool = false
@@ -106,8 +108,9 @@ struct SessionCardView: View {
     /// D61a: watched sessions' alerts drive the badge once any session is watched.
     var watched: Bool = false
     var onWatchToggle: (() -> Void)? = nil
-    /// D62a: locally muted (swipe-to-mute) or server-reported muted.
+    /// D62a: locally muted (swipe-to-mute or the 🔔 toggle) or server-reported muted.
     var muted: Bool = false
+    var onMuteToggle: (() -> Void)? = nil
     /// D43a: PWA `🤖 Summary` card action, only when `session.summarizer.enabled`.
     var summarizerEnabled: Bool = false
     var summarizing: Bool = false
@@ -118,18 +121,22 @@ struct SessionCardView: View {
 
     private var isDone: Bool { SessionStateStyle.isDone(session.state) }
     private var isWaiting: Bool { session.state == .waiting }
+    private var isMuted: Bool { muted || session.muted }
+
+    /// PWA `--warning` amber (#f59e0b): `.card-waiting-row`, council + zombie badges.
+    static let amber = Color(red: 0.961, green: 0.620, blue: 0.043)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             header
+            if !selecting { actions }
             metaLine
             if isWaiting {
                 waitingRow
             } else if !isDone {
-                statusRow
+                waitingBox { statusRow }
             }
         }
-        .padding(.vertical, 8)
         .contentShape(Rectangle())
     }
 
@@ -156,12 +163,21 @@ struct SessionCardView: View {
             Text(displayText)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DatawatchColors.onSurface)
-                .lineLimit(2)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .opacity(dim)
-            actions
+            // PWA `|` divider between the (wrapped) action group and the state pill.
+            Text(verbatim: "|")
+                .font(.system(size: 13))
+                .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.5))
+                .accessibilityHidden(true)
             SessionStatePill(state: session.state)
                 .opacity(dim)
+            if !selecting {
+                if let onWatchToggle { watchToggle(onWatchToggle) }
+                if let onMuteToggle { muteToggle(onMuteToggle) }
+            }
             // PWA .drag-handle (style.css:2176): always-visible ⋮⋮ at opacity .4.
             // Reorder itself is the List's native drag (`.onMove`), which iOS
             // starts with a press-and-hold on the row — the handle included.
@@ -170,28 +186,54 @@ struct SessionCardView: View {
                 .kerning(-1)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .opacity(0.4)
-                .frame(minWidth: 24)
+                .frame(minWidth: 20)
                 .accessibilityLabel(L("Drag to reorder"))
         }
     }
 
-    @ViewBuilder
+    /// PWA 👁 watch toggle: accent2 when watching, .4 opacity when not.
+    private func watchToggle(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(verbatim: "👁")
+                .font(.system(size: 14))
+                .foregroundStyle(watched ? DatawatchColors.secondary : DatawatchColors.onSurface)
+                .opacity(watched ? 1 : 0.4)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(L(watched ? "Watching" : "Not watching"))
+        .accessibilityHint(L("Watch this session to include its alerts in your badge count"))
+    }
+
+    /// PWA 🔔/🔕 mute toggle: full opacity when muted, .4 when not.
+    private func muteToggle(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(verbatim: isMuted ? "🔕" : "🔔")
+                .font(.system(size: 14))
+                .opacity(isMuted ? 1 : 0.4)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(L(isMuted ? "Unmute notifications" : "Mute notifications for this session"))
+    }
+
+    /// PWA `.card-actions`: wraps under the header at phone width, right-aligned.
     private var actions: some View {
-        if !selecting {
-            HStack(spacing: 4) {
-                if !isDone {
-                    cardButton("■ Stop", tint: DatawatchColors.error, action: onStop)
-                    if isWaiting { cardButton("▶", tint: DatawatchColors.onSurface, action: onQuick) }
-                } else {
-                    cardButton("↻ Restart", tint: DatawatchColors.onSurface, action: onRestart)
-                    cardButton("🗑", tint: DatawatchColors.error, action: onDelete)
+        HStack(spacing: 4) {
+            Spacer(minLength: 0)
+            if !isDone {
+                cardButton("■ Stop", tint: DatawatchColors.error, action: onStop)
+                if isWaiting {
+                    cardButton("▶", tint: DatawatchColors.onSurface, action: onQuick)
+                        .accessibilityLabel(L("Quick commands"))
                 }
-                if summarizerEnabled { summaryButton }
-                // PWA sess-maximize-btn: open this session in Dashboard expand mode.
-                cardButton("☷", tint: DatawatchColors.onSurface, action: onExpand)
-                    .accessibilityLabel("Open in Dashboard")
+            } else {
+                cardButton("↻ Restart", tint: DatawatchColors.onSurface, action: onRestart)
+                cardButton("🗑", tint: DatawatchColors.error, action: onDelete)
+                    .accessibilityLabel(L("Delete"))
             }
-            Text("|").font(.system(size: 11)).foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.5))
+            if summarizerEnabled { summaryButton }
+            // PWA sess-maximize-btn: open this session in Dashboard expand mode.
+            cardButton("☷", tint: DatawatchColors.onSurface, action: onExpand)
+                .accessibilityLabel(L("Open in Dashboard"))
         }
     }
 
@@ -205,7 +247,7 @@ struct SessionCardView: View {
                 .foregroundStyle(DatawatchColors.onSurface)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
+                .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 4))
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
         }
         .buttonStyle(.borderless)
@@ -213,6 +255,7 @@ struct SessionCardView: View {
         .accessibilityHint("Re-summarize with AI")
     }
 
+    /// PWA card action button: 11 px, 1 px --border (state colour for Stop / 🗑), bg2, r4, 3×8.
     private func cardButton(_ title: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(L(title))
@@ -222,50 +265,45 @@ struct SessionCardView: View {
                 .foregroundStyle(tint)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
+                .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 4))
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(tint == DatawatchColors.onSurface ? DatawatchColors.border : tint, lineWidth: 1))
         }
         .buttonStyle(.borderless)
     }
 
+    /// PWA meta row (flex-wrap): id · badges, then `margin-left:auto` group
+    /// 📄 Response · elapsed · age pinned to the trailing edge.
     private var metaLine: some View {
-        // Wraps like the PWA's flex-wrap meta row instead of truncating badges.
-        FlowLayout(spacing: 6) {
+        FlowLayout(spacing: 6, trailingLast: true) {
             Group { metaBadges }.opacity(dim)
-            if let onWatchToggle {
-                Button(action: onWatchToggle) {
-                    Image(systemName: watched ? "bell.fill" : "bell.slash")
-                        .font(.system(size: 11))
-                        .foregroundStyle(watched ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted.opacity(0.5))
+            HStack(spacing: 8) {
+                if session.lastResponse?.isEmpty == false {
+                    Button(action: onResponse) {
+                        Text(L("📄 Response"))
+                            .font(.system(size: 10))
+                            .lineLimit(1)
+                            .foregroundStyle(DatawatchColors.onSurface)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 4))
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
+                    }
+                    .buttonStyle(.borderless)
                 }
-                .buttonStyle(.borderless)
-                .accessibilityLabel(watched ? "Watching" : "Not watching")
-                .accessibilityHint("Watch this session to include its alerts in your badge count")
-            }
-            if session.lastResponse != nil {
-                Button(action: onResponse) {
-                    Text("📄 Response")
+                Group {
+                    if !isDone { ElapsedClock(since: session.createdAt.toEpochMilliseconds()) }
+                    Text(SessionCardView.ago(session.lastActivityAt.toEpochMilliseconds()))
                         .font(.system(size: 10))
-                        .foregroundStyle(DatawatchColors.onSurface)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
-                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
-                .buttonStyle(.borderless)
+                .opacity(dim)
             }
-            Group {
-                if !isDone { ElapsedClock(since: session.createdAt.toEpochMilliseconds()) }
-                Text(SessionCardView.ago(session.lastActivityAt.toEpochMilliseconds()))
-                    .font(.system(size: 11))
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-            }
-            .opacity(dim)
+            .fixedSize()
         }
         .font(.system(size: 11))
     }
 
-    /// Identity badges of the meta row (id pill · LLM · worker · council · server · host · lineage · muted).
+    /// Identity badges of the meta row (id pill · council · LLM · server · worker · host · lineage).
     @ViewBuilder
     private var metaBadges: some View {
         Text(session.id)
@@ -276,28 +314,28 @@ struct SessionCardView: View {
             .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
             .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
             .accessibilityLabel("Session ID \(session.id)")
-        if let llm = session.llmRef ?? session.backend, !llm.isEmpty {
-            accentBadge(llm)
+        // PWA: council sessions get the amber `🎭 Council` badge instead of the LLM badge.
+        if SessionCardView.isCouncil(session) {
+            outlineBadge("🎭 " + L("Council"), SessionCardView.amber)
+                .accessibilityLabel(L("Council session"))
+        } else if let llm = session.llmRef ?? session.backend, !llm.isEmpty {
+            outlineBadge(llm, DatawatchColors.secondary)
         }
-        if session.agentId != nil { accentBadge("⬡ worker") }
-        if SessionCardView.isCouncil(session) { accentBadge("🎭").accessibilityLabel("Council session") }
-        if let server = serverName, !server.isEmpty { accentBadge(server) }
-        if showHost, let host = session.hostnamePrefix, !host.isEmpty { accentBadge(host) }
+        if let server = serverName, !server.isEmpty { outlineBadge(server, DatawatchColors.secondary) }
+        if session.agentId != nil { outlineBadge("⬡ worker", DatawatchColors.secondary) }
+        if showHost, let host = session.hostnamePrefix, !host.isEmpty { outlineBadge(host, DatawatchColors.secondary) }
         lineageBadges
-        if muted || session.muted {
-            Image(systemName: "speaker.slash.fill").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
-                .accessibilityLabel("Muted")
-        }
     }
 
-    private func accentBadge(_ text: String) -> some View {
+    /// PWA meta-row badge: 10/600, 1 px colour border, colour @12 % fill, r8, 2×7.
+    private func outlineBadge(_ text: String, _ color: Color) -> some View {
         Text(text)
             .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(DatawatchColors.secondary)
+            .foregroundStyle(color)
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
-            .background(DatawatchColors.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(DatawatchColors.secondary, lineWidth: 1))
+            .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(color, lineWidth: 1))
             .lineLimit(1)
     }
 
@@ -324,7 +362,7 @@ struct SessionCardView: View {
 
     /// PWA `⚠ zombie` (claude_alive === false): amber outline badge.
     private var zombieBadge: some View {
-        let amber = Color(red: 0.961, green: 0.620, blue: 0.043)
+        let amber = SessionCardView.amber
         return Text("⚠ zombie")
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(amber)
@@ -336,34 +374,56 @@ struct SessionCardView: View {
             .accessibilityLabel("Claude process not running — session may be a zombie")
     }
 
-    /// PWA: prompt_context last 4 non-empty lines (≤100 chars each), then the short
-    /// summary (`last_response`, italic ≤180) with ▼/▲ for `last_summary_long`,
-    /// `AI <age>` and the ✕-closable long-summary panel.
+    /// PWA `.card-waiting-row`: amber-tinted box (warning @8 % fill, @15 % border).
+    private func waitingBox<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) { content() }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(SessionCardView.amber.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(SessionCardView.amber.opacity(0.15), lineWidth: 1))
+    }
+
+    /// PWA: prompt_context last 4 non-empty lines (≤100 chars each, one line each,
+    /// `.card-waiting-label` mono amber), then the short summary (`last_response`,
+    /// italic ≤180) with ▼/▲ for `last_summary_long`, `AI <age>` and the ✕ panel.
     private var waitingRow: some View {
-        let raw = session.promptContext ?? session.lastPrompt ?? ""
-        let lines = raw.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-        let shown: [String] = lines.suffix(4).map { $0.count > 100 ? String($0.prefix(100)) + "…" : $0 }
-        return VStack(alignment: .leading, spacing: 4) {
-            if shown.isEmpty {
-                Text("Input needed")
-            } else {
-                ForEach(Array(shown.enumerated()), id: \.offset) { _, l in Text(l) }
+        let shown: [String] = SessionCardView.promptLines(session.promptContext ?? session.lastPrompt)
+        return waitingBox {
+            VStack(alignment: .leading, spacing: 1) {
+                if shown.isEmpty {
+                    Text(L("Input needed"))
+                } else {
+                    ForEach(Array(shown.enumerated()), id: \.offset) { _, l in Text(verbatim: l) }
+                }
             }
-            if let lr = session.lastResponse, !lr.isEmpty {
+            .font(.system(size: 11, design: .monospaced))
+            .foregroundStyle(SessionCardView.amber)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            if let lr = SessionCardView.shortSummary(session.lastResponse) {
                 waitingSummaryLine(lr)
                 if summaryLongExpanded, let long = longSummary {
                     longSummaryPanel(long)
                 }
             }
         }
-        .font(.system(size: 11, design: .monospaced))
-        .foregroundStyle(DatawatchColors.onSurface)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DatawatchColors.waiting.opacity(0.08))
-        .overlay(alignment: .leading) { Rectangle().fill(DatawatchColors.waiting).frame(width: 2) }
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    /// PWA ctxLines: trimmed non-empty lines, last 4, each ≤100 chars + "…".
+    static func promptLines(_ raw: String?) -> [String] {
+        let lines = (raw ?? "").split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        return lines.suffix(4).map { $0.count > 100 ? String($0.prefix(100)) + "…" : $0 }
+    }
+
+    /// PWA renders `last_response` in a <span>, so HTML collapses newlines and
+    /// whitespace runs into single spaces; ≤180 chars + "…". Nil when blank.
+    static func shortSummary(_ raw: String?) -> String? {
+        let collapsed = (raw ?? "")
+            .split(whereSeparator: { $0.isWhitespace })
+            .joined(separator: " ")
+        guard !collapsed.isEmpty else { return nil }
+        return collapsed.count > 180 ? String(collapsed.prefix(180)) + "…" : collapsed
     }
 
     private var longSummary: String? {
@@ -373,7 +433,7 @@ struct SessionCardView: View {
 
     private func waitingSummaryLine(_ lr: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(lr.count > 180 ? String(lr.prefix(180)) + "…" : lr)
+            Text(verbatim: lr)
                 .font(.system(size: 10))
                 .italic()
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -457,7 +517,7 @@ struct SessionCardView: View {
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 4))
+                    .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 4))
                     .overlay(RoundedRectangle(cornerRadius: 4).stroke(DatawatchColors.border, lineWidth: 1))
             }
             .buttonStyle(.borderless)
@@ -541,9 +601,10 @@ struct SessionRowBackground: View {
         .background(DatawatchColors.background)
     }
 
-    /// Row insets matching the background (card padding 10 + edge 4 + outer 8).
+    /// Row insets matching the background: PWA `.session-card { padding: 12px 14px }`
+    /// plus the 4 pt edge and the 8 / 4 pt outer gap.
     static func insets(indent: CGFloat) -> EdgeInsets {
-        EdgeInsets(top: 4, leading: 22 + indent, bottom: 4, trailing: 18)
+        EdgeInsets(top: 16, leading: 26 + indent, bottom: 16, trailing: 22)
     }
 }
 

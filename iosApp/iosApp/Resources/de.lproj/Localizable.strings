@@ -1842,3 +1842,9 @@
 "%lld alerts" = "%lld Warnungen";
 "PLANNED" = "GEPLANT";
 "OUTPUT" = "AUSGABE";
+"(no title)" = "(kein Titel)";
+"Request Revision" = "Überarbeitung anfordern";
+"Council" = "Rat";
+"Mute notifications for this session" = "Benachrichtigungen für diese Sitzung stummschalten";
+"Unmute notifications" = "Benachrichtigungen wieder aktivieren";
+"Quick commands" = "Schnellbefehle";
