@@ -83,7 +83,7 @@ class ChannelReadyHubTest {
     }
 
     @Test
-    fun `isReady(session) honours channelReady field and cached full id`() {
+    fun `isReady honours channelReady field and cached full id`() {
         val s = session(id = "abcd", host = "ring", channelReady = false)
         assertFalse(ChannelReadyHub.isReady(s))
         assertTrue(ChannelReadyHub.isReady(s.copy(channelReady = true)))

@@ -11,12 +11,4 @@
 #   catalog     gradle/libs.versions.toml version key to bump (if direct)
 #   reason      why it's accepted until then
 risks:
-  - id: dependabot/71
-    group: org.jetbrains.kotlin
-    artifact: kotlin-gradle-plugin
-    fixed_in: 2.4.20-Beta1
-    catalog: kotlin
-    reason: >-
-      Build-time only (Kotlin Gradle plugin, not shipped). Only fix is a Beta;
-      adopting needs a Kotlin + Compose Multiplatform + AGP upgrade. Adopt the
-      first stable Kotlin release >= 2.4.20. Tracked in #208.
+  # (none) — dependabot/71 (kotlin-gradle-plugin) fixed by Kotlin 2.4.20.
