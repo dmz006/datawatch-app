@@ -20,7 +20,7 @@ struct SkillBrowseSheet: View {
         NavigationStack {
             List {
                 if loading {
-                    ProgressView().frame(maxWidth: .infinity)
+                    CardSkeleton()
                         .listRowBackground(DatawatchColors.surface)
                 } else if skills.isEmpty {
                     Text("No skills available in this registry — try Connect first.")

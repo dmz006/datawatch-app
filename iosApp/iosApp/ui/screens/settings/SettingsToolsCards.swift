@@ -35,7 +35,7 @@ struct SettingsRawConfigCard: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
             } else {
-                ProgressView().frame(maxWidth: .infinity)
+                CardSkeleton()
                 Spacer()
             }
         }

@@ -78,7 +78,7 @@ struct OrchestratorGraphsView: View {
                 } else if let loadError {
                     Text(loadError).font(DatawatchFonts.bodyMedium).foregroundStyle(DatawatchColors.error)
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                 }
             } header: {
                 HStack(spacing: 8) {
@@ -183,7 +183,7 @@ struct PipelinesView: View {
                 } else if let loadError {
                     Text(loadError).font(DatawatchFonts.bodyMedium).foregroundStyle(DatawatchColors.error)
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                 }
             } header: {
                 HStack(spacing: 8) {

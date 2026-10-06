@@ -85,7 +85,7 @@ struct NewPrdView: View {
             }
             .scrollContentBackground(.hidden)
             .background(DatawatchColors.background)
-            .overlay { if options == nil { ProgressView().tint(DatawatchColors.primary) } }
+            .overlay { if options == nil { CardSkeleton() } }
             .navigationTitle("Launch Automaton")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -517,7 +517,7 @@ struct SetPrdLlmView: View {
             }
             .scrollContentBackground(.hidden)
             .background(DatawatchColors.background)
-            .overlay { if options == nil { ProgressView().tint(DatawatchColors.primary) } }
+            .overlay { if options == nil { CardSkeleton() } }
             .navigationTitle("Set LLM")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

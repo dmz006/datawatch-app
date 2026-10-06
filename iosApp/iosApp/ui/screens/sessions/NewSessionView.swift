@@ -190,7 +190,7 @@ struct NewSessionView: View {
             .scrollContentBackground(.hidden)
             .background(DatawatchColors.background)
             .overlay {
-                if loading { ProgressView().tint(DatawatchColors.primary) }
+                if loading { CardSkeleton() }
             }
             .navigationTitle("New Session")
             .navigationBarTitleDisplayMode(.inline)
@@ -412,7 +412,7 @@ struct DirectoryBrowserSheet: View {
             }
             .scrollContentBackground(.hidden)
             .background(DatawatchColors.background)
-            .overlay { if loading { ProgressView().tint(DatawatchColors.primary) } }
+            .overlay { if loading { CardSkeleton() } }
             .navigationTitle("Choose folder")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarItems }

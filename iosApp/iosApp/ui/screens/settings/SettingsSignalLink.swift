@@ -119,7 +119,8 @@ private struct SignalLinkSheet: View {
             qrView(qrImage)
             instructions
         } else {
-            ProgressView()
+            SplashEyeView()
+                .frame(width: 40, height: 40)
                 .padding(.top, 40)
             Text("Linking started — waiting for QR code…")
                 .font(DatawatchFonts.bodyMedium)

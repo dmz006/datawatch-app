@@ -155,7 +155,7 @@ private struct ProfileEditorLoading: View {
             if let error {
                 FormStatusLine(text: error, tone: 2)
             } else {
-                ProgressView()
+                CardSkeleton()
             }
         }
         .padding()

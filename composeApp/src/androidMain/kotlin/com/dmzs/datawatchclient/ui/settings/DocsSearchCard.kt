@@ -278,8 +278,13 @@ private fun DocsTrustExportDialog(
 /** PWA renders an italic, muted "none" for an empty pending / trusted list. */
 @Composable
 private fun DocsTrustNone(loaded: Boolean) {
+    if (!loaded) {
+        // Content still in flight: the animated datawatch eye, not a bare "Loading…" line.
+        com.dmzs.datawatchclient.ui.common.PwaLoadingText()
+        return
+    }
     Text(
-        if (loaded) stringResource(R.string.docs_trust_none) else stringResource(R.string.common_loading),
+        stringResource(R.string.docs_trust_none),
         style = MaterialTheme.typography.bodySmall,
         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

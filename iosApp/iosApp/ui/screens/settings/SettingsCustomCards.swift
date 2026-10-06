@@ -271,7 +271,7 @@ private struct SettingsCommBackendsCard: View {
         List {
             Section {
                 if isLoading {
-                    ProgressView()
+                    CardSkeleton()
                 } else {
                     ForEach(SettingsCatalog.commServices, id: \.self) { svc in
                         backendRow(svc)

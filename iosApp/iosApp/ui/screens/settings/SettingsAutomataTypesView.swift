@@ -13,7 +13,7 @@ struct SettingsAutomataTypesView: View {
         List {
             Section {
                 if vm.isLoading && vm.types.isEmpty {
-                    ProgressView()
+                    CardSkeleton()
                 } else if vm.types.isEmpty {
                     Text("No automata types. Tap + to register the first automata type.")
                         .font(DatawatchFonts.bodyMedium)

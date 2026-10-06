@@ -266,7 +266,7 @@ struct PrdFileViewerSheet: View {
                 } else if failed {
                     Text("Unable to load file").foregroundStyle(DatawatchColors.error)
                 } else {
-                    ProgressView()
+                    CardSkeleton()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
