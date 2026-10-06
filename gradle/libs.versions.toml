@@ -1,5 +1,5 @@
 [versions]
-zxing = "3.5.3"
+zxing = "3.5.4"
 agp = "8.5.2"
 # R8 override: AGP 8.5.2 bundles R8 8.5, which cannot parse Kotlin 2.4 metadata.
 # Kotlin 2.4 needs R8 >= 9.1.29 (developer.android.com/build/kotlin-support).
