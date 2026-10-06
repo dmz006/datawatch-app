@@ -19,7 +19,7 @@ class CouncilLiveTest {
     }
 
     @Test
-    fun `sse parser splits frames, ignores comments, joins multi-line data`() {
+    fun `sse parser splits frames - ignores comments - joins multi-line data`() {
         val got =
             frames(
                 "event: hello\ndata: {}\nid: 0\n\n" +
