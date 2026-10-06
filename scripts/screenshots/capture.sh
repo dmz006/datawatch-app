@@ -7,6 +7,7 @@
 #   DW_URL       demo server URL reachable from the simulator
 #   DW_TOKEN     demo token
 #   SESSION_ID   session to open for ios-terminal.png
+#   AUTOMATON_ID optional; Automaton to open for ios-automaton-detail.png
 #   SETTLE       seconds to wait after each launch (default 12)
 set -euo pipefail
 
@@ -62,6 +63,12 @@ capture_device() { # name folder expected-WxH
   launch "$udid" sessions -dwOpenSession "$SESSION_ID"
   sleep $((SETTLE + 6))
   shot "$udid" "$dir/ios-terminal.png"
+
+  if [ -n "${AUTOMATON_ID:-}" ]; then
+    launch "$udid" automata -dwOpenAutomaton "$AUTOMATON_ID"
+    sleep "$SETTLE"
+    shot "$udid" "$dir/ios-automaton-detail.png"
+  fi
 
   # Size check.
   local bad=0 f w h

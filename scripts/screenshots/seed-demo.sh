@@ -205,6 +205,7 @@ story_id=$(api POST "/api/autonomous/prds/$prd_id/add_story" \
   | jget '[s for s in (d.get("stories") or d["prd"]["stories"]) if s["title"]=="Document the cache"][0]["id"]')
 api POST "/api/autonomous/prds/$prd_id/add_task" \
   "{\"story_id\":\"$story_id\",\"title\":\"Add caching section to docs/api.md\",\"spec\":\"Explain TTL, cache keys and the /health counters.\"}" >/dev/null
+echo "$prd_id" > "$DEMO_ROOT/automaton-id"
 
 # A second, not-yet-planned Automaton so the list has more than one entry.
 api POST /api/autonomous/prds "$(python3 -c 'import json,sys; print(json.dumps({"spec": "Add a /forecast/week endpoint that returns a 7-day forecast for a city, with input validation and tests.", "project_dir": sys.argv[1], "backend": "shell"}))' "$PROJ")" >/dev/null
