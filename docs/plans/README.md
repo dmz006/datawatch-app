@@ -7,26 +7,140 @@ Plans: individual dated documents live as `YYYY-MM-DD-<slug>.md` in this
 directory when work warrants formal planning (3+ files or non-trivial
 architecture).
 
-## Active roadmap plan
+## Active roadmap
 
-**Active arc: PWA parity alignment (Sprints 33–39)**. 22 gaps across 9 pages. Daemon baseline: v7.0.0-alpha.50.
+**Current release: v1.28.0 (2026-10-06).** Daemon baseline: datawatch v8.39.x.
 
-Full arc plan: [`2026-05-12-parity-arc-v0.102.md`](2026-05-12-parity-arc-v0.102.md)  
-PWA full spec: [`2026-05-12-pwa-full-spec.md`](2026-05-12-pwa-full-spec.md)  
-Gap audit: [`2026-05-12-pwa-parity-audit.md`](2026-05-12-pwa-parity-audit.md)
+**Active arc: three-way parity (PWA ↔ Android ↔ iOS).** It began with the 2026-10-04
+parity audit; v1.24.0 → v1.28.0 shipped the operator decisions. Row-level status lives in
+the parity matrix: [`../parity/README.md`](../parity/README.md),
+[`../parity/ios-parity-matrix.md`](../parity/ios-parity-matrix.md) and
+[`../parity/sections/`](../parity/sections/). Parity IDs there (`B1`–`B39`, `D1`–`D91`) are
+a separate namespace from the B#/BL# IDs in this file; this file cites them as
+"parity B12" / "parity D42".
 
-Current state: **v0.101.0/179**. Arc: v0.102.0 → v0.108.0, then v1.0 GH release tag.
+Plans still in this directory:
+- [`2026-05-12-testing-plan.md`](2026-05-12-testing-plan.md) — QA plan, in progress.
+- [`2026-09-14-sprint28-unifiedpush.md`](2026-09-14-sprint28-unifiedpush.md) and
+  [`2026-09-14-sprints-24-27-29-completion.md`](2026-09-14-sprints-24-27-29-completion.md) —
+  code shipped (v1.9.4 / v1.10.0) but their test/doc checklists were never ticked off;
+  reconcile before archiving.
+- [`2026-09-15-memory-arc-bl385-bl387.md`](2026-09-15-memory-arc-bl385-bl387.md) — unscheduled.
+- [`2026-05-12-parity-arc-v0.102.md`](2026-05-12-parity-arc-v0.102.md) with its
+  [spec](2026-05-12-pwa-full-spec.md) and [audit](2026-05-12-pwa-parity-audit.md) — Sprint 33
+  was never marked done; superseded by the 2026-10-04 parity matrix. Archive once confirmed.
+- iOS runbooks: [`ios-mac-build-host.md`](ios-mac-build-host.md),
+  [`ios-testflight-setup.md`](ios-testflight-setup.md).
 
 Shipped arc history (moved to `historical-plans/`):
 - `2026-05-09-v0.70-upgrade-arc.md` — v0.70–v0.79 (Sprints 1–10; issues #51–#96 + alpha alignment)
 - `2026-05-10-v0.80-parity-arc.md` — v0.80–v0.86 (Sprints 11–17; PWA parity + #96 #104–#110)
 - `2026-05-11-v0.94-alpha40-arc.md` — v0.94.0–v0.101.0 (Sprints 24–32; alpha.31–alpha.40 follow-on)
+- Archived 2026-10-06 (scope fully shipped): `2026-05-16-bl303-wear-auto.md` (BL35, v1.0.28),
+  `2026-05-27-ios-client.md` (iOS Stories 1–15, v1.0.4), `2026-05-31-auto-ux-overhaul.md` (v1.0.28),
+  `2026-09-13-auto-prd-story-task-management.md` (v1.4.0), `2026-09-14-bl28-contrast-audit.md` (v1.5.1),
+  `2026-09-14-bl29-prd-lifecycle.md` (v1.5.0), `2026-09-14-bl30-auto-task-lifecycle.md` (v1.8.0),
+  `2026-09-14-bl32-gpu-parity.md` (v1.6.0), `2026-09-14-bl33-per-guardrail-approval.md` (v1.7.0).
 
 ---
-## Open - Not Assessed
+
+## Open — after v1.28.0 (2026-10-06)
+
+| ID | Title | Waiting on / notes | Added |
+|----|-------|--------------------|-------|
+| BL400 | iOS push delivery end-to-end | App side shipped in v1.28.0 (registers on every launch, retries on failure, no cached token, sends `apns_environment`). Delivery needs the server's APNs sender and a `.p8` key: [dmz006/datawatch#183](https://github.com/dmz006/datawatch/issues/183) (open). Re-test on a real iPhone once it ships. | 2026-10-06 |
+| BL401 | iOS session drag-reorder needs press-and-hold | Platform limit: SwiftUI `List.onMove` (UIKit list drag) only starts after a hold, so the ⋮⋮ handle cannot drag immediately as on Android / the web UI (parity section 02, "Drag handle" row). Needs an operator decision to accept the difference, or an ADR for a custom drag implementation. | 2026-10-06 |
+| BL402 | iOS About: App Store link | Android About links to the Play Store; iOS shows Project / Mobile app / Docs only (parity section 07). Blocked until the iOS app has a public App Store listing. | 2026-10-06 |
+| BL403 | iOS App Intents / Siri + WidgetKit | Parity decision D85a: the iOS equivalents of Android's assist intents, widgets and QS tile are parity items, **deferred** ("Later" in the iOS matrix). | 2026-10-06 |
+| BL404 | "Waiting for MCP channel…" banner never clears after a daemon restart | Both apps clear the banner on the WS `channel_ready` frame and on the output ready markers (v1.25.1). The remaining cause is server side: bridges never re-register after a daemon restart — [dmz006/datawatch#174](https://github.com/dmz006/datawatch/issues/174) (open). | 2026-10-06 |
+| BL405 | Web UI parity follow-ups (server / PWA side) | Open on the parent: [#172](https://github.com/dmz006/datawatch/issues/172) PWA changes from the 2026-10-04 decisions · [#177](https://github.com/dmz006/datawatch/issues/177) per-story resources + GPU stats on Automata detail · [#181](https://github.com/dmz006/datawatch/issues/181) council markdown · [#182](https://github.com/dmz006/datawatch/issues/182) adopt app features (2026-10-05 decisions). Closed upstream: [#176](https://github.com/dmz006/datawatch/issues/176) splash badge removal, [#178](https://github.com/dmz006/datawatch/issues/178) council Recent Runs empty. Re-check the parity rows as each lands. | 2026-10-06 |
+| BL406 | CHANGELOG gap v1.23.8 → v1.23.125 | Those patch releases (Android Auto MESSAGING compliance fixes, iOS parity B1–B19, stats fixes) are tagged but have no `CHANGELOG.md` sections. Backfill from `git log v1.23.7..v1.23.125`. | 2026-10-06 |
+| BL407 | Real-device validation pass for v1.24 → v1.28 | The `docs/testing-tracker.md` rows added 2026-10-06 are unit-tested and/or emulator / simulator-checked only; none is Validated=Yes. Needs an Android phone + iPhone pass against a real server, then flip the rows. | 2026-10-06 |
+
+## Still open from earlier backlogs (carried forward 2026-10-06)
+
+| ID | Title | Status |
+|----|-------|--------|
+| BL31 | Android Auto: expanded voice commands (send message, run / decompose / reject plan, restart task, read story, cost report, kill / pause session) | Open — unscheduled. Full spec in the moved "Unscheduled backlog" table under Closed. |
+| BL385–BL387 | Memory arc (scope model, lifecycle, cross-automaton seeding) | Open — unscheduled; parts shipped in v1.23.85 (session-delete memory strategy). Re-audit against the plan before scheduling. Plan: [`2026-09-15-memory-arc-bl385-bl387.md`](2026-09-15-memory-arc-bl385-bl387.md). |
+| BL-graph | Automata per-story execution graph | Deferred. |
+| #163 | Story count truncation | Deferred to server — app shows what the server sends. |
+| BL19 | Local-LLM orchestration in the app | ❄️ Frozen 2026-05-04 (and conflicts with the pure-client invariant). |
+| B6 | Push via FCM | ❄️ Frozen 2026-05-04 — ntfy / UnifiedPush policy. |
+
+## Unclassified
+
+*(cleared 2026-10-06 — items converted to BL400–BL407 above)*
+
+---
+## Closed
+
+### Bugs closed in v1.24.0 → v1.28.0 (2026-10-04 → 2026-10-06)
+
+Backlog refactor skipped during these releases; recorded retroactively 2026-10-06. Test
+evidence per bug: [`../testing.md`](../testing.md).
+
+| ID | Title | Status | Notes |
+|----|-------|--------|-------|
+| B72 | Schedules created with no command; orchestrator graphs dropped the project dir; pipeline Cancel did nothing (Android) | ✅ Closed in v1.24.0 | Shared transport sends `command`/`cron_expr`/`run_at`; graph create sends `project_dir`; cancel posts id + action. `RestTransportTest`. |
+| B73 | Batch Archive set the automaton type to "archived" instead of archiving | ✅ Closed in v1.25.0 | Android. |
+| B74 | Signal device linking used wrong endpoints, never produced a link | ✅ Closed in v1.25.0 | Follows the web UI stream-id flow; QR + Copy / Open in Signal. |
+| B75 | Compute-node model list failed to load (`{models: …}` envelope) | ✅ Closed in v1.25.0 | `RestTransportAndroidParityTest.getComputeNodeModelsUnwrapsServerEnvelope`. |
+| B76 | Scan settings sent under names the server ignores | ✅ Closed in v1.25.0 | `RestTransportAndroidParityTest.scanConfigUsesServerKeys`. |
+| B77 | Session actions + deep links missed on hostnames containing '-' (`Session.fullId`) | ✅ Closed in v1.25.0 | Prefix taken by removing the `-<id>` suffix. `SessionMapperTest`. |
+| B78 | iOS session-card badge row truncated (`⚠ zombie`, `📄 Response`) | ✅ Closed in v1.25.0 | Wraps instead. |
+| B79 | Scroll mode could leave the terminal looking hung | ✅ Closed in v1.25.1 | REST `/api/command` with WS fallback; UI flips on confirmation; leaving the session exits copy-mode. Both apps. |
+| B80 | "Waiting for MCP channel…" banner didn't clear on `channel_ready` / ready markers | ✅ Closed in v1.25.1 | `ChannelReadyHub`, both apps. Server residue tracked as BL404. |
+| B81 | Splash "Updated to vX" badge (never requested) | ✅ Closed in v1.25.1 | Removed on both apps (web: datawatch#176). |
+| B82 | Read-only Config Viewer duplicated the editable Settings cards | ✅ Closed in v1.25.1 | Removed; Raw config card stays. |
+| B83 | Council personas: blank prompts, create/edit failed ("system_prompt required"), lists failed, Stop used the wrong method | ✅ Closed in v1.26.0 | Wire names `role` / `system_prompt`; cancel = `POST …/cancel`. `CouncilPersonaDtoTest`, `RestTransportCouncilLiveTest`. |
+| B84 | Docs Search trust queue never matched the server shape | ✅ Closed in v1.26.0 | Both apps. `RestTransportIosHTest.docsTrust*`. |
+| B85 | Guardrail Library type badge always blank | ✅ Closed in v1.26.0 | Reads `type`. `RestTransportIosHTest.guardrailLibraryReadsTypeAsKind`. |
+| B86 | Schedule cron badge never shown | ✅ Closed in v1.26.0 | Reads `cron_expr`. `RestTransportIosHTest.scheduleMapsCronExprAndSessionName`, `ScheduleRowLabelTest`. |
+| B87 | iOS session card: state pill / buttons wrapped mid-word | ✅ Closed in v1.26.0 | |
+| B88 | iOS alert group header squeezed every label | ✅ Closed in v1.26.0 | Two-line header. |
+| B89 | Automata tab stayed hidden after enabling Automata at runtime | ✅ Closed in v1.27.0 | Gated on live `/api/autonomous/config`. `RestTransportRunCommandTest`. |
+| B90 | Literal API keys visible in the LLM form / raw editors | ✅ Closed in v1.27.0 | `SecretMask`. `SecretMaskTest`, `ProfileEditorTest`. |
+| B91 | Profile create used PUT on Android (server rejects) | ✅ Closed in v1.27.0 | POST for new profiles. `RestTransportIosSettingsDepthTest.createKindProfilePostsToCollection`. |
+| B92 | Android voice reply failed under Do Not Disturb / silent mode | ✅ Closed in v1.27.1 | Ringer mute best-effort; recorder failure restores ringer. Emulator check with DND on. |
+| B93 | Android `datawatch://session/<full id>` links never connected | ✅ Closed in v1.27.1 | Resolve to the short id. `ShellParityTest`. |
+| B94 | Automaton with `scope_warnings` broke the Automata list | ✅ Closed in v1.27.1 | Field is `[]string`. `CouncilPersonaDtoTest.scope_warnings decodes as a list of strings`. |
+| B95 | LLM edits on Android dropped timeout / max in-flight / per-model nodes | ✅ Closed in v1.27.1 | `timeout_seconds`, `max_inflight`, `models[].node`. `RestTransportTaskSTest`. |
+| B96 | Reconnect status wrapped mid-phrase | ✅ Closed in v1.28.0 | Two centred lines, both apps. |
+| B97 | iOS APNs registration not per Apple docs (first launch only, cached token, no environment) | ✅ Closed in v1.28.0 | Every launch, retry on failure, token in memory only, `apns_environment` sent. Delivery: BL400. |
+
+### Features closed in v1.24.0 → v1.28.0
+
+| ID | Title | Status |
+|----|-------|--------|
+| (parity B1–B39) | iOS parity backlog — Settings six groups, Observer, Dashboard grid, sessions toolbar, Automata lifecycle, session detail tabs, localization (de/es/fr/ja) | ✅ Closed in v1.24.0 (iOS-only remainder in v1.25.0) |
+| (parity D-decisions) | Android parity decisions — accent `#7C3AED`, lowercase brand, Stop not Kill, alert dock replaces toasts, alerts page rules, state chips + select bar, splash gating | ✅ Closed in v1.24.0 |
+| (parity D91a) | Certificate pinning for server profiles (Android; iOS shipped in v1.23.x) | ✅ Closed in v1.24.0 |
+| (parity D2a / D65a) | App-wide active server + "Server:" picker bar; three-finger swipe (iOS) | ✅ Closed in v1.24.0 (Android picker bar v1.25.0) |
+| (parity D8a) | Terminal font: bundled JetBrains Mono + monthly update workflow | ✅ Closed in v1.25.0 |
+| (parity D26a / D27a) | Collapsible Observer / Settings cards with per-card docs links (Android) | ✅ Closed in v1.25.0 |
+| (android-missing sweep) | Light theme, reduced motion, sessions Tree view, schedules badge, cross-host view, Exit Hooks / Work Queue, Plugin Manager, Dashboard stat strip, process-stats bar, terminal search, connect watchdog | ✅ Closed in v1.25.0 |
+| (iOS D2a etc.) | iOS: "All servers" in Alerts + Automata, guardrail approve/run, identity / persona wizards, council settings, skills registry, remote-server test | ✅ Closed in v1.25.0 |
+| (web-only features) | Council live runs (start, live rounds, cancel, replay) | ✅ Closed in v1.26.0 |
+| (web-only features) | Automata: story/task LLM + profile overrides, spawn badges, template built-in / use count, header search, live planning stream, iOS resource cards | ✅ Closed in v1.26.0 |
+| (web-only features) | Session drag handle, voice waveform, LLM form YAML view, Docs Search Export YAML, Discussion Scopes Recall, red/green status dot | ✅ Closed in v1.26.0 |
+| (operator 2026-10-05) | Project / cluster profile editor — full form + YAML view toggle (both apps) | ✅ Closed in v1.27.0 |
+| (operator 2026-10-05) | Council replies / consensus / dissent as markdown | ✅ Closed in v1.27.0 |
+| (security #208) | Trust-all scoped to one host, Keystore-bound biometric gate, explicit PendingIntents, CI least privilege | ✅ Closed in v1.27.0 |
+| (parity #182) | Chat thinking blocks + inline images, story verdict badges, automaton depth / created / concurrency, compute 📡 live detail, LLM auto badge, alert deep links, iOS DAG card + Templates ＋, iOS Automata extra settings | ✅ Closed in v1.27.1 |
+| (operator 2026-10-06) | Terminal size from the server's per-session console settings (both apps); Android "Terminal dimensions" card removed | ✅ Closed in v1.28.0 |
+| (security) | Dependabot triage (Ktor 2.3.13, Guava floor), Kotlin 2.4.20, build-tooling floors, stable-fix watch workflow | ✅ Closed in v1.28.0 |
+
+
+### Pre-v1.0 / v1.x sprint tables (moved from the open section 2026-10-06)
+
+Everything below was listed as "open" but had shipped (most rows say Done / ✅ with a version).
+Items that were still genuinely open or frozen were copied to the "Still open from earlier backlogs" table at the top.
+
+#### (was: Open - Not Assessed)
 *(cleared 2026-04-29 — items converted to B52–B62 below)*
 
-### P0 closed in v0.34.6
+##### P0 closed in v0.34.6
 - ✅ **/api/sessions/kill 404** — mobile sent `session_id` key + short id;
   server reads `id` + full id. Fixed across every mutation endpoint.
 - ✅ **Stop badge in list** — same root cause as the above.
@@ -37,7 +151,7 @@ Shipped arc history (moved to `historical-plans/`):
   migration 4.sqm persists `output_mode`/`input_mode` so cold-open
   from cache picks the right surface.
 
-### Master parity inventory (2026-04-23)
+##### Master parity inventory (2026-04-23)
 
 Everything below is captured with per-gap IDs (G1–G64) in the
 master inventory — see [`audit-2026-04-23/README.md`](audit-2026-04-23/README.md)
@@ -52,7 +166,7 @@ Release batches:
 - **v0.35.1** — Session-detail polish: G11 (inline rename), G12 (state-override dropdown), G13–G17 (terminal toolbar + response)
 - **v0.35.2** — G41 Signal QR device linking (optional)
 
-## Open — alpha.31–alpha.36 follow-on (Sprints 24–29)
+#### (was: Open — alpha.31–alpha.36 follow-on (Sprints 24–29))
 
 **Status as of v1.9.4 (2026-09-14):**
 - Sprints 24, 25, 26, 27, 29 — code **shipped** during v1.x BL arc; unit tests completed in v1.9.4
@@ -62,7 +176,7 @@ Release batches:
 
 Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25) are independent; Status tab (26) builds on Stats; Alerts tabs (27) are parallel; UnifiedPush (28) is independent; Sessions filter (29) is independent.
 
-### Sprint 24 — Automata browse redesign (#117 / alpha.31)
+##### Sprint 24 — Automata browse redesign (#117 / alpha.31)
 
 | Surface | Change |
 |---------|--------|
@@ -73,7 +187,7 @@ Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25)
 | Locale | `automata_action_*` keys (5 bundles) |
 | Wear | Optional: `needs_approval` automata count complication |
 
-### Sprint 25 — Per-session Stats sub-tab redesign (#118 / alpha.32)
+##### Sprint 25 — Per-session Stats sub-tab redesign (#118 / alpha.32)
 
 | Surface | Change |
 |---------|--------|
@@ -82,7 +196,7 @@ Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25)
 | Click-through | ComputeNode card → Compute panel; LLM card → LLM panel |
 | Locale | `stats_card_*`, `stats_field_*`, `stats_open_*`, `stats_llm_more_soon` (5 bundles) |
 
-### Sprint 26 — Status sub-tab + hook arc (#120 #121 / alpha.34/34d)
+##### Sprint 26 — Status sub-tab + hook arc (#120 #121 / alpha.34/34d)
 
 | Surface | Change |
 |---------|--------|
@@ -95,7 +209,7 @@ Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25)
 | Toast | One-time "hooks installed in `<project>/.claude/`" on claude-code session launch |
 | Locale | `session_detail_tab_status`, `status_card_*`, `status_no_*`, `status_current_focus`, `status_hooks_*` (5 bundles) |
 
-### Sprint 27 — Ollama marketplace + Alerts tabs (#119 / alpha.33)
+##### Sprint 27 — Ollama marketplace + Alerts tabs (#119 / alpha.33)
 
 | Surface | Change |
 |---------|--------|
@@ -106,7 +220,7 @@ Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25)
 | Alert dock sizing | Match alpha.33 middle-ground (max-width 420, bigger fonts, per-type color rail) |
 | Locale | `alerts_*_tab_label`, `ollama_*`, `compute_models_*`, `compute_field_models` (5 bundles) |
 
-### Sprint 28 — UnifiedPush integration (#122 / alpha.35)
+##### Sprint 28 — UnifiedPush integration (#122 / alpha.35)
 
 | Surface | Change |
 |---------|--------|
@@ -116,7 +230,7 @@ Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25)
 | Tailscale fallback | Treat UnifiedPush and Signal/comm-channel as redundant safety nets (not primary+fallback) |
 | Note | alpha.35a (council/error/algorithm events) pending operator topic-taxonomy confirmation |
 
-### Sprint 29 — Sessions filter UX (#123 / alpha.36)
+##### Sprint 29 — Sessions filter UX (#123 / alpha.36)
 
 | Surface | Change |
 |---------|--------|
@@ -128,14 +242,14 @@ Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25)
 
 ---
 
-## Open — organised by sprint (fastest resolution first)
+#### (was: Open — organised by sprint (fastest resolution first))
 
 Refactored 2026-04-22: everything still active (bugs + unscheduled
 backlog) grouped into proposed sprint batches. Batches are ordered
 to land the highest-user-impact items first with the smallest code
 surface per batch. All sprints are **pre-1.0** per user direction.
 
-### Sprint FF+ — Wear & Auto feature parity (user request 2026-04-22)
+##### Sprint FF+ — Wear & Auto feature parity (user request 2026-04-22)
 
 | ID | Title | Notes |
 |----|-------|-------|
@@ -147,14 +261,14 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | BL26 | ✅ Session detail: GeneratingIndicator + state badge missing on session open | Done (v0.54.0) — Root cause: `startStream()` was called before `refreshFromServer()` so WS delivered the first `pane_capture` (dismissing the overlay) while `state.session` was still null (REST in flight). Fixed by awaiting `doRefreshFromServer()` before `startStream()` in `init`. Added `wsSessionRefreshFired` safety-net: if REST failed and session is still null on first WS event, one more REST refresh is triggered. |
 | BL27 | ✅ Wear: background battery drain + wake-on-alert | Done (v0.56.0) — Watch is fully passive (DataLayer only; no WS on watch). Wake-on-alert: `WearAlertListenerService` (`WearableListenerService`) receives `/datawatch/alert` message from phone and posts a high-priority notification. Phone side: `WearSyncService` tracks `prevWaitingIds`; when new sessions enter `waiting` state it calls `alertWatchNodes()` which pushes the message to connected nodes via `MessageClient`. |
 
-### Sprint FF3 — claude-code advanced options (v5.27.5 parity)
+##### Sprint FF3 — claude-code advanced options (v5.27.5 parity)
 
 | ID | Title | Notes |
 |----|-------|-------|
 | B70 | New Session: claude-code Advanced options block (permission mode + model + effort) | Done (v0.49.0) — fetches from /api/llm/claude/{models,efforts,permission_modes}; shown when backend = claude-code AND server ≥v5.27.5 (404 = hidden). Passes to POST /api/sessions/start. Closes [datawatch-app#32](https://github.com/dmz006/datawatch-app/issues/32). |
 | B71 | PRD dialog: permission mode dropdown | Done (v0.49.0) — added to `NewPrdDialog` alongside backend/effort/model. Fetches from /api/llm/claude/permission_modes (same probe as #32). Sent as `permission_mode` on PRD create. Closes [datawatch-app#33](https://github.com/dmz006/datawatch-app/issues/33). |
 
-### Sprint FF2 — PRD/About/icon polish (user request 2026-04-29)
+##### Sprint FF2 — PRD/About/icon polish (user request 2026-04-29)
 
 | ID | Title | Notes |
 |----|-------|-------|
@@ -177,7 +291,7 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | B52 | PRD: `PrdDto` missing `spec` field — EditPrdDialog starts blank | `spec: String? = null` added to `PrdDto`. `EditPrdDialog` now pre-populates the spec text area from `prd.spec`. Done (v0.45.0). |
 | B53 | PRD: AutonomousScreen filter chips missing statuses | Added `revisions_asked`, `approved`, `decomposing`, `cancelled` chips to the filter row — all 8 PRD statuses now reachable. Done (v0.45.0). |
 
-### Sprint II — session connection resilience (v0.46.x)
+##### Sprint II — session connection resilience (v0.46.x)
 
 Items from live-device testing 2026-04-29. Layout items (B54–B57) were already implemented in v0.35.9/v0.42.0 and closed on review. Remaining items are the connection-resilience + visual-polish gaps.
 
@@ -200,7 +314,7 @@ Items from live-device testing 2026-04-29. Layout items (B54–B57) were already
 | B68 | Android Auto: app icon eye overflows icon boundary | Done (v0.47.0) — Foreground sclera shrunk from ±40×26 to ±33×21 (fits within the 66dp safe zone, positions 21–87 on 108dp canvas). Iris r=22→18, pupil r=9→7, crosshairs and matrix rain repositioned within safe zone. |
 | B69 | Android Auto: Autonomous tab with contextual actions | Done (v0.47.0) — `WaitingPrdsScreen` expanded to include running plans (needs_review + revisions_asked + running). `PrdActionScreen` is now status-aware: shows Approve/Reject for review states, Stop (cancel) for running plans. `AutoSummaryScreen` row renamed to "Autonomous". `WaitingPrdsScreen` title updated to "Autonomous plans". Both text strings de-PRD'd to "plans". |
 
-### Sprint FF — live-device polish (next, v0.33.24+)
+##### Sprint FF — live-device polish (next, v0.33.24+)
 
 In-flight fixes from the current test pass. Small / cosmetic; aim
 for one commit per batch.
@@ -209,7 +323,7 @@ for one commit per batch.
 |----|-------|-------|
 | B28 | Watch + Auto need to view monitoring stats for all connected servers | Done (v0.48.0) — **Auto**: `AutoMonitorScreen` refactored to fetch all enabled servers in parallel (`coroutineScope { async{}.awaitAll() }`); single-server shows full detail gauge rows, multi-server shows one compact summary row per server (CPU · Mem · sessions). **Wear**: `WearSyncService` adds an all-servers parallel poll that publishes to `/datawatch/allStats` (parallel float arrays); `WearMainActivity` ViewModel consumes the new DataItem and `MonitorPage` switches between gauge grid (1 server) and `MultiServerMonitor` compact list (2+ servers). |
 
-### Sprint GG — unified monitoring Phase 1 (v0.34.x)
+##### Sprint GG — unified monitoring Phase 1 (v0.34.x)
 
 Issue dmz006/datawatch#20 is closed — these items are now unblocked.
 
@@ -219,7 +333,7 @@ Issue dmz006/datawatch#20 is closed — these items are now unblocked.
 | B10 | Live system-stats streaming | Done (v0.47.0) — `StatsHub` singleton (SharedFlow) added to `shared/transport/ws/`. `WebSocketTransport` routes `stats`-type frames to `StatsHub` before EventMapper sees them. `StatsViewModel` subscribes to `StatsHub.flow` and overlays live values on top of the 5 s REST poll — when a session WS is active the Monitor tab updates at the server's broadcast cadence without a separate REST round-trip. |
 | B11 | ✅ Per-session stats panel w/ wheels + graphs | Done (v0.57.0) — `SessionStatsPanel` composable added to session detail as a third "stats" tab (alongside tmux / channel). Finds matching `StatEnvelopeDto` from `StatsDto.envelopes` by sessionId prefix match. Shows CPU ring (threshold-coloured), RSS, threads, FDs, net Rx/Tx, GPU when present. Self-hides data rows with a message when no envelope matches. |
 
-### Sprint HH — BL backlog pulls (v0.35.x)
+##### Sprint HH — BL backlog pulls (v0.35.x)
 
 Unscheduled backlog items that align with the PWA-parity push —
 pulled out of the BL pool into real sprints since everything needs
@@ -238,19 +352,19 @@ to land pre-1.0.
 | BL19 | ❄️ FROZEN — Local-LLM orchestration — in-app PRD/HLD authoring + Ollama backend + task fire-off | Frozen 2026-05-04 per user direction. No ADR, no schedule. Revisit only when user explicitly unfreezes. |
 | BL21 | Signal device-linking (`/api/link/*` + QR SSE) | Needs QR rendering from SSE frames + paired-state persistence. Server issue: [datawatch#31](https://github.com/dmz006/datawatch/issues/31). |
 
-### Unscheduled backlog
+##### Unscheduled backlog
 
 | ID | Title | Notes |
 |----|-------|-------|
-| BL28 | Text contrast: dark-purple on black backgrounds — all surfaces | **SHIPPED v1.5.1 (2026-09-14).** Raised `DwAccent` from `#7C3AED` (~3.7:1, WCAG AA fail) to `#8B5CF6` (~4.93:1, WCAG AA pass). Fixed across: Theme.kt token, OrchestratorGraphDialog, PeerResourcesCard, FederatedPeersCard, PluginsCard, AutonomousScreen (approved status), MatrixSplashScreen. Wear OS and Android Auto were already passing (teal/green tile accent; CarColor only). Plan: `docs/plans/2026-09-14-bl28-contrast-audit.md`. |
+| BL28 | Text contrast: dark-purple on black backgrounds — all surfaces | **SHIPPED v1.5.1 (2026-09-14).** Raised `DwAccent` from `#7C3AED` (~3.7:1, WCAG AA fail) to `#8B5CF6` (~4.93:1, WCAG AA pass). Fixed across: Theme.kt token, OrchestratorGraphDialog, PeerResourcesCard, FederatedPeersCard, PluginsCard, AutonomousScreen (approved status), MatrixSplashScreen. Wear OS and Android Auto were already passing (teal/green tile accent; CarColor only). Plan: `docs/plans/historical-plans/2026-09-14-bl28-contrast-audit.md`. |
 | BL29 | PRD full lifecycle management — phone first, then Auto + iOS | **SHIPPED v1.5.0 (2026-09-14).** Cancel story/task, requeue completed/cancelled tasks, edit task spec before approval, approve with optional note — all from PrdDetailDialog on Android phone. Server prerequisites: datawatch v8.27.0 (cancel_story #149, cancel_task #150, reset_task force=true #151). Auto + iOS parity deferred to BL30. |
-| BL30 | Android Auto: full PRD/story/task view + lifecycle parity | **SHIPPED v1.8.0 (2026-09-14).** Navigation depth freed: `AutoPrdStoriesScreen` now stateful (stories list → story detail in-place, depth 4); `AutoTaskDetailScreen` is new leaf node (depth 5) with full task spec/error/verification/retry, Requeue + Cancel Task actions. Story-detail ActionStrip: Approve, Reset Task, Cancel Story. `buildStoryBody` updated with retry counts + verification summaries. Deferred to future: (b) PRD edit from Auto, (e) progress indicators/timestamps. Plan: `docs/plans/2026-09-14-bl30-auto-task-lifecycle.md`. |
+| BL30 | Android Auto: full PRD/story/task view + lifecycle parity | **SHIPPED v1.8.0 (2026-09-14).** Navigation depth freed: `AutoPrdStoriesScreen` now stateful (stories list → story detail in-place, depth 4); `AutoTaskDetailScreen` is new leaf node (depth 5) with full task spec/error/verification/retry, Requeue + Cancel Task actions. Story-detail ActionStrip: Approve, Reset Task, Cancel Story. `buildStoryBody` updated with retry counts + verification summaries. Deferred to future: (b) PRD edit from Auto, (e) progress indicators/timestamps. Plan: `docs/plans/historical-plans/2026-09-14-bl30-auto-task-lifecycle.md`. |
 | BL31 | Android Auto: expanded voice commands | **Priority 3 — after BL30 Auto views are solid.** Current gaps: (a) SEND_MESSAGE — capture speech and send as input to the active/selected session (most requested; needs a new voice capture → text → POST /api/sessions/{id}/input flow in Auto); (b) RUN_PLAN — "run my plan" / "start the automata" fires prdAction("run") on the first approved plan; (c) DECOMPOSE_PLAN — "decompose my plan" fires prdAction("decompose"); (d) REJECT_PLAN — "reject my plan" fires prdAction("reject"); (e) RESTART_TASK — "restart the task" / "retry the task" fires resetPrdTask on first failed task without requiring navigation to story detail; (f) READ_STORY — "what's the current story" / "read the active story" speaks the active story's description + running task from the first active plan; (g) COST_REPORT — "how much has this cost" reads cost summary (stub today, needs transport.getCostSummary()); (h) KILL_SESSION / PAUSE_SESSION — wire existing enum values to actual execution instead of "use the screen" stub. Phrase lists and disambiguation rules for each command need to be defined and unit-tested before wiring (same pattern as APPROVE_PLAN / STOP_PLAN). All new commands must have ≥3 phrase tests before merging. |
-| BL32 | GPU display info parity — observer card, session stats, PRD session resources | **SHIPPED v1.6.0 (2026-09-14).** Observer card already showed all 4 GPU metrics; added multi-GPU index prefix ("GPU 1 util", "GPU 2 util") when ≥2 GPUs. Session stats ComputeNode card now fetches `/api/compute/nodes/{ref}/detail` (remote GPU) instead of `gpuPct` from stats envelope (local process). All surfaces use `obs_cn_gpu_*` locale keys. No server changes. Plan: `docs/plans/2026-09-14-bl32-gpu-parity.md`. |
+| BL32 | GPU display info parity — observer card, session stats, PRD session resources | **SHIPPED v1.6.0 (2026-09-14).** Observer card already showed all 4 GPU metrics; added multi-GPU index prefix ("GPU 1 util", "GPU 2 util") when ≥2 GPUs. Session stats ComputeNode card now fetches `/api/compute/nodes/{ref}/detail` (remote GPU) instead of `gpuPct` from stats envelope (local process). All surfaces use `obs_cn_gpu_*` locale keys. No server changes. Plan: `docs/plans/historical-plans/2026-09-14-bl32-gpu-parity.md`. |
 | BL33 | Android Auto: per-guardrail approval buttons on Block Details screen | **SHIPPED v1.7.0 (2026-09-14).** `BlockDetailsScreen` split into single-block (`MessageTemplate` + "Approve [name]") and multi-block (`ListTemplate` with per-row tap-to-approve + "Approve All" ActionStrip). `approveGuardrailBlock(sessionId, guardrailName)` calls `POST /api/sessions/{id}/guardrail/{name}/approve` (datawatch#153). |
 | BL34 | ✅ Google Assistant App Actions — "Ok Google, send [command] to datawatch" launches `VoiceCommandActivity` with driver-safe confirmation screen. `SEND_MESSAGE` BII in `shortcuts.xml`. Routes to last-active (Running/Waiting) session; matches by name if spoken. GH#148. | v1.13.0 |
 
-### Parking lot (waiting on upstream / user gesture)
+##### Parking lot (waiting on upstream / user gesture)
 
 | ID | Title | Waiting on |
 |----|-------|-----------|
@@ -258,7 +372,7 @@ to land pre-1.0.
 | B31 | **HOLD** — Wear + Auto: Sessions snapshot + quick-command + voice | User still evaluating whether existing Auto scope counts as done. No action until user decides. |
 | Store assets | `docs/media/store/phone/`, `tablet-10/`, `tablet-7/` untracked | Commit in the next convenient version bump. |
 
-### Reclassified
+##### Reclassified
 
 Items originally filed as bugs but not PWA-parity gaps. Deferred
 or retracted rather than scheduled.
@@ -269,10 +383,6 @@ or retracted rather than scheduled.
 | B13 | Chat-channel status summary on Monitor | PWA doesn't put this on Monitor. Retracted. |
 | B14 | LLM-backend status summary on Monitor | Lives on Settings → LLM via LlmConfigCard (v0.33.14). Retracted. |
 | B15 | List of disabled chats on Monitor | ChannelsCard already shows enabled/disabled per-row. Retracted. |
-
----
-
-## Closed
 
 ### Bugs
 
@@ -317,7 +427,7 @@ or retracted rather than scheduled.
 
 | ID | Title | Shipped in | Notes |
 |----|-------|-----------|-------|
-| BL35 | Android Auto UX overhaul | v1.0.28 | Sprint labels in git history use historical PRD ID: BL303-A1–A8. ConstraintManager list limits, AutoSummaryScreen live automata counts + Last Output row, LastOutputDetailScreen, BlockDetailsScreen, VoiceRecordingScreen (CarAudioRecord), TranscriptionConfirmScreen, context-sensitive ActionStrip on session detail, update check in About screen. Plan: `docs/plans/2026-05-16-bl303-wear-auto.md`. |
+| BL35 | Android Auto UX overhaul | v1.0.28 | Sprint labels in git history use historical PRD ID: BL303-A1–A8. ConstraintManager list limits, AutoSummaryScreen live automata counts + Last Output row, LastOutputDetailScreen, BlockDetailsScreen, VoiceRecordingScreen (CarAudioRecord), TranscriptionConfirmScreen, context-sensitive ActionStrip on session detail, update check in About screen. Plan: `docs/plans/historical-plans/2026-05-16-bl303-wear-auto.md`. |
 | BL2 | Biometric unlock | v0.9.0 | Promoted per ADR-0042. Passphrase-bound variant now tracked as BL16. |
 | BL4 | Wear Tile | v0.5.0 | Data Layer pipe lives under v0.33.12 WearSyncService. |
 | BL6 | Home-screen widget | v0.4.0 | |
@@ -393,11 +503,13 @@ or retracted rather than scheduled.
 | v1.2.0 | ✅ Android Auto: full PRD view (`getPrd()` single-fetch, stories list `AutoPrdStoriesScreen`, voices status summary) | v1.2.0 |
 | v1.2.1 | ✅ GPU util% regression fix — `getComputeNodeDetail()` fallback when server v8.25.3 removes `gpu_util_pct` from `/api/stats` | v1.2.1 |
 | v1.3.0 | ✅ Android Auto: `AutoPrdDetailScreen` — full TTS-readable PRD detail with status, progress arc, active story, pending list, decisions, spec; contextual lifecycle actions; Stories action strip | v1.3.0 |
-| v1.4.0 | ✅ Android Auto: story-level navigation (`AutoPrdStoriesScreen` clickable rows → `AutoStoryDetailScreen`); Approve/Reset-Task per story; Run/Decompose lifecycle actions on PRD detail; APPROVE_PLAN / STOP_PLAN / READ_PLAN voice commands with real server execution; APPROVE_GATE + LIST_AUTOMATA execution wired. Plan: `docs/plans/2026-09-13-auto-prd-story-task-management.md` | v1.4.0 |
+| v1.4.0 | ✅ Android Auto: story-level navigation (`AutoPrdStoriesScreen` clickable rows → `AutoStoryDetailScreen`); Approve/Reset-Task per story; Run/Decompose lifecycle actions on PRD detail; APPROVE_PLAN / STOP_PLAN / READ_PLAN voice commands with real server execution; APPROVE_GATE + LIST_AUTOMATA execution wired. Plan: `docs/plans/historical-plans/2026-09-13-auto-prd-story-task-management.md` | v1.4.0 |
 
 ---
 
 ## v1.0.0 target
+
+*Historical (v1.0.0 shipped). Kept for context; current open work is under "Open — after v1.28.0" at the top.*
 
 PWA parity through alpha.23c was closed at v0.86.0. Alpha.31–alpha.36 follow-on features are tracked
 in Sprints 24–29 above (7 open issues, no external blockers).
