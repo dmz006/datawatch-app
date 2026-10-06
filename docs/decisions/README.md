@@ -58,3 +58,6 @@ All decisions approved by user on 2026-04-17 during the four-batch design Q&A, w
 | 0041 | App Display Name | Accepted | [0041-app-display-name.md](0041-app-display-name.md) |
 | 0042 | MVP Scope Promotion | Accepted | [0042-mvp-scope-promotion.md](0042-mvp-scope-promotion.md) |
 | 0043 | Version Label Correction | Accepted | [0043-version-label-correction.md](0043-version-label-correction.md) |
+| 0049 | Android Auto MESSAGING Category | Accepted | [0049-auto-messaging-category.md](0049-auto-messaging-category.md) |
+| 0050 | iOS Drag-to-Reorder Keeps Press-and-Hold | Accepted | [0050-ios-drag-press-and-hold.md](0050-ios-drag-press-and-hold.md) |
+| 0051 | Bundled Mermaid, Kept Current | Accepted | [0051-bundled-mermaid.md](0051-bundled-mermaid.md) |

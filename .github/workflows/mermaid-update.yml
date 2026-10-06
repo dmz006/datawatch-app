@@ -1,0 +1,44 @@
+name: Mermaid update
+
+# Keeps the bundled Mermaid (Automaton spec diagrams, Android + iOS, ADR-0051)
+# current: monthly check of the npm "mermaid" package; takes the newest stable
+# release that has been out >= 72 h (AGENT.md dependency rule) and opens a PR.
+on:
+  schedule:
+    - cron: "41 6 2 * *"   # 06:41 UTC on the 2nd of each month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check / update Mermaid
+        id: upd
+        run: |
+          out="$(./scripts/update-mermaid.sh)"
+          echo "$out"
+          echo "result=$out" >> "$GITHUB_OUTPUT"
+      - name: Open PR
+        if: startsWith(steps.upd.outputs.result, 'UPDATED')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ver="$(cat composeApp/src/androidMain/assets/mermaid/mermaid.VERSION)"
+          branch="chore/mermaid-$ver"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add composeApp/src/androidMain/assets/mermaid
+          git commit -m "chore(deps): bundled Mermaid $ver (Automaton diagrams, ADR-0051)"
+          git push -u origin "$branch"
+          body="Automated monthly check found a newer stable Mermaid release (${{ steps.upd.outputs.result }}), out for at least 72 h. Bundled for Android + iOS (composeApp/src/androidMain/assets/mermaid, shared with iOS as a folder reference). Licence: MIT (mermaid-LICENSE.txt). Before merging: open an Automaton whose spec has a mermaid block on Android and iOS and check the diagram renders."
+          # Repo may not allow Actions to open PRs; fall back to an issue linking the branch.
+          gh pr create --title "chore(deps): bundled Mermaid $ver" --body "$body" \
+            || gh issue create --title "chore(deps): bundled Mermaid $ver available" \
+                 --body "$body Branch \`$branch\` is ready: https://github.com/${{ github.repository }}/compare/$branch?expand=1"
