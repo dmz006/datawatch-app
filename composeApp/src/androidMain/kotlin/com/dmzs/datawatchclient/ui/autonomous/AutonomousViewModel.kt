@@ -606,6 +606,16 @@ public class AutonomousViewModel(
         prdOp("Run") { it.prdAction(prdId, "run") }
     }
 
+    /** Parity D52b — PWA automataPause: `POST /api/autonomous/prds/{id}/pause` (server v8.57+). */
+    public fun pausePrd(prdId: String) {
+        prdOp("Pause") { it.prdAction(prdId, "pause") }
+    }
+
+    /** Parity D52b — PWA automataResume: `POST /api/autonomous/prds/{id}/resume`. */
+    public fun resumePrd(prdId: String) {
+        prdOp("Resume") { it.prdAction(prdId, "resume") }
+    }
+
     /** Show confirm-cancel dialog for the given PRD. Dismiss without action via [dismissCancelConfirm]. */
     public fun requestCancel(prdId: String) {
         _state.value = _state.value.copy(confirmCancelId = prdId)

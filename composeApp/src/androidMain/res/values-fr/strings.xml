@@ -1388,4 +1388,6 @@
     <string name="sessions_mute">Couper les notifications de cette session</string>
     <string name="sessions_unmute">Réactiver les notifications</string>
     <string name="session_council_badge">Conseil</string>
+    <string name="automata_action_pause">Mettre en pause</string>
+    <string name="automata_action_resume">Reprendre</string>
 </resources>

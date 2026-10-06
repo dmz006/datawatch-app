@@ -114,6 +114,9 @@ internal fun PrdDetailDialog(
     extraBackendModels: Map<String, List<String>> = emptyMap(),
     onRun: () -> Unit,
     onCancel: () -> Unit,
+    /** Parity D52b — PWA detail Pause (running) / Resume (paused). */
+    onPause: (() -> Unit)? = null,
+    onResume: (() -> Unit)? = null,
     onRequestRevision: (note: String) -> Unit,
     onEditPrd: (title: String?, spec: String?, permissionMode: String?) -> Unit,
     onDelete: () -> Unit,
@@ -462,6 +465,18 @@ internal fun PrdDetailDialog(
                                             contentColor = Color(0xFF3B82F6),
                                         ),
                                 ) { Text(stringResource(R.string.prd_detail_run)) }
+                            }
+                            if (status == "running" && onPause != null) {
+                                FilledTonalButton(
+                                    onClick = onPause,
+                                    modifier = Modifier.weight(1f),
+                                ) { Text("⏸ " + stringResource(R.string.automata_action_pause)) }
+                            }
+                            if (status == "paused" && onResume != null) {
+                                FilledTonalButton(
+                                    onClick = onResume,
+                                    modifier = Modifier.weight(1f),
+                                ) { Text("▶ " + stringResource(R.string.automata_action_resume)) }
                             }
                             if (isCancellable) {
                                 FilledTonalButton(
