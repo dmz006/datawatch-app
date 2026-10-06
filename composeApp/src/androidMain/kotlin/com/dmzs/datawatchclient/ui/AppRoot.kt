@@ -567,6 +567,11 @@ private fun HomeShell(
     val mainPane: @Composable (Modifier) -> Unit = { mod ->
         Scaffold(
             modifier = mod,
+            // Each tab's TopAppBar already pads for the status bar and the
+            // NavigationBar for the nav bar. Since enableEdgeToEdge (build 283)
+            // the default systemBars insets here added the status bar a second
+            // time — an empty band above every tab title.
+            contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 BottomNavBar(
                     tabNav,
