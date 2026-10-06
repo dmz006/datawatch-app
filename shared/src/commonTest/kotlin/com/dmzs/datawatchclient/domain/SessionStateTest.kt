@@ -32,7 +32,7 @@ class SessionStateTest {
     }
 
     @Test
-    fun `unknown states degrade to New (not Error)`() {
+    fun `unknown states degrade to New - not Error`() {
         // Forward-compatibility: a future server state the mobile client hasn't
         // seen before is shown as New (neutral), not Error. User feedback
         // 2026-04-20: the previous Error fallback caused sessions with

@@ -31,7 +31,7 @@ class DecomposeStreamTest {
     }
 
     @Test
-    fun `reader joins multi-line data, strips CR and flushes a trailing frame`() {
+    fun `reader joins multi-line data - strips CR and flushes a trailing frame`() {
         val f = frames("event: x\r\ndata: line1\r\ndata:line2")
         assertEquals(1, f.size)
         assertEquals("x", f[0].event)
@@ -69,7 +69,7 @@ class DecomposeStreamTest {
     }
 
     @Test
-    fun `null fields, unknown types and garbage are tolerated`() {
+    fun `null fields - unknown types and garbage are tolerated`() {
         val story = DecomposeStreamParser.parse("{\"type\":\"story\",\"index\":0,\"title\":null,\"description\":null,\"id\":null}", null)!!
         assertEquals("", story.title)
         assertEquals("", story.storyId)

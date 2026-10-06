@@ -27,7 +27,7 @@ class WebSocketUrlTest {
     }
 
     @Test
-    fun `http base becomes ws URL (cleartext path for LAN)`() {
+    fun `http base becomes ws URL - cleartext path for LAN`() {
         assertEquals(
             "ws://laptop.local:8080/ws",
             transport("http://laptop.local:8080").buildWsUrl("http://laptop.local:8080"),
