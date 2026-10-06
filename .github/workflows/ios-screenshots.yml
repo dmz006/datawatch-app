@@ -73,6 +73,7 @@ jobs:
           # Clean shell environment for the demo sessions (no runner user/host in prompts).
           (cd "$DEMO_ROOT" && nohup env -i HOME="$DEMO_ROOT" PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
               SHELL=/bin/bash TERM=xterm-256color LANG=en_US.UTF-8 USER=demo \
+              BASH_SILENCE_DEPRECATION_WARNING=1 \
               "$RUNNER_TEMP/dw-bin/datawatch" --config "$DEMO_ROOT/config.yaml" start --foreground \
               > "$DEMO_ROOT/daemon.log" 2>&1 &)
           for i in $(seq 1 60); do
@@ -84,9 +85,10 @@ jobs:
       - name: Seed demo content
         run: |
           set -euo pipefail
-          bash scripts/screenshots/seed-demo.sh
+          # Keep going on a partial seed (screens still render); the log says what failed.
+          bash scripts/screenshots/seed-demo.sh || echo "::warning::demo seed incomplete — see log above"
           echo "SESSION_ID=$(cat "$DEMO_ROOT/terminal-session-id")" >> "$GITHUB_ENV"
-          echo "AUTOMATON_ID=$(cat "$DEMO_ROOT/automaton-id")" >> "$GITHUB_ENV"
+          echo "AUTOMATON_ID=$(cat "$DEMO_ROOT/automaton-id" 2>/dev/null || true)" >> "$GITHUB_ENV"
 
       # ── Build: same recipe as ios-build.yml (Debug, simulator) ─────────────
       - name: Set up JDK 21
@@ -159,6 +161,7 @@ jobs:
         if: always()
         run: |
           tail -60 "$DEMO_ROOT/daemon.log" || true
+          tail -20 "$DEMO_ROOT/ollama-stub.log" || true
           curl -sk -H "Authorization: Bearer $DW_TOKEN" "$DW_URL/api/sessions" | head -c 3000 || true
 
       - name: Upload screenshots

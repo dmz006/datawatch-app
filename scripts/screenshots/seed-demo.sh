@@ -13,14 +13,20 @@ DW_URL="${DW_URL:-https://127.0.0.1:18443}"
 DW_TOKEN="${DW_TOKEN:-dw-test-token-12345}"
 PROJ="$DEMO_ROOT/projects/weather-api"
 
-api() { # api METHOD PATH [JSON]
-  local method=$1 path=$2 body=${3:-}
+api() { # api METHOD PATH [JSON] — prints the body; fails (with the body on stderr) on HTTP >= 400
+  local method=$1 path=$2 body=${3:-} out code
+  out=$(mktemp)
   if [ -n "$body" ]; then
-    curl -fsSk -X "$method" -H "Authorization: Bearer $DW_TOKEN" \
-      -H 'Content-Type: application/json' --data "$body" "$DW_URL$path"
+    code=$(curl -sSk -o "$out" -w '%{http_code}' -X "$method" -H "Authorization: Bearer $DW_TOKEN" \
+      -H 'Content-Type: application/json' --data "$body" "$DW_URL$path")
   else
-    curl -fsSk -X "$method" -H "Authorization: Bearer $DW_TOKEN" "$DW_URL$path"
+    code=$(curl -sSk -o "$out" -w '%{http_code}' -X "$method" -H "Authorization: Bearer $DW_TOKEN" "$DW_URL$path")
   fi
+  if [ "$code" -ge 400 ]; then
+    echo "$method $path -> HTTP $code: $(head -c 500 "$out")" >&2
+    rm -f "$out"; return 1
+  fi
+  cat "$out"; rm -f "$out"
 }
 jget() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(eval(sys.argv[1], {}, {"d": d}))' "$1"; }
 
@@ -183,6 +189,8 @@ echo "sessions: docs=$docs_id tests=$tests_id deploy=$deploy_id"
 # ── 3. Automaton: create, plan (stub LLM), then add a story + task ────────
 # Planner LLM on a compute node backed by ollama-stub.py (canned plan).
 STUB_URL="${OLLAMA_STUB_URL:-http://127.0.0.1:11434}"
+for _ in $(seq 1 20); do curl -sf "$STUB_URL/api/tags" >/dev/null && break; sleep 1; done
+curl -sf "$STUB_URL/api/tags" >/dev/null || { echo "::error::ollama stub not reachable at $STUB_URL" >&2; exit 1; }
 api POST /api/compute/nodes "{\"name\":\"demo-gpu\",\"kind\":\"ollama\",\"address\":\"$STUB_URL\"}" >/dev/null
 api POST /api/llms '{"name":"demo-planner","kind":"ollama","model":"demo-planner","compute_nodes":["demo-gpu"],"output_mode":"chat","input_mode":"tmux"}' >/dev/null
 prd_id=$(api POST /api/autonomous/prds "$(python3 -c 'import json,sys; print(json.dumps({"spec": "Add response caching to the weather API so repeated forecast lookups for the same city are served from memory, and report cache hit/miss counts on /health.", "project_dir": sys.argv[1], "backend": "shell"}))' "$PROJ")" \
