@@ -7,6 +7,21 @@ gets two levels of validation:
 - **Validated** (`Yes` / `No`): live end-to-end confirmed on a real device against a real
   datawatch server. Document environment in *Test Conditions*.
 
+## How to run the e2e smoke flows (Maestro)
+
+`scripts/e2e-sandbox.sh [--wear] [--auto]` starts an isolated sandbox daemon (fresh
+`/home/dmz/workspace/.datawatch-test-e2e-<runid>`, real LLM nodes from the local
+`/home/dmz/workspace/.datawatch-test-llm-nodes.env`), boots `dw_test_phone` headless,
+installs the publicTrackDebug APK, runs every flow in `e2e/maestro/` plus runner-side
+checks (tmux `#{pane_in_mode}`, REST, logcat), then always tears everything down.
+Results: `/home/dmz/workspace/tmp/datawatch-app/run/e2e-<runid>/results.tsv`.
+Setup, flow list and debugging: [docs/testing/e2e-maestro.md](testing/e2e-maestro.md).
+
+**CI note:** these flows run **locally only** — CI has no emulator (and no LLM nodes),
+so the CI workflow runs JVM tests only. These runs are emulator + live sandbox daemon:
+say so in *Test Conditions* when citing one. The Wear/Auto stages are launch/no-crash
+smoke only and do not validate watch or car features.
+
 ## Interfaces
 
 | Surface | Feature | Tested | Validated | Sprint | Test Conditions | Notes |
