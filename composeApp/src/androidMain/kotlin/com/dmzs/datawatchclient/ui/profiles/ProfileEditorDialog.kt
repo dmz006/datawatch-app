@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -120,12 +122,19 @@ internal fun ProfileEditorDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
+        // Keep Cancel/Save above the gesture bar and keyboard (e2e flow 09:
+        // they rendered under the nav bar and were unreachable for TalkBack).
         Surface(
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 24.dp),
+            modifier =
+                Modifier
+                    .systemBarsPadding()
+                    .imePadding()
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 24.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -185,7 +194,12 @@ internal fun ProfileEditorDialog(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (busy) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp).size(20.dp), strokeWidth = 2.dp)
+                    if (busy) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 8.dp).size(20.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
                     TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                     TextButton(onClick = { submit() }, enabled = !busy) { Text(stringResource(R.string.save)) }
                 }
