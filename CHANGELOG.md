@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.1] — 2026-10-06
+
 ### Fixed
 - **Sessions failing to connect on slower links ("3 retries failed" while the web UI worked).** The connection watchdog reconnected from scratch every 5 seconds without a first screen of output. Over cellular or a relayed Tailscale route, connecting takes longer than that, so each retry cancelled a connection that had just opened. Like the web UI, the watchdog now re-sends the subscribe on the open connection; the Retry button still reconnects fully. Android and iOS.
 - **Empty gap above the bottom menu and empty band above every tab title (Android).** The navigation-bar and status-bar space was reserved twice after the app moved to edge-to-edge drawing. Both are gone on all six tabs.
