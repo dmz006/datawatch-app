@@ -1,6 +1,6 @@
 # Data Flow
 
-*Last updated 2026-04-22 for v0.33.0.*
+*Last updated 2026-10-06 for v1.28.0 (diagrams 19–24 added; 1–18 unchanged since v0.33.0).*
 
 Sequence diagrams for every interaction the app performs.
 
@@ -8,7 +8,10 @@ Sequence diagrams for every interaction the app performs.
 > "proposed" endpoints referenced in earlier revisions shipped in
 > parent datawatch v3.0.0 / v4.0.3 and are integrated. Diagrams 15–18
 > cover v0.15–v0.33 additions (profile CRUD, detection filters, MCP
-> SSE invocation, session reorder) — see bottom of this file.
+> SSE invocation, session reorder). Diagrams 19–24 cover v1.24–v1.28
+> (council live runs, live planning stream, scroll mode, channel-ready,
+> iOS APNs registration, profile editor YAML round-trip). Transport
+> details: [transports.md](transports.md).
 
 ## 1. Bootstrap + server pairing
 
@@ -405,6 +408,223 @@ sequenceDiagram
     T-->>App: McpToolsListOrCategories
     App-->>U: McpToolsCard renders flat / grouped view
 ```
+
+## 19. Council live run (v1.26.0)
+
+Shared `TransportClient.watchCouncilRun` (`CouncilLive.kt`), used by both apps.
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as App (Android / iOS)
+    participant T as TransportClient
+    participant DW as datawatch server
+
+    U->>App: Settings › Council › Run (proposal, Quick / Debate, personas)
+    App->>T: POST /api/council/run {proposal, mode, personas}
+    T->>DW: HTTPS
+    DW-->>T: 202-style ack {id, status: running, events_path}
+    App-->>U: Live sheet opens (phase chip, rounds)
+    App->>T: GET /api/council/runs/{id}/events (Accept: text/event-stream)
+    DW-->>T: event: hello
+    alt Run already finished before we subscribed (hub has no replay)
+        T->>DW: GET /api/council/runs/{id}
+        DW-->>T: persisted run
+        T-->>App: state from run detail, watch ends
+    else Run in flight
+        loop Each round / persona
+            DW-->>T: round_started / persona_reply / …
+            T-->>App: CouncilLiveReducer.reduce(state, event)
+            App-->>U: Replies stream in (markdown)
+        end
+        DW-->>T: run_completed (consensus / dissent)
+        T->>DW: GET /api/council/runs/{id} (retry ≤3 × 1 s until persisted)
+        DW-->>T: full run — fills replies sent before we connected
+        App-->>U: Consensus + dissent
+    end
+    opt Stream drops before a terminal event
+        loop every 5 s (max 720 polls)
+            T->>DW: GET /api/council/runs/{id}
+            DW-->>T: 404 / running → keep polling; finished → show
+        end
+    end
+    opt User taps Stop
+        App->>T: POST /api/council/runs/{id}/cancel
+    end
+    Note over App,DW: Recent runs: GET /api/council/runs (bare array) → tap opens a replay built from GET /api/council/runs/{id}
+```
+
+The SSE request has no read deadline beyond a 15-minute socket timeout (a persona can think
+for minutes and the topic has no keepalive).
+
+## 20. Automata live planning stream (v1.26.0)
+
+Shared `TransportClient.decomposeEvents` (`RestTransport.kt`, `sse/DecomposeStream.kt`).
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as App (Android / iOS)
+    participant T as TransportClient
+    participant DW as datawatch server
+
+    U->>App: Automaton › Decompose (plan)
+    App->>T: POST /api/autonomous/prds/{id}/decompose
+    T->>DW: HTTPS
+    DW-->>T: 202 {task_id, stream_url}
+    App->>T: GET /api/autonomous/prds/{id}/decompose/stream (text/event-stream)
+    loop Until complete / error
+        DW-->>T: id: N · data: {"type":"story", index, title, …}
+        T-->>App: story card appears live (deduped by index)
+        DW-->>T: id: N · data: {"type":"progress", done, total}
+        T-->>App: progress bar
+    end
+    alt Network drop mid-stream
+        T->>T: wait 1 s, 2 s, 4 s … (cap 30 s, max 3 retries in a row)
+        T->>DW: GET …/decompose/stream with Last-Event-ID: N
+        DW-->>T: replays every event after N
+    end
+    DW-->>T: data: {"type":"complete", story_count} (or "error", message)
+    T-->>App: terminal event → stream closes, detail refreshes
+    opt No planning job (already done / never started)
+        DW-->>T: 404 → stream ends quietly
+    end
+```
+
+## 21. Scroll mode (tmux copy-mode) enter / exit (v1.25.1)
+
+Android `SessionDetailViewModel.scrollModeCommand`, iOS `IosScrollMode` (shared transport).
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as App (Android / iOS)
+    participant T as TransportClient
+    participant WS as WebSocket /ws
+    participant DW as datawatch server
+
+    U->>App: Tap 📜 scroll
+    App->>T: POST /api/command {text: "tmux-copy-mode <fullId>"}
+    T->>DW: HTTPS
+    alt REST accepted (result not "Error…" / "not found")
+        DW-->>T: {result}
+        App-->>U: Scroll overlay (PgUp / PgDn / ↑ / ↓ / ESC)
+    else REST failed
+        App->>WS: {type:"command", data:{text:"tmux-copy-mode <fullId>"}}
+        Note over App,WS: Fallback only — a WS frame is dropped silently while the socket reconnects
+        App-->>U: Overlay only if the frame was sent
+    end
+    U->>App: Tap 📜 again, or leave the session while scrolled back
+    App->>T: POST /api/command {text: "sendkey <fullId>: Escape"}
+    DW-->>T: {result}
+    App-->>U: Live composer returns
+```
+
+The UI flips only after the server confirms, so tmux can no longer be left in copy-mode
+behind the live input bar.
+
+## 22. Channel ready — "Waiting for MCP channel…" banner (v1.25.1)
+
+Shared `ChannelReadyHub` / `ChannelReadyDetector` (`transport/ws/ChannelReadyHub.kt`).
+
+```mermaid
+sequenceDiagram
+    participant DW as datawatch server
+    participant WS as WebSocket /ws
+    participant Hub as ChannelReadyHub
+    participant App as Session detail (Android / iOS)
+    actor U as User
+
+    App-->>U: Banner "Waiting for MCP channel…" (session.channel_ready = false)
+    par Server event
+        DW-->>WS: {type:"channel_ready", data:{session_id: fullId}}
+        WS->>Hub: markReady(fullId)
+    and Session list / diff
+        DW-->>WS: sessions / session_state with channel_ready: true
+        WS->>Hub: cache fullId
+    and Output scan
+        DW-->>WS: output / pane_capture / chat_message for this session
+        WS->>Hub: scan(lines) — strip ANSI, look for "Listening for channel", "Channel: connected", "[opencode-acp] … ready"
+    end
+    Hub-->>App: isReady(fullId) = true (sticky for the app process)
+    App-->>U: Banner clears, channel input enabled
+```
+
+If the banner never clears after a daemon restart, the bridge never re-registered with the
+server: upstream dmz006/datawatch#174.
+
+## 23. iOS APNs registration (v1.28.0)
+
+`NotificationService.swift` + `IosServiceLocator.registerApnsToken`.
+
+```mermaid
+sequenceDiagram
+    participant iOS as iOS app
+    participant APNs as Apple Push Notification service
+    participant T as TransportClient (per enabled server)
+    participant DW as datawatch server
+
+    Note over iOS: Every launch (Apple guidance)
+    iOS->>APNs: registerForRemoteNotifications()
+    alt Success
+        APNs-->>iOS: device token (kept in memory only, never persisted)
+        loop Each enabled server profile
+            iOS->>T: registerDevice(token, kind=apns, platform=ios, apns_environment)
+            T->>DW: POST /api/devices/register {device_token, kind:"apns", app_version, platform:"ios", profile_hint, apns_environment:"production"|"development"}
+            DW-->>T: {device_id}
+            T-->>iOS: store device_id for that profile
+        end
+    else didFailToRegister
+        APNs-->>iOS: error
+        iOS->>iOS: registrationFailed = true → retry on next foreground
+    end
+    Note over DW,APNs: Delivery: server signs with a .p8 key and sends to api.push.apple.com (production) or api.sandbox.push.apple.com (development). Server sender pending — dmz006/datawatch#183.
+```
+
+## 24. Project / cluster profile editor — form ↔ YAML (v1.27.0)
+
+Shared `ProfileEditor` / `ProfileForm` / `ProfileSecrets` / `ProfileYaml`.
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as Profile editor (Android / iOS)
+    participant Ed as ProfileEditor (shared)
+    participant T as TransportClient
+    participant DW as datawatch server
+
+    U->>App: Settings › Profiles › edit (or ＋ new)
+    alt Existing profile
+        App->>T: GET /api/profiles/{kind}s
+        DW-->>T: stored profile JSON
+        App->>Ed: workingDoc = mask literal secrets (refs like ${secret:…} stay visible)
+    else New profile
+        App->>Ed: workingDoc = web-UI template for the kind
+    end
+    App-->>U: Form view (every web-UI field + defaults)
+    U->>App: Toggle "YAML view"
+    App->>Ed: toYaml(form values applied to workingDoc)
+    Ed-->>App: YAML text (unknown keys preserved)
+    U->>App: Edit YAML, toggle "Form view"
+    App->>Ed: parseYaml(text)
+    alt Parse error
+        Ed-->>App: "YAML parse error — line N …" (text kept, not discarded)
+    else OK
+        Ed-->>App: document → form values
+    end
+    U->>App: Save
+    App->>Ed: validate + buildBody (restore masked secrets from the stored copy)
+    alt New
+        App->>T: POST /api/profiles/{kind}s
+    else Existing
+        App->>T: PUT /api/profiles/{kind}s/{name}
+    end
+    T->>DW: HTTPS
+    DW-->>T: 200
+    App-->>U: Row re-renders
+```
+
+Diagram 15 (v0.32.0 profile dialog) is superseded by this flow.
 
 ## Error + reconnection behavior summary
 
