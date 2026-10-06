@@ -128,6 +128,9 @@ jobs:
         working-directory: iosApp
         run: xcodegen generate --spec project.yml
 
+      # Unlike ios-build.yml this signs ad-hoc ("Sign to Run Locally"): an
+      # unsigned app has no entitlements, so the simulator keychain rejects the
+      # server token (and the seeded profile never saves).
       - name: Build for iOS Simulator (Debug)
         working-directory: iosApp
         run: |
@@ -138,7 +141,7 @@ jobs:
               -destination 'generic/platform=iOS Simulator' \
               -configuration Debug \
               -derivedDataPath "$RUNNER_TEMP/dd" \
-              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
               ONLY_ACTIVE_ARCH=NO \
               > xcodebuild.log 2>&1; then
             echo "BUILD SUCCEEDED"
