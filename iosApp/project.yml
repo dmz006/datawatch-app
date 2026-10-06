@@ -17,6 +17,11 @@ targets:
       - path: ../composeApp/src/androidMain/assets/xterm
         type: folder
         buildPhase: resources
+      # Bundled Mermaid (Automaton spec diagrams, ADR-0051), shared with
+      # Android; kept current by .github/workflows/mermaid-update.yml.
+      - path: ../composeApp/src/androidMain/assets/mermaid
+        type: folder
+        buildPhase: resources
     info:
       path: iosApp/Info.plist
       properties:

@@ -232,7 +232,7 @@ private struct MdTable: View {
     }
 }
 
-/// Mermaid fence: WKWebView + CDN mermaid; source block when it can't render.
+/// Mermaid fence: WKWebView + the bundled mermaid (ADR-0051); source block when it can't render.
 struct MermaidBlock: View {
     let source: String
     @Environment(\.colorScheme) private var scheme
@@ -262,14 +262,22 @@ private struct MermaidWebView: UIViewRepresentable {
     @Binding var height: CGFloat
     @Binding var failed: Bool
 
-    /// Same pinned major/minor as the PWA (app.js mermaid@10.9.6).
-    private static let scriptURL = "https://cdn.jsdelivr.net/npm/mermaid@10.9.6/dist/mermaid.min.js"
+    /// Bundled mermaid (folder reference `mermaid/` shared with Android,
+    /// ADR-0051) — read once and injected as a user script, so no CDN fetch
+    /// and diagrams render offline. Nil if the resource is missing.
+    private static let bundledScript: String? = {
+        guard let url = Bundle.main.url(forResource: "mermaid.min", withExtension: "js", subdirectory: "mermaid") else { return nil }
+        return try? String(contentsOf: url, encoding: .utf8)
+    }()
 
     func makeCoordinator() -> Coordinator { Coordinator(height: $height, failed: $failed) }
 
     func makeUIView(context: Context) -> WKWebView {
         let controller = WKUserContentController()
         controller.add(WeakScriptHandler(context.coordinator), name: "dw")
+        if let js = Self.bundledScript {
+            controller.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
         let config = WKWebViewConfiguration()
         config.userContentController = controller
         let wv = WKWebView(frame: .zero, configuration: config)
@@ -300,7 +308,6 @@ private struct MermaidWebView: UIViewRepresentable {
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <style>html,body{margin:0;background:transparent}svg{max-width:100%;height:auto}</style>
         <script>function dwPost(m){try{window.webkit.messageHandlers.dw.postMessage(m)}catch(e){}}</script>
-        <script src="\(Self.scriptURL)" onerror="dwPost('err')"></script>
         </head><body><pre class="mermaid">\(escaped)</pre>
         <script>
         (function(){

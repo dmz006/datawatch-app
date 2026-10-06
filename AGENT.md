@@ -228,6 +228,16 @@ licence alongside). The pinned upstream tag lives in `fonts/JetBrainsMono.VERSIO
 - To update by hand: `scripts/update-jetbrains-mono.sh` (prints `UPDATED`/`UP_TO_DATE`).
 - Never swap the font for a CDN link — the WebView loads `file://` assets offline.
 
+## Mermaid — bundled, kept current (operator, 2026-10-06)
+
+Automaton spec diagrams use a bundled Mermaid (ADR-0051), never a CDN:
+- One copy in `composeApp/src/androidMain/assets/mermaid/` (`mermaid.min.js`, MIT
+  `mermaid-LICENSE.txt`, `mermaid.VERSION`), shared with iOS as a folder reference.
+- `.github/workflows/mermaid-update.yml` checks monthly via `scripts/update-mermaid.sh`
+  (newest stable npm release ≥ 72 h old) and opens a PR. Before merging, check a
+  mermaid block renders on Android and iOS.
+- Don't reintroduce a CDN `<script src>`; the diagram web view blocks network loads.
+
 ## Documentation Rules
 
 Every commit that adds or changes behavior must update documentation. This is blocking

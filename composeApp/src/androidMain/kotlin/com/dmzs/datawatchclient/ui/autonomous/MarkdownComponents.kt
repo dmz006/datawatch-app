@@ -22,7 +22,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -336,13 +338,17 @@ internal fun MermaidView(diagram: String, modifier: Modifier = Modifier) {
 <html><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="mermaid.min.js"></script>
 <style>body{margin:0;background:#fff}svg{max-width:100%;height:auto}</style>
 </head><body>
 <div class="mermaid">$escaped</div>
-<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default',securityLevel:'strict'});</script>
 </body></html>"""
     }
+    // Height follows the rendered diagram (iOS MermaidBlock does the same via a
+    // message handler). No addJavascriptInterface: poll document height with
+    // evaluateJavascript after load, until mermaid has drawn its SVG.
+    var heightDp by remember(diagram) { androidx.compose.runtime.mutableIntStateOf(0) }
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
@@ -350,11 +356,43 @@ internal fun MermaidView(diagram: String, modifier: Modifier = Modifier) {
                 @Suppress("SetJavaScriptEnabled")
                 settings.domStorageEnabled = true
                 settings.cacheMode = WebSettings.LOAD_NO_CACHE
+                // Mermaid is bundled (ADR-0051) — no network for this view.
+                settings.blockNetworkLoads = true
+                isVerticalScrollBarEnabled = false
+                webViewClient =
+                    object : android.webkit.WebViewClient() {
+                        override fun onPageFinished(view: WebView, url: String?) {
+                            // Wait until mermaid has drawn its SVG and the height
+                            // is stable across two polls, then size to it.
+                            var last = -1
+                            fun poll(tries: Int) {
+                                view.evaluateJavascript(
+                                    "(function(){var s=document.querySelector('.mermaid svg');" +
+                                        "if(!s)return 0;return Math.ceil(s.getBoundingClientRect().bottom)+8;})()",
+                                ) { v ->
+                                    val h = v?.toIntOrNull() ?: 0
+                                    if (h > 0 && h == last) {
+                                        heightDp = h
+                                    } else if (tries > 0) {
+                                        last = h
+                                        view.postDelayed({ poll(tries - 1) }, 150)
+                                    } else if (h > 0) {
+                                        heightDp = h
+                                    }
+                                }
+                            }
+                            poll(40)
+                        }
+                    }
             }
         },
         update = { wv ->
-            wv.loadDataWithBaseURL("https://cdn.jsdelivr.net", html, "text/html", "utf-8", null)
+            // Bundled Mermaid (assets/mermaid, ADR-0051): no CDN, works offline.
+            if (wv.tag != html) {
+                wv.tag = html
+                wv.loadDataWithBaseURL("file:///android_asset/mermaid/", html, "text/html", "utf-8", null)
+            }
         },
-        modifier = modifier.fillMaxWidth().height(260.dp),
+        modifier = modifier.fillMaxWidth().height(if (heightDp > 0) heightDp.dp else 120.dp),
     )
 }

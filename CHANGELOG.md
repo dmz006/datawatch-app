@@ -17,6 +17,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - **Watched-only filters:** a "👁 N" button in the session filter row and a 👁 button on the Automata toolbar show only the sessions / automata you watch. Android and iOS.
 
 ### Changed
+- **Mermaid diagrams in Automaton specs render from a copy bundled in the app** (Mermaid 12.1.0) instead of a public CDN, so they work offline and the app makes no third-party request for them. A monthly check opens an update when a newer stable Mermaid has been out for 72 hours. On Android the diagram view now sizes itself to the whole diagram instead of cutting it off at a fixed height.
 - **iOS Automata toolbar** uses the web UI's square icon buttons (☑ select, ⊞ filter, ⏱ history, 👁 watched) instead of text chips.
 
 ## [1.28.1] — 2026-10-06
