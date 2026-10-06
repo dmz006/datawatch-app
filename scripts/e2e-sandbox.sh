@@ -273,7 +273,7 @@ run_flow() { # run_flow <name> [extra maestro env...]
   rc=$?
   LAST_FLOW_RC=$rc
   if [ $rc -eq 0 ]; then result "$name" PASS "$(( $(date +%s) - t0 ))s"
-  else result "$name" FAIL "$(( $(date +%s) - t0 ))s $(grep -m1 -E 'FAILED|Assertion|not found|is visible' "$OUT/flows/$name/maestro.log" | tr -s ' ' | cut -c1-160)"; fi
+  else result "$name" FAIL "$(( $(date +%s) - t0 ))s $(grep -E 'FAILED' "$OUT/flows/$name/maestro.log" | grep -v -E 'Run |Repeat ' | tail -1 | tr -s ' ' | cut -c1-160)"; fi
   "$ADB" -s "$PHONE" exec-out screencap -p > "$OUT/flows/$name/final.png" 2>/dev/null
   return $rc
 }
@@ -391,7 +391,7 @@ smoke_surface() { # smoke_surface <avd> <apk> <label>
   serial="$BOOTED_SERIAL"
   "$ADB" -s "$serial" install -r -g "$apk" >> "$LOG" 2>&1 || { result "$label" FAIL "install"; return 1; }
   "$ADB" -s "$serial" logcat -c
-  "$ADB" -s "$serial" shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >> "$LOG" 2>&1
+  "$ADB" -s "$serial" shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
   local pid=""
   for _ in $(seq 1 30); do pid=$("$ADB" -s "$serial" shell pidof "$PKG" 2>/dev/null | tr -d '\r'); [ -n "$pid" ] && break; sleep 1; done
   sleep 8   # let the first frames render / any startup crash surface

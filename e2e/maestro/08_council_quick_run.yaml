@@ -17,7 +17,11 @@ name: 08 council quick run
     visible: "completed"
     timeout: 420000        # small model, many personas on CPU nodes
 - assertVisible: "Consensus"
-- assertVisible: "✓"
+# Persona replies (✓ <persona>) sit above the consensus; the sheet may open scrolled.
+- scrollUntilVisible:
+    element: "✓"
+    direction: UP
+    timeout: 20000
 - assertNotVisible: "Lost connection to the council run."
 - takeScreenshot: 08_council_completed
 - back
