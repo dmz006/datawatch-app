@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.13] — 2026-10-07
+
 ### Changed
 - **Android: error banners use the web UI's light red tint** instead of a solid dark red (light theme: instead of solid pink).
 
