@@ -8,9 +8,11 @@ Please try:
 5. Observer and Dashboard: check the numbers match the web app.
 6. iPad: try the split layout in portrait and landscape.
 7. Settings › General › Security: turn on Face ID / Touch ID lock and relaunch the app.
+8. Push: with the app closed, let a session wait for input. You should get a notification; tap it to open the session.
+9. Siri and widgets: say "Hey Siri, tell datawatch…", and add the datawatch Sessions / Monitor widgets to the Home Screen.
 
 Known limitations in this build:
-• Push notifications while the app is closed arrive with an upcoming datawatch server update. The app already asks for permission and registers; alerts show only while the app is open for now.
+• Push notifications while the app is closed need datawatch v8.63 or later with APNs set up on the server (push.apns). Older servers show alerts only while the app is open.
 • To reorder sessions, press and hold a session, then drag.
 • No Siri shortcuts or home-screen widgets yet.
 
