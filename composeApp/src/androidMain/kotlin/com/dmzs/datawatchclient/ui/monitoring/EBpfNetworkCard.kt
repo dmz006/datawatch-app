@@ -50,7 +50,7 @@ public fun EBpfNetworkCard(vm: StatsViewModel = viewModel()) {
     // PWA loadEBPFNetworkTraffic: the card always renders; with no
     // per-process data it shows `ebpf_no_data` ("No eBPF data available").
     if (rows.isEmpty()) {
-        Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network), docsAnchor = "ebpf-per-process-net") {
+        Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network)) {
             Text(
                 text = stringResource(R.string.ebpf_no_data),
                 modifier = Modifier.fillMaxWidth().padding(8.dp).alpha(0.7f),
@@ -61,7 +61,7 @@ public fun EBpfNetworkCard(vm: StatsViewModel = viewModel()) {
         return
     }
 
-    Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network), docsAnchor = "ebpf-per-process-net") {
+    Section(id = "ebpf_network", title = stringResource(R.string.stats_section_process_network)) {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             // Header row
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {

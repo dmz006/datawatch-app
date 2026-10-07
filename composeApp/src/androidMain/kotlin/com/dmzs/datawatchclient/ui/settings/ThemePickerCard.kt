@@ -46,7 +46,6 @@ public fun ThemePickerCard(modifier: Modifier = Modifier) {
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp),
-        docsAnchor = "settings",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             ExposedDropdownMenuBox(

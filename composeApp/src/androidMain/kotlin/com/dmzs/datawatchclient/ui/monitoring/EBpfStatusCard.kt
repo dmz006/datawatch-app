@@ -54,7 +54,7 @@ public fun EBpfStatusCard(vm: EBpfStatusViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.refresh() }
     val ebpf = state.ebpf ?: return
 
-    Section(id = "ebpf_status", title = "eBPF status", docsAnchor = "ebpf-per-process-net") {
+    Section(id = "ebpf_status", title = "eBPF status") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 EBpfFlag("configured", ebpf.configured)

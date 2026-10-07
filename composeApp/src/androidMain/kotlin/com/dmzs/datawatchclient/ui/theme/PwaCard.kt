@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.docs.DocsLinks
 
 /**
  * Parity D26a + D27a — the shared Observer / Settings card shell.
@@ -43,8 +44,9 @@ import com.dmzs.datawatchclient.R
  *    single tap target that toggles the card body;
  *  - the collapsed state is persisted per [id] ([PwaCardCollapseStore]); ids are
  *    the PWA section keys where a PWA card exists (`schedules`, `gc_dw`, …);
- *  - a docs "?" link opens the server's manual at [docsAnchor] (the PWA's
- *    `defsLink(title)` slug — see [pwaDocsSlug]) in the in-app docs viewer.
+ *  - a docs "?" link opens [docsPath] (a target under the server's `docs/`
+ *    tree, default: the `DocsLinks` entry for [id] — BL414) in the in-app
+ *    docs viewer; no link when the id has no entry.
  *
  * PWA default is every card expanded (`cs_settings_collapsed` starts `{}`).
  *
@@ -59,7 +61,7 @@ public fun PwaCard(
     id: String,
     title: String,
     modifier: Modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-    docsAnchor: String? = null,
+    docsPath: String? = DocsLinks.forKey(id),
     innerPadding: PaddingValues = PaddingValues(0.dp),
     collapsible: Boolean = true,
     headerActions: (@Composable RowScope.() -> Unit)? = null,
@@ -73,12 +75,12 @@ public fun PwaCard(
                 title = title,
                 collapsed = collapsed,
                 onToggle = { PwaCardCollapseStore.toggle(context, id) },
-                docsAnchor = docsAnchor,
+                docsPath = docsPath,
                 headerActions = headerActions,
             )
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                PwaSectionTitle(title, modifier = Modifier.weight(1f), docsAnchor = docsAnchor)
+                PwaSectionTitle(title, modifier = Modifier.weight(1f), docsPath = docsPath)
                 headerActions?.invoke(this)
             }
         }
@@ -92,7 +94,7 @@ internal fun PwaCardHeader(
     title: String,
     collapsed: Boolean,
     onToggle: () -> Unit,
-    docsAnchor: String?,
+    docsPath: String?,
     headerActions: (@Composable RowScope.() -> Unit)?,
 ) {
     val rotation by animateFloatAsState(
@@ -125,18 +127,10 @@ internal fun PwaCardHeader(
                 letterSpacing = 0.8.sp,
             )
         }
-        if (docsAnchor != null) DocsInlineButton(anchor = docsAnchor)
+        if (docsPath != null) DocsInlineButton(docsPath = docsPath)
         if (!collapsed && headerActions != null) headerActions()
     }
 }
-
-/**
- * PWA `defsLink(title)` slug: lowercase, runs of non-alphanumerics → '-',
- * leading/trailing dashes trimmed. Feed it the PWA's English card title so the
- * anchor matches the web UI regardless of the app's locale.
- */
-public fun pwaDocsSlug(title: String): String =
-    title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
 
 /**
  * Persisted collapsed-card ids (PWA `cs_settings_collapsed` analogue). Backed by

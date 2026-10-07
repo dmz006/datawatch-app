@@ -101,7 +101,7 @@ struct AutomataView: View {
                         }
                         .accessibilityLabel("Identity wizard")
                     }
-                    DocsLinkButton(profile: selectedProfile, anchor: "automata")
+                    DocsLinkButton(profile: selectedProfile, key: "view_automata")
                     if section == .prds {
                         Button {
                             withAnimation { filterOpen.toggle() }

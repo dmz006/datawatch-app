@@ -49,22 +49,6 @@ final class ObserverCollapseStore: ObservableObject {
     }
 }
 
-/// PWA `defsLink(title)` slug: non-alphanumerics → "-", lower-cased, trimmed.
-func observerDocsSlug(_ title: String) -> String {
-    var out = ""
-    var lastDash = false
-    for ch in title.lowercased() {
-        if (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") {
-            out.append(ch)
-            lastDash = false
-        } else if !lastDash {
-            out.append("-")
-            lastDash = true
-        }
-    }
-    return out.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-}
-
 // ── Collapsible card (settingsSectionHeader + secContent) ─────────────────
 
 struct ObsSection<Content: View>: View {
@@ -111,7 +95,7 @@ struct ObsSection<Content: View>: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text(L(title)))
             .accessibilityHint(Text(collapsed ? "Expand" : "Collapse"))
-            DocsLinkButton(profile: profile, anchor: observerDocsSlug(title))
+            DocsLinkButton(profile: profile, key: key)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

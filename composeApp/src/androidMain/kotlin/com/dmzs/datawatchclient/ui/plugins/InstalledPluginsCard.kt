@@ -58,7 +58,7 @@ public fun InstalledPluginsCard() {
             onFailure = { error = it.message ?: it::class.simpleName },
         )
     }
-    PwaCard(id = "plugins_list", title = stringResource(R.string.plugins_manager_title), docsAnchor = "plugins") {
+    PwaCard(id = "plugins_list", title = stringResource(R.string.plugins_manager_title)) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
             OutlinedButton(onClick = {
                 scope.launch {

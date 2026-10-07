@@ -176,7 +176,7 @@ struct SessionsView: View {
                         .controlSize(.mini)
                         .accessibilityLabel("Refreshing")
                 }
-                DocsLinkButton(profile: viewModel.activeProfile, anchor: "sessions-list")
+                DocsLinkButton(profile: viewModel.activeProfile, key: "view_sessions")
                 Button {
                     withAnimation { showFilter.toggle() }
                 } label: {

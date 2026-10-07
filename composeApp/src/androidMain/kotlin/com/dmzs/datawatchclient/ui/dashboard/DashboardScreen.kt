@@ -127,7 +127,7 @@ public fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_dashboard)) },
                 actions = {
-                    DocsLinkAction("datawatch-definitions.md#dashboard")
+                    DocsLinkAction(com.dmzs.datawatchclient.docs.DocsLinks.forKey("view_dashboard"))
                     IconButton(onClick = { editSheetOpen = true }) {
                         Icon(
                             Icons.Filled.Edit,

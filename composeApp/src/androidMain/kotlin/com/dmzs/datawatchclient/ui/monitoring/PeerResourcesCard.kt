@@ -63,7 +63,6 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp),
-        docsAnchor = "federated-peers",
         headerActions = { Box(Modifier.padding(end = 8.dp)) { LiveDot() } },
     ) {
         run {

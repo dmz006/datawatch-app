@@ -92,12 +92,13 @@ struct NewPrdView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                // PWA wizard header "?" (automata_wizard_help_tip) → howto/automata-wizard.md.
+                // PWA wizard header "?" names howto/automata-wizard.md, which the server
+                // doesn't ship — BL414 points at the manual's Launch Automation form section.
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 4) {
                         Text("Launch Automaton").font(.headline)
-                        DocsLinkButton(profile: profile, anchor: "", docPath: "howto/automata-wizard.md")
-                            .accessibilityHint("Open the Launch Automaton howto — covers every wizard field including Advanced switches")
+                        DocsLinkButton(profile: profile, key: "view_automata_wizard")
+                            .accessibilityHint("Open the Launch Automaton docs — covers every wizard field including Advanced switches")
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {

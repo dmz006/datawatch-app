@@ -47,7 +47,6 @@ public fun SavedCommandsCard(vm: SavedCommandsViewModel = viewModel()) {
     PwaCard(
         id = "cmds",
         title = "Saved Commands",
-        docsAnchor = "saved-commands",
         headerActions = {
             IconButton(onClick = vm::refresh, enabled = state.supported) {
                 Icon(

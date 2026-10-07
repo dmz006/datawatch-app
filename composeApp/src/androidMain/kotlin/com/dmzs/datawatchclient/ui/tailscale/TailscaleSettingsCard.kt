@@ -85,7 +85,7 @@ public fun TailscaleSettingsCard() {
     }
     LaunchedEffect(Unit) { load() }
 
-    PwaCard(id = "tailscale_config", title = stringResource(R.string.tailscale_section_config), docsAnchor = "tailscale-configuration") {
+    PwaCard(id = "tailscale_config", title = stringResource(R.string.tailscale_section_config)) {
         Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
             if (loadError != null) {
                 Text(

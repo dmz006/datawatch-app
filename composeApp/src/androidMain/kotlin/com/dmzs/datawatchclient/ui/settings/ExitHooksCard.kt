@@ -131,7 +131,6 @@ public fun ExitHooksCard() {
     PwaCard(
         id = "exit_hooks",
         title = stringResource(R.string.exit_hooks_title),
-        docsAnchor = "exit-hooks",
         innerPadding = PaddingValues(12.dp),
     ) {
         Text(

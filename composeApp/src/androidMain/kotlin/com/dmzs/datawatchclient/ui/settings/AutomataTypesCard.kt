@@ -62,7 +62,6 @@ internal fun AutomataTypesCard() {
         id = "automata_type_registry",
         title = stringResource(R.string.automata_type_registry_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "type-registry",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             IconButton(onClick = { createOpen = true }) {

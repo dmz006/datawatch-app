@@ -109,23 +109,7 @@ struct SettingsCard: Identifiable {
     let title: String
     let icon: String
     let content: SettingsCardContent
-
-    /// Central-manual anchor (PWA defsLink slug rule: non-alnum → "-").
-    var docsAnchor: String {
-        let lowered = title.lowercased()
-        var out = ""
-        var lastDash = false
-        for ch in lowered {
-            if ch.isLetter || ch.isNumber {
-                out.append(ch)
-                lastDash = false
-            } else if !lastDash {
-                out.append("-")
-                lastDash = true
-            }
-        }
-        return out.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-    }
+    // The card's "?" docs target is the shared DocsLinks entry for `id` (BL414).
 
     static func config(_ id: String, _ title: String, _ icon: String, _ fields: [SettingsField],
                        extra: SettingsConfigExtra = .none) -> SettingsCard {

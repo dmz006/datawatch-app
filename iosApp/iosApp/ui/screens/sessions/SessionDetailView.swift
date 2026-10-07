@@ -176,7 +176,7 @@ struct SessionDetailView: View {
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 4) {
                 watchButton
-                DocsLinkButton(profile: profile, anchor: "sessions")
+                DocsLinkButton(profile: profile, key: "view_session_detail")
                 AlertsBellButton()
                 // D46b: the global status dot is the disconnect indicator (no overlay).
                 ReachabilityDotView(profile: profile)

@@ -195,7 +195,6 @@ public fun DiscussionScopesCard() {
     PwaCard(
         id = "discussion_scopes",
         title = stringResource(R.string.discussion_scopes_title),
-        docsAnchor = "discussion-scopes",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             IconButton(onClick = { scope.launch { reload() } }) {

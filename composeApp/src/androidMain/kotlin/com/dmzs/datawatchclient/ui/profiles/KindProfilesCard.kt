@@ -72,7 +72,6 @@ public fun KindProfilesCard(
     PwaCard(
         id = "gc_${kind}profiles",
         title = title,
-        docsAnchor = "$kind-profiles",
         headerActions = {
             TextButton(onClick = { creating = true }) {
                 Text(stringResource(R.string.pfe_add), style = MaterialTheme.typography.labelSmall)

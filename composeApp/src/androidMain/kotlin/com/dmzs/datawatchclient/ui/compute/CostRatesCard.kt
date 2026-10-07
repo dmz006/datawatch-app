@@ -66,7 +66,6 @@ public fun CostRatesCard() {
     PwaCard(
         id = "costrates",
         title = stringResource(R.string.cost_rates_title),
-        docsAnchor = "cost-rates-usd-1k-tokens",
     ) {
         Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
             if (error != null || rates.isEmpty()) {

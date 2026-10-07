@@ -1105,7 +1105,7 @@ private fun StatsCard(
     title: String,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
-    PwaCard(id = "stats_$id", title = title, docsAnchor = "system-statistics", content = content)
+    PwaCard(id = "stats_$id", title = title, content = content)
 }
 
 /**

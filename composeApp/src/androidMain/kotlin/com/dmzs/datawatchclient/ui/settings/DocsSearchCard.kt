@@ -70,7 +70,6 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
     PwaCard(
         id = "docs_search",
         title = stringResource(R.string.docs_search_title),
-        docsAnchor = "docs-search",
         innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
         // Search input

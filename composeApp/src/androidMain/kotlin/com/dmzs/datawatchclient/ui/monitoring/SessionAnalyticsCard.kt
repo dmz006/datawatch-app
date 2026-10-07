@@ -65,7 +65,6 @@ public fun SessionAnalyticsCard() {
         id = "analytics",
         title = "Session Analytics",
         modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "session-analytics",
         innerPadding = PaddingValues(12.dp),
     ) {
 

@@ -69,7 +69,6 @@ public fun CooldownCard() {
         id = "cooldown",
         title = "Global Cooldown",
         modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "global-cooldown",
         innerPadding = PaddingValues(12.dp),
     ) {
 

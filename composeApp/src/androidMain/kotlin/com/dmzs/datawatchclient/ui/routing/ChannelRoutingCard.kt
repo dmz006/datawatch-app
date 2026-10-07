@@ -73,7 +73,6 @@ public fun ChannelRoutingCard() {
     PwaCard(
         id = "channel_routing",
         title = stringResource(R.string.channel_routing_title),
-        docsAnchor = "channel-routing",
         innerPadding = PaddingValues(12.dp),
     ) {
         // Add rule form

@@ -83,7 +83,6 @@ public fun WorkQueueCard() {
     PwaCard(
         id = "work_queue",
         title = stringResource(R.string.work_queue_title),
-        docsAnchor = "work-queue",
         innerPadding = PaddingValues(12.dp),
     ) {
         Text(

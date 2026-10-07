@@ -44,19 +44,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.docs.DocsLinks
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 
 /**
  * Docs / help link — plain "?" text button that opens [docsPath] in an in-app WebView sheet.
- * [docsPath] is relative to the server's diagrams page, e.g. "datawatch-definitions.md#sessions-list".
- * The full URL becomes "$baseUrl/diagrams.html#docs/$docsPath".
- * Hidden entirely when no active server is configured.
+ * [docsPath] is a target under the server's `docs/` tree, e.g. "datawatch-definitions.md#sessions-list";
+ * callers pass the `DocsLinks` entry for a `view_*` screen key (BL414). The full URL is
+ * [DocsLinks.viewerUrl]: "$baseUrl/diagrams.html#docs/$docsPath".
+ * Hidden entirely when no active server is configured or [docsPath] is null.
  * Placed leftmost in the TopAppBar actions block (appears left of filter, alerts, status).
  */
 @Composable
-internal fun DocsLinkAction(docsPath: String) {
+internal fun DocsLinkAction(docsPath: String?) {
     val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
     val activeProfile =
@@ -72,8 +74,8 @@ internal fun DocsLinkAction(docsPath: String) {
     val allowSelfSigned = activeProfile?.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL
     var showDocs by remember { mutableStateOf(false) }
 
-    if (baseUrl != null) {
-        val url = "$baseUrl/diagrams.html#docs/$docsPath"
+    if (baseUrl != null && docsPath != null) {
+        val url = DocsLinks.viewerUrl(baseUrl, docsPath)
         Box(
             modifier =
                 Modifier

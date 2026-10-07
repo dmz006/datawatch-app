@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.docs.DocsLinks
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.common.DocsViewerSheet
@@ -173,17 +174,17 @@ public fun Modifier.pwaCard(bordered: Boolean = true): Modifier {
  * `.settings-section-title` (11px, text2 color, 0.8px letter-spacing,
  * 10px 16px padding).
  *
- * When [docsAnchor] is non-null, the title is shown in a Row with a
- * small "?" button that opens the corresponding section in the
- * in-app docs viewer.
+ * When [docsPath] is non-null, the title is shown in a Row with a
+ * small "?" button that opens that docs target (`file.md#anchor` under the
+ * server's `docs/` tree, normally from `DocsLinks`) in the in-app docs viewer.
  */
 @Composable
 public fun PwaSectionTitle(
     title: String,
     modifier: Modifier = Modifier,
-    docsAnchor: String? = null,
+    docsPath: String? = null,
 ) {
-    if (docsAnchor != null) {
+    if (docsPath != null) {
         Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
             Text(
                 title.uppercase(),
@@ -193,7 +194,7 @@ public fun PwaSectionTitle(
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.8.sp,
             )
-            DocsInlineButton(anchor = docsAnchor)
+            DocsInlineButton(docsPath = docsPath)
         }
     } else {
         Text(
@@ -208,12 +209,12 @@ public fun PwaSectionTitle(
 }
 
 /**
- * Small inline "?" button that opens the given docs [anchor] in the
- * in-app WebView sheet. Hidden when no active server is configured.
- * Used inside [PwaSectionTitle] when [docsAnchor] is non-null.
+ * Small inline "?" button that opens the given [docsPath] (`file.md#anchor`
+ * under the server's `docs/` tree) in the in-app WebView sheet. Hidden when
+ * no active server is configured. Used by [PwaSectionTitle] and PwaCard.
  */
 @Composable
-internal fun DocsInlineButton(anchor: String) {
+internal fun DocsInlineButton(docsPath: String) {
     val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
     val activeProfile =
@@ -230,7 +231,7 @@ internal fun DocsInlineButton(anchor: String) {
     var showDocs by remember { mutableStateOf(false) }
 
     if (baseUrl != null) {
-        val url = "$baseUrl/diagrams.html#docs/datawatch-definitions.md#$anchor"
+        val url = DocsLinks.viewerUrl(baseUrl, docsPath)
         TextButton(
             onClick = { showDocs = true },
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),

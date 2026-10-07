@@ -81,7 +81,6 @@ internal fun ScanConfigCard() {
         id = "automata_scan",
         title = stringResource(R.string.scan_config_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "guardrail-library",
         innerPadding = PaddingValues(12.dp),
     ) {
         val cfg = config ?: return@PwaCard

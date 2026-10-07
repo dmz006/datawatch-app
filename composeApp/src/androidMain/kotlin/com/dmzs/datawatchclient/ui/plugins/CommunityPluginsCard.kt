@@ -54,7 +54,6 @@ public fun CommunityPluginsCard() {
     PwaCard(
         id = "plugins_list",
         title = "Community Plugins",
-        docsAnchor = "plugin-manager",
     ) {
         banner?.let {
             Text(

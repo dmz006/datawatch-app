@@ -84,7 +84,6 @@ internal fun AlgorithmModeCard() {
         id = "algorithm",
         title = stringResource(R.string.algorithm_mode_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "algorithm-mode",
         innerPadding = PaddingValues(12.dp),
     ) {
         // Start algorithm mode on any session by ID

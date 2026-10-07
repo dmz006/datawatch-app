@@ -167,7 +167,7 @@ struct DashCardFrame<Content: View>: View {
             .accessibilityLabel(Text(L(title)))
             .accessibilityHint(Text(L(collapsed ? "Expand" : "Collapse")))
             if vm.editing { editButtons }
-            DocsLinkButton(profile: profile, anchor: IosDashCatalog.shared.docsSlug(label: title))
+            DocsLinkButton(profile: profile, key: "dash_" + card.id)
                 .font(.caption)
         }
         .padding(.horizontal, 8)

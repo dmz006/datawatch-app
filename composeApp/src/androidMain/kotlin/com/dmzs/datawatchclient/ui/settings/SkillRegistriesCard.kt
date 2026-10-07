@@ -88,7 +88,6 @@ internal fun SkillRegistriesCard() {
         id = "automata_skills",
         title = stringResource(R.string.skills_section_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "skill-registries",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             TextButton(onClick = {

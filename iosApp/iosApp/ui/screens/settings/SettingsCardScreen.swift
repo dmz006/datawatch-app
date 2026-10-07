@@ -18,7 +18,7 @@ struct SettingsCardScreen: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    DocsLinkButton(profile: profile, anchor: card.docsAnchor)
+                    DocsLinkButton(profile: profile, key: card.id)
                 }
             }
     }

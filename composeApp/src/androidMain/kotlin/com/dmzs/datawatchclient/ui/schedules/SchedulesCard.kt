@@ -61,7 +61,6 @@ public fun SchedulesCard(vm: SchedulesViewModel = viewModel()) {
     PwaCard(
         id = "schedules",
         title = "Scheduled Events",
-        docsAnchor = "scheduled-events",
         headerActions = {
             if (state.refreshing) {
                 androidx.compose.material3.CircularProgressIndicator(

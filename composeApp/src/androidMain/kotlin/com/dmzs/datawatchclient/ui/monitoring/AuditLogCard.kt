@@ -69,7 +69,6 @@ public fun AuditLogCard() {
         id = "audit",
         title = "Audit Log",
         modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "audit-log",
         innerPadding = PaddingValues(12.dp),
     ) {
 

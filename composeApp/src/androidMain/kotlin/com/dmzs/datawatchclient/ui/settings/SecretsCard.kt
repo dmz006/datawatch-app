@@ -66,7 +66,6 @@ public fun SecretsCard(vm: SecretsCardViewModel = viewModel()) {
     PwaCard(
         id = "secrets_store",
         title = stringResource(R.string.secrets_section_store),
-        docsAnchor = "secrets-store",
         innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
         // Parity D33a — vault status lives inside the Secrets Store card.

@@ -70,7 +70,6 @@ internal fun PushNotificationsCard() {
     PwaCard(
         id = "push_notifications",
         title = "Push Notifications",
-        docsAnchor = "push-notifications",
         headerActions = {
             IconButton(onClick = { scope.launch { reload() } }) {
                 Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
