@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.9] — 2026-10-07
+
 ### Fixed
 - **Settings lists that failed to load now load:** Skill Registries, Evals, Remote Servers, Routing Rules, Backend Artifact Lifecycle and Guardrail Profiles. The app expected a different response format, or a different address for Guardrail Profiles, than the server uses. Android and iOS.
 - **Errors in Settings lists are short and readable:** the server's own message (for example "tailscale not configured") instead of a raw HTTP dump. iOS, plus the Android Community Plugins card.
