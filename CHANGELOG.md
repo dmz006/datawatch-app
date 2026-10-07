@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.6] — 2026-10-07
+
 ### Fixed
 - **LLM API keys are no longer wiped on servers v8.63.1 and later.** These servers hide a stored literal API key: the GET response returns it blank and reports `api_key_ref_present` instead (datawatch GH#179). The apps no longer send that blank value back, so saving the LLM form, using the JSON editor, or pressing Android's refresh-models button keeps the key. The key field shows "configured — enter to change" as before. Android and iOS.
 
