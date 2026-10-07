@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### CI
+- **External TestFlight setup workflow** (`ios-testflight-setup.yml`, run by hand): fills TestFlight Test Information and What to Test from the repo files, creates the external tester group, and optionally uploads the App Store listing and screenshots, submits the build for Beta App Review or enables the public link. Contact details and the demo sign-in come only from repository secrets or App Store Connect.
+
 ## [1.28.5] — 2026-10-06
 
 ### Fixed

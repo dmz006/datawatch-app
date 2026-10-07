@@ -1,4 +1,4 @@
-Version 1.28.0 — thank you for testing!
+Thank you for testing!
 
 Please try:
 1. Add your server: Settings › Comms › Servers › +. Enter the https:// URL and bearer token. If the server uses a self-signed certificate, use "Pin server certificate…" (check the fingerprint, then "Trust & pin") rather than "Trust all certificates".

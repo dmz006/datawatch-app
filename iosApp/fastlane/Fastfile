@@ -7,6 +7,8 @@
 # match reads MATCH_GIT_URL, MATCH_GIT_BASIC_AUTHORIZATION and MATCH_PASSWORD
 # from env; app_identifier comes from the Matchfile.
 
+require "tmpdir"
+
 default_platform(:ios)
 
 BUNDLE_ID = "com.dmzs.datawatchclient"
@@ -79,5 +81,122 @@ platform :ios do
       api_key: api_key,
       skip_waiting_for_build_processing: true,
     )
+  end
+
+  # External TestFlight setup (ios-testflight-setup.yml, run by hand). Idempotent:
+  #  - Test Information: beta description, marketing + privacy URLs, review notes
+  #    (metadata/beta/*.txt); feedback email, review contact and demo sign-in only
+  #    when their secrets are set — otherwise left as entered in ASC.
+  #  - "What to Test" on the build for the current version code.
+  #  - External group EXTERNAL_GROUP (created if missing).
+  #  - UPLOAD_LISTING=true: App Store listing text + screenshots via deliver
+  #    (never submits the App Store version).
+  #  - SUBMIT_FOR_BETA_REVIEW=true: add the build to the group and submit it for
+  #    Beta App Review. ENABLE_PUBLIC_LINK=true: turn on the group's public link
+  #    (Apple allows it once a build in the group has been approved).
+  # Never prints credentials.
+  desc "External TestFlight: Test Information, What to Test, external group, optional listing upload / beta review"
+  lane :testflight_setup do
+    api_key = asc_api_key
+    meta = File.expand_path("metadata", __dir__)
+    read = ->(rel) { File.read(File.join(meta, rel)).strip }
+    env = ->(k) { v = ENV[k].to_s.strip; v.empty? ? nil : v }
+
+    app = Spaceship::ConnectAPI::App.find(BUNDLE_ID)
+    UI.user_error!("App #{BUNDLE_ID} not found in App Store Connect") unless app
+
+    # Test Information › Beta App Description etc.
+    loc_attrs = {
+      description: read.call("beta/description.txt"),
+      marketingUrl: read.call("en-US/marketing_url.txt"),
+      privacyPolicyUrl: read.call("en-US/privacy_url.txt"),
+    }
+    loc_attrs[:feedbackEmail] = env.call("BETA_FEEDBACK_EMAIL") if env.call("BETA_FEEDBACK_EMAIL")
+    loc = app.get_beta_app_localizations.find { |l| l.locale == "en-US" }
+    if loc
+      Spaceship::ConnectAPI.patch_beta_app_localizations(localization_id: loc.id, attributes: loc_attrs)
+    else
+      Spaceship::ConnectAPI.post_beta_app_localizations(app_id: app.id, attributes: loc_attrs.merge(locale: "en-US"))
+    end
+    UI.success("Test Information: description, URLs#{loc_attrs[:feedbackEmail] ? ', feedback email' : ''} set")
+
+    # Test Information › Beta App Review Information
+    review = { notes: read.call("beta/review_notes.txt"), demoAccountRequired: true }
+    {
+      contactFirstName: "BETA_REVIEW_CONTACT_FIRST_NAME",
+      contactLastName: "BETA_REVIEW_CONTACT_LAST_NAME",
+      contactPhone: "BETA_REVIEW_CONTACT_PHONE",
+      contactEmail: "BETA_REVIEW_CONTACT_EMAIL",
+      demoAccountName: "BETA_REVIEW_DEMO_URL",
+      demoAccountPassword: "BETA_REVIEW_DEMO_TOKEN",
+    }.each { |attr, key| review[attr] = env.call(key) if env.call(key) }
+    Spaceship::ConnectAPI.patch_beta_app_review_detail(app_id: app.id, attributes: review)
+    UI.success("Beta App Review: notes set; from secrets: #{(review.keys - [:notes, :demoAccountRequired]).join(', ').then { |s| s.empty? ? 'none (enter contact + sign-in in ASC)' : s }}")
+
+    # What to Test on this version's build
+    build_number = ENV.fetch("DATAWATCH_APP_VERSION_CODE")
+    build = app.get_builds(filter: { version: build_number }).first
+    if build
+      whats_new = read.call("beta/what_to_test.txt")
+      bloc = build.get_beta_build_localizations.find { |l| l.locale == "en-US" }
+      if bloc
+        Spaceship::ConnectAPI.patch_beta_build_localizations(localization_id: bloc.id, attributes: { whatsNew: whats_new })
+      else
+        Spaceship::ConnectAPI.post_beta_build_localizations(build_id: build.id, attributes: { whatsNew: whats_new, locale: "en-US" })
+      end
+      UI.success("What to Test set on build #{build_number} (#{build.processing_state})")
+    else
+      UI.important("Build #{build_number} not in App Store Connect yet — What to Test skipped")
+    end
+
+    # External group
+    group_name = ENV.fetch("EXTERNAL_GROUP", "Beta testers")
+    group = app.get_beta_groups(filter: { name: group_name }).find { |g| g.name == group_name && !g.is_internal_group }
+    unless group
+      group = app.create_beta_group(group_name: group_name, is_internal_group: false, public_link_enabled: false)
+      UI.success("Created external group '#{group_name}'")
+    end
+
+    if ENV["UPLOAD_LISTING"] == "true"
+      # The first App Store version can't carry "What's New", and beta/ isn't
+      # deliver metadata: upload a copy without them.
+      listing = Dir.mktmpdir("listing")
+      FileUtils.cp_r(Dir.glob(File.join(meta, "*")), listing)
+      FileUtils.rm_rf(File.join(listing, "beta"))
+      FileUtils.rm_f(Dir.glob(File.join(listing, "*", "release_notes.txt")))
+      deliver(
+        api_key: api_key,
+        app_identifier: BUNDLE_ID,
+        app_version: ENV.fetch("DATAWATCH_APP_VERSION"),
+        metadata_path: listing,
+        screenshots_path: File.expand_path("screenshots", __dir__),
+        skip_binary_upload: true,
+        overwrite_screenshots: true,
+        submit_for_review: false,
+        run_precheck_before_submit: false,
+        force: true,
+      )
+    end
+
+    if ENV["SUBMIT_FOR_BETA_REVIEW"] == "true"
+      UI.user_error!("Build #{build_number} not found") unless build
+      UI.user_error!("Build #{build_number} is still #{build.processing_state}") unless build.processing_state == "VALID"
+      build.add_beta_groups(beta_groups: [group])
+      begin
+        build.post_beta_app_review_submission
+        UI.success("Build #{build_number} added to '#{group_name}' and submitted for Beta App Review")
+      rescue => e
+        UI.important("Beta review submission: #{e.message}")
+      end
+    end
+
+    if ENV["ENABLE_PUBLIC_LINK"] == "true"
+      begin
+        group.update(attributes: { public_link_enabled: true, public_link_limit_enabled: false })
+        UI.success("Public link enabled for '#{group_name}'")
+      rescue => e
+        UI.important("Public link not enabled yet (needs an approved build): #{e.message}")
+      end
+    end
   end
 end

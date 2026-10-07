@@ -151,12 +151,11 @@ of it is "collected" by the developer):
 | Photos the user takes to attach | the user's datawatch server | attachment |
 | APNs device token + environment | the user's datawatch server (`/api/devices/register`) | so that server can send push notifications |
 | Push notifications | Apple Push Notification service → device | delivery (sent by the user's server) |
-| HTTPS request for the Mermaid library (no user data) | jsDelivr CDN | drawing diagrams in automaton descriptions, only when one is shown |
 
 Tracking: **No.** No IDFA, no App Tracking Transparency prompt, no data brokers.
 
-If the operator prefers to remove the jsDelivr request, bundle the Mermaid script into the
-app like the xterm assets (a code change; the web app loads the same pinned version).
+The app makes no other network requests: Mermaid (diagrams) and xterm.js (terminal) are
+bundled in the app (ADR-0050, ADR-0051).
 
 ## 5. Age rating
 
@@ -262,12 +261,28 @@ Then:
    the number of testers). Share the link from the README.
 4. Builds expire after 90 days; each new tag uploads a fresh build.
 
-The fastlane `upload_to_testflight` action can take these values directly
-(`beta_app_description`, `beta_app_feedback_email`, `changelog` for What to Test,
-`beta_app_review_info` for contact + demo account + notes, `distribute_external`,
-`groups`). The current `beta` lane does not pass them, so Test Information is entered
-once in ASC; wire them in later if desired, reading credentials from CI secrets, never
-from the repo.
+### Automated: `ios-testflight-setup.yml`
+
+Actions › **iOS — external TestFlight setup** › Run workflow (fastlane lane
+`testflight_setup`, same API key as the release job). Safe to re-run. It:
+
+- fills Test Information from `beta/description.txt`, `beta/review_notes.txt` and the
+  marketing / privacy URLs, and marks sign-in as required;
+- sets **What to Test** on the build for the current version code from
+  `beta/what_to_test.txt`;
+- creates the external group (input `group`, default "Beta testers");
+- `upload_listing`: also uploads the App Store listing text and screenshots with
+  `deliver` (never submits the App Store version);
+- `submit_for_beta_review`: adds the build to the group and submits it for Beta App
+  Review — run only after the contact and sign-in fields are filled;
+- `enable_public_link`: turns on the group's public link (Apple allows it once a build in
+  the group is approved).
+
+Feedback email, review contact and demo sign-in come from optional repository secrets
+(`BETA_FEEDBACK_EMAIL`, `BETA_REVIEW_CONTACT_FIRST_NAME` / `_LAST_NAME` / `_PHONE` /
+`_EMAIL`, `BETA_REVIEW_DEMO_URL`, `BETA_REVIEW_DEMO_TOKEN`, set with `gh secret set`).
+When a secret is unset the value typed into App Store Connect is kept, so the operator can
+enter them in ASC instead. Never commit them.
 
 ## 10. Operator checklist
 
@@ -283,4 +298,4 @@ from the repo.
       `docs/media/ios/`.
 - [ ] Create the external TestFlight group, submit the v1.28.0 build for Beta App Review,
       enable the public link.
-- [ ] Decide whether to bundle Mermaid locally to drop the jsDelivr request (§4).
+- [x] Mermaid bundled in the app (v1.28.x) — no CDN request (§4).

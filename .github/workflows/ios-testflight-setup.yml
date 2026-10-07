@@ -1,0 +1,80 @@
+name: iOS — external TestFlight setup
+
+# Fills TestFlight › Test Information from iosApp/fastlane/metadata/beta, sets
+# "What to Test" on the current build, creates the external group and, when
+# asked, uploads the App Store listing text + screenshots, submits the build for
+# Beta App Review, or enables the group's public link (fastlane lane
+# `testflight_setup`). Safe to re-run.
+#
+# Uses the same App Store Connect API key secrets as release.yml. Optional
+# secrets — when unset, the value already entered in App Store Connect is kept:
+#   BETA_FEEDBACK_EMAIL
+#   BETA_REVIEW_CONTACT_FIRST_NAME / _LAST_NAME / _PHONE / _EMAIL
+#   BETA_REVIEW_DEMO_URL     — demo server https:// URL (sign-in "user name")
+#   BETA_REVIEW_DEMO_TOKEN   — demo server bearer token (sign-in "password")
+# Never commit these values. See docs/store-listing-ios.md §9.
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_listing:
+        description: 'Also upload App Store listing text + screenshots (does not submit the App Store version)'
+        type: boolean
+        default: false
+      submit_for_beta_review:
+        description: 'Add the current build to the external group and submit it for Beta App Review'
+        type: boolean
+        default: false
+      enable_public_link:
+        description: 'Enable the external group public link (works once a build is approved)'
+        type: boolean
+        default: false
+      group:
+        description: 'External group name'
+        type: string
+        default: 'Beta testers'
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    name: fastlane testflight_setup
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fastlane
+        run: gem install fastlane --no-document
+
+      - name: Export version env vars
+        run: |
+          set -euo pipefail
+          v=$(sed -n 's/^DATAWATCH_APP_VERSION=//p' gradle.properties)
+          c=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)
+          [ -n "$v" ] && [ -n "$c" ] || { echo "::error::version not found in gradle.properties"; exit 1; }
+          echo "DATAWATCH_APP_VERSION=$v" >> "$GITHUB_ENV"
+          echo "DATAWATCH_APP_VERSION_CODE=$c" >> "$GITHUB_ENV"
+          echo "iOS version: $v ($c)"
+
+      - name: Check metadata lengths
+        run: scripts/check-ios-metadata.sh
+
+      - name: fastlane testflight_setup
+        working-directory: iosApp
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          BETA_FEEDBACK_EMAIL: ${{ secrets.BETA_FEEDBACK_EMAIL }}
+          BETA_REVIEW_CONTACT_FIRST_NAME: ${{ secrets.BETA_REVIEW_CONTACT_FIRST_NAME }}
+          BETA_REVIEW_CONTACT_LAST_NAME: ${{ secrets.BETA_REVIEW_CONTACT_LAST_NAME }}
+          BETA_REVIEW_CONTACT_PHONE: ${{ secrets.BETA_REVIEW_CONTACT_PHONE }}
+          BETA_REVIEW_CONTACT_EMAIL: ${{ secrets.BETA_REVIEW_CONTACT_EMAIL }}
+          BETA_REVIEW_DEMO_URL: ${{ secrets.BETA_REVIEW_DEMO_URL }}
+          BETA_REVIEW_DEMO_TOKEN: ${{ secrets.BETA_REVIEW_DEMO_TOKEN }}
+          UPLOAD_LISTING: ${{ inputs.upload_listing }}
+          SUBMIT_FOR_BETA_REVIEW: ${{ inputs.submit_for_beta_review }}
+          ENABLE_PUBLIC_LINK: ${{ inputs.enable_public_link }}
+          EXTERNAL_GROUP: ${{ inputs.group }}
+        run: fastlane testflight_setup
