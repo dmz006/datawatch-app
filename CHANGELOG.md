@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.5] — 2026-10-06
+
+### Fixed
+- **Automaton cards no longer cut off their buttons.** When Cancel / Reject / Request Revision and Approve don't fit on one line, the row wraps (as in the web UI) instead of pushing the card past the screen edge. Android and iOS.
+
+### Tests
+- iOS debug builds take `-dwSeedTrust system` to seed a test profile with normal certificate checking, used to check the app against a server with a real (Let's Encrypt) certificate.
+
 ## [1.28.4] — 2026-10-06
 
 ### CI
