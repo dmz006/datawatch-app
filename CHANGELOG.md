@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.4] — 2026-10-06
+
+### CI
+- **Dependabot sends one grouped PR** for minor and patch updates (majors stay separate) and no longer rebases on every push, so release builds aren't held up behind dependency checks.
+
 ### Changed
 - **Terminal library updated to match the web UI:** xterm.js 5.5.0 (was 5.3.0) with the fit 0.10.0 and search 0.15.0 add-ons, Android and iOS. Checked against a live session: connecting, typing, keyboard resize, scroll mode, search and font size.
 
