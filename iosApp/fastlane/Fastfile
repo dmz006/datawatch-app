@@ -130,8 +130,26 @@ platform :ios do
       demoAccountName: "BETA_REVIEW_DEMO_URL",
       demoAccountPassword: "BETA_REVIEW_DEMO_TOKEN",
     }.each { |attr, key| review[attr] = env.call(key) if env.call(key) }
-    Spaceship::ConnectAPI.patch_beta_app_review_detail(app_id: app.id, attributes: review)
-    UI.success("Beta App Review: notes set; from secrets: #{(review.keys - [:notes, :demoAccountRequired]).join(', ').then { |s| s.empty? ? 'none (enter contact + sign-in in ASC)' : s }}")
+    from_secrets = review.keys - [:notes, :demoAccountRequired]
+    # Apple rejects the PATCH unless all four contact fields are present: fall
+    # back to what is already entered in App Store Connect.
+    existing = Spaceship::ConnectAPI.get_beta_app_review_detail(filter: { app: app.id }).to_models.first
+    contact = %i[contactFirstName contactLastName contactPhone contactEmail]
+    contact.each do |attr|
+      next if review[attr]
+      v = existing&.send(attr.to_s.gsub(/([A-Z])/) { "_#{$1.downcase}" }).to_s.strip
+      review[attr] = v unless v.nil? || v.empty?
+    end
+    # demoAccountRequired=true needs the sign-in too; leave the flag as entered in
+    # ASC until the demo URL/token exist somewhere.
+    review.delete(:demoAccountRequired) unless review[:demoAccountName] || existing&.demo_account_name.to_s.strip != ""
+    missing = contact.reject { |a| review[a] }
+    if missing.empty?
+      Spaceship::ConnectAPI.patch_beta_app_review_detail(app_id: app.id, attributes: review)
+      UI.success("Beta App Review: notes set; from secrets: #{from_secrets.empty? ? 'none' : from_secrets.join(', ')}")
+    else
+      UI.important("Beta App Review info skipped: enter the contact (#{missing.join(', ')}) and demo sign-in in ASC › TestFlight › Test Information, or set the BETA_REVIEW_* secrets, then re-run")
+    end
 
     # What to Test on this version's build
     build_number = ENV.fetch("DATAWATCH_APP_VERSION_CODE")
