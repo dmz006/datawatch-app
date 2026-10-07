@@ -240,11 +240,11 @@ Fill **TestFlight › Test Information** once:
 | Field | Source | Status |
 |---|---|---|
 | Beta App Description | `beta/description.txt` (940 / 4,000) | set |
-| Feedback Email | `beta/feedback_email.txt` — placeholder `FEEDBACK_EMAIL` | **operator** |
+| Feedback Email | `beta/feedback_email.txt` (public, same as the Play contact) | set |
 | Marketing URL | `https://github.com/dmz006/datawatch-app` | set |
 | Privacy Policy URL | `https://dmzs.com/datawatch-client/privacy` | set |
-| Beta App Review contact | first name, last name, phone, email | **operator** |
-| Sign-in required | Yes — demo server URL (user name) + token (password) | **operator** |
+| Beta App Review contact | first name, last name, phone, email (private to Apple; `BETA_REVIEW_CONTACT_*` secrets) | set |
+| Sign-in required | Yes — demo server URL (user name) + token (password); `BETA_REVIEW_DEMO_*` secrets | set |
 | Review notes | `beta/review_notes.txt` (1,737 / 4,000) | set |
 | License agreement | Apple standard | — |
 
@@ -286,8 +286,8 @@ enter them in ASC instead. Never commit them.
 
 ## 10. Operator checklist
 
-- [ ] Replace `FEEDBACK_EMAIL` (in ASC; update the file too if a public address is fine).
-- [ ] Beta App Review / App Review contact: name, phone, email.
+- [x] Feedback email: the public Play contact address.
+- [x] Beta App Review contact: name, phone, email (secrets, 2026-10-07).
 - [ ] Stand up a reachable **demo datawatch server** with sample sessions, alerts and an
       automaton; create a revocable token; enter URL + token as sign-in information.
 - [ ] Confirm subtitle, keywords, categories and copyright holder (`2026 dmzs.com`).
