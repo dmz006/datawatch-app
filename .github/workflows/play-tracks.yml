@@ -37,7 +37,9 @@ jobs:
                   print(f"track={t['track']!r} releases={rel}")
                   if t['track'] not in ('internal', 'production') and not t['track'].endswith(':internal'):
                       te = s.get(f"{base}/{edit}/testers/{t['track']}")
-                      print(f"   testers: {te.json() if te.ok else te.status_code}")
+                      # No braces in the output: the masked key JSON has a lone "{" line.
+                      g = te.json().get("googleGroups", []) if te.ok else [f"HTTP {te.status_code}"]
+                      print("   tester groups: " + (", ".join(g) if g else "(none / email list)"))
           finally:
               s.delete(f"{base}/{edit}")
           EOF
