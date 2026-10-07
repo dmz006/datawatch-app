@@ -35,6 +35,9 @@ jobs:
               for t in s.get(f"{base}/{edit}/tracks").json().get("tracks", []):
                   rel = [f"{r.get('status')}:{','.join(r.get('versionCodes', []))}:{r.get('name','')}" for r in t.get("releases", [])]
                   print(f"track={t['track']!r} releases={rel}")
+                  if t['track'] not in ('internal', 'production') and not t['track'].endswith(':internal'):
+                      te = s.get(f"{base}/{edit}/testers/{t['track']}")
+                      print(f"   testers: {te.json() if te.ok else te.status_code}")
           finally:
               s.delete(f"{base}/{edit}")
           EOF
