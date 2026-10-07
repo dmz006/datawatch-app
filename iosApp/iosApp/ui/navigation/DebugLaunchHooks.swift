@@ -16,6 +16,7 @@ import DatawatchShared
 ///   -dwOpenSession <id>               open that session (same path as a
 ///                                     datawatch://session/<id> link, no OS prompt)
 ///   -dwOpenAutomaton <id>             open that Automaton's detail (with -dwTab automata)
+///   -dwSettingsCard <card id>         open that Settings card (e.g. cc_websrv)
 ///
 /// Values come from the `xcrun simctl launch` command line only; nothing is
 /// stored in the repo.
@@ -61,6 +62,9 @@ enum DebugLaunchHooks {
     /// Automata list has loaded it (one-shot per launch).
     static var openAutomatonId: String? { arg("-dwOpenAutomaton") }
     @MainActor static var automatonOpened = false
+
+    /// `-dwSettingsCard <card id>`: open that Settings card via SettingsDeepLink.
+    static var openSettingsCard: String? { arg("-dwSettingsCard") }
 
     static func applyTheme() {
         if let t = arg("-dwTheme") { UserDefaults.standard.set(t, forKey: "dw.theme") }

@@ -119,6 +119,10 @@ struct RootView: View {
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
             }
+            if let card = DebugLaunchHooks.openSettingsCard {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                SettingsDeepLink.open(cardId: card)
+            }
         }
         #endif
     }
