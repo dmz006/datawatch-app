@@ -863,35 +863,59 @@ struct PrdRow: View {
     private var actionRow: some View {
         VStack(spacing: 0) {
             Rectangle().fill(DatawatchColors.border).frame(height: 1)
-            HStack(spacing: 6) {
-                if let onAction {
-                    if isCancelable { PrdCardButton(title: "✕ " + L("Cancel")) { onAction("cancel") } }
-                    if isApprovalState {
-                        PrdCardButton(title: "✗ " + L("Reject"), fg: DatawatchColors.error, stroke: DatawatchColors.error) {
-                            onAction("reject")
-                        }
-                        PrdCardButton(title: "↺ " + L("Request Revision"), fg: SessionCardView.amber,
-                                      bg: SessionCardView.amber.opacity(0.15), bold: true) {
-                            onAction("request_revision")
-                        }
-                    }
-                    if status == "running" { PrdCardButton(title: "⏸ " + L("Pause")) { onAction("pause") } }
-                    if status == "paused" {
-                        PrdCardButton(title: "▶ " + L("Resume"), fg: .white, bg: DatawatchColors.primary,
-                                      stroke: DatawatchColors.primary) { onAction("resume") }
+            // PWA action row is `flex-wrap: wrap` with the Approve/👁/📍 group at
+            // `margin-left: auto`: one line when it fits, otherwise the right group
+            // moves to its own line, still right-aligned (never wider than the card).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    leftActions
+                    Spacer(minLength: 0)
+                    rightActions
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) { leftActions }
+                    HStack(spacing: 6) {
+                        Spacer(minLength: 0)
+                        rightActions
                     }
                 }
-                Spacer(minLength: 0)
-                if let onAction, isApprovalState {
-                    PrdCardButton(title: "✓ " + L("Approve"), fg: DatawatchColors.background, bg: SessionCardView.amber,
-                                  stroke: SessionCardView.amber, bold: true) { onAction("approve") }
-                }
-                if let onWatchToggle { watchButton(onWatchToggle) }
-                if let onPinToggle { pinButton(onPinToggle) }
             }
             .padding(.top, 10)
         }
         .padding(.top, 10)
+    }
+
+    /// ✕ Cancel · ✗ Reject · ↺ Request Revision · ⏸ Pause / ▶ Resume.
+    @ViewBuilder
+    private var leftActions: some View {
+        if let onAction {
+            if isCancelable { PrdCardButton(title: "✕ " + L("Cancel")) { onAction("cancel") } }
+            if isApprovalState {
+                PrdCardButton(title: "✗ " + L("Reject"), fg: DatawatchColors.error, stroke: DatawatchColors.error) {
+                    onAction("reject")
+                }
+                PrdCardButton(title: "↺ " + L("Request Revision"), fg: SessionCardView.amber,
+                              bg: SessionCardView.amber.opacity(0.15), bold: true) {
+                    onAction("request_revision")
+                }
+            }
+            if status == "running" { PrdCardButton(title: "⏸ " + L("Pause")) { onAction("pause") } }
+            if status == "paused" {
+                PrdCardButton(title: "▶ " + L("Resume"), fg: .white, bg: DatawatchColors.primary,
+                              stroke: DatawatchColors.primary) { onAction("resume") }
+            }
+        }
+    }
+
+    /// ✓ Approve · 👁 watch · 📍 pin.
+    @ViewBuilder
+    private var rightActions: some View {
+        if let onAction, isApprovalState {
+            PrdCardButton(title: "✓ " + L("Approve"), fg: DatawatchColors.background, bg: SessionCardView.amber,
+                          stroke: SessionCardView.amber, bold: true) { onAction("approve") }
+        }
+        if let onWatchToggle { watchButton(onWatchToggle) }
+        if let onPinToggle { pinButton(onPinToggle) }
     }
 
     /// PWA watchBtn 👁: accent2 when watching, .4 opacity when not.

@@ -1100,8 +1100,11 @@ private fun PrdRow(
                     onInstantiate = { instantiateOpen = true },
                     compact = true,
                 )
-                // Action row: cancel left | approve+pin right — border-top separator mirrors PWA
-                Row(
+                // Action row — PWA `flex-wrap: wrap` with Approve/👁/📍 at `margin-left: auto`:
+                // one line when it fits; otherwise the right group wraps to its own line,
+                // still right-aligned (never clipped).
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -1115,8 +1118,8 @@ private fun PrdRow(
                                 )
                             }
                             .padding(top = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     if (showCancel) {
                         // PWA uses btn-secondary: bg3 background, border, normal text — not red
@@ -1150,44 +1153,49 @@ private fun PrdRow(
                             onClick = onResume,
                         )
                     }
-                    Spacer(Modifier.weight(1f))
-                    if (showApprove) {
-                        // PWA approveBtn: warning fill, --bg text, bold.
-                        PrdCardButton(
-                            "✓ " + stringResource(R.string.action_approve),
-                            fg = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.bg,
-                            bg = Color(0xFFF59E0B),
-                            borderColor = Color(0xFFF59E0B),
-                            bold = true,
-                            onClick = onApprove,
-                        )
-                    }
-                    if (!selectMode) {
-                        // PWA watchBtn 👁 (accent2 when watching, .4 opacity when not).
-                        val watchDesc = stringResource(if (isWatched) R.string.automata_watch_on else R.string.automata_watch_off)
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (showApprove) {
+                            // PWA approveBtn: warning fill, --bg text, bold.
+                            PrdCardButton(
+                                "✓ " + stringResource(R.string.action_approve),
+                                fg = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.bg,
+                                bg = Color(0xFFF59E0B),
+                                borderColor = Color(0xFFF59E0B),
+                                bold = true,
+                                onClick = onApprove,
+                            )
+                        }
+                        if (!selectMode) {
+                            // PWA watchBtn 👁 (accent2 when watching, .4 opacity when not).
+                            val watchDesc = stringResource(if (isWatched) R.string.automata_watch_on else R.string.automata_watch_off)
+                            Text(
+                                "👁",
+                                fontSize = 14.sp,
+                                color = if (isWatched) com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2 else MaterialTheme.colorScheme.onSurface,
+                                modifier =
+                                    Modifier
+                                        .alpha(if (isWatched) 1f else 0.4f)
+                                        .clickable(onClick = onWatchToggle)
+                                        .semantics { contentDescription = watchDesc }
+                                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                        // Pin button — 📌 when pinned (warning), 📍 when not (.4 opacity)
                         Text(
-                            "👁",
+                            if (pinned) "📌" else "📍",
                             fontSize = 14.sp,
-                            color = if (isWatched) com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2 else MaterialTheme.colorScheme.onSurface,
+                            color = if (pinned) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface,
                             modifier =
                                 Modifier
-                                    .alpha(if (isWatched) 1f else 0.4f)
-                                    .clickable(onClick = onWatchToggle)
-                                    .semantics { contentDescription = watchDesc }
+                                    .alpha(if (pinned) 1f else 0.4f)
+                                    .clickable(onClick = onTogglePin)
                                     .padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
-                    // Pin button — 📌 when pinned (warning), 📍 when not (.4 opacity)
-                    Text(
-                        if (pinned) "📌" else "📍",
-                        fontSize = 14.sp,
-                        color = if (pinned) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface,
-                        modifier =
-                            Modifier
-                                .alpha(if (pinned) 1f else 0.4f)
-                                .clickable(onClick = onTogglePin)
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
-                    )
                 }
                 // Stories envelope — always visible, matches PWA <details> (shows "no stories yet" when empty)
                 var storiesExpanded by remember(prd.id) { mutableStateOf(false) }
