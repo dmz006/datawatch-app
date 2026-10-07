@@ -47,7 +47,7 @@ public fun CommunityPluginsCard() {
             }
         ServiceLocator.transportFor(profile).browsePlugins("community").fold(
             onSuccess = { plugins = it.plugins },
-            onFailure = { banner = "Browse unavailable — ${it.message ?: it::class.simpleName}" },
+            onFailure = { banner = "Browse unavailable — " + com.dmzs.datawatchclient.transport.ErrorText.of(it, "error") },
         )
     }
 

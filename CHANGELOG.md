@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Settings lists that failed to load now load:** Skill Registries, Evals, Remote Servers, Routing Rules, Backend Artifact Lifecycle and Guardrail Profiles. The app expected a different response format, or a different address for Guardrail Profiles, than the server uses. Android and iOS.
+- **Errors in Settings lists are short and readable:** the server's own message (for example "tailscale not configured") instead of a raw HTTP dump. iOS, plus the Android Community Plugins card.
+- **iOS: one navigation bar everywhere.** Settings had two back buttons, and Dashboard and Settings opened from the More tab showed an extra bar. More is now the app's own list that opens Dashboard and Settings.
+
 ## [1.28.8] — 2026-10-07
 
 ### Added

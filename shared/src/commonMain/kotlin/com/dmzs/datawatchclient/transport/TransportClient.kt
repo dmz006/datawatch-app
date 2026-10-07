@@ -1436,16 +1436,16 @@ public interface TransportClient {
     /** GET /api/autonomous/guardrails — browse available guardrail checks. */
     public suspend fun listGuardrailLibrary(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailLibraryItemDto>>
 
-    /** GET /api/autonomous/guardrail-profiles — list guardrail profiles. */
+    /** GET /api/autonomous/guardrail_profiles — list guardrail profiles. */
     public suspend fun listGuardrailProfiles(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>>
 
-    /** POST /api/autonomous/guardrail-profiles — create a guardrail profile. */
+    /** POST /api/autonomous/guardrail_profiles — create a guardrail profile. */
     public suspend fun createGuardrailProfile(profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>
 
-    /** PUT /api/autonomous/guardrail-profiles/{id} — update a guardrail profile. */
+    /** PUT /api/autonomous/guardrail_profiles/{id} — update a guardrail profile. */
     public suspend fun updateGuardrailProfile(id: String, profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>
 
-    /** DELETE /api/autonomous/guardrail-profiles/{id} — delete a guardrail profile. */
+    /** DELETE /api/autonomous/guardrail_profiles/{id} — delete a guardrail profile. */
     public suspend fun deleteGuardrailProfile(id: String): Result<Unit>
 
     /** POST /api/sessions/{id}/guardrail — run guardrail against session project dir. */

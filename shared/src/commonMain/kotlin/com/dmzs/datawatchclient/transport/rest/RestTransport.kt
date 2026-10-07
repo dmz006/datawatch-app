@@ -1665,11 +1665,13 @@ public class RestTransport(
 
     override suspend fun listRemoteServers(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
-            val arr: kotlinx.serialization.json.JsonArray =
+            // Server answers {"servers": [...]}; accept a bare array too.
+            listElements(
                 client.get("${profile.baseUrl}/api/servers") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
-                }.body()
-            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+                }.body(),
+                "servers",
+            ).mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
     override suspend fun addRemoteServer(server: com.dmzs.datawatchclient.transport.dto.RemoteServerDto): Result<Unit> =
@@ -2052,9 +2054,14 @@ public class RestTransport(
 
     override suspend fun listSkillRegistries(): Result<List<SkillRegistryDto>> =
         request {
-            client.get("${profile.baseUrl}/api/skills/registries") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body<com.dmzs.datawatchclient.transport.dto.SkillRegistriesResponseDto>().registries
+            // Server answers a bare array; older builds wrapped it in {"registries": [...]}.
+            decodeList(
+                client.get("${profile.baseUrl}/api/skills/registries") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body(),
+                "registries",
+                SkillRegistryDto.serializer(),
+            )
         }
 
     override suspend fun createSkillRegistry(req: SkillRegistryRequestDto): Result<SkillRegistryDto> =
@@ -2447,9 +2454,14 @@ public class RestTransport(
 
     override suspend fun evalsList(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalSuiteDto>> =
         request {
-            client.get("${profile.baseUrl}/api/evals/suites") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body<com.dmzs.datawatchclient.transport.dto.EvalSuitesResponseDto>().suites
+            // Server answers a bare array ([] when no suites); accept {"suites": [...]} too.
+            decodeList(
+                client.get("${profile.baseUrl}/api/evals/suites") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body(),
+                "suites",
+                com.dmzs.datawatchclient.transport.dto.EvalSuiteDto.serializer(),
+            )
         }
 
     override suspend fun evalsRun(suiteId: String): Result<com.dmzs.datawatchclient.transport.dto.EvalRunResultDto> =
@@ -3178,9 +3190,13 @@ public class RestTransport(
 
     override suspend fun listGuardrailProfiles(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>> =
         request {
-            client.get("${profile.baseUrl}/api/autonomous/guardrail-profiles") {
-                bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            decodeList(
+                client.get("${profile.baseUrl}/api/autonomous/guardrail_profiles") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body(),
+                "profiles",
+                com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto.serializer(),
+            )
         }
 
     override suspend fun createGuardrailProfile(
@@ -3188,7 +3204,7 @@ public class RestTransport(
     ): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto> =
         request {
             val dto = profile
-            client.post("${this.profile.baseUrl}/api/autonomous/guardrail-profiles") {
+            client.post("${this.profile.baseUrl}/api/autonomous/guardrail_profiles") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
                 setBody(dto)
@@ -3201,7 +3217,7 @@ public class RestTransport(
     ): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto> =
         request {
             val dto = profile
-            client.put("${this.profile.baseUrl}/api/autonomous/guardrail-profiles/$id") {
+            client.put("${this.profile.baseUrl}/api/autonomous/guardrail_profiles/$id") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
                 setBody(dto)
@@ -3210,7 +3226,7 @@ public class RestTransport(
 
     override suspend fun deleteGuardrailProfile(id: String): Result<Unit> =
         request {
-            client.delete("${profile.baseUrl}/api/autonomous/guardrail-profiles/$id") {
+            client.delete("${profile.baseUrl}/api/autonomous/guardrail_profiles/$id") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }
             Unit
@@ -4527,6 +4543,23 @@ public class RestTransport(
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
+    /** A list response that is either a bare array or an object holding it under [key] (null → empty). */
+    private fun listElements(
+        el: kotlinx.serialization.json.JsonElement,
+        key: String,
+    ): kotlinx.serialization.json.JsonArray =
+        when (el) {
+            is kotlinx.serialization.json.JsonArray -> el
+            is kotlinx.serialization.json.JsonObject -> el[key] as? kotlinx.serialization.json.JsonArray ?: kotlinx.serialization.json.JsonArray(emptyList())
+            else -> kotlinx.serialization.json.JsonArray(emptyList())
+        }
+
+    private fun <T> decodeList(
+        el: kotlinx.serialization.json.JsonElement,
+        key: String,
+        serializer: kotlinx.serialization.KSerializer<T>,
+    ): List<T> = listElements(el, key).map { DefaultJson.decodeFromJsonElement(serializer, it) }
+
     private inline fun <T> request(block: () -> T): Result<T> =
         try {
             val v = block()
@@ -4606,6 +4639,9 @@ public class RestTransport(
                 isLenient = true
                 encodeDefaults = true
                 explicitNulls = false
+                // Go encodes an empty slice as null ({"rules":null}, "present":null);
+                // decode null into the field's default (e.g. emptyList()) instead of failing.
+                coerceInputValues = true
             }
 
         /**

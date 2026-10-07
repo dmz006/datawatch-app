@@ -75,7 +75,7 @@ public object IosSettingsLists {
         scope.launch {
             runCatching { rows(t(profile), kind) }.fold(
                 onSuccess = { onSuccess(it) },
-                onFailure = { onError(it.message ?: "Failed to load.") },
+                onFailure = { onError(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Failed to load.")) },
             )
         }
     }
@@ -179,7 +179,7 @@ public object IosSettingsLists {
                         }
                     else -> Result.failure<String>(UnsupportedOperationException("Not supported"))
                 }
-            r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Action failed.") })
+            r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Action failed.")) })
         }
     }
 
@@ -201,7 +201,7 @@ public object IosSettingsLists {
                     "plugins" -> tr.reloadPlugins().map { "Reloaded: $it plugin(s)" }
                     else -> Result.failure<String>(UnsupportedOperationException("Not supported"))
                 }
-            r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(it.message ?: "Action failed.") })
+            r.fold(onSuccess = { onSuccess(it) }, onFailure = { onError(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Action failed.")) })
         }
     }
 

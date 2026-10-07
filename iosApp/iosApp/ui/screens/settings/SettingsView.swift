@@ -16,8 +16,10 @@ struct SettingsView: View {
         store.activeProfile
     }
 
+    // No NavigationStack here: RootView (tab / More / iPad detail) provides it;
+    // a second one nested a second navigation bar.
     var body: some View {
-        NavigationStack {
+        Group {
             List {
                 ForEach(SettingsCatalog.groups) { group in
                     groupSection(group)

@@ -22,6 +22,9 @@ struct RootView: View {
     @State private var selectedTab: AppTab = ShellRestore.initialTab()
     /// Sessions tab stack — deep links, notification taps and D40a restore push here.
     @State private var sessionsPath = NavigationPath()
+    /// iPhone "More" tab stack (Dashboard / Settings when six tabs are visible).
+    @State private var morePath: [AppTab] = []
+    @State private var showingMore = false
     /// nil = unknown (tabs shown); false hides Automata + Dashboard.
     @State private var autonomousEnabled: Bool? = nil
     @State private var restored = false
@@ -129,19 +132,93 @@ struct RootView: View {
 
     // ── iPhone: TabView ───────────────────────────────────────────────────
 
+    /// iPhone shows at most five tab items. With six visible tabs the last two
+    /// (Dashboard, Settings) go behind our own "More" list instead of UIKit's
+    /// More controller, which wrapped each tab's NavigationStack in a second
+    /// navigation bar (two back buttons).
+    private var barTabs: [AppTab] {
+        visibleTabs.count > 5 ? Array(visibleTabs.prefix(4)) : visibleTabs
+    }
+
+    private var overflowTabs: [AppTab] {
+        visibleTabs.count > 5 ? Array(visibleTabs.dropFirst(4)) : []
+    }
+
+    private static let moreTag = "more"
+
+    private var tabTag: Binding<String> {
+        Binding(
+            get: {
+                (showingMore || overflowTabs.contains(selectedTab)) && !overflowTabs.isEmpty
+                    ? Self.moreTag : selectedTab.rawValue
+            },
+            set: { tag in
+                if tag == Self.moreTag {
+                    showingMore = true
+                } else if let tab = AppTab(rawValue: tag) {
+                    showingMore = false
+                    selectedTab = tab
+                }
+            }
+        )
+    }
+
     private var iPhoneLayout: some View {
-        TabView(selection: $selectedTab) {
-            ForEach(visibleTabs) { tab in
+        TabView(selection: tabTag) {
+            ForEach(barTabs) { tab in
                 tabStack(tab)
                     .tabItem {
                         Label(L(tab.title), systemImage: tab.iconName)
                     }
-                    .tag(tab)
+                    .tag(tab.rawValue)
                     .badge(badgeText(tab))
+            }
+            if !overflowTabs.isEmpty {
+                moreStack
+                    .tabItem {
+                        Label(L("More"), systemImage: "ellipsis")
+                    }
+                    .tag(Self.moreTag)
+                    .badge(overflowTabs.contains(.settings) ? badgeText(.settings) : nil)
             }
         }
         .tint(DatawatchColors.secondary)
         .dwThemed()
+        .onChange(of: selectedTab) { tab in
+            // Programmatic switches (deep links, restore) to an overflow tab open it in More.
+            if overflowTabs.contains(tab) {
+                showingMore = true
+                if morePath.last != tab { morePath = [tab] }
+            }
+        }
+        .onChange(of: morePath) { path in
+            if let last = path.last, last != selectedTab { selectedTab = last }
+        }
+        .onAppear {
+            if overflowTabs.contains(selectedTab) {
+                showingMore = true
+                morePath = [selectedTab]
+            }
+        }
+    }
+
+    private var moreStack: some View {
+        NavigationStack(path: $morePath) {
+            List(overflowTabs) { tab in
+                NavigationLink(value: tab) {
+                    Label(L(tab.title), systemImage: tab.iconName)
+                        .foregroundStyle(DatawatchColors.onSurface)
+                        .badge(badgeText(tab))
+                }
+                .listRowBackground(DatawatchColors.surface)
+            }
+            .scrollContentBackground(.hidden)
+            .background(DatawatchColors.background)
+            .navigationTitle(L("More"))
+            .navigationDestination(for: AppTab.self) { tab in
+                tab.rootView
+            }
+        }
     }
 
     @ViewBuilder
