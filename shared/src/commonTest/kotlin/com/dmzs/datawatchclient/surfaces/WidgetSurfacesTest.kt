@@ -215,7 +215,7 @@ class WidgetSurfacesTest {
     }
 
     @Test
-    fun `send target matches the hint by name or id prefix, else newest`() {
+    fun `send target matches the hint by name or id prefix else newest`() {
         val list =
             listOf(
                 session("ab12", SessionState.Running, 10, name = "Build Server"),
