@@ -56,25 +56,22 @@ final class NotificationService: NSObject, ObservableObject {
         IosServiceLocator.shared.registerApnsToken(token: token, environment: Self.apnsEnvironment)
     }
 
-    /// Handle incoming push notification payload.
+    /// Handle a tapped notification. Two payload shapes arrive here:
+    /// - server APNs pushes (datawatch v8.63+): `{"aps":…, "sessionId": "<id>", "type": "<alert level>"}`;
+    /// - the app's own interim local notifications (D87b): `session_id`, `profile_id`, `type: "input_needed"`.
+    /// A session id opens that session; otherwise any datawatch notification opens the Alerts tab.
     func handleNotification(_ userInfo: [AnyHashable: Any]) {
-        // Route to the appropriate tab based on payload type.
-        guard let type = userInfo["type"] as? String else { return }
-        switch type {
-        case "session_waiting", "input_needed":
-            if let sessionId = userInfo["session_id"] as? String {
-                var info: [String: String] = ["id": sessionId]
-                let pid = userInfo["profile_id"] as? String
-                if let pid { info["profileId"] = pid }
-                // A tap that cold-starts the app arrives before RootView listens:
-                // the D40a restore slot reopens it once the root appears.
-                ShellRestore.setOpenSession(profileId: pid ?? "", sessionId: sessionId)
-                NotificationCenter.default.post(name: .deepLinkSession, object: nil, userInfo: info)
-            }
-        case "alert":
+        let sessionId: String? = (userInfo["session_id"] as? String) ?? (userInfo["sessionId"] as? String)
+        if let sessionId, !sessionId.isEmpty {
+            var info: [String: String] = ["id": sessionId]
+            let pid = userInfo["profile_id"] as? String
+            if let pid { info["profileId"] = pid }
+            // A tap that cold-starts the app arrives before RootView listens:
+            // the D40a restore slot reopens it once the root appears.
+            ShellRestore.setOpenSession(profileId: pid ?? "", sessionId: sessionId)
+            NotificationCenter.default.post(name: .deepLinkSession, object: nil, userInfo: info)
+        } else if userInfo["type"] != nil || userInfo["aps"] != nil {
             NotificationCenter.default.post(name: .deepLinkAlert, object: nil, userInfo: nil)
-        default:
-            break
         }
     }
 }
