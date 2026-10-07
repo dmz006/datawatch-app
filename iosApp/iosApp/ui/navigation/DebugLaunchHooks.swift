@@ -8,6 +8,9 @@ import DatawatchShared
 ///   -dwSeedURL https://<host>:18443   add a self-signed (trust-all) profile once
 ///   -dwSeedToken <token>              bearer token for that profile
 ///   -dwSeedName <name>                display name (default "sandbox")
+///   -dwSeedTrust system               seed with normal certificate checking
+///                                     (no trust-all) — for servers with a real
+///                                     CA certificate, e.g. the review demo server
 ///   -dwTab sessions|alerts|automata|observer|dashboard|settings
 ///   -dwTheme dark|light|system
 ///   -dwOpenSession <id>               open that session (same path as a
@@ -34,7 +37,7 @@ enum DebugLaunchHooks {
             displayName: name,
             baseUrl: url,
             bearerTokenRef: "",
-            trustAnchorSha256: svc.TRUST_ALL_SENTINEL,
+            trustAnchorSha256: arg("-dwSeedTrust") == "system" ? nil : svc.TRUST_ALL_SENTINEL,
             reachabilityProfileId: svc.generateProfileId(),
             enabled: true,
             createdTs: svc.nowMillis(),
