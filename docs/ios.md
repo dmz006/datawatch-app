@@ -35,6 +35,9 @@ Also:
 - **Deep links.** `datawatch://session/<id>`, `datawatch://alert/<id>` and
   `datawatch://<tab>` open the app at that place.
 - **App lock.** Optional Face ID / Touch ID (falls back to your passcode).
+- **Siri, widgets and Control Center.** Send a reply to a session by voice, see session
+  counts and server load on the Home Screen or Lock Screen. See
+  [Siri, widgets and Control Center](#siri-widgets-and-control-center).
 
 ---
 
@@ -105,6 +108,52 @@ iCloud and is not restored onto another device).
 
 ---
 
+## Siri, widgets and Control Center
+
+These work with the server that is active in the app (the one picked in the server
+picker; with **All servers**, the first enabled server).
+
+### Send to a session with Siri
+
+Say **"Hey Siri, tell datawatch"** (also "Send a message with datawatch" or "Reply in
+datawatch"). Siri asks what to send, then asks you to confirm: **"Send … to
+<session>?"**. Nothing is sent until you say yes.
+
+- The message goes to the most recently active session that is running or waiting for
+  input on the active server.
+- To pick a session, use the **Send to session** action in the **Shortcuts** app and fill
+  in **Session** with part of the session's name (or the start of its id).
+- Your iPhone must be unlocked: the server token is only readable while it is.
+- The Siri phrases are translated for the app's languages (English, German, Spanish,
+  French, Japanese). The **Send to session** action is also listed in the Shortcuts app,
+  where you can add it to your own shortcuts.
+
+### Home Screen and Lock Screen widgets
+
+Touch and hold the Home Screen (or the Lock Screen and tap **Customize**), tap **+** /
+**Add Widgets**, search for **datawatch** and pick one:
+
+| Widget | Sizes | Shows |
+|---|---|---|
+| **datawatch Sessions** | Small, Medium; Lock Screen rectangular and inline | Running, waiting and total sessions, and the server's name |
+| **datawatch Monitor** | Large | CPU load, memory, disk, swap and GPU (when the host has them), network, daemon memory, session counts and uptime |
+
+- Tap a widget to open the app.
+- On iOS 17 and later, tap the **server name** on a widget to switch to the next enabled
+  server. The app uses that server too the next time you open it.
+- Widgets refresh about every 30 minutes (iOS decides the exact time) and whenever you
+  leave the app.
+- **offline · name** means the widget couldn't reach the server. **locked · name** means
+  the iPhone was locked at refresh time, so the widget keeps the last numbers it had.
+
+### Control Center control (iOS 18 and later)
+
+Open Control Center, tap **+** › **Add a Control**, search for **datawatch** and add
+**datawatch voice**. It opens datawatch. You can also put it on the Lock Screen or the
+Action button.
+
+---
+
 ## Permissions
 
 iOS asks for each permission the first time a feature needs it. All are optional; the
@@ -131,7 +180,9 @@ Change any of them in iOS **Settings › datawatch**.
   about 45 seconds raises a local notification.
 - **Reordering sessions:** press and hold a session, then drag it (a quick swipe scrolls
   instead). The session's menu also has **Move up** / **Move down**.
-- **No Siri shortcuts, home-screen widgets, Live Activities or Apple Watch app yet.**
+- **No Live Activities or Apple Watch app yet.**
+- **Widgets:** switching server by tapping the widget needs iOS 17; the Control Center
+  control needs iOS 18.
 
 ---
 
@@ -183,6 +234,10 @@ attach.
   you).
 - Tokens live in the iOS Keychain; cached session data is protected by iOS Data
   Protection and cannot be read while the device is locked.
+- The widgets read your server list (names, addresses, certificate pins) from a Keychain
+  item on this device that the app keeps up to date; it holds no tokens. They read the
+  token itself from the Keychain only while the device is unlocked, and keep their last
+  numbers on the device so the Lock Screen widget has something to show.
 - Diagrams in automaton descriptions are drawn with the Mermaid library, which the app
   loads from the jsDelivr CDN when such a diagram is shown.
 - Full policy: [privacy-policy.md](privacy-policy.md) ·

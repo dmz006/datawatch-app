@@ -87,6 +87,8 @@ struct DatawatchClientApp: App {
             // Lock on background only — `.inactive` also fires for Control
             // Center / the Face ID sheet itself, which must not re-lock.
             if phase == .background && BiometricGate.lockRequired { isLocked = true }
+            // BL403: redraw the home-screen widgets with fresh data as the user leaves.
+            if phase == .background { WidgetSync.reloadWidgets() }
         }
     }
 
@@ -110,6 +112,8 @@ struct DatawatchClientApp: App {
                     UIApplication.shared.registerForRemoteNotifications()
                 }
                 IosServiceLocator.shared.reregisterAllProfiles(onComplete: nil)
+                // BL403: pick up a server switched from the widget while away.
+                profileStore.adoptWidgetSelection()
             }
     }
 }

@@ -167,16 +167,16 @@ public class IosTokenStore {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun cfString(value: String) =
+internal fun cfString(value: String) =
     CFStringCreateWithCString(kCFAllocatorDefault, value, kCFStringEncodingUTF8)
 
 @OptIn(ExperimentalForeignApi::class)
-private fun ByteArray.toCFData() = usePinned { pinned ->
+internal fun ByteArray.toCFData() = usePinned { pinned ->
     CFDataCreate(kCFAllocatorDefault, pinned.addressOf(0).reinterpret(), size.convert())
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun newDict(capacity: Int) =
+internal fun newDict(capacity: Int) =
     CFDictionaryCreateMutable(
         kCFAllocatorDefault,
         capacity.convert(),

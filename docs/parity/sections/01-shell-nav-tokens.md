@@ -51,7 +51,7 @@ Refs are `file:line` or symbol. Audited 2026-10-04 from code (no screenshots yet
 | nav | Leaving session detail tears down terminal + stats polling | ✓ `destroyXterm`, interval clears (app.js:1825-1831) | ✓ `DisposableEffect` in TerminalView.kt | ✓ `dismantleUIView` + `subscription.cancel()` (TerminalView.swift) | aligned | | |
 | nav | Deep link to a session | n/a | ✓ `datawatch://session/<id>`; `dwclient://` accepted as a one-release alias | ✓ `datawatch://` in project.yml `CFBundleURLTypes`; `AppRouter.parse` joins host+path; `SessionRoute` → `DeepLinkSessionView` | aligned | decided D84b | iOS: register scheme + fix parsing; Android: rename dwclient→datawatch · iOS done (D84b); Android still `dwclient://` · iOS: register scheme + fix parsing; Android: rename dwclient→datawatch · Android done (D84b) (2026-10-04) |
 | nav | Deep link to an alert | ✗ | ✓ `datawatch://alert/<id>` (and `alerts`; `dwclient://` alias, D84b) → Alerts tab; AlertsViewModel.focusAlert selects the alert's Active/Inactive/System tab, clears chip+search, expands its group and scrolls to it (DeepLinks.pendingAlertTarget, AppRoot) | ✓ `datawatch://alert/<id>` (and `alerts`) → AppRouter → `AlertDeepLinkFocus`; AlertsView selects the sub-tab holding the alert, clears chip + search, expands its card and scrolls to it; bare link opens the tab; D40a session restore skipped for that launch | aligned | operator 2026-10-05: alert deep links on both apps | neither app effectively has it (PWA n/a) · Task-O 2026-10-05: needs decision: only iOS has a (tab-level) alert deep link; PWA n/a, Android none · Task-R 2026-10-05: Android added; PWA → dmz006/datawatch#182. · Task-R 2026-10-05: iOS now focuses the alert like Android |
-| nav | Platform integrations: ASSIST / VOICE_COMMAND / VOICE_SEND intents, home-screen widgets, Quick Settings tile | n/a | ✓ AndroidManifest.xml:43-48, 65, 108-139 | ✗ (no Siri Shortcuts, widgets) | ios-missing | decided D85a | iOS App Intents / WidgetKit — later · Task-O 2026-10-05: unchanged — D85a App Intents / WidgetKit deferred (new iOS surfaces, not an alignment fix) |
+| nav | Platform integrations: ASSIST / VOICE_COMMAND / VOICE_SEND intents, home-screen widgets, Quick Settings tile | n/a | ✓ AndroidManifest.xml:43-48, 65, 108-139 | ✓ (BL403, 2026-10-07: Siri/Shortcuts "Send to session" = VOICE_SEND; "Open datawatch" = ASSIST/VOICE_COMMAND, native; WidgetKit Sessions + Monitor widgets; Control Center "datawatch voice" control = QS tile, iOS 18+) | aligned | decided D85a | iOS App Intents / WidgetKit — later · Task-O 2026-10-05: unchanged — D85a App Intents / WidgetKit deferred (new iOS surfaces, not an alignment fix) · **BL403 2026-10-07: built per D85a** (code on branch; Mac build + widget signing profile pending). Widget server-name cycle needs iOS 17 (iOS 16: tap opens the app). Android's QS tile target `datawatch://voice/new` is not handled by Android itself — what both should open is open (BL403). |
 | data | Reload client when daemon version changes (WS hello / `/api/health` on reconnect) | ✓ app.js:283-293, 505-512 | n/a (native binary) | n/a | n/a | | native analogue — re-probe capabilities on version change — exists on neither app |
 | element | Daemon self-update check (`checkUpdate`) surfaced in UI | ~ Settings/About (section 07) | ✓ DaemonOpsCards.kt:388 | ✓ Settings › About "Check now" (SettingsAboutCards.swift:119,230) | aligned |  | detail in section 07 |
 | nav | First-run flow | ~ token prompt only | ✓ Splash → Home; Sessions shows "No server connected" + Add server (no Onboarding page) | ~ per-tab "No server connected" empty states, no onboarding | aligned | decided D86c | Android still routes to OnboardingScreen (AppRoot.kt:248-263); iOS already minimal · per D86c (2026-10-04) |
@@ -88,7 +88,7 @@ Refs are `file:line` or symbol. Audited 2026-10-04 from code (no screenshots yet
 | motion | Reduced-motion respected (`prefers-reduced-motion` disables pulses) | ✓ style.css:2356-2358, 2416-2418 | ✓ `rememberDwPulse` / `rememberRunningPulseAlpha` static when animator scale = 0 | ✓ splash, skeleton, card pulse, dashboard and the reachability dot pulse honour Reduce Motion | aligned |  | only the iOS dot pulse remains · iOS-F 2026-10-05: iOS dot pulse static under Reduce Motion |
 
 ## Coverage
-rows: 81 · aligned: 71 · ios-missing: 1 · android-missing: 0 · pwa-missing: 4 · misaligned: 0 · n/a: 5
+rows: 81 · aligned: 72 · ios-missing: 0 · android-missing: 0 · pwa-missing: 4 · misaligned: 0 · n/a: 5
 
 Re-audited 2026-10-04 against current code after the decisions + implementation pass. Where both apps lack a decided feature the row is filed `ios-missing` and the Notes say "+ Android".
 
@@ -105,7 +105,7 @@ Re-audited 2026-10-04 against current code after the decisions + implementation 
 10. Wide-screen model → D11a: per-platform layouts accepted.
 11. Restore last view on cold start → D40a: last tab + open session.
 12. Deep-link scheme → D84b: `datawatch://` on both apps.
-13. Android platform integrations → D85a: iOS App Intents / WidgetKit are parity items (later).
+13. Android platform integrations → D85a: iOS App Intents / WidgetKit are parity items (later). Built 2026-10-07 (BL403).
 14. iOS first run → D86c: PWA-style minimal on both apps.
 15. `--accent` → D6b: Android reverts to #7C3AED.
 16. UI typeface → D7b: platform system font + Dynamic Type.

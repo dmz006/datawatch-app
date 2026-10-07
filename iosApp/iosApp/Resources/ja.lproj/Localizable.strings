@@ -1881,3 +1881,14 @@
 "This device is not registered with the server yet. Tap Re-register this device." = "このデバイスはまだサーバーに登録されていません。「このデバイスを再登録」をタップしてください。";
 "APNs is not set up on this server (push.apns in the server config)." = "このサーバーでは APNs が設定されていません（サーバー設定の push.apns）。";
 "No APNs device was sent to." = "送信先の APNs デバイスがありません。";
+
+/* BL403 — Siri / App Intents */
+"Send to session" = "セッションに送信";
+"Sends text to your most recently active datawatch session after you confirm." = "確認後、最後にアクティブだった datawatch セッションにテキストを送信します。";
+"What should I send?" = "何を送信しますか？";
+"Send ${message} to ${sessionName}" = "${message} を ${sessionName} に送信";
+"Nothing to send." = "送信する内容がありません。";
+"No running session to send to." = "送信先の実行中セッションがありません。";
+"Send “%@” to %@?" = "「%@」を %@ に送信しますか？";
+"Sent to %@." = "%@ に送信しました。";
+"Open datawatch voice" = "datawatch 音声を開く";

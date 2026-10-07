@@ -116,8 +116,9 @@ phone, watch, or car display:
 - **Council** — run a multi-persona council debate and watch it live.
 - **Server settings** — every web-UI settings card, including the project / cluster
   profile editor with a YAML view, LLM registry, compute nodes and plugins.
-- **Glance surfaces** — home-screen widget, Wear Tile, Wear complications (CPU /
-  mem / session counts / server switch), and Android Auto list screen.
+- **Glance surfaces** — home-screen widgets, Wear Tile, Wear complications (CPU /
+  mem / session counts / server switch), Android Auto list screen; on iOS, Home Screen /
+  Lock Screen widgets, a Control Center control and Siri ("tell datawatch").
 - **Foldable + tablet two-pane** — sessions list and session detail render
   side-by-side on screens ≥ 600 dp (Pixel Fold, Galaxy Z Fold, tablets).
 - **Secure at rest** — SQLCipher-backed storage + Android Keystore for bearer
@@ -210,8 +211,11 @@ under Settings › Comms › Servers. Full guide: [docs/ios.md](docs/ios.md).
 (same LAN, a VPN, or Tailscale). The app has no cloud service of its own.
 
 **Not yet:** push notifications while the app is closed arrive with an upcoming datawatch
-server update (until then alerts show while the app is open); no Siri shortcuts or widgets
-yet.
+server update (until then alerts show while the app is open).
+
+**Siri and widgets:** "Hey Siri, tell datawatch" sends a reply to a session after you
+confirm; Home Screen / Lock Screen widgets show session counts and server load; a
+Control Center control opens the app (iOS 18+).
 
 <!-- iOS screenshots: images go in docs/media/ios/ -->
 <table>

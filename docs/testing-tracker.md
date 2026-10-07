@@ -233,6 +233,11 @@ Same column meaning as the section below. Validated stays `No` until a real-devi
 | Phone | Profile editor Save above the gesture bar | No | No | unreleased | Build only | e2e flow 09 still taps by position |
 | Phone | Markdown `_italic_` (council replies) | Yes | No | unreleased | `MarkdownInlineTest` (3 cases) | |
 | Phone + Wear + AAOS | Maestro e2e smoke suite (`scripts/e2e-sandbox.sh`) | Yes | No | unreleased | 21/21 PASS on emulators against the sandbox with real LLM nodes | Local only; no emulator in CI |
+| Shared (iOS) | Widget config pick / cycle, session counts, Monitor snapshot, Siri send target (Android widget + VoiceCommandActivity rules) | Yes | No | unreleased | `WidgetSurfacesTest` (18) | BL403 |
+| iOS | Siri / Shortcuts "Send to session" (confirm, then reply via shared transport) | No | No | unreleased | Not built yet — needs Mac build + real iPhone with Siri | BL403; device must be unlocked |
+| iOS widget | Sessions widget (small / medium / Lock Screen) + Monitor widget (large); 30 min refresh; locked → last numbers | No | No | unreleased | Not built yet — needs Mac build + signed install (shared keychain group) | BL403; separate surface row per AGENT.md |
+| iOS widget | Tap server name cycles the active server; app adopts it on foreground | No | No | unreleased | Needs iOS 17+ device | BL403 |
+| iOS Control Center | "datawatch voice" control opens the app | No | No | unreleased | Needs iOS 18+ device | BL403 |
 
 ## v1.23.3 → v1.28.0 (2026-09-17 → 2026-10-06)
 

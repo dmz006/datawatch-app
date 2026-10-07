@@ -14,6 +14,7 @@ No Mac is required — certificate generation and signing both run on the hosted
 | Tag release → test gate → sign → TestFlight → IPA on GitHub release | `.github/workflows/release.yml`, job `testflight` |
 | fastlane lanes (`match_init`, `beta`) | `iosApp/fastlane/Fastfile`, `iosApp/fastlane/Matchfile` |
 | Bundle ID | `com.dmzs.datawatchclient` (`iosApp/project.yml`) |
+| Widget extension bundle ID | `com.dmzs.datawatchclient.widgets` (`DatawatchWidgets` target, BL403) — own App Store profile |
 
 ## Your part — about 20 minutes, all in a browser
 
@@ -62,6 +63,15 @@ Actions → **iOS signing — match init (one-shot)** → Run workflow → type 
 It creates the Apple Distribution certificate and the App Store provisioning profile
 through the API and pushes them, encrypted, to the certs repo. Takes ~2 minutes.
 Re-run only to rotate (Apple distribution certs are valid for one year).
+
+**Widget extension (BL403), once:** the Matchfile lists the app *and*
+`com.dmzs.datawatchclient.widgets`, and match can only make a profile for a bundle id
+that exists. Register it first — either run the workflow with **register_widget_bundle**
+ticked (it runs `fastlane register_widget_bundle`, then match), or locally
+`cd iosApp && fastlane register_widget_bundle`. No capabilities to enable: the widget
+shares data through the keychain-access-groups entitlement (no App Group). After that,
+`fastlane beta` signs each target with its own profile (`DW_APP_PROFILE_SPECIFIER` /
+`DW_WIDGET_PROFILE_SPECIFIER`).
 
 ### 6. Ship
 Set `IOS_SIGNING_CONFIGURED=true`, then the next `git push origin vX.Y.Z` tag runs:

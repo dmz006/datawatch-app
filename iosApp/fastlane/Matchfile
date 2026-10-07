@@ -5,6 +5,9 @@
 # Usage: fastlane match appstore --readonly
 
 # git_url("https://github.com/your-org/datawatch-ios-certs")
-app_identifier(["com.dmzs.datawatchclient"])
+# App + its WidgetKit extension (BL403). The widget bundle id must exist in the
+# Apple Developer portal before match can make its profile:
+#   fastlane register_widget_bundle
+app_identifier(["com.dmzs.datawatchclient", "com.dmzs.datawatchclient.widgets"])
 # Apple ID comes from the FASTLANE_USER env var when running locally; CI
 # authenticates with the App Store Connect API key and needs no Apple ID.
