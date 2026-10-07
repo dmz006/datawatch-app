@@ -14,6 +14,5 @@ Please try:
 Known limitations in this build:
 • Push notifications while the app is closed need datawatch v8.63 or later with APNs set up on the server (push.apns). Older servers show alerts only while the app is open.
 • To reorder sessions, press and hold a session, then drag.
-• No Siri shortcuts or home-screen widgets yet.
 
 Send feedback with a screenshot from TestFlight (take a screenshot in the app) or by email. Please include your iOS version, device model and datawatch server version. Never include your server address or token.
