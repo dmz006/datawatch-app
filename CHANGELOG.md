@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- **iOS: Siri, Home Screen widgets and a Control Center control**, the iPhone versions of the Android widgets, voice tile and Assistant action.
+  - **Siri:** say "Hey Siri, tell datawatch" (or "Send a message with datawatch"). Siri asks what to send and asks you to confirm before it sends it to your most recently active session. The **Send to session** action is also in the Shortcuts app, where you can name the session. Works in all five app languages.
+  - **Widgets:** **datawatch Sessions** (running / waiting / total, Home Screen and Lock Screen) and **datawatch Monitor** (CPU, memory, disk, swap, GPU, network, daemon, sessions, uptime). They refresh about every 30 minutes and when you leave the app. On iOS 17 and later, tap the server name on a widget to switch server.
+  - **Control Center (iOS 18+):** a **datawatch voice** control that opens the app.
+
 ### Fixed
 - **Android: Cost Rates, Device Aliases, Session Templates, Tooling, Secrets status and pipeline Cancel work on a fresh install.** These used to need a server explicitly picked as "active"; without one, Cost Rates showed "No rate data — daemon unavailable" and the others stayed empty. They now use the active server, or else the first enabled one, like the other cards. Cost Rates also shows the loading eye while it loads.
 - **Android: Compute Nodes rows stay readable with longer node names.** "cap=10" used to break into one character per line; the row now wraps whole items.

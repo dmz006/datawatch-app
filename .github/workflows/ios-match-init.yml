@@ -29,6 +29,10 @@ on:
         description: 'Regenerate the profile (picks up new App ID capabilities, e.g. Push)'
         type: boolean
         default: false
+      register_widget_bundle:
+        description: 'First register the widget extension bundle id (com.dmzs.datawatchclient.widgets) — once, before its first profile'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -82,6 +86,7 @@ jobs:
         env:
           MATCH_TYPE: ${{ inputs.type }}
           MATCH_FORCE: ${{ inputs.force }}
+          REGISTER_WIDGET_BUNDLE: ${{ inputs.register_widget_bundle }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
@@ -94,6 +99,11 @@ jobs:
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -lut 21600 build.keychain
+          # Matchfile lists the app and its widget extension; match needs both
+          # bundle ids registered in the Developer portal.
+          if [ "$REGISTER_WIDGET_BUNDLE" = "true" ]; then
+            fastlane register_widget_bundle
+          fi
           fastlane match_init
 
       - name: Remove temporary keychain
@@ -108,6 +118,6 @@ jobs:
             [ -f "$p" ] || continue
             echo "== $(basename "$p")"
             openssl smime -inform der -verify -noverify -in "$p" > /tmp/prof.plist 2>/dev/null || { echo "decode failed"; continue; }
-            /usr/libexec/PlistBuddy -c "Print :Entitlements" /tmp/prof.plist | grep -E "aps-environment|application-identifier|Name" || true
+            /usr/libexec/PlistBuddy -c "Print :Entitlements" /tmp/prof.plist | grep -E "aps-environment|application-identifier|keychain-access-groups|Name" || true
             /usr/libexec/PlistBuddy -c "Print :Name" /tmp/prof.plist || true
           done

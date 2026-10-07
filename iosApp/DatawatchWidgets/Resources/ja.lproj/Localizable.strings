@@ -1,0 +1,25 @@
+/* BL403 — DatawatchWidgets extension (widgets + Control Center control). */
+"datawatch Sessions" = "datawatch セッション";
+"Running / waiting / total session counts at a glance." = "実行中 / 待機中 / 合計のセッション数をひと目で。";
+"datawatch Monitor" = "datawatch モニター";
+"CPU load, memory and session counts from the active datawatch server." = "アクティブな datawatch サーバーの CPU 負荷、メモリ、セッション数。";
+"running" = "実行中";
+"waiting" = "待機中";
+"total" = "合計";
+"%@ running · %@ waiting" = "実行中 %@ · 待機中 %@";
+"No servers" = "サーバーなし";
+"offline · %@" = "オフライン · %@";
+"locked · %@" = "ロック中 · %@";
+"Monitor" = "モニター";
+"CPU" = "CPU";
+"Memory" = "メモリ";
+"Disk" = "ディスク";
+"Swap" = "スワップ";
+"GPU" = "GPU";
+"Net" = "ネット";
+"Net (eBPF)" = "ネット (eBPF)";
+"Daemon" = "デーモン";
+"Next server" = "次のサーバー";
+"datawatch voice" = "datawatch 音声";
+"Opens datawatch." = "datawatch を開きます。";
+"Open datawatch voice" = "datawatch 音声を開く";

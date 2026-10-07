@@ -288,6 +288,11 @@ jobs:
                    UIBackgroundModes UISupportedInterfaceOrientations "UISupportedInterfaceOrientations~ipad"; do
             /usr/libexec/PlistBuddy -c "Print :$k" iosApp/Info.plist >/dev/null 2>&1 || { echo "::error::Info.plist missing $k — add it to project.yml info.properties"; missing=1; }
           done
+          # Widget extension (BL403): its version must match the app's, and it must
+          # declare the WidgetKit extension point.
+          for k in CFBundleShortVersionString CFBundleVersion NSExtension:NSExtensionPointIdentifier; do
+            /usr/libexec/PlistBuddy -c "Print :$k" DatawatchWidgets/Info.plist >/dev/null 2>&1 || { echo "::error::DatawatchWidgets/Info.plist missing $k — add it to project.yml (DatawatchWidgets info.properties)"; missing=1; }
+          done
           [ "$missing" -eq 0 ] && echo "Info.plist: all required keys present"
           exit $missing
 

@@ -61,6 +61,12 @@ iOS App Store distribution requires:
 
 None of these are currently active (no Apple enrollment as of v1.0.4). The `ios-build.yml` CI job validates compilation only; archive + upload to App Store is a manual step until enrollment completes.
 
+**Current setup (supersedes the list above):** fastlane match + App Store Connect API key —
+see `docs/plans/ios-testflight-setup.md`. Since BL403 the IPA holds two signed bundles, the app
+(`com.dmzs.datawatchclient`) and its WidgetKit extension (`com.dmzs.datawatchclient.widgets`),
+each with its own match App Store profile; register the widget bundle id once with
+`fastlane register_widget_bundle` before running match.
+
 ### Re-signing procedure (future)
 
 1. Rotate the distribution cert in Apple Developer Portal.

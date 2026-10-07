@@ -11,6 +11,9 @@ targets:
     platform: iOS
     sources:
       - iosApp
+      # BL403: files compiled into BOTH the app and the widget extension
+      # (the Control Center control's app-opening intent must be in both).
+      - Shared
       # xterm.js host page + vendored libs, shared byte-for-byte with Android.
       # Folder reference so the bundle keeps the xterm/ subdirectory;
       # TerminalView loads host.html from it (no CDN, works offline).
@@ -79,6 +82,10 @@ targets:
         # Bundle ID must match Android phone app so the same Apple Developer
         # account can publish both as a universal cross-platform brand.
         PRODUCT_BUNDLE_IDENTIFIER: com.dmzs.datawatchclient
+        # Release signing (fastlane beta) passes one match profile per target:
+        # DW_APP_PROFILE_SPECIFIER here, DW_WIDGET_PROFILE_SPECIFIER on the widget.
+        # Unset (empty) for local / CI unsigned builds.
+        PROVISIONING_PROFILE_SPECIFIER: $(DW_APP_PROFILE_SPECIFIER)
         # Version values injected from gradle.properties by CI and build-ios-framework.sh.
         # See docs/setup.md §iOS and .github/workflows/ios-build.yml for how these are set.
         MARKETING_VERSION: ${DATAWATCH_APP_VERSION}
@@ -96,3 +103,62 @@ targets:
       - sdk: LocalAuthentication.framework
       - sdk: UserNotifications.framework
       - sdk: WebKit.framework
+      - sdk: AppIntents.framework
+      - sdk: WidgetKit.framework
+      # BL403: home-screen widgets + Control Center control (embedded in PlugIns/).
+      - target: DatawatchWidgets
+
+  # BL403 — WidgetKit extension: Sessions + Monitor widgets (Android SessionsWidget /
+  # MonitorWidget) and the "datawatch voice" control (Android voice QS tile, iOS 18+).
+  # Second bundle id: com.dmzs.datawatchclient.widgets (register it with
+  # `fastlane register_widget_bundle`, then run match so it gets its own profile).
+  # Data sharing needs no App Group: the app writes the widget config to the
+  # Keychain and both targets share the keychain group below (no portal step).
+  DatawatchWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - DatawatchWidgets
+      - Shared
+    info:
+      path: DatawatchWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: datawatch
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations:
+          - en
+          - de
+          - es
+          - fr
+          - ja
+        # Must equal the app's version + build or App Store Connect rejects the upload.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: DatawatchWidgets/DatawatchWidgets.entitlements
+      properties:
+        # Same group as the app (first entry there too): lets the widget read the
+        # widget config item and, while unlocked, the server's bearer token.
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.dmzs.datawatchclient
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dmzs.datawatchclient.widgets
+        PROVISIONING_PROFILE_SPECIFIER: $(DW_WIDGET_PROFILE_SPECIFIER)
+        MARKETING_VERSION: ${DATAWATCH_APP_VERSION}
+        CURRENT_PROJECT_VERSION: ${DATAWATCH_APP_VERSION_CODE}
+        FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/debug
+        # DatawatchShared is a static framework: linked into the extension, not embedded.
+        OTHER_LDFLAGS: $(inherited) -framework DatawatchShared -lsqlite3
+        LD_RUNPATH_SEARCH_PATHS: $(inherited) @executable_path/Frameworks @executable_path/../../Frameworks
+      configs:
+        Release:
+          FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/release
+    dependencies:
+      - framework: ../shared/build/XCFrameworks/debug/DatawatchShared.xcframework
+        embed: false
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+      - sdk: AppIntents.framework

@@ -27,11 +27,22 @@ final class ServerProfileStore: ObservableObject {
     func selectActive(_ id: String) {
         activeProfileId = id
         UserDefaults.standard.set(id, forKey: "dw.active_profile_id")
+        WidgetSync.publish(activeProfileId: id)
+    }
+
+    /// BL403: tapping the server name on a home-screen widget cycles the active
+    /// server (Android "tap to cycle"). The widget writes the shared widget config;
+    /// adopt its choice on launch and whenever the app returns to the foreground.
+    func adoptWidgetSelection() {
+        guard let id = WidgetSync.widgetActiveProfileId(), id != activeProfileId else { return }
+        activeProfileId = id
+        UserDefaults.standard.set(id, forKey: "dw.active_profile_id")
     }
 
     private var collectionTask: Task<Void, Never>?
 
     init() {
+        adoptWidgetSelection()
         startCollecting()
     }
 
@@ -91,7 +102,11 @@ final class ServerProfileStore: ObservableObject {
             do {
                 for try await array in stream {
                     let typed = array.compactMap { $0 as? ServerProfile }
-                    await MainActor.run { self?.profiles = typed }
+                    await MainActor.run {
+                        self?.profiles = typed
+                        // Widgets show the active (or first enabled) server.
+                        WidgetSync.publish(activeProfileId: self?.activeProfileId)
+                    }
                 }
             } catch {
                 // Flow ended — not an error in normal operation.

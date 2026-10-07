@@ -1,0 +1,4 @@
+/* BL403 — Siri phrases for SendToSessionIntent (DatawatchShortcuts). ${applicationName} = datawatch. */
+"Tell ${applicationName}" = "Dis à ${applicationName}";
+"Send a message with ${applicationName}" = "Envoyer un message avec ${applicationName}";
+"Reply in ${applicationName}" = "Répondre dans ${applicationName}";

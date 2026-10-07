@@ -1,0 +1,25 @@
+/* BL403 — DatawatchWidgets extension (widgets + Control Center control). */
+"datawatch Sessions" = "datawatch Sitzungen";
+"Running / waiting / total session counts at a glance." = "Laufende / wartende / alle Sitzungen auf einen Blick.";
+"datawatch Monitor" = "datawatch Monitor";
+"CPU load, memory and session counts from the active datawatch server." = "CPU-Last, Speicher und Sitzungszahlen des aktiven datawatch-Servers.";
+"running" = "aktiv";
+"waiting" = "wartend";
+"total" = "gesamt";
+"%@ running · %@ waiting" = "%@ aktiv · %@ wartend";
+"No servers" = "Keine Server";
+"offline · %@" = "offline · %@";
+"locked · %@" = "gesperrt · %@";
+"Monitor" = "Monitor";
+"CPU" = "CPU";
+"Memory" = "Speicher";
+"Disk" = "Festplatte";
+"Swap" = "Swap";
+"GPU" = "GPU";
+"Net" = "Netz";
+"Net (eBPF)" = "Netz (eBPF)";
+"Daemon" = "Daemon";
+"Next server" = "Nächster Server";
+"datawatch voice" = "datawatch Sprache";
+"Opens datawatch." = "Öffnet datawatch.";
+"Open datawatch voice" = "datawatch Sprache öffnen";

@@ -105,6 +105,23 @@ token (Keystore material is platform-excluded from backup; user re-enters each t
 - EncryptedSharedPreferences for non-DB settings (AES-256-GCM with Jetpack Security).
 - FLAG_SECURE applied on all screens showing tokens, paired devices, and config exports.
 
+### iOS widgets and Siri (BL403)
+
+- The app writes a **widget configuration** Keychain item (service `datawatch.widget`,
+  `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`): enabled servers' id, name, base
+  URL, certificate pin and the *Keychain alias* of the bearer token, plus the active
+  server id. No token. No App Group: the app and the `com.dmzs.datawatchclient.widgets`
+  extension share the `$(AppIdentifierPrefix)com.dmzs.datawatchclient` keychain access
+  group (entitlement only, no Developer-portal registration).
+- The widget extension reads the bearer token from the existing token item
+  (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, unchanged), so it can only reach the
+  server while the device is unlocked; a refresh while locked shows the last numbers.
+- The widget keeps its last numbers (counts / stats text, server name) in its own
+  container's `UserDefaults` — the same data it shows on screen, never a token.
+- The Siri **Send to session** intent runs in the app process with
+  `authenticationPolicy = .requiresAuthentication` (device must be unlocked) and always
+  asks for confirmation before sending. It does not pass the app's optional Face ID lock.
+
 ## In-transit protection
 
 - All HTTPS requests pin to modern cipher suites; weak suites disabled in OkHttp's

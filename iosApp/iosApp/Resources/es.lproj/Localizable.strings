@@ -1881,3 +1881,14 @@
 "This device is not registered with the server yet. Tap Re-register this device." = "Este dispositivo aún no está registrado en el servidor. Toca «Volver a registrar este dispositivo».";
 "APNs is not set up on this server (push.apns in the server config)." = "APNs no está configurado en este servidor (push.apns en la configuración del servidor).";
 "No APNs device was sent to." = "No se envió a ningún dispositivo APNs.";
+
+/* BL403 — Siri / App Intents */
+"Send to session" = "Enviar a la sesión";
+"Sends text to your most recently active datawatch session after you confirm." = "Envía texto a tu sesión de datawatch activa más reciente después de que confirmes.";
+"What should I send?" = "¿Qué debo enviar?";
+"Send ${message} to ${sessionName}" = "Enviar ${message} a ${sessionName}";
+"Nothing to send." = "No hay nada que enviar.";
+"No running session to send to." = "No hay ninguna sesión en ejecución a la que enviar.";
+"Send “%@” to %@?" = "¿Enviar «%@» a %@?";
+"Sent to %@." = "Enviado a %@.";
+"Open datawatch voice" = "Abrir voz de datawatch";
