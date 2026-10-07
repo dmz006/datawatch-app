@@ -365,6 +365,10 @@
     <string name="stats_section_ollama">Ollama Server</string>
     <string name="stats_section_envelopes">Process envelopes</string>
     <string name="stats_section_backends">Backend health</string>
+    <string name="stats_section_certificates">Certificates</string>
+    <string name="acme_loading_status">Loading cert status…</string>
+    <string name="acme_renew_now">Renew now</string>
+    <string name="acme_verify">Verify</string>
     <string name="stats_row_download">↓ Download</string>
     <string name="stats_row_upload">↑ Upload</string>
     <string name="stats_row_memory">Memory</string>

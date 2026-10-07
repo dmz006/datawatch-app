@@ -45,6 +45,7 @@ import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaDocsSlug
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -109,9 +110,14 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
                 val raw = JsonObject(cfg.raw.toMap())
                 rawConfig = raw
                 section.fields.forEach { f ->
-                    val v = readDottedAsString(raw, f.key)
+                    val v = if (f is ConfigField.ListField) readDottedAsCsv(raw, f.key) else readDottedAsString(raw, f.key)
                     values[f.key] = v
                     loaded[f.key] = v
+                }
+                section.fields.filterIsInstance<ConfigField.CertSource>().forEach { f ->
+                    val mode = certSourceOf(values)
+                    values[f.key] = mode
+                    loaded[f.key] = mode
                 }
             },
             onFailure = { banner = "Config load failed — ${it.message ?: it::class.simpleName}" },
@@ -154,10 +160,18 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
             return@PwaCard
         }
         section.fields.forEach { field ->
+            if (!isShown(field, section.fields, values)) return@forEach
             FieldRow(
                 field = field,
                 value = values[field.key].orEmpty(),
-                onChange = { v -> values[field.key] = v },
+                onChange = { v ->
+                    values[field.key] = v
+                    // PWA onCertSourceChange: the selector writes both booleans.
+                    if (field is ConfigField.CertSource) {
+                        values["server.tls_auto_generate"] = (v == "selfsigned").toString()
+                        values["acme.enabled"] = (v == "acme").toString()
+                    }
+                },
                 interfaces = interfaces,
                 backends = backends,
             )
@@ -282,9 +296,141 @@ private fun FieldRow(
                     keyboardType = KeyboardType.Text,
                 )
             }
-        is ConfigField.Select -> SelectRow(field.label, field.options, value, onChange)
+        is ConfigField.Select ->
+            SelectRow(field.label, field.options, value.ifBlank { field.defaultValue.orEmpty() }, onChange, field.optionLabels)
         is ConfigField.InterfaceSelect -> SelectRow(field.label, interfaces, value, onChange)
         is ConfigField.LlmSelect -> SelectRow(field.label, backends, value, onChange)
+        is ConfigField.ListField ->
+            InputRow(field.label) {
+                CompactInput(
+                    value = value,
+                    onChange = onChange,
+                    placeholder = field.placeholder,
+                    password = false,
+                    keyboardType = KeyboardType.Uri,
+                )
+            }
+        is ConfigField.CertSource ->
+            SelectRow(field.label, CERT_SOURCE_OPTIONS.keys.toList(), value, onChange, CERT_SOURCE_OPTIONS)
+        is ConfigField.Hidden -> Unit
+        is ConfigField.Note ->
+            Text(
+                field.text,
+                modifier = Modifier.padding(horizontal = ROW_PADDING_H, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        is ConfigField.AcmeStatus -> AcmeStatusBlock()
+    }
+}
+
+/** PWA `acme_cert_source` options, value → label. */
+private val CERT_SOURCE_OPTIONS: Map<String, String> =
+    linkedMapOf(
+        "selfsigned" to "Self-signed (auto-generate)",
+        "custom" to "Custom cert path",
+        "acme" to "Let's Encrypt (ACME)",
+    )
+
+/** PWA mode rule: acme.enabled wins, then tls_auto_generate, else custom paths. */
+internal fun certSourceOf(values: Map<String, String>): String =
+    when {
+        values["acme.enabled"] == "true" -> "acme"
+        values["server.tls_auto_generate"] == "true" -> "selfsigned"
+        else -> "custom"
+    }
+
+/** [ConfigField.showWhen] against the current values; a Select's default stands in for an empty value. */
+internal fun isShown(
+    field: ConfigField,
+    fields: List<ConfigField>,
+    values: Map<String, String>,
+): Boolean {
+    var rule: ShowWhen? = field.showWhen
+    while (rule != null) {
+        val key = rule.key
+        val dflt = (fields.firstOrNull { it.key == key } as? ConfigField.Select)?.defaultValue.orEmpty()
+        if (values[key].orEmpty().ifBlank { dflt } !in rule.values) return false
+        rule = rule.and
+    }
+    return true
+}
+
+/**
+ * PWA `loadAcmeStatus` + Renew now / Verify buttons, inside the certificate-source
+ * block. Re-fetches after Renew. Toast text matches the web UI.
+ */
+@Composable
+private fun AcmeStatusBlock() {
+    val scope = rememberCoroutineScope()
+    var lines by remember { mutableStateOf<List<com.dmzs.datawatchclient.transport.AcmeLine>?>(null) }
+    var notice by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    var tick by remember { mutableStateOf(0) }
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+
+    suspend fun transport() =
+        ServiceLocator.profileRepository.observeAll().first().let { profiles ->
+            val activeId = ServiceLocator.activeServerStore.get()
+            (
+                profiles.firstOrNull { it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS }
+                    ?: profiles.firstOrNull { it.enabled }
+            )?.let { ServiceLocator.transportFor(it) }
+        }
+
+    LaunchedEffect(tick) {
+        val tr = transport() ?: return@LaunchedEffect
+        lines =
+            tr.acmeStatus().fold(
+                onSuccess = { com.dmzs.datawatchclient.transport.AcmeStatusFormat.settingsLines(it) },
+                onFailure = { listOf(com.dmzs.datawatchclient.transport.AcmeLine("Status unavailable.", "muted")) },
+            )
+    }
+    Column(modifier = Modifier.padding(horizontal = ROW_PADDING_H, vertical = 6.dp)) {
+        val shown = lines
+        if (shown == null) {
+            Text(stringResource(R.string.acme_loading_status), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            shown.forEach { l ->
+                Text(
+                    l.text + if (l.error.isNotEmpty()) " (${l.error})" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (l.error.isNotEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = {
+                notice = "Requesting renewal…" to true
+                scope.launch {
+                    val tr = transport() ?: return@launch
+                    notice =
+                        tr.acmeRenew().fold(
+                            onSuccess = { "Renewed" to true },
+                            onFailure = { "Renew failed: " + com.dmzs.datawatchclient.transport.AcmeStatusFormat.errorText(it.message) to false },
+                        )
+                    tick++
+                }
+            }) { Text(stringResource(R.string.acme_renew_now), style = inputTextStyle()) }
+            OutlinedButton(onClick = {
+                notice = "Verifying…" to true
+                scope.launch {
+                    val tr = transport() ?: return@launch
+                    notice =
+                        tr.acmeVerify().fold(
+                            onSuccess = { com.dmzs.datawatchclient.transport.AcmeStatusFormat.verifyMessage(it) },
+                            onFailure = { "Verify failed: " + com.dmzs.datawatchclient.transport.AcmeStatusFormat.errorText(it.message) to false },
+                        )
+                }
+            }) { Text(stringResource(R.string.acme_verify), style = inputTextStyle()) }
+        }
+        notice?.let { (msg, ok) ->
+            Text(
+                msg,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (ok) dw.success else MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
 
@@ -308,6 +454,7 @@ private fun SelectRow(
     options: List<String>,
     value: String,
     onChange: (String) -> Unit,
+    optionLabels: Map<String, String> = emptyMap(),
 ) {
     var expanded by remember { mutableStateOf(false) }
     Row(
@@ -320,7 +467,12 @@ private fun SelectRow(
                 onClick = { expanded = true },
                 modifier = Modifier.width(INPUT_WIDTH),
             ) {
-                Text(value.ifBlank { "(default)" }, style = inputTextStyle())
+                // Collapsed button shows the short name ("HTTP-01"); the menu shows the full label.
+                Text(
+                    optionLabels[value]?.substringBefore(" (") ?: value.ifBlank { "(default)" },
+                    style = inputTextStyle(),
+                    maxLines = 1,
+                )
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 if (options.isEmpty()) {
@@ -331,7 +483,7 @@ private fun SelectRow(
                 }
                 options.forEach { opt ->
                     DropdownMenuItem(
-                        text = { Text(opt) },
+                        text = { Text(optionLabels[opt] ?: opt) },
                         onClick = {
                             onChange(opt)
                             expanded = false
@@ -365,6 +517,21 @@ internal fun readDottedAsString(
     }
 }
 
+/** Array value as the comma-separated text the PWA input shows (`acme.domains`). */
+internal fun readDottedAsCsv(
+    root: JsonObject,
+    dottedKey: String,
+): String {
+    var cur: JsonElement = root
+    for (p in dottedKey.split('.')) {
+        cur = (cur as? JsonObject)?.get(p) ?: return ""
+    }
+    return (cur as? kotlinx.serialization.json.JsonArray)
+        ?.mapNotNull { (it as? JsonPrimitive)?.content }
+        ?.joinToString(", ")
+        ?: readDottedAsString(root, dottedKey)
+}
+
 /**
  * Build the flat dot-path patch the server's `applyConfigPatch`
  * actually accepts. Returns `null` if nothing has actually changed
@@ -394,13 +561,21 @@ internal fun buildDotPatch(
             }
             val el: JsonElement =
                 when (field) {
-                    is ConfigField.Toggle -> JsonPrimitive(trimmed.toBooleanStrictOrNull() ?: false)
+                    is ConfigField.Toggle,
+                    is ConfigField.Hidden,
+                    -> JsonPrimitive(trimmed.toBooleanStrictOrNull() ?: false)
                     is ConfigField.NumberField -> JsonPrimitive(trimmed.toIntOrNull() ?: 0)
                     is ConfigField.TextField -> JsonPrimitive(trimmed)
                     is ConfigField.Select,
                     is ConfigField.InterfaceSelect,
                     is ConfigField.LlmSelect,
+                    is ConfigField.ListField,
                     -> JsonPrimitive(trimmed)
+                    // Pseudo-fields: never sent (the selector writes its Hidden booleans).
+                    is ConfigField.CertSource,
+                    is ConfigField.Note,
+                    is ConfigField.AcmeStatus,
+                    -> return@mapNotNull null
                 }
             key to el
         }
@@ -463,6 +638,8 @@ private fun CompactInput(
                     Text(
                         placeholder,
                         style = textStyle.copy(color = placeholderColor),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
                 }
                 inner()

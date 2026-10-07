@@ -1850,3 +1850,29 @@
 "Quick commands" = "クイックコマンド";
 "Show watched only" = "ウォッチ中のみ表示";
 "Filter" = "フィルター";
+
+/* BL413 — certificate source + Let's Encrypt status (web v8.62) */
+"Certificate source" = "証明書のソース";
+"Self-signed (auto-generate)" = "自己署名（自動生成）";
+"Custom cert path" = "カスタム証明書パス";
+"Let's Encrypt (ACME)" = "Let's Encrypt（ACME）";
+"Domains (comma-separated)" = "ドメイン（カンマ区切り）";
+"Endpoint" = "エンドポイント";
+"Staging (testing, untrusted certs)" = "ステージング（テスト用・信頼されない証明書）";
+"Production (trusted certs)" = "本番（信頼される証明書）";
+"Validation method" = "検証方式";
+"HTTP-01 (no DNS management, no wildcard)" = "HTTP-01（DNS 管理不要・ワイルドカード不可）";
+"DNS-01 (wildcard support, needs a provider token)" = "DNS-01（ワイルドカード対応・プロバイダートークンが必要）";
+"DNS provider" = "DNS プロバイダー";
+"Provider token secret ref" = "プロバイダートークンのシークレット参照";
+"Zone ID (reference only)" = "ゾーン ID（参照用のみ）";
+"Zone-scoped token only (Cloudflare \"Zone > DNS > Edit\" on one zone) — never the account-global key. Stored via the secrets manager, referenced here as ${secret:name}, never shown once saved." = "1 つのゾーンに限定したトークン（Cloudflare の \"Zone > DNS > Edit\"）のみを使用し、アカウント全体のキーは使わないでください。シークレットマネージャーに保存し、ここでは ${secret:name} として参照します。保存後は表示されません。";
+"Loading cert status…" = "証明書の状態を読み込み中…";
+"Renew now" = "今すぐ更新";
+"Verify" = "検証";
+"Certificates" = "証明書";
+"Requesting renewal…" = "更新をリクエスト中…";
+"Renewed" = "更新しました";
+"Verifying…" = "検証中…";
+"Verify OK — DNS resolves, ACME directory reachable" = "検証 OK — DNS が解決し、ACME ディレクトリに到達できます";
+"Verify found issues — check the domains list for details" = "検証で問題が見つかりました — ドメイン一覧で詳細を確認してください";

@@ -217,6 +217,52 @@ public object IosSettingsConfig {
         }
     }
 
+    /** BL413 — Settings › Web Server Let's Encrypt status lines (PWA loadAcmeStatus). */
+    public fun acmeStatusLines(
+        profile: ServerProfile,
+        onDone: (List<com.dmzs.datawatchclient.transport.AcmeLine>) -> Unit,
+    ) {
+        scope.launch {
+            onDone(
+                IosServiceLocator.transportFor(profile).acmeStatus().fold(
+                    onSuccess = { com.dmzs.datawatchclient.transport.AcmeStatusFormat.settingsLines(it) },
+                    onFailure = { listOf(com.dmzs.datawatchclient.transport.AcmeLine("Status unavailable.", "muted")) },
+                ),
+            )
+        }
+    }
+
+    /** BL413 — POST /api/acme/renew; [onDone] gets null on success or the error. */
+    public fun acmeRenew(
+        profile: ServerProfile,
+        onDone: (String?) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).acmeRenew().fold(
+                onSuccess = { onDone(null) },
+                onFailure = { onDone(com.dmzs.datawatchclient.transport.AcmeStatusFormat.errorText(err(it, "Renew failed."))) },
+            )
+        }
+    }
+
+    /** BL413 — GET /api/acme/verify → (message, ok), PWA toast text. */
+    public fun acmeVerify(
+        profile: ServerProfile,
+        onDone: (String, Boolean) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).acmeVerify().fold(
+                onSuccess = {
+                    val (m, ok) = com.dmzs.datawatchclient.transport.AcmeStatusFormat.verifyMessage(it)
+                    onDone(m, ok)
+                },
+                onFailure = {
+                    onDone("Verify failed: " + com.dmzs.datawatchclient.transport.AcmeStatusFormat.errorText(err(it, "unknown error")), false)
+                },
+            )
+        }
+    }
+
     /**
      * GET /api/update/check → (status, version). status is "up_to_date" or
      * "update_available" (PWA checkForUpdate).

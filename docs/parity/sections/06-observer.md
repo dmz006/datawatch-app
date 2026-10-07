@@ -41,6 +41,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | element | Ollama Server card | ✓ renderStatsData Ollama card (app.js:20756) | ✓ OllamaStatsCard | ✓ inside stats panel (IosObserver.kt:484) | aligned | decided D78a |  |
 | element | Process envelopes card | ✓ app.js:24579 `envelopesBlock` → /api/observer/envelopes (v8.58, D78) | ✓ EnvelopesCard StatsScreen.kt:352 | ✓ Process Envelopes card (IosObserver.kt:495) | aligned | decided D78a | → #172 · PWA shipped in v8.58 (2026-10-06 re-check) |
 | element | Backend health card | ✓ app.js:24573 `backendHealthBlock` → /api/backends (v8.58, D78) | ✓ BackendHealthCard StatsScreen.kt:387 | ✓ Backend Health card (IosObserver.kt:506) | aligned | decided D78a | → #172 · PWA shipped in v8.58 (2026-10-06 re-check) |
+| element | Certificates card (ACME expiry per domain; green > 14 d, amber ≤ 14 d, red not issued; hidden when ACME off) | ✓ `acmeHealthBlock` → /api/acme/status (v8.62, BL397) | ✓ CertificatesCard StatsScreen.kt (BL413) | ✓ Certificates card (IosObserver, BL413) | aligned | | 2026-10-07; order Backend Health · Certificates · Envelopes as in the web UI |
 | element | eBPF "Degraded" banner (built without eBPF / not active) | ✓ renderStatsData banner (app.js:20672) | ✓ StatsScreen:67–92 | ✓ EbpfBanner | aligned | decided D78a |  |
 | element | eBPF status line (live / configured+cap / cap missing / off, colored dot) | ✓ loadEBPFStatus app.js:19905 (`/api/stats?v=2`) | ✓ EBpfStatusCard | ✓ ObserverEbpfBlocks | aligned | | |
 | element | Network Traffic per-process table (Process / In / Out) | ✓ loadEBPFNetworkTraffic | ✓ EBpfNetworkCard "Network (by process)" | ✓ NetTrafficTable (top 10) | aligned | | |
@@ -112,7 +113,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | string | Empty copy "Add a server in Settings to monitor metrics." | n/a | ✓ "Add a server in Settings to monitor metrics." (observer_no_server) | ✓ | aligned |  | no PWA string; unify app copy (D35a spirit) · Android-I 2026-10-05: Android copy unified with iOS |
 
 ## Coverage
-rows: 93 · aligned: 90 · ios-missing: 0 · android-missing: 0 · pwa-missing: 2 · misaligned: 0 · n/a: 1
+rows: 94 · aligned: 91 · ios-missing: 0 · android-missing: 0 · pwa-missing: 2 · misaligned: 0 · n/a: 1
 
 ## Decisions (resolved 2026-10-04)
 1. Docs links → D26a: per-card docs links on both apps.

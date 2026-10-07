@@ -1,7 +1,12 @@
 package com.dmzs.datawatchclient.ui.configfields
 
+import com.dmzs.datawatchclient.ui.configfields.ConfigField.AcmeStatus
+import com.dmzs.datawatchclient.ui.configfields.ConfigField.CertSource
+import com.dmzs.datawatchclient.ui.configfields.ConfigField.Hidden
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.InterfaceSelect
+import com.dmzs.datawatchclient.ui.configfields.ConfigField.ListField
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.LlmSelect
+import com.dmzs.datawatchclient.ui.configfields.ConfigField.Note
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.NumberField
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.Select
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.TextField
@@ -15,6 +20,12 @@ import com.dmzs.datawatchclient.ui.configfields.ConfigField.Toggle
  * schemas so new fields show up by adding one line below.
  */
 public object ConfigFieldSchemas {
+    /** Pseudo-key of the Web Server certificate-source selector (PWA `_cert_source`). */
+    public const val CERT_SOURCE_KEY: String = "_cert_source"
+    private val CERT_CUSTOM = ShowWhen(CERT_SOURCE_KEY, setOf("custom"))
+    private val CERT_ACME = ShowWhen(CERT_SOURCE_KEY, setOf("acme"))
+    private val ACME_DNS01 = ShowWhen("acme.method", setOf("dns01"), and = CERT_ACME)
+
     // ---- General tab ----
 
     public val Datawatch: ConfigSection =
@@ -369,9 +380,62 @@ public object ConfigFieldSchemas {
                     NumberField("server.port", "Port"),
                     Toggle("server.tls", "TLS enabled"),
                     NumberField("server.tls_port", "TLS port", "8443"),
-                    Toggle("server.tls_auto_generate", "TLS auto-generate cert"),
-                    TextField("server.tls_cert", "TLS cert path"),
-                    TextField("server.tls_key", "TLS key path"),
+                    // BL413 — web v8.62 certificate-source selector (BL397) replaces
+                    // the separate tls_auto_generate / tls_cert / tls_key rows.
+                    Hidden("server.tls_auto_generate"),
+                    Hidden("acme.enabled"),
+                    CertSource(CERT_SOURCE_KEY, "Certificate source"),
+                    TextField("server.tls_cert", "TLS cert path", showWhen = CERT_CUSTOM),
+                    TextField("server.tls_key", "TLS key path", showWhen = CERT_CUSTOM),
+                    ListField("acme.domains", "Domains (comma-separated)", "datawatch.example.com", showWhen = CERT_ACME),
+                    Select(
+                        "acme.endpoint",
+                        "Endpoint",
+                        listOf("staging", "production"),
+                        optionLabels =
+                            mapOf(
+                                "staging" to "Staging (testing, untrusted certs)",
+                                "production" to "Production (trusted certs)",
+                            ),
+                        defaultValue = "staging",
+                        showWhen = CERT_ACME,
+                    ),
+                    Select(
+                        "acme.method",
+                        "Validation method",
+                        listOf("http01", "dns01"),
+                        optionLabels =
+                            mapOf(
+                                "http01" to "HTTP-01 (no DNS management, no wildcard)",
+                                "dns01" to "DNS-01 (wildcard support, needs a provider token)",
+                            ),
+                        defaultValue = "http01",
+                        showWhen = CERT_ACME,
+                    ),
+                    Select(
+                        "acme.dns01.provider",
+                        "DNS provider",
+                        listOf("cloudflare"),
+                        optionLabels = mapOf("cloudflare" to "Cloudflare"),
+                        defaultValue = "cloudflare",
+                        showWhen = ACME_DNS01,
+                    ),
+                    TextField(
+                        "acme.dns01.token_secret",
+                        "Provider token secret ref",
+                        "${'$'}{secret:cf-zone-edit-token}",
+                        password = true,
+                        showWhen = ACME_DNS01,
+                    ),
+                    TextField("acme.dns01.zone_id", "Zone ID (reference only)", showWhen = ACME_DNS01),
+                    Note(
+                        "_acme_dns01_note",
+                        "Zone-scoped token only (Cloudflare \"Zone > DNS > Edit\" on one zone) — never the " +
+                            "account-global key. Stored via the secrets manager, referenced here as " +
+                            "${'$'}{secret:name}, never shown once saved.",
+                        showWhen = ACME_DNS01,
+                    ),
+                    AcmeStatus("_acme_status", showWhen = CERT_ACME),
                     NumberField("server.channel_port", "Channel port (0=random)"),
                 ),
         )

@@ -2194,7 +2194,7 @@ public class RestTransport(
                 contentType(ContentType.Application.Json)
                 // auto_created is server-owned (read-only) — never written back.
                 setBody(com.dmzs.datawatchclient.transport.LlmSaveBody.of(dto))
-            }.body()
+            }.body<kotlinx.serialization.json.JsonObject>().let { llmSaveResult(it, dto) }
         }
 
     override suspend fun updateLlm(
@@ -2207,7 +2207,22 @@ public class RestTransport(
                 contentType(ContentType.Application.Json)
                 // auto_created is server-owned (read-only) — never written back.
                 setBody(com.dmzs.datawatchclient.transport.LlmSaveBody.of(dto))
-            }.body()
+            }.body<kotlinx.serialization.json.JsonObject>().let { llmSaveResult(it, dto) }
+        }
+
+    /**
+     * POST/PUT `/api/llms` answer `{"name":…,"ok":true}` (not the entry), which
+     * failed DTO decoding and showed "Save failed" after a successful save. Use
+     * the entry when a server sends one, else the saved [sent] entry.
+     */
+    private fun llmSaveResult(
+        body: kotlinx.serialization.json.JsonObject,
+        sent: com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto,
+    ): com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto =
+        if ("kind" in body) {
+            DefaultJson.decodeFromJsonElement(com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto.serializer(), body)
+        } else {
+            sent
         }
 
     override suspend fun deleteLlm(name: String): Result<Unit> =
@@ -3800,6 +3815,27 @@ public class RestTransport(
                     else -> null
                 }
             }.filter { it.isNotEmpty() }
+        }
+
+    override suspend fun acmeStatus(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/acme/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun acmeRenew(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/acme/renew") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun acmeVerify(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/acme/verify") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
         }
 
     override suspend fun fetchLlmJson(name: String): Result<kotlinx.serialization.json.JsonObject> =

@@ -1850,3 +1850,29 @@
 "Quick commands" = "Commandes rapides";
 "Show watched only" = "Afficher uniquement les suivis";
 "Filter" = "Filtrer";
+
+/* BL413 — certificate source + Let's Encrypt status (web v8.62) */
+"Certificate source" = "Source du certificat";
+"Self-signed (auto-generate)" = "Auto-signé (génération automatique)";
+"Custom cert path" = "Chemin de certificat personnalisé";
+"Let's Encrypt (ACME)" = "Let's Encrypt (ACME)";
+"Domains (comma-separated)" = "Domaines (séparés par des virgules)";
+"Endpoint" = "Point de terminaison";
+"Staging (testing, untrusted certs)" = "Staging (tests, certificats non fiables)";
+"Production (trusted certs)" = "Production (certificats fiables)";
+"Validation method" = "Méthode de validation";
+"HTTP-01 (no DNS management, no wildcard)" = "HTTP-01 (sans gestion DNS, sans joker)";
+"DNS-01 (wildcard support, needs a provider token)" = "DNS-01 (joker possible, jeton du fournisseur requis)";
+"DNS provider" = "Fournisseur DNS";
+"Provider token secret ref" = "Référence secrète du jeton du fournisseur";
+"Zone ID (reference only)" = "ID de zone (référence uniquement)";
+"Zone-scoped token only (Cloudflare \"Zone > DNS > Edit\" on one zone) — never the account-global key. Stored via the secrets manager, referenced here as ${secret:name}, never shown once saved." = "Uniquement un jeton limité à une zone (Cloudflare \"Zone > DNS > Edit\" sur une zone), jamais la clé globale du compte. Stocké via le gestionnaire de secrets, référencé ici sous la forme ${secret:name}, jamais affiché une fois enregistré.";
+"Loading cert status…" = "Chargement de l'état du certificat…";
+"Renew now" = "Renouveler maintenant";
+"Verify" = "Vérifier";
+"Certificates" = "Certificats";
+"Requesting renewal…" = "Demande de renouvellement…";
+"Renewed" = "Renouvelé";
+"Verifying…" = "Vérification…";
+"Verify OK — DNS resolves, ACME directory reachable" = "Vérification OK — le DNS résout, l'annuaire ACME est joignable";
+"Verify found issues — check the domains list for details" = "La vérification a trouvé des problèmes — voir la liste des domaines";

@@ -1850,3 +1850,29 @@
 "Quick commands" = "Schnellbefehle";
 "Show watched only" = "Nur beobachtete anzeigen";
 "Filter" = "Filter";
+
+/* BL413 — certificate source + Let's Encrypt status (web v8.62) */
+"Certificate source" = "Zertifikatsquelle";
+"Self-signed (auto-generate)" = "Selbstsigniert (automatisch erzeugen)";
+"Custom cert path" = "Eigener Zertifikatspfad";
+"Let's Encrypt (ACME)" = "Let's Encrypt (ACME)";
+"Domains (comma-separated)" = "Domains (durch Kommas getrennt)";
+"Endpoint" = "Endpunkt";
+"Staging (testing, untrusted certs)" = "Staging (Test, nicht vertrauenswürdige Zertifikate)";
+"Production (trusted certs)" = "Produktion (vertrauenswürdige Zertifikate)";
+"Validation method" = "Validierungsmethode";
+"HTTP-01 (no DNS management, no wildcard)" = "HTTP-01 (keine DNS-Verwaltung, keine Wildcards)";
+"DNS-01 (wildcard support, needs a provider token)" = "DNS-01 (Wildcards möglich, benötigt Provider-Token)";
+"DNS provider" = "DNS-Anbieter";
+"Provider token secret ref" = "Secret-Referenz des Provider-Tokens";
+"Zone ID (reference only)" = "Zonen-ID (nur zur Referenz)";
+"Zone-scoped token only (Cloudflare \"Zone > DNS > Edit\" on one zone) — never the account-global key. Stored via the secrets manager, referenced here as ${secret:name}, never shown once saved." = "Nur ein auf eine Zone beschränktes Token (Cloudflare \"Zone > DNS > Edit\" für eine Zone) — nie den kontoweiten Schlüssel. Wird im Secrets-Manager gespeichert, hier als ${secret:name} referenziert und nach dem Speichern nie angezeigt.";
+"Loading cert status…" = "Zertifikatsstatus wird geladen…";
+"Renew now" = "Jetzt erneuern";
+"Verify" = "Prüfen";
+"Certificates" = "Zertifikate";
+"Requesting renewal…" = "Erneuerung wird angefordert…";
+"Renewed" = "Erneuert";
+"Verifying…" = "Wird geprüft…";
+"Verify OK — DNS resolves, ACME directory reachable" = "Prüfung OK — DNS löst auf, ACME-Verzeichnis erreichbar";
+"Verify found issues — check the domains list for details" = "Prüfung hat Probleme gefunden — Details in der Domainliste";

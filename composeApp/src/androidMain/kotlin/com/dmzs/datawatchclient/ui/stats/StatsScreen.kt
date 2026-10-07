@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -114,8 +115,10 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
         // which showed an "offline" card on servers that merely list
         // Ollama as a backend without it running.
         it.ollamaStats?.takeIf { o -> o.available }?.let { o -> OllamaStatsCard(o) }
-        if (it.envelopes.isNotEmpty()) EnvelopesCard(it.envelopes)
+        // PWA Monitor order: Backend Health · Certificates (BL397/BL413) · Envelopes.
         if (it.backends.isNotEmpty()) BackendHealthCard(it.backends)
+        CertificatesCard()
+        if (it.envelopes.isNotEmpty()) EnvelopesCard(it.envelopes)
     }
     // BL391: prefer multi-provider stats (v8.39.0+), fall back to legacy single-provider card.
     val wsV2 = state.webSearchStatsV2
@@ -405,6 +408,67 @@ private fun EnvelopesCard(envs: List<com.dmzs.datawatchclient.transport.dto.Stat
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * BL413 — PWA `loadAcmeHealthCard` (web v8.62): Let's Encrypt expiry per domain,
+ * green > 14 days, amber ≤ 14, red not issued / failed. Hidden entirely while
+ * ACME is off or the server has no `/api/acme/status` (older servers).
+ */
+@Composable
+private fun CertificatesCard() {
+    val dw = LocalDatawatchColors.current
+    var lines by remember { mutableStateOf<List<com.dmzs.datawatchclient.transport.AcmeLine>>(emptyList()) }
+    val activeId by com.dmzs.datawatchclient.di.ServiceLocator.activeServerStore.observe()
+        .collectAsState(initial = com.dmzs.datawatchclient.di.ServiceLocator.activeServerStore.get())
+    LaunchedEffect(activeId) {
+        lines = emptyList()
+        while (true) {
+            val tr = com.dmzs.datawatchclient.ui.compute.resolveActiveTransport()
+            lines =
+                tr?.acmeStatus()?.getOrNull()
+                    ?.let { com.dmzs.datawatchclient.transport.AcmeStatusFormat.healthLines(it, System.currentTimeMillis()) }
+                    .orEmpty()
+            kotlinx.coroutines.delay(60_000)
+        }
+    }
+    if (lines.isEmpty()) return
+    StatsCard(id = "certificates", title = stringResource(R.string.stats_section_certificates)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            lines.forEach { l ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val dotColor =
+                        when (l.tone) {
+                            "success" -> dw.success
+                            "warning" -> dw.warning
+                            else -> MaterialTheme.colorScheme.error
+                        }
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(8.dp)
+                                .background(color = dotColor, shape = androidx.compose.foundation.shape.CircleShape),
+                    )
+                    Text(
+                        l.text,
+                        modifier = Modifier.weight(1f).padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                if (l.error.isNotEmpty()) {
+                    Text(
+                        l.error,
+                        modifier = Modifier.padding(start = 16.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         }

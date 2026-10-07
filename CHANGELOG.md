@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- **Let's Encrypt settings, as in the web UI (datawatch v8.62+).** Settings › Comms › Web Server now has one "Certificate source" control: Self-signed, Custom cert path, or Let's Encrypt. Let's Encrypt shows the domains, endpoint (staging / production), validation method (HTTP-01 / DNS-01 with Cloudflare token and zone), the certificate's status, and Renew now / Verify buttons. Android and iOS.
+- **Observer › Certificates card:** each Let's Encrypt domain with days until expiry: green over 14 days, amber at 14 or fewer, red when not issued. Hidden when Let's Encrypt is off. Android and iOS.
+
+### Fixed
+- **Android: saving an LLM no longer says "Save failed" when it worked.** The server answers a save with a short confirmation, which the app could not read.
+
 ## [1.28.6] — 2026-10-07
 
 ### Fixed

@@ -9,6 +9,14 @@ import Foundation
 /// (`IosSettingsConfig.write(kind:)`).
 enum SettingsFieldKind: String {
     case toggle, number, text, password, select, interface, llm, csv, lines, readonly
+    /// Comma-separated list the server accepts as a string (`acme.domains`).
+    case csvText
+    /// BL413 — PWA `acme_cert_source` selector (writes tls_auto_generate + acme.enabled).
+    case certSource
+    /// Static hint text.
+    case note
+    /// BL413 — live `/api/acme/status` + Renew now / Verify.
+    case acmeStatus
 }
 
 struct SettingsField: Identifiable {
@@ -17,6 +25,12 @@ struct SettingsField: Identifiable {
     let kind: SettingsFieldKind
     var options: [String] = []
     var placeholder: String = ""
+    /// Display text per option value (PWA `<option>` labels).
+    var optionLabels: [String: String] = [:]
+    /// Used for display and [showWhen] while the server value is empty.
+    var defaultValue: String = ""
+    /// Shown only while, for every rule, the value of `key` is one of `values`.
+    var showWhen: [(key: String, values: Set<String>)] = []
 
     var id: String { key }
 
@@ -137,7 +151,25 @@ enum SettingsCatalog {
         "server.host", "server.port", "server.tls", "server.tls_auto_generate", "server.tls_cert", "server.tls_key",
         "mcp.enabled", "mcp.sse_enabled", "mcp.sse_host", "mcp.sse_port", "mcp.tls_enabled",
         "dns_channel.enabled", "dns_channel.listen", "dns_channel.domain",
+        // BL397/BL413 — the ACME manager starts and stops only at daemon boot.
+        "acme.enabled", "acme.endpoint", "acme.domains", "acme.method",
+        "acme.dns01.provider", "acme.dns01.token_secret", "acme.dns01.zone_id",
     ]
+
+    /// Pseudo-key of the Web Server certificate-source selector (PWA `_cert_source`).
+    static let certSourceKey = "_cert_source"
+    static let certSourceOptions: [(String, String)] = [
+        ("selfsigned", "Self-signed (auto-generate)"),
+        ("custom", "Custom cert path"),
+        ("acme", "Let's Encrypt (ACME)"),
+    ]
+
+    /// PWA mode rule: acme.enabled wins, then tls_auto_generate, else custom paths.
+    static func certSource(_ values: [String: String]) -> String {
+        if values["acme.enabled"]?.lowercased() == "true" { return "acme" }
+        if values["server.tls_auto_generate"]?.lowercased() == "true" { return "selfsigned" }
+        return "custom"
+    }
 
     /// PWA tab order: General · Plugins · Comms · Compute · Automata · About.
     static let groups: [SettingsGroup] = [
@@ -255,9 +287,34 @@ enum SettingsCatalog {
             .number("server.port", "Port"),
             .toggle("server.tls", "TLS enabled"),
             .number("server.tls_port", "TLS port", "8443"),
-            .toggle("server.tls_auto_generate", "TLS auto-generate cert"),
-            .text("server.tls_cert", "TLS cert path"),
-            .text("server.tls_key", "TLS key path"),
+            // BL413 — web v8.62 certificate-source selector (BL397) replaces the
+            // separate tls_auto_generate / tls_cert / tls_key rows.
+            SettingsField(key: certSourceKey, label: "Certificate source", kind: .certSource),
+            SettingsField(key: "server.tls_cert", label: "TLS cert path", kind: .text,
+                          showWhen: [(certSourceKey, ["custom"])]),
+            SettingsField(key: "server.tls_key", label: "TLS key path", kind: .text,
+                          showWhen: [(certSourceKey, ["custom"])]),
+            SettingsField(key: "acme.domains", label: "Domains (comma-separated)", kind: .csvText,
+                          placeholder: "datawatch.example.com", showWhen: [(certSourceKey, ["acme"])]),
+            SettingsField(key: "acme.endpoint", label: "Endpoint", kind: .select, options: ["staging", "production"],
+                          optionLabels: ["staging": "Staging (testing, untrusted certs)",
+                                         "production": "Production (trusted certs)"],
+                          defaultValue: "staging", showWhen: [(certSourceKey, ["acme"])]),
+            SettingsField(key: "acme.method", label: "Validation method", kind: .select, options: ["http01", "dns01"],
+                          optionLabels: ["http01": "HTTP-01 (no DNS management, no wildcard)",
+                                         "dns01": "DNS-01 (wildcard support, needs a provider token)"],
+                          defaultValue: "http01", showWhen: [(certSourceKey, ["acme"])]),
+            SettingsField(key: "acme.dns01.provider", label: "DNS provider", kind: .select, options: ["cloudflare"],
+                          optionLabels: ["cloudflare": "Cloudflare"], defaultValue: "cloudflare",
+                          showWhen: [(certSourceKey, ["acme"]), ("acme.method", ["dns01"])]),
+            SettingsField(key: "acme.dns01.token_secret", label: "Provider token secret ref", kind: .password,
+                          placeholder: "${secret:cf-zone-edit-token}", showWhen: [(certSourceKey, ["acme"]), ("acme.method", ["dns01"])]),
+            SettingsField(key: "acme.dns01.zone_id", label: "Zone ID (reference only)", kind: .text,
+                          showWhen: [(certSourceKey, ["acme"]), ("acme.method", ["dns01"])]),
+            SettingsField(key: "_acme_dns01_note",
+                          label: "Zone-scoped token only (Cloudflare \"Zone > DNS > Edit\" on one zone) — never the account-global key. Stored via the secrets manager, referenced here as ${secret:name}, never shown once saved.",
+                          kind: .note, showWhen: [(certSourceKey, ["acme"]), ("acme.method", ["dns01"])]),
+            SettingsField(key: "_acme_status", label: "", kind: .acmeStatus, showWhen: [(certSourceKey, ["acme"])]),
             .number("server.channel_port", "Channel port (0=random)"),
         ]),
         .config("cc_mcpsrv", "MCP Server", "cpu", [

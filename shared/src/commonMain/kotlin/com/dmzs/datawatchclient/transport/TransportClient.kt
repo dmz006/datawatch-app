@@ -1689,6 +1689,18 @@ public interface TransportClient {
         kind: String,
     ): Result<List<String>> = Result.failure(UnsupportedOperationException("computeNodeModelNames"))
 
+    /** BL413 — GET /api/acme/status (web v8.62 Let's Encrypt status). */
+    public suspend fun acmeStatus(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("acmeStatus"))
+
+    /** BL413 — POST /api/acme/renew (PWA "Renew now"). */
+    public suspend fun acmeRenew(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("acmeRenew"))
+
+    /** BL413 — GET /api/acme/verify (PWA "Verify": DNS + ACME directory pre-flight). */
+    public suspend fun acmeVerify(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("acmeVerify"))
+
     /** GET /api/llms/{name} as raw JSON (PWA llmEdit). */
     public suspend fun fetchLlmJson(name: String): Result<kotlinx.serialization.json.JsonObject> =
         Result.failure(UnsupportedOperationException("fetchLlmJson"))

@@ -128,14 +128,28 @@ struct SettingsConfigCardView: View {
                 }
             } else {
                 Section {
-                    ForEach(fields) { field in
-                        SettingsFieldRow(
-                            field: field,
-                            value: values[field.key] ?? "",
-                            options: options(for: field),
-                            onCommit: { newValue in save(field, newValue) }
-                        )
-                        .listRowBackground(DatawatchColors.surface)
+                    ForEach(fields.filter { isShown($0) }) { field in
+                        switch field.kind {
+                        case .acmeStatus:
+                            AcmeStatusRow(profile: profile)
+                                .listRowBackground(DatawatchColors.surface)
+                        case .certSource:
+                            SettingsFieldRow(
+                                field: field,
+                                value: SettingsCatalog.certSource(values),
+                                options: [],
+                                onCommit: { mode in saveCertSource(mode) }
+                            )
+                            .listRowBackground(DatawatchColors.surface)
+                        default:
+                            SettingsFieldRow(
+                                field: field,
+                                value: values[field.key] ?? "",
+                                options: options(for: field),
+                                onCommit: { newValue in save(field, newValue) }
+                            )
+                            .listRowBackground(DatawatchColors.surface)
+                        }
                     }
                 } footer: {
                     if saving > 0 {
@@ -174,6 +188,43 @@ struct SettingsConfigCardView: View {
             Section { WhisperTestRow(profile: profile) }
         case .scanDefaults:
             ScanDefaultsSection(profile: profile)
+        }
+    }
+
+    /// Every `showWhen` rule holds; a select's default stands in for an empty value.
+    private func isShown(_ field: SettingsField) -> Bool {
+        field.showWhen.allSatisfy { rule in
+            let current = rule.key == SettingsCatalog.certSourceKey
+                ? SettingsCatalog.certSource(values)
+                : (values[rule.key] ?? "")
+            let dflt = fields.first(where: { $0.key == rule.key })?.defaultValue ?? ""
+            return rule.values.contains(current.isEmpty ? dflt : current)
+        }
+    }
+
+    /// PWA onCertSourceChange: one selector writes both booleans; restart applies it.
+    private func saveCertSource(_ mode: String) {
+        guard mode != SettingsCatalog.certSource(values) else { return }
+        let patch: [(String, String)] = [
+            ("server.tls_auto_generate", mode == "selfsigned" ? "true" : "false"),
+            ("acme.enabled", mode == "acme" ? "true" : "false"),
+        ]
+        let previous = values
+        for (k, v) in patch { values[k] = v }
+        saving += 1
+        IosSettingsConfig.shared.write(profile: profile, key: patch[0].0, kind: "toggle", value: patch[0].1) { err1 in
+            IosSettingsConfig.shared.write(profile: profile, key: patch[1].0, kind: "toggle", value: patch[1].1) { err2 in
+                DispatchQueue.main.async {
+                    saving = max(0, saving - 1)
+                    if let err = err1 ?? err2 {
+                        values = previous
+                        error = L("Save failed") + ": " + err
+                    } else {
+                        error = nil
+                        restartNeeded = true
+                    }
+                }
+            }
         }
     }
 
@@ -297,7 +348,18 @@ struct SettingsFieldRow: View {
             }
             .tint(DatawatchColors.primary)
         case .select, .interface, .llm:
-            SettingsPickerRow(field: field, value: value, options: options, onCommit: onCommit)
+            SettingsPickerRow(field: field, value: value.isEmpty ? field.defaultValue : value,
+                              options: options, onCommit: onCommit)
+        case .certSource:
+            SettingsPickerRow(field: field, value: value,
+                              options: SettingsCatalog.certSourceOptions.map { $0.0 }, onCommit: onCommit)
+        case .note:
+            Text(L(field.label))
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        case .acmeStatus:
+            EmptyView()
         case .readonly:
             VStack(alignment: .leading, spacing: 4) {
                 SettingsFieldLabel(text: field.label)
@@ -327,8 +389,14 @@ private struct SettingsPickerRow: View {
     let options: [String]
     let onCommit: (String) -> Void
 
+    private var labels: [String: String] {
+        field.kind == .certSource
+            ? Dictionary(uniqueKeysWithValues: SettingsCatalog.certSourceOptions)
+            : field.optionLabels
+    }
+
     private var choices: [String] {
-        var list: [String] = field.kind == .select ? [] : [""]
+        var list: [String] = field.kind == .select || field.kind == .certSource ? [] : [""]
         list.append(contentsOf: options)
         if !value.isEmpty && !list.contains(value) { list.append(value) }
         return list
@@ -337,7 +405,7 @@ private struct SettingsPickerRow: View {
     var body: some View {
         Picker(selection: Binding(get: { value }, set: { onCommit($0) })) {
             ForEach(choices, id: \.self) { opt in
-                Text(opt.isEmpty ? L("— default —") : opt).tag(opt)
+                Text(opt.isEmpty ? L("— default —") : L(labels[opt] ?? opt)).tag(opt)
             }
         } label: {
             SettingsFieldLabel(text: field.label)
@@ -362,7 +430,7 @@ private struct SettingsTextRow: View {
     private var displayValue: String {
         switch field.kind {
         case .password: return ""
-        case .csv: return value.replacingOccurrences(of: "\n", with: ", ")
+        case .csv, .csvText: return value.replacingOccurrences(of: "\n", with: ", ")
         default: return value
         }
     }
@@ -423,5 +491,66 @@ private struct SettingsTextRow: View {
         }
         if text == displayValue { return }
         onCommit(text)
+    }
+}
+
+// MARK: - Let's Encrypt status (BL413, PWA loadAcmeStatus + Renew now / Verify)
+
+private struct AcmeStatusRow: View {
+    let profile: ServerProfile
+    @State private var lines: [AcmeLine]?
+    @State private var notice: (String, Bool)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let lines {
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, l in
+                    Text(l.error.isEmpty ? l.text : "\(l.text) (\(l.error))")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(l.error.isEmpty ? DatawatchColors.onSurfaceMuted : DatawatchColors.error)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                Text("Loading cert status…")
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            HStack(spacing: 12) {
+                Button("Renew now") { renew() }
+                Button("Verify") { verify() }
+            }
+            .font(DatawatchFonts.labelSmall)
+            .foregroundStyle(DatawatchColors.primary)
+            .buttonStyle(.borderless)
+            if let n = notice {
+                Text(L(n.0))
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(n.1 ? DatawatchColors.success : DatawatchColors.error)
+            }
+        }
+        .task { refresh() }
+    }
+
+    private func refresh() {
+        IosSettingsConfig.shared.acmeStatusLines(profile: profile) { result in
+            DispatchQueue.main.async { lines = result }
+        }
+    }
+
+    private func renew() {
+        notice = ("Requesting renewal…", true)
+        IosSettingsConfig.shared.acmeRenew(profile: profile) { err in
+            DispatchQueue.main.async {
+                notice = err.map { ("Renew failed: " + $0, false) } ?? ("Renewed", true)
+                refresh()
+            }
+        }
+    }
+
+    private func verify() {
+        notice = ("Verifying…", true)
+        IosSettingsConfig.shared.acmeVerify(profile: profile) { msg, ok in
+            DispatchQueue.main.async { notice = (msg, ok.boolValue) }
+        }
     }
 }

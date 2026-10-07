@@ -88,6 +88,8 @@ public data class IosStatsExtras(
     /** -1 when the server didn't send `active_sessions`. */
     val activeSessions: Int,
     val rtkLatestVersion: String,
+    /** BL413 — `/api/acme/status` health lines; empty hides the Certificates card. */
+    val certificates: List<com.dmzs.datawatchclient.transport.AcmeLine> = emptyList(),
 )
 
 /** 8 s refresh payload: grid + peer rows share one set of peer snapshots. */
@@ -248,6 +250,7 @@ public object IosObserver {
             val snapshot =
                 coroutineScope {
                     val localJob = async { tr.fetchStatsJson().getOrNull() }
+                    val acmeJob = async { tr.acmeStatus().getOrNull() }
                     val nodesJob = async { tr.listComputeNodes().getOrNull().orEmpty() }
                     val peersRes = tr.observerPeers()
                     val peers = peersRes.getOrNull()?.peers.orEmpty()
@@ -299,6 +302,10 @@ public object IosObserver {
                                 hostname = local?.str("hostname").orEmpty(),
                                 activeSessions = local?.dbl("active_sessions")?.toInt() ?: -1,
                                 rtkLatestVersion = local?.str("rtk_latest_version").orEmpty(),
+                                certificates =
+                                    acmeJob.await()?.let {
+                                        com.dmzs.datawatchclient.transport.AcmeStatusFormat.healthLines(it, Clock.System.now().toEpochMilliseconds())
+                                    }.orEmpty(),
                             ),
                     )
                 }
@@ -486,14 +493,6 @@ public object IosObserver {
                 cards.add(IosObsCard("Ollama Server", listOf(IosObsKv("", "offline", "error")), ""))
             }
         }
-        // D78a — Android-only cards, built on iOS too.
-        if (s.envelopes.isNotEmpty()) {
-            val rows =
-                s.envelopes.sortedByDescending { it.cpuPct }.take(8).map { e ->
-                    IosObsKv("${e.kind}: ${e.label.ifBlank { e.id }}", "${fixed(e.cpuPct, 1)}% · ${kb(e.rssBytes.toDouble())}", "text")
-                }
-            cards.add(IosObsCard("Process Envelopes", rows, ""))
-        }
         if (s.backends.isNotEmpty()) {
             val rows =
                 s.backends.map { b ->
@@ -504,6 +503,24 @@ public object IosObserver {
                     }
                 }
             cards.add(IosObsCard("Backend Health", rows, ""))
+        }
+        // BL413 — PWA Monitor order: Backend Health · Certificates · Envelopes.
+        if (extras.certificates.isNotEmpty()) {
+            val rows =
+                extras.certificates.flatMap { l ->
+                    val (domain, label) = l.text.split(" — ", limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+                    listOf(IosObsKv(domain, label, l.tone)) +
+                        if (l.error.isNotEmpty()) listOf(IosObsKv("", l.error, "error")) else emptyList()
+                }
+            cards.add(IosObsCard("Certificates", rows, ""))
+        }
+        // D78a — Android-only cards, built on iOS too.
+        if (s.envelopes.isNotEmpty()) {
+            val rows =
+                s.envelopes.sortedByDescending { it.cpuPct }.take(8).map { e ->
+                    IosObsKv("${e.kind}: ${e.label.ifBlank { e.id }}", "${fixed(e.cpuPct, 1)}% · ${kb(e.rssBytes.toDouble())}", "text")
+                }
+            cards.add(IosObsCard("Process Envelopes", rows, ""))
         }
 
         val active = if (extras.activeSessions >= 0) extras.activeSessions else s.sessionsRunning

@@ -1850,3 +1850,29 @@
 "Quick commands" = "Comandos rápidos";
 "Show watched only" = "Mostrar solo los observados";
 "Filter" = "Filtrar";
+
+/* BL413 — certificate source + Let's Encrypt status (web v8.62) */
+"Certificate source" = "Origen del certificado";
+"Self-signed (auto-generate)" = "Autofirmado (generar automáticamente)";
+"Custom cert path" = "Ruta de certificado personalizada";
+"Let's Encrypt (ACME)" = "Let's Encrypt (ACME)";
+"Domains (comma-separated)" = "Dominios (separados por comas)";
+"Endpoint" = "Endpoint";
+"Staging (testing, untrusted certs)" = "Staging (pruebas, certificados no confiables)";
+"Production (trusted certs)" = "Producción (certificados confiables)";
+"Validation method" = "Método de validación";
+"HTTP-01 (no DNS management, no wildcard)" = "HTTP-01 (sin gestión de DNS, sin comodín)";
+"DNS-01 (wildcard support, needs a provider token)" = "DNS-01 (admite comodín, requiere token del proveedor)";
+"DNS provider" = "Proveedor DNS";
+"Provider token secret ref" = "Referencia secreta del token del proveedor";
+"Zone ID (reference only)" = "ID de zona (solo referencia)";
+"Zone-scoped token only (Cloudflare \"Zone > DNS > Edit\" on one zone) — never the account-global key. Stored via the secrets manager, referenced here as ${secret:name}, never shown once saved." = "Solo un token limitado a una zona (Cloudflare \"Zone > DNS > Edit\" en una zona), nunca la clave global de la cuenta. Se guarda en el gestor de secretos, se referencia aquí como ${secret:name} y no se muestra una vez guardado.";
+"Loading cert status…" = "Cargando estado del certificado…";
+"Renew now" = "Renovar ahora";
+"Verify" = "Verificar";
+"Certificates" = "Certificados";
+"Requesting renewal…" = "Solicitando renovación…";
+"Renewed" = "Renovado";
+"Verifying…" = "Verificando…";
+"Verify OK — DNS resolves, ACME directory reachable" = "Verificación correcta: el DNS resuelve y el directorio ACME es accesible";
+"Verify found issues — check the domains list for details" = "La verificación encontró problemas: revisa la lista de dominios";

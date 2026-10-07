@@ -15,6 +15,9 @@ public sealed interface ConfigField {
     public val key: String
     public val label: String
 
+    /** Shown only while another field's value is in [ShowWhen.values] (PWA conditional blocks). */
+    public val showWhen: ShowWhen? get() = null
+
     public data class Toggle(
         override val key: String,
         override val label: String,
@@ -31,13 +34,65 @@ public sealed interface ConfigField {
         override val label: String,
         public val placeholder: String? = null,
         public val password: Boolean = false,
+        override val showWhen: ShowWhen? = null,
     ) : ConfigField
 
     public data class Select(
         override val key: String,
         override val label: String,
         public val options: List<String>,
+        /** Display text per option value (PWA `<option>` labels); the value is what is saved. */
+        public val optionLabels: Map<String, String> = emptyMap(),
+        /** Shown and used for [showWhen] checks while the server value is empty. */
+        public val defaultValue: String? = null,
+        override val showWhen: ShowWhen? = null,
     ) : ConfigField
+
+    /**
+     * Comma-separated list (`acme.domains`): the server returns an array and
+     * accepts a comma-separated string in the patch, like the PWA input.
+     */
+    public data class ListField(
+        override val key: String,
+        override val label: String,
+        public val placeholder: String? = null,
+        override val showWhen: ShowWhen? = null,
+    ) : ConfigField
+
+    /** Boolean key that is loaded and saved but not drawn — set by another control (e.g. [CertSource]). */
+    public data class Hidden(
+        override val key: String,
+    ) : ConfigField {
+        override val label: String get() = ""
+    }
+
+    /**
+     * PWA `acme_cert_source` (BL397, web v8.62): one selector over
+     * `server.tls_auto_generate` + `acme.enabled` — Self-signed / Custom cert
+     * path / Let's Encrypt. Pseudo-key, never sent itself; the section must
+     * also list both booleans as [Hidden].
+     */
+    public data class CertSource(
+        override val key: String,
+        override val label: String,
+    ) : ConfigField
+
+    /** Static hint text under a group of fields. */
+    public data class Note(
+        override val key: String,
+        public val text: String,
+        override val showWhen: ShowWhen? = null,
+    ) : ConfigField {
+        override val label: String get() = ""
+    }
+
+    /** Live `/api/acme/status` lines + Renew now / Verify (PWA `acmeStatusCard`). */
+    public data class AcmeStatus(
+        override val key: String,
+        override val showWhen: ShowWhen? = null,
+    ) : ConfigField {
+        override val label: String get() = ""
+    }
 
     /**
      * Populated dynamically from `GET /api/interfaces`. The
@@ -60,6 +115,13 @@ public sealed interface ConfigField {
         override val label: String,
     ) : ConfigField
 }
+
+/** Visibility rule: show while the value of [key] is one of [values] (and [and], if set, also holds). */
+public data class ShowWhen(
+    public val key: String,
+    public val values: Set<String>,
+    public val and: ShowWhen? = null,
+)
 
 /**
  * A named group of fields — maps to one PWA settings-section

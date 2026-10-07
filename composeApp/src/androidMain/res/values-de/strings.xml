@@ -232,6 +232,10 @@
     <string name="stats_section_ollama">Ollama-Server</string>
     <string name="stats_section_envelopes">Prozess-Envelopes</string>
     <string name="stats_section_backends">Backend-Gesundheit</string>
+    <string name="stats_section_certificates">Zertifikate</string>
+    <string name="acme_loading_status">Zertifikatsstatus wird geladen…</string>
+    <string name="acme_renew_now">Jetzt erneuern</string>
+    <string name="acme_verify">Prüfen</string>
     <string name="stats_row_download">↓ Download</string>
     <string name="stats_row_upload">↑ Upload</string>
     <string name="stats_row_memory">Speicher</string>
