@@ -232,11 +232,42 @@ public object IosSettingsConfig {
                 onSuccess = { b ->
                     onSuccess(
                         b.plugins.map { p ->
-                            IosCommunityPlugin(p.name, p.manifest.description.ifBlank { p.manifest.version })
+                            IosCommunityPlugin(
+                                p.name,
+                                com.dmzs.datawatchclient.transport.CommunityPlugins.subtitle(p.manifest.description, p.manifest.version),
+                            )
                         },
                     )
                 },
                 onFailure = { onError(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Browse unavailable.")) },
+            )
+        }
+    }
+
+    /** Registry names for the Community Plugins picker (GET /api/skills/registries). */
+    public fun pluginRegistries(
+        profile: ServerProfile,
+        onSuccess: (List<String>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).listSkillRegistries().fold(
+                onSuccess = { list -> onSuccess(list.map { it.name }) },
+                onFailure = { onError(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Registries unavailable.")) },
+            )
+        }
+    }
+
+    /** Connect a registry (same call as Skill Registries › Connect); [onDone] gets null or the error. */
+    public fun connectPluginRegistry(
+        profile: ServerProfile,
+        registry: String,
+        onDone: (String?) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).connectSkillRegistry(registry).fold(
+                onSuccess = { onDone(null) },
+                onFailure = { onDone(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Connect failed.")) },
             )
         }
     }

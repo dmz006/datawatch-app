@@ -1908,3 +1908,11 @@
 "Install" = "Installieren";
 "Installed" = "Installiert";
 "Install failed" = "Installation fehlgeschlagen";
+
+/* Community Plugins: registry picker + Connect */
+"Registry" = "Registry";
+"No registries configured yet." = "Noch keine Registrys konfiguriert.";
+"This registry isn't connected yet." = "Diese Registry ist noch nicht verbunden.";
+"Connect" = "Verbinden";
+"Connect failed" = "Verbindung fehlgeschlagen";
+"No plugins found in this registry." = "Keine Plugins in dieser Registry gefunden.";

@@ -1393,4 +1393,12 @@
     <string name="automata_action_pause">Pausar</string>
     <string name="automata_action_resume">Reanudar</string>
     <string name="session_watch_filter_tip">Mostrar solo los observados</string>
+    <string name="community_plugins_title">Plugins de la comunidad</string>
+    <string name="community_plugins_no_registries">Aún no hay registros configurados.</string>
+    <string name="community_plugins_not_connected">Este registro aún no está conectado.</string>
+    <string name="community_plugins_connect">Conectar</string>
+    <string name="community_plugins_empty">No se encontraron plugins en este registro.</string>
+    <string name="community_plugins_install">Instalar</string>
+    <string name="community_plugins_installing">Instalando…</string>
+    <string name="community_plugins_installed">Instalado</string>
 </resources>

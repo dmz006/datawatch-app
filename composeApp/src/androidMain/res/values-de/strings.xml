@@ -1393,4 +1393,12 @@
     <string name="automata_action_pause">Pausieren</string>
     <string name="automata_action_resume">Fortsetzen</string>
     <string name="session_watch_filter_tip">Nur beobachtete anzeigen</string>
+    <string name="community_plugins_title">Community-Plugins</string>
+    <string name="community_plugins_no_registries">Noch keine Registrys konfiguriert.</string>
+    <string name="community_plugins_not_connected">Diese Registry ist noch nicht verbunden.</string>
+    <string name="community_plugins_connect">Verbinden</string>
+    <string name="community_plugins_empty">Keine Plugins in dieser Registry gefunden.</string>
+    <string name="community_plugins_install">Installieren</string>
+    <string name="community_plugins_installing">Wird installiert…</string>
+    <string name="community_plugins_installed">Installiert</string>
 </resources>

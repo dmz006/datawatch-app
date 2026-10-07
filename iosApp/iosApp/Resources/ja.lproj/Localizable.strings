@@ -1908,3 +1908,11 @@
 "Install" = "インストール";
 "Installed" = "インストール済み";
 "Install failed" = "インストールに失敗しました";
+
+/* Community Plugins: registry picker + Connect */
+"Registry" = "レジストリ";
+"No registries configured yet." = "レジストリがまだ設定されていません。";
+"This registry isn't connected yet." = "このレジストリはまだ接続されていません。";
+"Connect" = "接続";
+"Connect failed" = "接続に失敗しました";
+"No plugins found in this registry." = "このレジストリにプラグインはありません。";

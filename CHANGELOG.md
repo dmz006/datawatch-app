@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed
+- **Community Plugins matches the new web UI card (datawatch v8.66).** It picks a registry ("community" by default, with a picker when there's more than one), and offers **Connect** when the registry isn't connected yet instead of showing an error. Plugins without a description show their version. Android and iOS.
+- **"?" on Security, Theme and Language** now opens the manual's new "App-only settings (Android/iOS)" section. Android and iOS.
+
 ## [1.28.11] — 2026-10-07
 
 ### Fixed

@@ -52,7 +52,7 @@ public object DocsLinks {
             "view_settings_automata" to D + "settings-automate",
             "view_settings_about" to D + "settings-about",
             // ── Settings → General ─────────────────────────────────────
-            "security" to D + "settings-general",
+            "security" to D + "app-only-settings-android-ios",
             "raw_config" to "operations.md#4-configuration",
             "gc_dw" to "howto/setup-and-install.md",
             "gc_autoupdate" to D + "self-update-v8-9-21",
@@ -132,8 +132,8 @@ public object DocsLinks {
             "community_plugins" to "api/plugins.md",
             // ── Settings → About ───────────────────────────────────────
             "about" to D + "settings-about",
-            "language" to "messaging-backends.md#supported-languages",
-            "theme" to D + "settings-about",
+            "language" to D + "app-only-settings-android-ios",
+            "theme" to D + "app-only-settings-android-ios",
             "api" to D + "api",
             "mcp_channel" to D + "mcp-channel-bridge-diagnostics-v8-10-16",
             "mcp_tools" to D + "mcp-tools",

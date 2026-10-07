@@ -1706,4 +1706,12 @@
     <string name="automata_action_pause">Pause</string>
     <string name="automata_action_resume">Resume</string>
     <string name="session_watch_filter_tip">Show watched only</string>
+    <string name="community_plugins_title">Community Plugins</string>
+    <string name="community_plugins_no_registries">No registries configured yet.</string>
+    <string name="community_plugins_not_connected">This registry isn\'t connected yet.</string>
+    <string name="community_plugins_connect">Connect</string>
+    <string name="community_plugins_empty">No plugins found in this registry.</string>
+    <string name="community_plugins_install">Install</string>
+    <string name="community_plugins_installing">Installing…</string>
+    <string name="community_plugins_installed">Installed</string>
 </resources>

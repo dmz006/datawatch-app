@@ -389,14 +389,18 @@ private struct SettingsCommBackendsCard: View {
     }
 }
 
-// MARK: - Community Plugins (Android CommunityPluginsCard; web UI datawatch#191)
+// MARK: - Community Plugins (web UI GH#191 / datawatch v8.66; Android parity)
 
-/// Browse the "community" registry's plugins (GET /api/plugins/browse) and install
-/// one (POST /api/plugins/install). Same rows and Install states as Android.
+/// Browse a registry's plugins and install one. Registries come from Skill
+/// Registries: "community" by default, a picker when there is more than one, and a
+/// Connect action when the registry isn't connected (shared `CommunityPlugins`).
 struct SettingsCommunityPluginsCard: View {
     let profile: ServerProfile?
-    private let registry = "community"
+    @State private var registries: [String]?
+    @State private var registry: String?
     @State private var plugins: [IosCommunityPlugin]?
+    @State private var notConnected = false
+    @State private var connecting = false
     @State private var message: String?
     @State private var failed = false
     @State private var installing: Set<String> = []
@@ -405,31 +409,18 @@ struct SettingsCommunityPluginsCard: View {
     var body: some View {
         List {
             Section {
-                if let plugins {
-                    if plugins.isEmpty {
-                        Text(message.map { L($0) } ?? L("No plugins in this registry."))
-                            .font(DatawatchFonts.bodyMedium)
-                            .foregroundStyle(failed ? DatawatchColors.error : DatawatchColors.onSurfaceMuted)
+                if let registries, registries.count > 1 {
+                    Picker(selection: Binding(get: { registry ?? "" }, set: { select($0) })) {
+                        ForEach(registries, id: \.self) { Text(verbatim: $0).tag($0) }
+                    } label: {
+                        Text("Registry").foregroundStyle(DatawatchColors.onSurface)
                     }
-                    ForEach(plugins, id: \.name) { p in
-                        HStack(alignment: .center, spacing: 8) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(verbatim: p.name).foregroundStyle(DatawatchColors.onSurface)
-                                if !p.detail.isEmpty {
-                                    Text(verbatim: p.detail)
-                                        .font(DatawatchFonts.labelSmall)
-                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                }
-                            }
-                            Spacer(minLength: 4)
-                            installButton(p.name)
-                        }
-                    }
-                } else {
-                    CardSkeleton()
+                    .pickerStyle(.menu)
+                    .tint(DatawatchColors.primary)
                 }
+                content
             } footer: {
-                if let message, !(plugins?.isEmpty ?? true) {
+                if let message {
                     Text(L(message)).foregroundStyle(failed ? DatawatchColors.error : DatawatchColors.success)
                 }
             }
@@ -437,8 +428,51 @@ struct SettingsCommunityPluginsCard: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .task { load() }
-        .refreshable { load() }
+        .task { loadRegistries() }
+        .refreshable { loadRegistries() }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if registries == nil {
+            CardSkeleton()
+        } else if registries?.isEmpty == true {
+            Text("No registries configured yet.")
+                .font(DatawatchFonts.bodyMedium)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+        } else if notConnected {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("This registry isn't connected yet.")
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                Button(connecting ? L("Connecting…") : L("Connect")) { connect() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(DatawatchColors.primary)
+                    .disabled(connecting)
+            }
+        } else if let plugins {
+            if plugins.isEmpty && message == nil {
+                Text("No plugins found in this registry.")
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
+            ForEach(plugins, id: \.name) { p in
+                HStack(alignment: .center, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: p.name).foregroundStyle(DatawatchColors.onSurface)
+                        if !p.detail.isEmpty {
+                            Text(verbatim: p.detail)
+                                .font(DatawatchFonts.labelSmall)
+                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    installButton(p.name)
+                }
+            }
+        } else {
+            CardSkeleton()
+        }
     }
 
     @ViewBuilder
@@ -455,17 +489,63 @@ struct SettingsCommunityPluginsCard: View {
         }
     }
 
-    private func load() {
-        guard let profile else { plugins = []; message = "No server connected"; failed = true; return }
-        IosSettingsConfig.shared.browsePlugins(profile: profile, registry: registry, onSuccess: { list in
-            DispatchQueue.main.async { plugins = list; message = nil; failed = false }
+    private func loadRegistries() {
+        guard let profile else { registries = []; message = "No server connected"; failed = true; return }
+        IosSettingsConfig.shared.pluginRegistries(profile: profile, onSuccess: { names in
+            DispatchQueue.main.async {
+                registries = names
+                registry = CommunityPlugins.shared.pickRegistry(names: names, current: registry)
+                loadPlugins()
+            }
         }, onError: { err in
-            DispatchQueue.main.async { plugins = []; message = L("Browse unavailable") + " — " + err; failed = true }
+            DispatchQueue.main.async { registries = []; message = err; failed = true }
         })
     }
 
+    private func select(_ name: String) {
+        guard name != registry else { return }
+        registry = name
+        message = nil
+        loadPlugins()
+    }
+
+    private func loadPlugins() {
+        guard let profile, let registry else { return }
+        plugins = nil
+        notConnected = false
+        IosSettingsConfig.shared.browsePlugins(profile: profile, registry: registry, onSuccess: { list in
+            DispatchQueue.main.async { plugins = list }
+        }, onError: { err in
+            DispatchQueue.main.async {
+                plugins = []
+                if CommunityPlugins.shared.isNotConnected(error: err) {
+                    notConnected = true
+                } else {
+                    message = L("Browse unavailable") + " — " + err
+                    failed = true
+                }
+            }
+        })
+    }
+
+    private func connect() {
+        guard let profile, let registry else { return }
+        connecting = true
+        IosSettingsConfig.shared.connectPluginRegistry(profile: profile, registry: registry) { err in
+            DispatchQueue.main.async {
+                connecting = false
+                if let err {
+                    message = L("Connect failed") + ": " + err
+                    failed = true
+                } else {
+                    loadPlugins()
+                }
+            }
+        }
+    }
+
     private func install(_ name: String) {
-        guard let profile else { return }
+        guard let profile, let registry else { return }
         installing.insert(name)
         IosSettingsConfig.shared.installPlugin(profile: profile, registry: registry, name: name) { err in
             DispatchQueue.main.async {
