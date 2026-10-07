@@ -1,0 +1,40 @@
+name: Play — list tracks (read-only)
+
+# Lists every Google Play track (phone + Wear form factors) with the version
+# codes and status of its releases, using the same service account as the
+# release job. Read-only: opens an edit, reads the tracks, deletes the edit.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tracks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List tracks
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
+        run: |
+          set -euo pipefail
+          pip install --quiet google-auth requests
+          python3 - <<'EOF'
+          import json, os
+          import google.auth.transport.requests as gtr
+          from google.oauth2 import service_account
+          creds = service_account.Credentials.from_service_account_info(
+              json.loads(os.environ["PLAY_KEY_JSON"]),
+              scopes=["https://www.googleapis.com/auth/androidpublisher"])
+          s = gtr.AuthorizedSession(creds)
+          pkg = "com.dmzs.datawatchclient"
+          base = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{pkg}/edits"
+          edit = s.post(base).json()["id"]
+          try:
+              for t in s.get(f"{base}/{edit}/tracks").json().get("tracks", []):
+                  rel = [f"{r.get('status')}:{','.join(r.get('versionCodes', []))}:{r.get('name','')}" for r in t.get("releases", [])]
+                  print(f"track={t['track']!r} releases={rel}")
+          finally:
+              s.delete(f"{base}/{edit}")
+          EOF
