@@ -56,7 +56,6 @@ public fun SecretsStatusCard() {
     PwaCard(
         id = "secrets_status",
         title = stringResource(R.string.vault_status_title),
-        docsAnchor = "secrets-store",
         headerActions = {
             if (s.activeBackend == "vault") {
                 // Reachability dot — green if reachable, red if not.

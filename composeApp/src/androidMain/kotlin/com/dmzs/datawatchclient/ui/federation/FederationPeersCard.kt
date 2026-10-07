@@ -70,7 +70,6 @@ public fun FederationPeersCard() {
     PwaCard(
         id = "fedpeers",
         title = "Federated peers",
-        docsAnchor = "federation-peers",
         headerActions = {
             IconButton(onClick = { addOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add peer")

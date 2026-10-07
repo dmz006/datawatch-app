@@ -108,7 +108,6 @@ internal fun CommBackendsCard() {
     PwaCard(
         id = "comm_backends",
         title = "Communication Backends",
-        docsAnchor = "communication-configuration",
         innerPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
     ) {
         val list = enabledBackends

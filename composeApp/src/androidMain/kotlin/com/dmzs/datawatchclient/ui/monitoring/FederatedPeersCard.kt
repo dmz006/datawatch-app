@@ -103,7 +103,6 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
     PwaCard(
         id = "observer_peers",
         title = "Federated peers",
-        docsAnchor = "federated-peers",
         headerActions = { Box(Modifier.padding(end = 8.dp)) { LiveDot() } },
     ) {
         run {

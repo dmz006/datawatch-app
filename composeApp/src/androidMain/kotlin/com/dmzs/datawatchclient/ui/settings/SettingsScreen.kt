@@ -72,6 +72,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.docs.DocsLinks
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
@@ -117,13 +118,15 @@ import java.io.FileOutputStream
  */
 private enum class SettingsTab(
     @StringRes val labelRes: Int,
+    /** BL414 — header "?" opens the manual's section for this tab. */
+    val docsKey: String,
 ) {
-    General(R.string.settings_tab_general),
-    Plugins(R.string.settings_tab_plugins),
-    Comms(R.string.settings_tab_comms),
-    Compute(R.string.settings_tab_compute),
-    Automata(R.string.settings_tab_automata),
-    About(R.string.settings_tab_about),
+    General(R.string.settings_tab_general, "view_settings_general"),
+    Plugins(R.string.settings_tab_plugins, "view_settings_plugins"),
+    Comms(R.string.settings_tab_comms, "view_settings_comms"),
+    Compute(R.string.settings_tab_compute, "view_settings_compute"),
+    Automata(R.string.settings_tab_automata, "view_settings_automata"),
+    About(R.string.settings_tab_about, "view_settings_about"),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -193,7 +196,7 @@ public fun SettingsScreen(
                     )
                 },
                 actions = {
-                    DocsLinkAction("datawatch-definitions.md#settings")
+                    DocsLinkAction(DocsLinks.forKey(activeTab.docsKey))
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                     if (activeProfile != null) {
                         ReachabilityDot(
@@ -502,7 +505,6 @@ private fun ServersCard(
         actionIcon = Icons.Filled.Add,
         actionDescription = "Add server",
         onAction = onAddServer,
-        docsAnchor = "servers",
     ) {
         if (profiles.isEmpty()) {
             Text(
@@ -723,7 +725,7 @@ private fun SecurityCard() {
     var migrationError by remember { mutableStateOf<String?>(null) }
     val migrationFailedFmt = stringResource(R.string.security_migration_failed)
 
-    Section(id = "security", title = "Security", docsAnchor = "security") {
+    Section(id = "security", title = "Security") {
         androidx.compose.foundation.layout.Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -786,7 +788,7 @@ private fun SecurityCard() {
 
 @Composable
 private fun CommsCard() {
-    Section(id = "comms", title = "Comms", docsAnchor = "communication-configuration") {
+    Section(id = "comms", title = "Comms") {
         Text(
             "Messaging channel configuration will land in Sprint 3 (see " +
                 "docs/plans/README.md F3). This card will mirror the PWA's " +
@@ -829,7 +831,7 @@ private fun AboutCard(activeProfile: ServerProfile?) {
     }
 
     // PWA About header is a plain (non-collapsible) title (app.js renderSettingsView).
-    Section(id = "about", title = "About", docsAnchor = "api", collapsible = false) {
+    Section(id = "about", title = "About", collapsible = false) {
         // S6-6 (#87): normalized to 12dp horizontal / 8dp vertical per pwaCard standard.
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             // Live animated logo (matrix rain + eye + arcs + tablet frame).
@@ -1079,16 +1081,18 @@ private fun DaemonInfoRow(
     }
 }
 
-/** Settings / Observer card — thin alias over the shared collapsible [PwaCard] (D26a/D27a). */
+/**
+ * Settings / Observer card — thin alias over the shared collapsible [PwaCard] (D26a/D27a);
+ * its "?" target comes from the DocsLinks entry for [id] (BL414).
+ */
 @Composable
 internal fun Section(
     id: String,
     title: String,
-    docsAnchor: String? = null,
     collapsible: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    PwaCard(id = id, title = title, docsAnchor = docsAnchor, collapsible = collapsible) { content() }
+    PwaCard(id = id, title = title, collapsible = collapsible) { content() }
 }
 
 @Composable
@@ -1098,13 +1102,11 @@ private fun SectionWithAction(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     actionDescription: String,
     onAction: () -> Unit,
-    docsAnchor: String? = null,
     content: @Composable () -> Unit,
 ) {
     PwaCard(
         id = id,
         title = title,
-        docsAnchor = docsAnchor,
         headerActions = {
             IconButton(onClick = onAction) {
                 Icon(

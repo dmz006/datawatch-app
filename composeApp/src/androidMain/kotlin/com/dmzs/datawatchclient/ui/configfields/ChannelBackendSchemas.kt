@@ -147,6 +147,7 @@ public object ChannelBackendSchemas {
             id = "cc_channel_$channelId",
             title = "$channelId · $type",
             fields = fieldsFor("channels.$channelId", type),
+            docsPath = com.dmzs.datawatchclient.docs.DocsLinks.forChannelType(type),
         )
 
     /**
@@ -160,5 +161,6 @@ public object ChannelBackendSchemas {
             id = "cc_global_$type",
             title = type.replaceFirstChar { it.titlecase() },
             fields = fieldsFor("messaging.$type", type),
+            docsPath = com.dmzs.datawatchclient.docs.DocsLinks.forChannelType(type),
         )
 }

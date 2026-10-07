@@ -87,7 +87,6 @@ internal fun ChannelDiagnosticsCard() {
     PwaCard(
         id = "channel_diag",
         title = stringResource(R.string.channel_diag_title),
-        docsAnchor = "channel-diagnostics",
         headerActions = { TextButton(onClick = { reload++ }) { Text("↻") } },
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {

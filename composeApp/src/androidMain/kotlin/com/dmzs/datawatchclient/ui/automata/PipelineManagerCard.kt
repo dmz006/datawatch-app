@@ -77,7 +77,6 @@ internal fun PipelineManagerCard(
         id = if (liveRefreshMs != null) "obs_pipelines" else "pipelines",
         title = stringResource(R.string.pipeline_manager_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "pipeline-manager",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             if (liveRefreshMs != null) {

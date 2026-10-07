@@ -77,7 +77,6 @@ public fun SummarizerCard() {
     PwaCard(
         id = "gc_summarizer",
         title = "Session Summarizer",
-        docsAnchor = "session-ai-summarizer",
         innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
 

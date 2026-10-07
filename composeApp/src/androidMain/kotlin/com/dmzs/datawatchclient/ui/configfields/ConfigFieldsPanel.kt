@@ -40,10 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.docs.DocsLinks
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.theme.PwaCard
-import com.dmzs.datawatchclient.ui.theme.pwaDocsSlug
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
@@ -136,12 +136,12 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
         }
     }
 
-    // D26a/D27a: collapsible card keyed by the PWA section key (gc_/cc_/lc_<id>),
-    // docs anchor = PWA defsLink slug of the PWA's English section title.
+    // D26a/D27a: collapsible card keyed by the PWA section key (gc_/cc_/lc_<id>);
+    // BL414: "?" target from the section itself or the DocsLinks table.
     PwaCard(
         id = section.id,
         title = section.title,
-        docsAnchor = pwaDocsSlug(PWA_SECTION_TITLES[section.id] ?: section.title),
+        docsPath = section.docsPath ?: DocsLinks.forKey(section.id),
     ) {
         banner?.let {
             // Only error banners fire after the autosave switch (S4). Drop
@@ -225,17 +225,6 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
 }
 
 private const val SAVE_DEBOUNCE_MS: Long = 500
-
-/**
- * PWA English section titles (app.js GENERAL/COMMS/LLM_CONFIG_FIELDS `section`)
- * where the Android title differs — the docs anchor must be the PWA's slug.
- */
-private val PWA_SECTION_TITLES: Map<String, String> =
-    mapOf(
-        "gc_sess" to "Sessions",
-        "gc_autonomous" to "Autonomous Automata planning",
-        "gc_orchestrator" to "Automata-DAG orchestrator",
-    )
 
 /**
  * Tight phone-sized widget rhythm — every settings row uses the

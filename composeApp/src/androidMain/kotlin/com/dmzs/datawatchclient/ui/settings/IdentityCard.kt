@@ -60,7 +60,6 @@ internal fun IdentityCard() {
         id = "identity",
         title = stringResource(R.string.identity_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "identity",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             IconButton(onClick = { wizardOpen = true }) {

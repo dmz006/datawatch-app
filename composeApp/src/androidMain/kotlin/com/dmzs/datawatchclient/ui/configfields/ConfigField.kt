@@ -132,4 +132,6 @@ public data class ConfigSection(
     public val id: String,
     public val title: String,
     public val fields: List<ConfigField>,
+    /** "?" docs target; null = look [id] up in `DocsLinks` (BL414). */
+    public val docsPath: String? = null,
 )

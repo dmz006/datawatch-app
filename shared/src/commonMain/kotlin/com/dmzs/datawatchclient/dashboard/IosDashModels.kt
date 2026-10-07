@@ -173,22 +173,6 @@ public object IosDashCatalog {
             gap = if (viewportWidth < 600.0) 6.0 else 8.0,
             narrow = viewportWidth < 600.0,
         )
-
-    /** PWA `defsLink` slug for the per-card docs anchor (D26a). */
-    public fun docsSlug(label: String): String {
-        val sb = StringBuilder()
-        var lastDash = false
-        for (ch in label.lowercase()) {
-            if (ch in 'a'..'z' || ch in '0'..'9') {
-                sb.append(ch)
-                lastDash = false
-            } else if (!lastDash) {
-                sb.append('-')
-                lastDash = true
-            }
-        }
-        return sb.toString().trim('-')
-    }
 }
 
 // ── Hook board (hook_update frame / GET /status) ─────────────────────────

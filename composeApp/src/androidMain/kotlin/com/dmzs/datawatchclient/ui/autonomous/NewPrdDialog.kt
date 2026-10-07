@@ -235,8 +235,11 @@ internal fun NewPrdDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Launch Automaton", modifier = Modifier.weight(1f))
-                // PWA wizard header "?" → howto/automata-wizard.md (automata_wizard_help_tip).
-                com.dmzs.datawatchclient.ui.common.DocsLinkAction("howto/automata-wizard.md")
+                // PWA wizard header "?" names howto/automata-wizard.md, which the server
+                // doesn't ship — BL414 points at the manual's Launch Automation form section.
+                com.dmzs.datawatchclient.ui.common.DocsLinkAction(
+                    com.dmzs.datawatchclient.docs.DocsLinks.forKey("view_automata_wizard"),
+                )
             }
         },
         text = {

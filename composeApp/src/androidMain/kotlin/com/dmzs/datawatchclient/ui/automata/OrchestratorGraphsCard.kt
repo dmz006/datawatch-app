@@ -74,7 +74,6 @@ internal fun OrchestratorGraphsCard() {
         id = "orchestrator_graphs",
         title = stringResource(R.string.orchestrator_graphs_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "automata-orchestrator",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             if (loading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)

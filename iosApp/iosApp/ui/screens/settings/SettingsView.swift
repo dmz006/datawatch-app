@@ -33,7 +33,7 @@ struct SettingsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 4) {
-                        DocsLinkButton(profile: profile, anchor: "settings")
+                        DocsLinkButton(profile: profile, key: "view_settings")
                         AlertsBellButton()
                         ReachabilityDotView(profile: profile)
                     }

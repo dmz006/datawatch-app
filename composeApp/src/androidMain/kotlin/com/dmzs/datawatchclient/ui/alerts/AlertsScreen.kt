@@ -506,7 +506,7 @@ private fun AlertsTopBar(
             }
         },
         actions = {
-            DocsLinkAction("datawatch-definitions.md#alerts")
+            DocsLinkAction(com.dmzs.datawatchclient.docs.DocsLinks.forKey("view_alerts"))
             if (!state.allServersMode && state.activeProfile != null) {
                 ReachabilityDot(
                     reachable = reachable,

@@ -200,6 +200,7 @@ public object LlmBackendSchemas {
             id = "lc_backend_${name.replace('-', '_')}",
             title = "$backendName configuration",
             fields = fields,
+            docsPath = com.dmzs.datawatchclient.docs.DocsLinks.forLlmBackend(name),
         )
     }
 

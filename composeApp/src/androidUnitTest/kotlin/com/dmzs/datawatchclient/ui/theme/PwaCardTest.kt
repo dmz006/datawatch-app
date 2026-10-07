@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** Parity D26a (docs slug) + D27a (persisted collapse state). */
+/** Parity D27a (persisted collapse state). Docs targets: DocsLinksCoverageTest (BL414). */
 class PwaCardTest {
     private lateinit var prefs: FakeSharedPreferences
     private lateinit var ctx: Context
@@ -27,14 +27,6 @@ class PwaCardTest {
 
     @AfterTest
     fun tearDown() = PwaCardCollapseStore.resetForTest()
-
-    @Test
-    fun `slug matches PWA defsLink`() {
-        assertEquals("scheduled-events", pwaDocsSlug("Scheduled Events"))
-        assertEquals("cost-rates-usd-1k-tokens", pwaDocsSlug("Cost Rates (USD / 1K tokens)"))
-        assertEquals("automata-dag-orchestrator", pwaDocsSlug("Automata-DAG orchestrator"))
-        assertEquals("llms", pwaDocsSlug("  LLMs!! "))
-    }
 
     @Test
     fun `cards default to expanded like the PWA`() {

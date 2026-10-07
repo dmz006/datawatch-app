@@ -56,7 +56,7 @@ public fun ObserverScreen(
             TopAppBar(
                 title = { androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.nav_observer)) },
                 actions = {
-                    DocsLinkAction("datawatch-definitions.md#observer")
+                    DocsLinkAction(com.dmzs.datawatchclient.docs.DocsLinks.forKey("view_observer"))
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                     if (state.activeProfile != null) {
                         ReachabilityDot(
@@ -116,7 +116,7 @@ private fun ObserverStatsBlock() {
         title = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.observer_system_statistics),
         collapsed = collapsed,
         onToggle = { com.dmzs.datawatchclient.ui.theme.PwaCardCollapseStore.toggle(context, "stats") },
-        docsAnchor = "system-statistics",
+        docsPath = com.dmzs.datawatchclient.docs.DocsLinks.forKey("stats"),
         headerActions = null,
     )
     if (collapsed) return

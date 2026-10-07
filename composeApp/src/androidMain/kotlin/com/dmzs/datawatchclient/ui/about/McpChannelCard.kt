@@ -54,7 +54,6 @@ public fun McpChannelCard() {
     PwaCard(
         id = "mcp_channel",
         title = "MCP Channel Bridge",
-        docsAnchor = "mcp-server",
     ) {
         val dw = LocalDatawatchColors.current
         val current = lines

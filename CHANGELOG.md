@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ### Fixed
 - **iOS: "Send test notification" now sends a real push to this iPhone** through the server's APNs test (datawatch v8.63+), and says when the device isn't registered or APNs isn't set up on the server. Older servers keep the previous test.
 - **Android: saving an LLM no longer says "Save failed" when it worked.** The server answers a save with a short confirmation, which the app could not read.
+- **Every "?" help button now opens the documentation for that screen or card.** Most of them used to land at the top of the general definitions page because the section they pointed at didn't exist. Each card and screen now opens its own page and section: for example Settings › Compute › Work Queue opens the Work Queue section, Alert Rules opens the alert-rules guide, Pipeline Manager opens the pipeline guide, and each messaging channel or LLM backend dialog opens that channel's or backend's section. The Settings header "?" follows the open tab, and the Automata header "?" opens the Automaton detail section while an Automaton is open. New Session and Launch Automaton now open pages the server ships (their old targets didn't exist). Android and iOS use the same list.
 
 ## [1.28.6] — 2026-10-07
 

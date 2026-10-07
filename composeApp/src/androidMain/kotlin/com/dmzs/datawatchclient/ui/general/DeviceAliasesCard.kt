@@ -52,7 +52,6 @@ public fun DeviceAliasesCard(vm: DeviceAliasesViewModel = viewModel()) {
     PwaCard(
         id = "device_aliases",
         title = stringResource(R.string.device_aliases_title),
-        docsAnchor = "device-aliases",
         innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
         // Add form

@@ -82,7 +82,6 @@ public fun FileServiceCard() {
     PwaCard(
         id = "file_service",
         title = stringResource(R.string.file_service_title),
-        docsAnchor = "file-service",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             IconButton(onClick = { scope.launch { reload() } }) {

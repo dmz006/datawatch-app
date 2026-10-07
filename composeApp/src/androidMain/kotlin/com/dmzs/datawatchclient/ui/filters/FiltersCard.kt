@@ -78,7 +78,7 @@ public fun FiltersCard() {
 
     LaunchedEffect(Unit) { refresh() }
 
-    PwaCard(id = "filters", title = "Output filters", docsAnchor = "output-filters") {
+    PwaCard(id = "filters", title = "Output filters") {
         banner?.let {
             Text(
                 it,

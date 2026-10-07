@@ -48,7 +48,6 @@ public fun ApiLinksCard() {
     PwaCard(
         id = "api",
         title = "API",
-        docsAnchor = "api",
     ) {
         if (base == null) {
             Text(

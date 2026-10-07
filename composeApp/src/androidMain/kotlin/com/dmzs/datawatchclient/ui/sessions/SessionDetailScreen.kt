@@ -410,7 +410,7 @@ public fun SessionDetailScreen(
                 // below the tabs.
                 actions = {
                     com.dmzs.datawatchclient.ui.common.DocsLinkAction(
-                        "datawatch-definitions.md#sessions",
+                        com.dmzs.datawatchclient.docs.DocsLinks.forKey("view_session_detail"),
                     )
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
                     val alertsVm: com.dmzs.datawatchclient.ui.alerts.AlertsViewModel =

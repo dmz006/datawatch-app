@@ -116,7 +116,10 @@ public fun LlmConfigCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("LLM Configuration", docsAnchor = "llms")
+        PwaSectionTitle(
+            "LLM Configuration",
+            docsPath = com.dmzs.datawatchclient.docs.DocsLinks.forKey("llm_config"),
+        )
         banner?.let {
             Text(
                 it,

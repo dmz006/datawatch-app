@@ -82,7 +82,6 @@ public fun AlertRulesCard() {
         id = "alert_rules",
         title = "Alert Rules",
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "alert-rules",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             TextButton(onClick = { showAddDialog = true }) {

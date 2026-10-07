@@ -70,7 +70,6 @@ internal fun LanguagePickerCard() {
         id = "language",
         title = "Language / Whisper Language",
         modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "language",
         innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Row(

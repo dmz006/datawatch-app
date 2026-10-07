@@ -45,7 +45,6 @@ public fun ToolingCard(vm: ToolingViewModel = viewModel()) {
     PwaCard(
         id = "tooling",
         title = stringResource(R.string.tooling_title),
-        docsAnchor = "backend-artifact-lifecycle",
         innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
         headerActions = {
             TextButton(onClick = { vm.load() }) {

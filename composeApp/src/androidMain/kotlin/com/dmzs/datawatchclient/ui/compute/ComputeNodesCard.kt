@@ -145,7 +145,6 @@ public fun ComputeNodesCard(
     PwaCard(
         id = "compute_nodes",
         title = stringResource(R.string.settings_compute_nodes_title),
-        docsAnchor = "compute-nodes",
         headerActions = {
             IconButton(onClick = {
                 selectedNode = null

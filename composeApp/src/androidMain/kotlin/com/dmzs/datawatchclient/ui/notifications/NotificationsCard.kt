@@ -41,7 +41,6 @@ public fun NotificationsCard() {
     PwaCard(
         id = "gc_notifs",
         title = "Notifications",
-        docsAnchor = "notifications",
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),

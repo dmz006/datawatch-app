@@ -52,7 +52,6 @@ public fun CertInstallCard() {
     PwaCard(
         id = "cert_install",
         title = "CA certificate",
-        docsAnchor = "security",
     ) {
         if (base == null) {
             Text(

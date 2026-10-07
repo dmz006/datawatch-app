@@ -199,7 +199,11 @@ public fun AutonomousScreen(
                     IconButton(onClick = { identityWizardOpen = true }) {
                         Text("🤖", style = MaterialTheme.typography.titleMedium)
                     }
-                    DocsLinkAction("datawatch-definitions.md#automata")
+                    DocsLinkAction(
+                        com.dmzs.datawatchclient.docs.DocsLinks.forKey(
+                            if (openPrdId != null) "view_automaton_detail" else "view_automata",
+                        ),
+                    )
                     // PWA #headerSearchBtn on the automata view: toggles the same filter
                     // row as ⊞ (_toggleAutonomousFilters); hidden in detail like the PWA.
                     if (currentTab == 0 && openPrdId == null) {

@@ -57,7 +57,6 @@ public fun SessionTemplatesCard(vm: SessionTemplatesViewModel = viewModel()) {
     PwaCard(
         id = "templates",
         title = stringResource(R.string.session_templates_title),
-        docsAnchor = "session-templates",
         innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
         // Add form

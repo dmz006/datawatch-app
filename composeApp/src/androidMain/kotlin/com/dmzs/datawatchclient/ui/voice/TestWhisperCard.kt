@@ -153,7 +153,7 @@ public fun TestWhisperCard() {
             }
         }
 
-    Section(id = "test_whisper", title = "Test Whisper", docsAnchor = "voice-input-whisper") {
+    Section(id = "test_whisper", title = "Test Whisper") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             // v0.74.0 S5-6 — show active backend (whisper.backend from /api/config)
             whisperBackend?.let { backend ->

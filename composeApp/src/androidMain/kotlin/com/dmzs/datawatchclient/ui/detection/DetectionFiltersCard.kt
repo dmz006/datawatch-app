@@ -167,7 +167,7 @@ public fun DetectionFiltersCard() {
         }
     }
 
-    PwaCard(id = "detection", title = "Detection filters", docsAnchor = "detection-filters") {
+    PwaCard(id = "detection", title = "Detection filters") {
         banner?.let {
             Text(
                 it,

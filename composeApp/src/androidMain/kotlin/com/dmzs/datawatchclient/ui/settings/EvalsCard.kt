@@ -80,7 +80,6 @@ internal fun EvalsCard() {
         id = "evals",
         title = stringResource(R.string.evals_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "evals",
         innerPadding = PaddingValues(12.dp),
     ) {
         if (suites.isEmpty()) {

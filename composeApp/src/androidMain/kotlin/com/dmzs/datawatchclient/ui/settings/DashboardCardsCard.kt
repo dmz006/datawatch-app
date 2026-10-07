@@ -130,7 +130,10 @@ internal fun DashboardCardsCard() {
                 .pwaCard()
                 .padding(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.dash_cards_title), docsAnchor = "dashboard")
+        PwaSectionTitle(
+            stringResource(R.string.dash_cards_title),
+            docsPath = com.dmzs.datawatchclient.docs.DocsLinks.forKey("dashboard_cards"),
+        )
 
         // Error banner
         errorMsg?.let { msg ->

@@ -225,7 +225,7 @@ public fun SessionsScreen(
                             )
                         }
                         // G3 — context help link (Claude Code hooks docs).
-                        DocsLinkAction("datawatch-definitions.md#sessions-list")
+                        DocsLinkAction(com.dmzs.datawatchclient.docs.DocsLinks.forKey("view_sessions"))
                         // User direction 2026-04-24 + dmz006/datawatch#23
                         // — search icon lives on the top app bar, left
                         // of the reachability dot. Tapping toggles the

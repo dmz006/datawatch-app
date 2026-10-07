@@ -102,7 +102,6 @@ public fun WebSearchRegistryCard() {
     PwaCard(
         id = "websearch_providers",
         title = stringResource(R.string.ws_registry_title),
-        docsAnchor = "web-search-providers",
         headerActions = {
             IconButton(onClick = { editProvider = null; showAddDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.ws_registry_add))

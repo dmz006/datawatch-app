@@ -201,7 +201,6 @@ internal fun CouncilCard() {
         id = "council",
         title = stringResource(R.string.council_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "council-mode",
         innerPadding = PaddingValues(12.dp),
     ) {
         // ── PERSONAS section ──────────────────────────────────────────────

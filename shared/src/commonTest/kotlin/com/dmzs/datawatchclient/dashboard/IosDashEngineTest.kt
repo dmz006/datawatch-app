@@ -80,7 +80,6 @@ class IosDashEngineTest {
         assertEquals(6, IosDashCatalog.effectiveSpan(3, 800.0))
         assertEquals(12, IosDashCatalog.effectiveSpan(6, 800.0))
         assertEquals(3, IosDashCatalog.effectiveSpan(3, 1200.0))
-        assertEquals("timeline-6h", IosDashCatalog.docsSlug("Timeline · 6h"))
     }
 
     @Test

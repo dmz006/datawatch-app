@@ -2,27 +2,24 @@ import SwiftUI
 import SafariServices
 import DatawatchShared
 
-/// Toolbar button that opens the server-hosted definitions doc at a specific anchor.
+/// "?" button that opens the server-hosted docs page for a card or screen.
 ///
-/// URL format: `<profile.baseUrl>/diagrams.html#docs/datawatch-definitions.md#<anchor>`
+/// `key` is a card id (PWA section key, e.g. `work_queue`) or a `view_*` screen
+/// key; the target page + anchor comes from the shared `DocsLinks` table (BL414),
+/// the same table Android uses. URL format:
+/// `<profile.baseUrl>/diagrams.html#docs/<file.md>#<anchor>`.
 /// Matches Android's `DocsLinkAction` composable.
 ///
-/// If `profile` is nil the button is hidden — no active server, no docs.
+/// Hidden when `profile` is nil (no active server) or the key has no entry.
 struct DocsLinkButton: View {
     let profile: ServerProfile?
-    let anchor: String
-    /// Whole doc path under `docs/` (e.g. `howto/automata-wizard.md`); overrides `anchor`.
-    var docPath: String? = nil
+    let key: String
 
     @State private var showSafari = false
 
     private var docsURL: URL? {
-        guard let profile else { return nil }
-        var base = profile.baseUrl
-        if base.hasSuffix("/") { base = String(base.dropLast()) }
-        let target: String = docPath ?? "datawatch-definitions.md#\(anchor)"
-        let urlString = "\(base)/diagrams.html#docs/\(target)"
-        return URL(string: urlString)
+        guard let profile, let target = DocsLinks.shared.forKey(key: key) else { return nil }
+        return URL(string: DocsLinks.shared.viewerUrl(baseUrl: profile.baseUrl, target: target))
     }
 
     var body: some View {
@@ -81,7 +78,7 @@ private struct SafariView: UIViewControllerRepresentable {
         DatawatchColors.background
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    DocsLinkButton(profile: profile, anchor: "sessions-list")
+                    DocsLinkButton(profile: profile, key: "view_sessions")
                 }
             }
     }

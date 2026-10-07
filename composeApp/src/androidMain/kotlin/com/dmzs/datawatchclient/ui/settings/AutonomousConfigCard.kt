@@ -72,7 +72,6 @@ internal fun AutonomousConfigCard() {
         id = "automata_autonomous",
         title = stringResource(R.string.autonomous_config_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "autonomous-config",
         innerPadding = PaddingValues(12.dp),
     ) {
         val cfg = config ?: return@PwaCard

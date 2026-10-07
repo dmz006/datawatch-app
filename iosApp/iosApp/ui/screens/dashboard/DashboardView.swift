@@ -341,7 +341,7 @@ struct DashboardView: View {
         }
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 4) {
-                DocsLinkButton(profile: selectedProfile, anchor: "dashboard")
+                DocsLinkButton(profile: selectedProfile, key: "view_dashboard")
                 AlertsBellButton()
                 ReachabilityDotView(profile: selectedProfile)
             }

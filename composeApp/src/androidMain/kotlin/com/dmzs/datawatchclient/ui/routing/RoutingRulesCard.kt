@@ -76,7 +76,6 @@ public fun RoutingRulesCard() {
     PwaCard(
         id = "routing_rules",
         title = stringResource(R.string.routing_rules_title),
-        docsAnchor = "routing-rules",
         innerPadding = PaddingValues(12.dp),
     ) {
         // Add rule form

@@ -46,7 +46,7 @@ public fun PluginsCard(vm: PluginsCardViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.refresh() }
     if (state.plugins.isEmpty() && state.native.isEmpty() && !state.loading) return
 
-    Section(id = "obs_plugins", title = "Plugins", docsAnchor = "installed-plugins") {
+    Section(id = "obs_plugins", title = "Plugins") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             if (state.loading && state.plugins.isEmpty() && state.native.isEmpty()) {
                 com.dmzs.datawatchclient.ui.common.PwaLoadingText()

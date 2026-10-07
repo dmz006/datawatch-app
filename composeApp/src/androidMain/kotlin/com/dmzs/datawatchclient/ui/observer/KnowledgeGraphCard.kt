@@ -54,7 +54,6 @@ internal fun KnowledgeGraphCard() {
     PwaCard(
         id = "kg",
         title = "Knowledge Graph",
-        docsAnchor = "knowledge-graph",
         innerPadding = PaddingValues(12.dp),
     ) {
 

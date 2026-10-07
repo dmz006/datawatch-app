@@ -178,7 +178,6 @@ public fun MemoryCard() {
     PwaCard(
         id = "membrowser",
         title = "Episodic memory",
-        docsAnchor = "memory-browser",
         headerActions = {
             IconButton(onClick = { addOpen = true }) {
                 Icon(

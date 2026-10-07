@@ -315,7 +315,7 @@ public fun NewSessionScreen(
                     }
                 },
                 actions = {
-                    DocsLinkAction("howto/new-session.md")
+                    DocsLinkAction(com.dmzs.datawatchclient.docs.DocsLinks.forKey("view_new_session"))
                 },
             )
         },

@@ -85,7 +85,6 @@ public fun DaemonLogCard() {
     PwaCard(
         id = "daemonlog",
         title = "Daemon log",
-        docsAnchor = "daemon-log",
     ) {
         banner?.let {
             Text(
@@ -170,7 +169,6 @@ public fun InterfacesCard() {
     PwaCard(
         id = "network_interfaces",
         title = "Network interfaces",
-        docsAnchor = "network-interfaces",
     ) {
         banner?.let {
             Text(
@@ -231,7 +229,6 @@ public fun KillOrphansCard() {
     PwaCard(
         id = "kill_orphans",
         title = "Kill orphaned tmux sessions",
-        docsAnchor = "orphaned-tmux-sessions",
     ) {
         Text(
             "Terminate tmux sessions on the server that datawatch isn't " +
@@ -332,7 +329,6 @@ public fun UpdateDaemonCard() {
     PwaCard(
         id = "daemon_update",
         title = "Daemon update",
-        docsAnchor = "auto-update",
     ) {
         Text(
             "Check whether a new datawatch daemon version is available on " +
@@ -465,7 +461,6 @@ public fun RestartDaemonCard() {
     PwaCard(
         id = "daemon_restart",
         title = "Daemon",
-        docsAnchor = "datawatch",
     ) {
         Text(
             "Restart the datawatch daemon on the active server. Every " +
@@ -552,7 +547,6 @@ public fun SubsystemReloadCard() {
     PwaCard(
         id = "hot_reload",
         title = "Hot-reload subsystem",
-        docsAnchor = "hot-reload",
     ) {
         Text(
             "Reload a subsystem on the active server without restarting the daemon. " +

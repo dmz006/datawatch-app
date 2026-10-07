@@ -96,7 +96,6 @@ public fun ChannelsCard() {
     PwaCard(
         id = "backends",
         title = "Communication Configuration",
-        docsAnchor = "communication-configuration",
         headerActions = {
             IconButton(onClick = { addOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add channel")

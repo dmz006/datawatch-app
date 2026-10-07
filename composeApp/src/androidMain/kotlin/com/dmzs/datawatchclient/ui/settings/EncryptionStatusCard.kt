@@ -60,7 +60,6 @@ public fun EncryptionStatusCard() {
     PwaCard(
         id = "encryption_status",
         title = stringResource(R.string.encryption_status_title),
-        docsAnchor = "security",
         innerPadding = PaddingValues(12.dp),
     ) {
         run {

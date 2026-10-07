@@ -143,7 +143,6 @@ public fun LlmRegistryCard() {
     PwaCard(
         id = "llms",
         title = stringResource(R.string.settings_llm_registry_title),
-        docsAnchor = "llms",
         headerActions = {
             IconButton(onClick = {
                 selectedLlm = null

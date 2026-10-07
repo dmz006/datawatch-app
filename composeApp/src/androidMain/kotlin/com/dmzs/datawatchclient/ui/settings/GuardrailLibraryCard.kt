@@ -101,7 +101,6 @@ internal fun GuardrailLibraryCard() {
         id = "guardrail_library_list",
         title = stringResource(R.string.guardrail_library_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "guardrail-library",
         innerPadding = PaddingValues(12.dp),
         headerActions = {
             IconButton(
@@ -143,7 +142,6 @@ internal fun GuardrailLibraryCard() {
         id = "automata_guardrail_profiles",
         title = stringResource(R.string.guardrail_profiles_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        docsAnchor = "guardrail-profiles",
         innerPadding = PaddingValues(12.dp),
     ) {
         if (profiles.isEmpty()) {

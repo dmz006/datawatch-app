@@ -415,7 +415,7 @@ struct AlertsView: View {
                 HStack(spacing: 4) {
                     DocsLinkButton(
                         profile: store.activeProfile,
-                        anchor: "alerts"
+                        key: "view_alerts"
                     )
                     if !store.isAllServers {
                         ReachabilityDotView(profile: store.activeProfile)
