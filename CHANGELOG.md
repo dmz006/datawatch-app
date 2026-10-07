@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.10] — 2026-10-07
+
 ### Added
 - **iOS: Community Plugins card** (Settings › Plugins), matching Android: browse the community registry's plugins and install one. If the registry isn't connected, the card says so. The web UI version is requested in datawatch#191.
 - **iOS: Siri sends can require Face ID.** Settings › Security › "Require Face ID for Siri" (on by default; Touch ID or passcode on devices without Face ID). With it on, "Send to session" asks you to confirm it's you before anything is sent, and sends nothing if you can't confirm.
