@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.7] — 2026-10-07
+
 ### Added
 - **Let's Encrypt settings, as in the web UI (datawatch v8.62+).** Settings › Comms › Web Server now has one "Certificate source" control: Self-signed, Custom cert path, or Let's Encrypt. Let's Encrypt shows the domains, endpoint (staging / production), validation method (HTTP-01 / DNS-01 with Cloudflare token and zone), the certificate's status, and Renew now / Verify buttons. Android and iOS.
 - **Observer › Certificates card:** each Let's Encrypt domain with days until expiry: green over 14 days, amber at 14 or fewer, red when not issued. Hidden when Let's Encrypt is off. Android and iOS.
@@ -15,7 +17,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ### Fixed
 - **iOS: "Send test notification" now sends a real push to this iPhone** through the server's APNs test (datawatch v8.63+), and says when the device isn't registered or APNs isn't set up on the server. Older servers keep the previous test.
 - **Android: saving an LLM no longer says "Save failed" when it worked.** The server answers a save with a short confirmation, which the app could not read.
-- **Every "?" help button now opens the documentation for that screen or card.** Most of them used to land at the top of the general definitions page because the section they pointed at didn't exist. Each card and screen now opens its own page and section: for example Settings › Compute › Work Queue opens the Work Queue section, Alert Rules opens the alert-rules guide, Pipeline Manager opens the pipeline guide, and each messaging channel or LLM backend dialog opens that channel's or backend's section. The Settings header "?" follows the open tab, and the Automata header "?" opens the Automaton detail section while an Automaton is open. New Session and Launch Automaton now open pages the server ships (their old targets didn't exist). Android and iOS use the same list.
+- **Every "?" help button now opens the documentation for that screen or card.** Most of them used to land at the top of the general definitions page because the section they pointed at didn't exist. Each card and screen now opens its own page and section: for example Settings › Compute › Work Queue opens the Work Queue section, Alert Rules opens the alert-rules guide, Pipeline Manager opens the pipeline guide, and each messaging channel or LLM backend dialog opens that channel's or backend's section. The Settings header "?" follows the open tab, and the Automata header "?" opens the Automaton detail section while an Automaton is open. New Session and Launch Automaton now open pages the server ships (their old targets didn't exist). Android and iOS use the same list. On iOS the right page opens, but jumping to the section needs a datawatch server fix (reported).
 
 ## [1.28.6] — 2026-10-07
 
