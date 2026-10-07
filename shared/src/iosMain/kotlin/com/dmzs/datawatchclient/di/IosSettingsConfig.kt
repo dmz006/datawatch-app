@@ -217,6 +217,45 @@ public object IosSettingsConfig {
         }
     }
 
+    /**
+     * Community Plugins (Android CommunityPluginsCard parity; web UI datawatch#191):
+     * GET /api/plugins/browse?registry=<name> → (name, description-or-version) rows.
+     */
+    public fun browsePlugins(
+        profile: ServerProfile,
+        registry: String,
+        onSuccess: (List<IosCommunityPlugin>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).browsePlugins(registry).fold(
+                onSuccess = { b ->
+                    onSuccess(
+                        b.plugins.map { p ->
+                            IosCommunityPlugin(p.name, p.manifest.description.ifBlank { p.manifest.version })
+                        },
+                    )
+                },
+                onFailure = { onError(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Browse unavailable.")) },
+            )
+        }
+    }
+
+    /** POST /api/plugins/install {registry, name}; [onDone] gets null on success or the error. */
+    public fun installPlugin(
+        profile: ServerProfile,
+        registry: String,
+        name: String,
+        onDone: (String?) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).installPlugin(registry, name).fold(
+                onSuccess = { onDone(null) },
+                onFailure = { onDone(com.dmzs.datawatchclient.transport.ErrorText.of(it, "Install failed.")) },
+            )
+        }
+    }
+
     /** BL413 — Settings › Web Server Let's Encrypt status lines (PWA loadAcmeStatus). */
     public fun acmeStatusLines(
         profile: ServerProfile,
@@ -494,3 +533,6 @@ public object IosSettingsConfig {
 
     private fun JsonObject.str(key: String): String = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content.orEmpty()
 }
+
+/** One Community Plugins row: plugin name + manifest description (or version). */
+public data class IosCommunityPlugin(val name: String, val detail: String)

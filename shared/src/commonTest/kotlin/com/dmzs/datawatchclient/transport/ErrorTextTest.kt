@@ -21,4 +21,13 @@ class ErrorTextTest {
         assertEquals("timeout", ErrorText.of(RuntimeException("timeout"), "Failed to load."))
         assertEquals("Failed to load.", ErrorText.of(null, "Failed to load."))
     }
+
+    @Test
+    fun plainTextServerBodyIsShown() {
+        val m = "Client request(GET https://h/api/plugins/browse?registry=community) invalid: 400 Bad Request. Text: \"registry \"community\" not connected (run `datawatch skills registry connect community` first)\n\""
+        assertEquals(
+            "registry \"community\" not connected (run `datawatch skills registry connect community` first)",
+            ErrorText.of(RuntimeException(m), "Failed to load."),
+        )
+    }
 }

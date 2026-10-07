@@ -1900,3 +1900,11 @@
 "Confirm it's you before Siri or Shortcuts sends a message to a session" = "Siri やショートカットがセッションにメッセージを送る前に本人確認する";
 "Confirm it's you to send to your session" = "セッションに送信するには本人確認してください";
 "Not sent. Confirm with Face ID or your passcode, or open datawatch to send." = "送信されませんでした。Face ID かパスコードで確認するか、datawatch を開いて送信してください。";
+
+/* Community Plugins card */
+"Community Plugins" = "コミュニティプラグイン";
+"No plugins in this registry." = "このレジストリにプラグインはありません。";
+"Browse unavailable" = "閲覧できません";
+"Install" = "インストール";
+"Installed" = "インストール済み";
+"Install failed" = "インストールに失敗しました";

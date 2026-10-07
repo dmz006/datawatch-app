@@ -59,6 +59,7 @@ private struct SettingsServerCustomCard: View {
         case .mcpTools: SettingsMcpToolsCard(profile: profile)
         case .mcpChannel: SettingsMcpChannelCard(profile: profile)
         case .subsystemReload: SettingsSubsystemReloadCard(profile: profile)
+        case .communityPlugins: SettingsCommunityPluginsCard(profile: profile)
         case .encryption: SettingsEncryptionCard(profile: profile)
         case .exitHooks: SettingsExitHooksCard(profile: profile)
         case .workQueue: SettingsWorkQueueCard(profile: profile)
@@ -382,6 +383,100 @@ private struct SettingsCommBackendsCard: View {
                     load()
                 } else {
                     restartNeeded = true
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Community Plugins (Android CommunityPluginsCard; web UI datawatch#191)
+
+/// Browse the "community" registry's plugins (GET /api/plugins/browse) and install
+/// one (POST /api/plugins/install). Same rows and Install states as Android.
+struct SettingsCommunityPluginsCard: View {
+    let profile: ServerProfile?
+    private let registry = "community"
+    @State private var plugins: [IosCommunityPlugin]?
+    @State private var message: String?
+    @State private var failed = false
+    @State private var installing: Set<String> = []
+    @State private var installed: Set<String> = []
+
+    var body: some View {
+        List {
+            Section {
+                if let plugins {
+                    if plugins.isEmpty {
+                        Text(message.map { L($0) } ?? L("No plugins in this registry."))
+                            .font(DatawatchFonts.bodyMedium)
+                            .foregroundStyle(failed ? DatawatchColors.error : DatawatchColors.onSurfaceMuted)
+                    }
+                    ForEach(plugins, id: \.name) { p in
+                        HStack(alignment: .center, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(verbatim: p.name).foregroundStyle(DatawatchColors.onSurface)
+                                if !p.detail.isEmpty {
+                                    Text(verbatim: p.detail)
+                                        .font(DatawatchFonts.labelSmall)
+                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                }
+                            }
+                            Spacer(minLength: 4)
+                            installButton(p.name)
+                        }
+                    }
+                } else {
+                    CardSkeleton()
+                }
+            } footer: {
+                if let message, !(plugins?.isEmpty ?? true) {
+                    Text(L(message)).foregroundStyle(failed ? DatawatchColors.error : DatawatchColors.success)
+                }
+            }
+            .listRowBackground(DatawatchColors.surface)
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .task { load() }
+        .refreshable { load() }
+    }
+
+    @ViewBuilder
+    private func installButton(_ name: String) -> some View {
+        if installed.contains(name) {
+            Text("Installed").font(DatawatchFonts.labelSmall).foregroundStyle(DatawatchColors.success)
+        } else if installing.contains(name) {
+            ProgressView().controlSize(.small)
+        } else {
+            Button("Install") { install(name) }
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(DatawatchColors.primary)
+                .buttonStyle(.borderless)
+        }
+    }
+
+    private func load() {
+        guard let profile else { plugins = []; message = "No server connected"; failed = true; return }
+        IosSettingsConfig.shared.browsePlugins(profile: profile, registry: registry, onSuccess: { list in
+            DispatchQueue.main.async { plugins = list; message = nil; failed = false }
+        }, onError: { err in
+            DispatchQueue.main.async { plugins = []; message = L("Browse unavailable") + " — " + err; failed = true }
+        })
+    }
+
+    private func install(_ name: String) {
+        guard let profile else { return }
+        installing.insert(name)
+        IosSettingsConfig.shared.installPlugin(profile: profile, registry: registry, name: name) { err in
+            DispatchQueue.main.async {
+                installing.remove(name)
+                if let err {
+                    message = L("Install failed") + ": " + err
+                    failed = true
+                } else {
+                    installed.insert(name)
+                    message = L("Installed") + " " + name
+                    failed = false
                 }
             }
         }

@@ -1900,3 +1900,11 @@
 "Confirm it's you before Siri or Shortcuts sends a message to a session" = "Bestätige deine Identität, bevor Siri oder Kurzbefehle eine Nachricht an eine Sitzung senden";
 "Confirm it's you to send to your session" = "Bestätige deine Identität, um an deine Sitzung zu senden";
 "Not sent. Confirm with Face ID or your passcode, or open datawatch to send." = "Nicht gesendet. Bestätige mit Face ID oder deinem Code oder öffne datawatch zum Senden.";
+
+/* Community Plugins card */
+"Community Plugins" = "Community-Plugins";
+"No plugins in this registry." = "Keine Plugins in dieser Registry.";
+"Browse unavailable" = "Durchsuchen nicht verfügbar";
+"Install" = "Installieren";
+"Installed" = "Installiert";
+"Install failed" = "Installation fehlgeschlagen";

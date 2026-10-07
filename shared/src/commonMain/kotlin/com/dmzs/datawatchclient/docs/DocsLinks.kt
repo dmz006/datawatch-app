@@ -129,6 +129,7 @@ public object DocsLinks {
             // ── Settings → Plugins ─────────────────────────────────────
             "gc_plugins" to "api/plugins.md",
             "plugins_list" to D + "plugin-manager",
+            "community_plugins" to "api/plugins.md",
             // ── Settings → About ───────────────────────────────────────
             "about" to D + "settings-about",
             "language" to "messaging-backends.md#supported-languages",

@@ -82,6 +82,7 @@ enum SettingsCustomCard {
     case alertRules, savedCommands, outputFilters
     case identity, automataTypes, pipelineManager, orchestratorGraphs, algorithmMode
     case about, apiLinks, mcpTools, mcpChannel, subsystemReload, encryption
+    case communityPlugins
     case exitHooks, workQueue
     case fileService, observerQuicklink
 }
@@ -242,6 +243,8 @@ enum SettingsCatalog {
             .number("plugins.timeout_ms", "Invocation timeout (ms)", "2000"),
         ]),
         .list("plugins_list", "Plugin Manager", "puzzlepiece.extension", kind: "plugins", cardActions: ["Reload plugins"]),
+        // Android CommunityPluginsCard parity; web UI card requested in datawatch#191.
+        .custom("community_plugins", "Community Plugins", "shippingbox", .communityPlugins),
     ]
 
     // MARK: Comms
