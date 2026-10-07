@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed
+- **Android: error banners use the web UI's light red tint** instead of a solid dark red (light theme: instead of solid pink).
+
 ### Added
 - **iOS: "▨ Status" link on Automaton stories.** It opens the story's worker session straight on its Status tab, next to the existing "→ Session" link, as in the web UI and Android.
 

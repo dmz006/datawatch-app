@@ -98,7 +98,8 @@ private val DatawatchDarkScheme =
         outlineVariant = DwBorder,
         error = DwError,
         onError = Color.White,
-        errorContainer = Color(0xFF3B0F10),
+        // Web UI error banners: rgba(239,68,68,0.12) tint over the surface (operator 2026-10-07).
+        errorContainer = Color(0x1FEF4444),
         onErrorContainer = DwError,
     )
 
@@ -153,7 +154,8 @@ internal val LightColorScheme =
         outlineVariant = DwLightBorder,
         error = DwLightError,
         onError = Color.White,
-        errorContainer = Color(0xFFFEE2E2),
+        // Web UI uses the same rgba(239,68,68,0.12) tint in light mode.
+        errorContainer = Color(0x1FEF4444),
         onErrorContainer = DwLightError,
     )
 

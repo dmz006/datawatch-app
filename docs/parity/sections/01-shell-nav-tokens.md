@@ -72,7 +72,7 @@ Refs are `file:line` or symbol. Audited 2026-10-04 from code (no screenshots yet
 | token | `--waiting` #3b82f6 | ✓ | ✓ | ✓ | aligned | | |
 | token | `--border` #2d3148 | ✓ | ✓ | ✓ | aligned | | |
 | token | Alert-pill blue #60a5fa (rgba 96,165,250 tint; not a CSS var) | ✓ inline app.js:936 | ✓ `Color(0xFF60A5FA)` HeaderComponents.kt | ✓ `AlertsBellButton.accent2` = #60A5FA | aligned | decided D3a | with the iOS pill (D3a) |
-| token | `errorContainer` #3B0F10 banner background | ✗ (PWA uses rgba error tints) | ✓ Theme.kt:98 | ✗ | pwa-missing |  | minor; no decision · 2026-10-06 re-check: still missing in v8.61.5 (new GH#182 list banner uses rgba(239,68,68,0.12) tint, not #3B0F10) · **2026-10-07 re-audit vs datawatch v8.66.1: still missing — no #3B0F10 in style.css/app.js; PWA error banners keep rgba(239,68,68,…) tints** |
+| token | `errorContainer` #3B0F10 banner background | ✗ (PWA uses rgba error tints) | ✓ Theme.kt errorContainer = rgba(239,68,68,0.12) tint (both themes) | ✓ error.opacity(…) tints | aligned | decided 2026-10-07 | minor; no decision · 2026-10-06 re-check: still missing in v8.61.5 (new GH#182 list banner uses rgba(239,68,68,0.12) tint, not #3B0F10) · **2026-10-07 re-audit vs datawatch v8.66.1: still missing — no #3B0F10 in style.css/app.js; PWA error banners keep rgba(239,68,68,…) tints** · 2026-10-07: operator chose the web UI tint; Android #3B0F10 / #FEE2E2 → rgba(239,68,68,0.12) |
 | token | Radii: `--radius` 12px cards · `--radius-sm` 8px · pills 10px | ✓ style.css:35-36 | ✓ `pwaCard` 12dp, `PwaStatePill` 10dp (PwaComponents.kt:88,156) | ✓ `DatawatchRadius` card 12 / sm 8 / pill 10 (ui/design/DatawatchRadius.swift); adopted in Automata cards, alert chips, server picker + alert pill | aligned |  | iOS needs radius tokens (no decision) · iOS-F 2026-10-05: remaining ad-hoc radii in other screens can adopt the token as they are touched |
 | token | Spacing scale: header 56 · nav 60 · input bar 60 (CSS vars); card padding 12–16 | ✓ style.css:32-34 | ~ 16dp gutters (`PwaSectionTitle`), no scale | ~ 16pt gutters, no scale | aligned | decided D4a + D32 | native density per D32/D4a |
 | token | UI font: `'JetBrains Mono','Fira Code', monospace` 14px body; nav labels system-ui 10px | ✓ style.css:69-70, 315-318 | ~ Roboto / M3 default `Typography` (none in Theme.kt) | ~ SF Pro (`DatawatchFonts`); SF Mono terminal only | aligned | decided D7b | platform font + Dynamic Type per D7b |
@@ -88,7 +88,7 @@ Refs are `file:line` or symbol. Audited 2026-10-04 from code (no screenshots yet
 | motion | Reduced-motion respected (`prefers-reduced-motion` disables pulses) | ✓ style.css:2356-2358, 2416-2418 | ✓ `rememberDwPulse` / `rememberRunningPulseAlpha` static when animator scale = 0 | ✓ splash, skeleton, card pulse, dashboard and the reachability dot pulse honour Reduce Motion | aligned |  | only the iOS dot pulse remains · iOS-F 2026-10-05: iOS dot pulse static under Reduce Motion |
 
 ## Coverage
-rows: 81 · aligned: 74 · ios-missing: 0 · android-missing: 0 · pwa-missing: 2 · misaligned: 0 · n/a: 5
+rows: 81 · aligned: 75 · ios-missing: 0 · android-missing: 0 · pwa-missing: 1 · misaligned: 0 · n/a: 5
 
 Re-audited 2026-10-07: every `pwa-missing` row re-checked against the datawatch web UI at v8.66.1 (GH#172/#182/#186/#189/#191 closed upstream).
 
