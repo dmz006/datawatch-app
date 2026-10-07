@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **LLM API keys are no longer wiped on servers v8.63.1 and later.** These servers hide a stored literal API key: the GET response returns it blank and reports `api_key_ref_present` instead (datawatch GH#179). The apps no longer send that blank value back, so saving the LLM form, using the JSON editor, or pressing Android's refresh-models button keeps the key. The key field shows "configured — enter to change" as before. Android and iOS.
+
 ### CI
 - **External TestFlight setup workflow** (`ios-testflight-setup.yml`, run by hand): fills TestFlight Test Information and What to Test from the repo files, creates the external tester group, and optionally uploads the App Store listing and screenshots, submits the build for Beta App Review or enables the public link. Contact details and the demo sign-in come only from repository secrets or App Store Connect.
 

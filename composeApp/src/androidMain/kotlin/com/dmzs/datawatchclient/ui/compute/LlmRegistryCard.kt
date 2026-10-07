@@ -772,6 +772,9 @@ private fun LlmRegistryDialog(
     var autoAdd by remember(existing) { mutableStateOf(existing?.autoAddModels ?: false) }
     // A literal key is never shown; the field starts blank and blank keeps it (iOS form rule).
     val existingKey = existing?.apiKeyRef.orEmpty()
+    // Servers ≥ v8.63.1 redact it (blank + api_key_ref_present); blank on save
+    // omits the field and the server keeps the stored key.
+    val existingRedactedKey = existingKey.isEmpty() && existing?.apiKeyRefPresent == true
     val existingLiteralKey = existingKey.isNotEmpty() && !com.dmzs.datawatchclient.transport.SecretMask.isReference(existingKey)
     var apiKeyRef by remember(existing) { mutableStateOf(if (existingLiteralKey) "" else existingKey) }
     var timeout by remember(existing) { mutableStateOf(existing?.timeoutSeconds?.takeIf { it > 0 }?.toString() ?: "") }
@@ -995,7 +998,7 @@ private fun LlmRegistryDialog(
                     label = { Text(stringResource(R.string.llm_field_api_key_ref)) },
                     placeholder = {
                         Text(
-                            if (existingLiteralKey) com.dmzs.datawatchclient.transport.SecretMask.PLACEHOLDER else "\${secret:anthropic-key}",
+                            if (existingLiteralKey || existingRedactedKey) com.dmzs.datawatchclient.transport.SecretMask.PLACEHOLDER else "\${secret:anthropic-key}",
                         )
                     },
                     visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),

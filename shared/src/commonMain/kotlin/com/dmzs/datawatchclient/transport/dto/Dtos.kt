@@ -1331,6 +1331,12 @@ public data class LlmRegistryEntryDto(
     @SerialName("auto_add_models") val autoAddModels: Boolean = false,
     // alpha.41 core fields
     @SerialName("api_key_ref") val apiKeyRef: String? = null,
+    /**
+     * Servers ≥ v8.63.1 (datawatch GH#179) redact a literal key: `api_key_ref`
+     * comes back blank with this set true. Read-only — null on requests, so it is
+     * never sent (explicitNulls = false).
+     */
+    @SerialName("api_key_ref_present") val apiKeyRefPresent: Boolean? = null,
     /** Server `timeout_seconds` (PWA "Timeout (seconds, 0 = adapter default)"); legacy `timeout` accepted. */
     @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
     @SerialName("timeout_seconds")

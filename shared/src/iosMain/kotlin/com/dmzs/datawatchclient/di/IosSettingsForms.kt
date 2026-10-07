@@ -655,7 +655,9 @@ public object IosSettingsForms {
             values = values,
             models = models,
             computeNodes = nodes,
-            apiKeyConfigured = key.isNotEmpty() && !isRef,
+            // Servers ≥ v8.63.1 redact a literal key: blank `api_key_ref` +
+            // `api_key_ref_present: true` (datawatch GH#179).
+            apiKeyConfigured = (key.isNotEmpty() && !isRef) || (key.isEmpty() && o.b("api_key_ref_present")),
         )
     }
 
@@ -684,7 +686,17 @@ public object IosSettingsForms {
         val key: String = v["api_key_ref"].orEmpty().trim()
         val existingKey: String = base.s("api_key_ref")
         val keepLiteral: Boolean = key.isEmpty() && existingKey.isNotEmpty() && !existingKey.startsWith("\${secret:")
-        if (!keepLiteral) out["api_key_ref"] = JsonPrimitive(key)
+        // v8.63.1+ returns a literal key redacted (blank + api_key_ref_present) and
+        // merges a PUT onto the stored entry: omit the field so the key is kept,
+        // rather than echoing the blank back.
+        val keepRedacted: Boolean = key.isEmpty() && existingKey.isEmpty() && base.b("api_key_ref_present")
+        out.remove("api_key_ref_present")
+        out.remove("api_key_ref_prefix")
+        if (keepRedacted) {
+            out.remove("api_key_ref")
+        } else if (!keepLiteral) {
+            out["api_key_ref"] = JsonPrimitive(key)
+        }
         out["timeout_seconds"] = JsonPrimitive(int(v, "timeout_seconds"))
         out["max_inflight"] = JsonPrimitive(int(v, "max_inflight"))
         out["tags"] = strArray(csv(v["tags"].orEmpty()))
