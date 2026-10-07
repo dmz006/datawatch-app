@@ -203,6 +203,19 @@ jobs:
             :wear:publishReleaseBundle \
             --no-daemon --stacktrace
 
+      # Closed testing (Play track `alpha`) gets the same build: promoted from
+      # internal, no re-upload. Google reviews each closed-track update before
+      # testers see it. Phone only — Wear has no closed track.
+      - name: Promote to closed testing (alpha)
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
+        run: |
+          set -euo pipefail
+          pip install --quiet google-auth requests
+          CODE=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)
+          python3 scripts/play_promote.py --package com.dmzs.datawatchclient \
+            --from-track internal --to-track alpha --version-code "$CODE"
+
       - name: Clean up key file
         if: always()
         run: rm -f "$RUNNER_TEMP/play-key.json"

@@ -1,0 +1,31 @@
+name: Play — promote to closed testing
+
+# Promote a build from the internal track to closed testing (`alpha`) without
+# re-uploading. The release workflow does this for every tag; run this by hand
+# to catch the closed track up or promote a specific version code.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'Version code to promote (empty = newest on internal)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote internal → alpha
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
+          CODE: ${{ inputs.version_code }}
+        run: |
+          set -euo pipefail
+          pip install --quiet google-auth requests
+          python3 scripts/play_promote.py --package com.dmzs.datawatchclient \
+            --from-track internal --to-track alpha ${CODE:+--version-code "$CODE"}
