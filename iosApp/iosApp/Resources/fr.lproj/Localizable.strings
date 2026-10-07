@@ -1916,3 +1916,4 @@
 "Connect" = "Connecter";
 "Connect failed" = "Échec de la connexion";
 "No plugins found in this registry." = "Aucun plugin trouvé dans ce registre.";
+"Open session Status tab" = "Ouvrir l’onglet État de la session";

@@ -320,7 +320,8 @@ struct RootView: View {
         selectedTab = .sessions
         AlertDock.shared.close()
         sessionsPath = NavigationPath()
-        sessionsPath.append(SessionRoute(sessionId: id, profileId: pid))
+        let status = (info?["tab"] as? String) == "status"
+        sessionsPath.append(SessionRoute(sessionId: id, profileId: pid, statusTab: status))
     }
 
     /// D40a: reopen the session that was open when the app was last killed.

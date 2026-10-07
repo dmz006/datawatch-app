@@ -79,13 +79,13 @@ New iOS gap from this re-audit: **open a session in Status mode** (`03` › Deep
 |---|---|---|---|---|---|---|---|---|
 | 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 81 | 74 | 0 | 0 | 2 | 0 | 5 |
 | 02 | [Sessions list](sections/02-sessions-list.md) | 84 | 76 | 0 | 0 | 0 | 1 | 7 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 109 | 1 | 0 | 3 | 1 | 4 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 110 | 0 | 0 | 3 | 1 | 4 |
 | 04 | [Alerts](sections/04-alerts.md) | 65 | 56 | 0 | 0 | 1 | 0 | 8 |
 | 05 | [Automata](sections/05-automata.md) | 100 | 99 | 0 | 0 | 1 | 0 | 0 |
 | 06 | [Observer](sections/06-observer.md) | 94 | 91 | 0 | 0 | 2 | 0 | 1 |
 | 07 | [Settings](sections/07-settings.md) | 98 | 95 | 0 | 0 | 0 | 1 | 2 |
 | 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 66 | 0 | 0 | 0 | 0 | 5 |
-| | **Total** | **711** | **666** | **1** | **0** | **9** | **3** | **32** |
+| | **Total** | **711** | **667** | **0** | **0** | **9** | **3** | **32** |
 
 **2026-10-07 PWA re-audit** (datawatch v8.66.1): aligned 657 → **666** · ios-missing 0 → **1** ·
 pwa-missing 21 → **9** · misaligned 1 → **3**. Counts recounted by script from the section tables.

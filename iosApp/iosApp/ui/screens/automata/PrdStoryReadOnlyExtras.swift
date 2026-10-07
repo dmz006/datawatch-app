@@ -46,21 +46,33 @@ struct PrdStoryReadOnlyExtras: View {
         .font(DatawatchFonts.labelSmall)
     }
 
+    /// PWA story session row: "→ Session <id>" + "▨ Status" (gotoSessionStatus).
     private func sessionLink(_ sid: String) -> some View {
-        Button {
-            NotificationCenter.default.post(
-                name: .deepLinkSession, object: nil,
-                userInfo: ["id": sid, "profileId": profileId]
-            )
-        } label: {
-            HStack(spacing: 4) {
-                Text(verbatim: "→ " + L("Session"))
-                Text(verbatim: sid).font(DatawatchFonts.terminalSmall)
+        HStack(spacing: 10) {
+            Button {
+                open(sid, status: false)
+            } label: {
+                HStack(spacing: 4) {
+                    Text(verbatim: "→ " + L("Session"))
+                    Text(verbatim: sid).font(DatawatchFonts.terminalSmall)
+                }
             }
-            .font(DatawatchFonts.labelSmall)
-            .foregroundStyle(DatawatchColors.primary)
+            .accessibilityLabel("Open the worker session that ran this story")
+            Button {
+                open(sid, status: true)
+            } label: {
+                Text(verbatim: "▨ " + L("Status"))
+            }
+            .accessibilityLabel("Open session Status tab")
         }
+        .font(DatawatchFonts.labelSmall)
+        .foregroundStyle(DatawatchColors.primary)
         .buttonStyle(.borderless)
-        .accessibilityLabel("Open the worker session that ran this story")
+    }
+
+    private func open(_ sid: String, status: Bool) {
+        var info: [String: String] = ["id": sid, "profileId": profileId]
+        if status { info["tab"] = "status" }
+        NotificationCenter.default.post(name: .deepLinkSession, object: nil, userInfo: info)
     }
 }

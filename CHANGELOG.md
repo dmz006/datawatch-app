@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- **iOS: "▨ Status" link on Automaton stories.** It opens the story's worker session straight on its Status tab, next to the existing "→ Session" link, as in the web UI and Android.
+
 ### Docs
 - **Parity matrix re-audited against the datawatch v8.66 web UI.** Of the 21 rows where only the apps had a feature, 9 now match, 2 were built differently (three-finger swipe, agent badge), 1 turned out to be an iOS gap (open a session in Status mode), and 9 are still missing from the web UI (BL405).
 

@@ -1916,3 +1916,4 @@
 "Connect" = "接続";
 "Connect failed" = "接続に失敗しました";
 "No plugins found in this registry." = "このレジストリにプラグインはありません。";
+"Open session Status tab" = "セッションのステータスタブを開く";

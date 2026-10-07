@@ -1916,3 +1916,4 @@
 "Connect" = "Verbinden";
 "Connect failed" = "Verbindung fehlgeschlagen";
 "No plugins found in this registry." = "Keine Plugins in dieser Registry gefunden.";
+"Open session Status tab" = "Status-Tab der Sitzung öffnen";

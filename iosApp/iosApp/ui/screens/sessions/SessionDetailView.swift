@@ -15,6 +15,8 @@ import DatawatchShared
 struct SessionDetailView: View {
     let session: DwSession
     let profile: ServerProfile
+    /// Open on the Status tab instead of the remembered one (PWA `gotoSessionStatus`).
+    var openInStatus: Bool = false
 
     @State private var live: DwSession? = nil
     @State private var isStopping = false
@@ -272,7 +274,11 @@ struct SessionDetailView: View {
 
     private func applyDetailExtras() {
         // Restore the persisted output tab when this session offers it.
-        if detailTabs.contains(where: { $0.0 == savedDetailTab }) { detailTab = savedDetailTab }
+        if openInStatus {
+            detailTab = "status"
+        } else if detailTabs.contains(where: { $0.0 == savedDetailTab }) {
+            detailTab = savedDetailTab
+        }
         // Rate-limit notice: current state now, then live `rate_limited` events.
         if session.state == .rateLimited { rateLimitShown = true }
         terminal.onRateLimited = { retry in

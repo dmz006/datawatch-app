@@ -7,6 +7,8 @@ import DatawatchShared
 struct SessionRoute: Hashable {
     let sessionId: String
     let profileId: String?
+    /// Open on the Status tab (PWA `gotoSessionStatus`, Android `openInStatusMode`).
+    var statusTab: Bool = false
 }
 
 /// Handles `datawatch://` deep links (D84b — same scheme as Android).
@@ -96,7 +98,7 @@ struct DeepLinkSessionView: View {
     var body: some View {
         Group {
             if let r = resolved {
-                SessionDetailView(session: r.0, profile: r.1)
+                SessionDetailView(session: r.0, profile: r.1, openInStatus: route.statusTab)
             } else if failed {
                 notFound
             } else {
