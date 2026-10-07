@@ -224,6 +224,15 @@ platform :ios do
     if ENV["SUBMIT_FOR_BETA_REVIEW"] == "true"
       UI.user_error!("Build #{build_number} not found") unless build
       UI.user_error!("Build #{build_number} is still #{build.processing_state}") unless build.processing_state == "VALID"
+      # External submission needs the build's export-compliance answer and a
+      # finished TestFlight state; report both and answer compliance if missing
+      # (the app uses only standard HTTPS/TLS: ITSAppUsesNonExemptEncryption = NO).
+      detail = build.get_build_beta_details.first
+      UI.message("Build #{build_number}: internal=#{detail&.internal_build_state} external=#{detail&.external_build_state} usesNonExemptEncryption=#{build.uses_non_exempt_encryption.inspect}")
+      if build.uses_non_exempt_encryption.nil? || detail&.external_build_state == "MISSING_EXPORT_COMPLIANCE"
+        Spaceship::ConnectAPI.patch_builds(build_id: build.id, attributes: { usesNonExemptEncryption: false })
+        UI.success("Answered export compliance: no non-exempt encryption")
+      end
       build.add_beta_groups(beta_groups: [group])
       begin
         build.post_beta_app_review_submission
