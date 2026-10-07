@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.11] — 2026-10-07
+
 ### Fixed
 - **iOS: tapping a push from the server opens the session.** The server's APNs payload names the session `sessionId` and puts the alert level in `type`; the app only recognised its own local-notification fields, so a tapped server push did nothing. It now opens that session, or the Alerts tab when there's no session.
 
