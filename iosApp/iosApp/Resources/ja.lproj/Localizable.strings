@@ -1892,3 +1892,11 @@
 "Send “%@” to %@?" = "「%@」を %@ に送信しますか？";
 "Sent to %@." = "%@ に送信しました。";
 "Open datawatch voice" = "datawatch 音声を開く";
+
+/* Siri send: Face ID option */
+"Require Face ID for Siri" = "Siri で Face ID を必須にする";
+"Require Touch ID for Siri" = "Siri で Touch ID を必須にする";
+"Require passcode for Siri" = "Siri でパスコードを必須にする";
+"Confirm it's you before Siri or Shortcuts sends a message to a session" = "Siri やショートカットがセッションにメッセージを送る前に本人確認する";
+"Confirm it's you to send to your session" = "セッションに送信するには本人確認してください";
+"Not sent. Confirm with Face ID or your passcode, or open datawatch to send." = "送信されませんでした。Face ID かパスコードで確認するか、datawatch を開いて送信してください。";

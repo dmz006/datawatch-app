@@ -47,6 +47,15 @@ struct SendToSessionIntent: AppIntent {
             result: .result(dialog: IntentDialog("Send “\(text)” to \(label)?")),
             confirmationActionName: .send
         )
+        // Settings › Security › "Require Face ID for Siri" (default on): prove it's the
+        // owner before anything reaches the server. If iOS can't show the prompt from
+        // Siri, nothing is sent.
+        if BiometricGate.siriAuthRequired {
+            let ok = await BiometricGate.authenticate(reason: String(localized: "Confirm it's you to send to your session"))
+            if !ok {
+                return .result(dialog: IntentDialog("Not sent. Confirm with Face ID or your passcode, or open datawatch to send."))
+            }
+        }
         try await Self.send(text, to: target)
         return .result(dialog: IntentDialog("Sent to \(label)."))
     }

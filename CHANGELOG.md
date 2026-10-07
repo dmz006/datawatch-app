@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- **iOS: Siri sends can require Face ID.** Settings › Security › "Require Face ID for Siri" (on by default; Touch ID or passcode on devices without Face ID). With it on, "Send to session" asks you to confirm it's you before anything is sent, and sends nothing if you can't confirm.
+
 ## [1.28.9] — 2026-10-07
 
 ### Fixed

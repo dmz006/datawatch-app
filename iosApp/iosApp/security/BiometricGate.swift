@@ -26,6 +26,29 @@ enum BiometricGate {
     /// Settings key for the opt-in lock (Settings › Security).
     static let enabledKey = "biometricLockEnabled"
 
+    /// Settings › Security: confirm with Face ID / Touch ID (or passcode) before a
+    /// Siri / Shortcuts "Send to session". On by default; the user can turn it off.
+    static let siriAuthKey = "siriRequiresAuth"
+
+    static var siriAuthRequired: Bool {
+        (UserDefaults.standard.object(forKey: siriAuthKey) as? Bool ?? true) && canAuthenticate
+    }
+
+    /// async/await form of [authenticate]; false on failure or when no UI can be shown.
+    static func authenticate(reason: String) async -> Bool {
+        await withCheckedContinuation { cont in
+            let ctx = LAContext()
+            var error: NSError?
+            guard ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+                cont.resume(returning: false)
+                return
+            }
+            ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, _ in
+                cont.resume(returning: success)
+            }
+        }
+    }
+
     /// Whether the app should be locked right now (enabled + usable).
     static var lockRequired: Bool {
         UserDefaults.standard.bool(forKey: enabledKey) && canAuthenticate

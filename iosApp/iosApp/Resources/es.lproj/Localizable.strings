@@ -1892,3 +1892,11 @@
 "Send “%@” to %@?" = "¿Enviar «%@» a %@?";
 "Sent to %@." = "Enviado a %@.";
 "Open datawatch voice" = "Abrir voz de datawatch";
+
+/* Siri send: Face ID option */
+"Require Face ID for Siri" = "Pedir Face ID para Siri";
+"Require Touch ID for Siri" = "Pedir Touch ID para Siri";
+"Require passcode for Siri" = "Pedir código para Siri";
+"Confirm it's you before Siri or Shortcuts sends a message to a session" = "Confirma que eres tú antes de que Siri o Atajos envíen un mensaje a una sesión";
+"Confirm it's you to send to your session" = "Confirma que eres tú para enviar a tu sesión";
+"Not sent. Confirm with Face ID or your passcode, or open datawatch to send." = "No enviado. Confirma con Face ID o tu código, o abre datawatch para enviar.";

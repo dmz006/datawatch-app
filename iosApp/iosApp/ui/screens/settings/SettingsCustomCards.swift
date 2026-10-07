@@ -72,6 +72,7 @@ private struct SettingsServerCustomCard: View {
 
 private struct SettingsSecurityCard: View {
     @AppStorage(BiometricGate.enabledKey) private var biometricLockEnabled = false
+    @AppStorage(BiometricGate.siriAuthKey) private var siriRequiresAuth = true
 
     var body: some View {
         List {
@@ -86,7 +87,19 @@ private struct SettingsSecurityCard: View {
                         }
                     }
                     .tint(DatawatchColors.primary)
-                } else {
+                }
+                if BiometricGate.canAuthenticate {
+                    Toggle(isOn: $siriRequiresAuth) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L(siriAuthLabel)).foregroundStyle(DatawatchColors.onSurface)
+                            Text("Confirm it's you before Siri or Shortcuts sends a message to a session")
+                                .font(DatawatchFonts.labelSmall)
+                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        }
+                    }
+                    .tint(DatawatchColors.primary)
+                }
+                if !BiometricGate.isAvailable {
                     Text("Biometric authentication is not available on this device.")
                         .font(DatawatchFonts.bodyMedium)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -111,6 +124,14 @@ private struct SettingsSecurityCard: View {
                 }
             }
         )
+    }
+
+    private var siriAuthLabel: String {
+        switch BiometricGate.biometricType {
+        case .faceID: return "Require Face ID for Siri"
+        case .touchID: return "Require Touch ID for Siri"
+        default: return "Require passcode for Siri"
+        }
     }
 
     private var biometricLabel: String {
