@@ -233,12 +233,17 @@ platform :ios do
         Spaceship::ConnectAPI.patch_builds(build_id: build.id, attributes: { usesNonExemptEncryption: false })
         UI.success("Answered export compliance: no non-exempt encryption")
       end
-      build.add_beta_groups(beta_groups: [group])
-      begin
-        build.post_beta_app_review_submission
-        UI.success("Build #{build_number} added to '#{group_name}' and submitted for Beta App Review")
-      rescue => e
-        UI.important("Beta review submission: #{e.message}")
+      already = %w[WAITING_FOR_BETA_REVIEW IN_BETA_REVIEW BETA_APPROVED IN_BETA_TESTING].include?(detail&.external_build_state)
+      if already
+        UI.success("Build #{build_number} is already #{detail.external_build_state} — nothing to submit")
+      else
+        build.add_beta_groups(beta_groups: [group])
+        begin
+          build.post_beta_app_review_submission
+          UI.success("Build #{build_number} added to '#{group_name}' and submitted for Beta App Review")
+        rescue => e
+          UI.important("Beta review submission: #{e.message}")
+        end
       end
     end
 
