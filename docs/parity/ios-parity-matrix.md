@@ -4,7 +4,7 @@ Rules: PWA drives design unless an app idea is better; every judgment call is th
 all 92 were answered on 2026-10-04 (§2). Schema and section scopes: [`README.md`](README.md).
 Section files: [`sections/`](sections/).
 
-## Remaining work (as of 2026-10-04)
+## Remaining work (as of 2026-10-04; PWA list re-audited 2026-10-07)
 
 Ordered by user impact within each platform. Refs: `SS` section file › row Feature.
 
@@ -55,23 +55,40 @@ Status 2026-10-04 (Android remaining-work sweep): items 1–11 done except where
 
 ### PWA (server repo)
 
-1. **#172 — app extras to the PWA (D59–D83)**: watch sessions/automata + watched-badge filter (D61a), swipe-to-mute + muted icon (D62a), Whisper reply (D63a), council badge/filter (D64a), skeleton list (D60a), three-finger swipe (D65a), hooks toast / rate-limit notice / persisted mode (D67a), agent/Chrome badges (D66a), terminal search (D69a), Yes/No/Stop chips (D68b), alert-rule Recent Firings (D70a), PRD extras (D71a–D76a), memory UI (D77a), Observer server-info/envelopes/backend-health/add-memory (D78a), config viewer + raw editor (D79a), subsystem reload + MCP cards (D80a), New Session library + resume (D81a/D82a), inline file viewer (D83a), splash status line + replay (D59a). Rows tagged "→ #172".
-2. **PRD Pause/Resume** wired up (D52b) — unreachable in all three today. `05` › Actions: Pause / Resume
-3. **Lowercase "datawatch"** in header, manifest and title (D1a/D9a). `01` › Sessions-list header title, Brand/manifest, Brand casing
+**Re-audit 2026-10-07 against datawatch v8.66.1** (GH#172, #181, #182, #186, #189, #191 all closed
+upstream; v8.61.6–v8.66.0). 21 `pwa-missing` rows → 9 `aligned`, 2 `misaligned`, 1 `ios-missing`,
+9 still `pwa-missing`; D52b Pause/Resume (v8.57) and lowercase "datawatch" (v8.39.27 + v8.61.6) are done.
+What remains on the web UI side (no open datawatch issue covers any of it — #172 was closed as complete):
+
+1. **Watched-only alert badge** (D61a) — `updateAlertBadge` app.js:17817 still shows the server's total `unread_count`. `04` › Watched-session filter
+2. **Per-Automaton memory section** (D77a) — stats tile, Learning Report, recall search on Automaton detail. `05` › Memory: stats tile…
+3. **Observer server info: hostname + daemon version** (D78a). `06` › Server info card
+4. **Add-memory tags** (D78a) — `addMemoryQuick` posts text only. `06` › Add memory dialog
+5. **Session splash dwell + two stages** (D10a) — min/max dwell timers and "connecting…" → "waiting for terminal…". `03` › Splash min/max dwell, Splash stages
+6. **Persisted output tab** (D67a) — v8.64.0 declined ("output_mode fixed per session"), but the PWA's Tmux/Channel/Status tabs reset to Tmux on every open; needs an operator call: file it, or accept as n/a. `03` › Mode preference persisted
+7. *Minor, no decision:* header refreshing spinner; `errorContainer` #3B0F10 banner token. `01`
+8. *Misaligned, operator call (PWA implemented differently):* three-finger swipe highlights the always-visible picker bar instead of opening a picker (D65a, v8.64.0); detail-header agent badge reads "⬡ worker" not "⬡ <agent_id>" (D66a, v8.61.9). `02`, `03`
+
+~~1. **#172 — app extras to the PWA (D59–D83)**~~ — closed upstream 2026-10-07 (remainders above). ~~2. **PRD Pause/Resume** (D52b)~~ — v8.57.0. ~~3. **Lowercase "datawatch"** (D1a/D9a)~~ — v8.39.27 + v8.61.6.
+
+New iOS gap from this re-audit: **open a session in Status mode** (`03` › Deep-link open in Status mode) — PWA `gotoSessionStatus` app.js:4682 and Android `openInStatusMode` both have it.
 
 ## 1. Summary
 
 | # | Section | rows | aligned | ios-missing | android-missing | pwa-missing | misaligned | n/a |
 |---|---|---|---|---|---|---|---|---|
-| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 81 | 72 | 0 | 0 | 4 | 0 | 5 |
-| 02 | [Sessions list](sections/02-sessions-list.md) | 84 | 74 | 0 | 0 | 3 | 0 | 7 |
-| 03 | [Session detail](sections/03-session-detail.md) | 118 | 104 | 0 | 0 | 10 | 0 | 4 |
+| 01 | [Shell, nav, splash, tokens](sections/01-shell-nav-tokens.md) | 81 | 74 | 0 | 0 | 2 | 0 | 5 |
+| 02 | [Sessions list](sections/02-sessions-list.md) | 84 | 76 | 0 | 0 | 0 | 1 | 7 |
+| 03 | [Session detail](sections/03-session-detail.md) | 118 | 109 | 1 | 0 | 3 | 1 | 4 |
 | 04 | [Alerts](sections/04-alerts.md) | 65 | 56 | 0 | 0 | 1 | 0 | 8 |
 | 05 | [Automata](sections/05-automata.md) | 100 | 99 | 0 | 0 | 1 | 0 | 0 |
 | 06 | [Observer](sections/06-observer.md) | 94 | 91 | 0 | 0 | 2 | 0 | 1 |
 | 07 | [Settings](sections/07-settings.md) | 98 | 95 | 0 | 0 | 0 | 1 | 2 |
 | 08 | [New Session, modals, post-spec views](sections/08-modals-and-post-spec.md) | 71 | 66 | 0 | 0 | 0 | 0 | 5 |
-| | **Total** | **711** | **657** | **0** | **0** | **21** | **1** | **32** |
+| | **Total** | **711** | **666** | **1** | **0** | **9** | **3** | **32** |
+
+**2026-10-07 PWA re-audit** (datawatch v8.66.1): aligned 657 → **666** · ios-missing 0 → **1** ·
+pwa-missing 21 → **9** · misaligned 1 → **3**. Counts recounted by script from the section tables.
 
 Full re-audit 2026-10-04 against current code after all 92 decisions were answered. Status now
 means: `aligned` = equivalent **or** the difference is what a decision prescribes (noted "per Dxx");

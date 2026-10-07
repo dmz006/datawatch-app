@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Docs
+- **Parity matrix re-audited against the datawatch v8.66 web UI.** Of the 21 rows where only the apps had a feature, 9 now match, 2 were built differently (three-finger swipe, agent badge), 1 turned out to be an iOS gap (open a session in Status mode), and 9 are still missing from the web UI (BL405).
+
 ## [1.28.12] — 2026-10-07
 
 ### Changed

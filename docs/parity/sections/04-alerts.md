@@ -54,7 +54,7 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Per-alert ✓ mark-read control / unread dot | ✗ | ✗ removed | ✗ no unread dot / read dimming (D49a) | aligned | decided D49a | iOS should drop read UI · iOS-F 2026-10-05: already removed (stale row) |
 | interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✗ removed | ✗ | aligned | decided D50d | |
 | interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ✗ removed 2026-10-04 | aligned | decided D50d | D50d done on iOS |
-| data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✓ I:AlertsView.swift:20 `LocalSessionPrefs.badgeCount` | pwa-missing | decided D61a | → #172 · 2026-10-06 re-check: still missing in v8.61.5: D61 (v8.50) filters the sessions list, but `updateAlertBadge` app.js:17237 still counts all unread |
+| data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✓ I:AlertsView.swift:20 `LocalSessionPrefs.badgeCount` | pwa-missing | decided D61a | → #172 · 2026-10-06 re-check: still missing in v8.61.5: D61 (v8.50) filters the sessions list, but `updateAlertBadge` app.js:17237 still counts all unread · **2026-10-07 re-audit vs datawatch v8.66.1: still missing — `updateAlertBadge` app.js:17817 shows `state.alertUnread` = server `unread_count` (app.js:23425), not filtered by `watchedSessions`** |
 | element | Alert dock panel (header chips per type, collapse chevron, ✕, 🔕; body cards with ×N, 3-line clamp, left rail) | ✓ js:15044 | ✓ A:AlertDockOverlay.kt + AlertDockChannel.kt | ✓ `AlertDockPanel` (type ×N chips, ⌄, ✕, 🔕; cards with rail, ×N, ✕, 3-line clamp ▸ more) | aligned | decided D3a | |
 | data | Dock coalescing: family key, 60 s window, ×N, max 100 | ✓ js:15004–15040 | ✓ A:AlertDockChannel.kt:42–43 MAX_ENTRIES 100, 60 s window | ✓ `AlertDock.post` family key, 60 s, ×N, max 100 | aligned | decided D3a | |
 | data | Dock mute persisted per browser session (sessionStorage cs_alert_muted) | ✓ js:15204 | ✓ A:AlertDockChannel.kt:48,77 in-memory per app session | ✓ AlertDock.muted in-memory per app run (D47a, same as Android) | aligned | decided D47a | iOS-F 2026-10-05: already done (stale row) |
@@ -74,6 +74,8 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 
 ## Coverage
 rows: 65 · aligned: 56 · ios-missing: 0 · android-missing: 0 · pwa-missing: 1 · misaligned: 0 · n/a: 8
+
+Re-audited 2026-10-07: every `pwa-missing` row re-checked against the datawatch web UI at v8.66.1 (GH#172/#182/#186/#189/#191 closed upstream).
 
 ## Decisions (resolved 2026-10-04)
 1. 🔕 semantics → **D47a** apps implement a real dock mute (Android done; iOS pending, needs dock).

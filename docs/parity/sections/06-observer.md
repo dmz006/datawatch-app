@@ -35,7 +35,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | element | RTK Token Savings (version, saved tokens, update badge → copy cmd) | ✓ app.js:20542 | ✓ RtkCard StatsScreen.kt:231 (version, hooks, saved, avg %, commands; no update badge) | ✓ (latest version from raw /api/stats) | aligned |  | update badge tracked next row |
 | interaction | RTK update badge click → copy upgrade command (toast) | ✓ data-cmd BL223 | ✓ "→ update available" in RtkCard, tap copies the upgrade one-liner (no latest-version text: StatsDto lacks it) | ✓ tap → UIPasteboard + toast (ObserverStatsSection.swift:128) | aligned |  |  |
 | element | Episodic Memory stats inside stats panel | ✓ app.js:20555 | ✓ MemoryStatsCard | ✓ | aligned | | |
-| element | Server info card (hostname, version, host, port) | ~ host:port in Observer Infrastructure stat-card (app.js:21706 `renderStatsData`); no hostname/version | ✓ ServerInfoCard StatsScreen.kt:461 | ✓ (IosObserver.loadServerContext) | pwa-missing | decided D78a | → #172 (PWA Observer) · 2026-10-06 re-check: server team counted D78 server info as already shipped (Daemon + Infrastructure cards); hostname + version still missing in v8.61.5 |
+| element | Server info card (hostname, version, host, port) | ~ host:port in Observer Infrastructure stat-card (app.js:21706 `renderStatsData`); no hostname/version | ✓ ServerInfoCard StatsScreen.kt:461 | ✓ (IosObserver.loadServerContext) | pwa-missing | decided D78a | → #172 (PWA Observer) · 2026-10-06 re-check: server team counted D78 server info as already shipped (Daemon + Infrastructure cards); hostname + version still missing in v8.61.5 · **2026-10-07 re-audit vs datawatch v8.66.1: still missing — Daemon card (RSS/goroutines/fds/uptime) + Infrastructure card (host:port, TLS, MCP SSE, tmux) app.js:22374–22395; no hostname or daemon version** |
 | element | Session Statistics ring (total/max_sessions) + running/waiting/complete/failed counts | ✓ donut in renderStatsData (app.js:20659) | ✓ ring success colour | ✓ donut active/max + counts (PWA success colour) | aligned | decided D78a | Android ring colours by threshold; PWA/iOS do not |
 | data | `session.max_sessions` from /api/config for ring denominator | ✓ state._maxSessions (used elsewhere) | ✓ StatsViewModel maxSessions | ✓ loadServerContext | aligned | | |
 | element | Ollama Server card | ✓ renderStatsData Ollama card (app.js:20756) | ✓ OllamaStatsCard | ✓ inside stats panel (IosObserver.kt:484) | aligned | decided D78a |  |
@@ -71,7 +71,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | element | Search input + role filter (All/Manual/Session/Learning/Chunks) + since (All/7d/30d/90d) | ✓ app.js:23402 | ✓ role + since filters on the List tab | ✓ PWA role/since filters | aligned |  | Android lacks role + since filters |
 | interaction | Search / List / Export buttons | ✓ | ✓ Text("Search"), Text("Export…"), Text("Test") | ✓ (Export → share sheet) | aligned | | Android adds "Test" |
 | element | Memory stats cards: Total Memories / Manual / Session / Learnings / Chunks / DB Size | ✓ loadMemoryStats app.js:14276 | ✓ MemoryCard StatsGrid | ✓ | aligned | | |
-| interaction | Add memory dialog (text, tags) | ~ inline quick-add app.js:24638 `addMemoryQuick` → /api/memory/save, text only (v8.58, D78) | ✓ memory_add_title AlertDialog (MemoryCard.kt:692) | ✓ alert text + tags (D78a) | pwa-missing | decided D78a | → #172 · 2026-10-06 re-check: v8.58 adds a text-only inline add; tags field still missing in v8.61.5 |
+| interaction | Add memory dialog (text, tags) | ~ inline quick-add app.js:24638 `addMemoryQuick` → /api/memory/save, text only (v8.58, D78) | ✓ memory_add_title AlertDialog (MemoryCard.kt:692) | ✓ alert text + tags (D78a) | pwa-missing | decided D78a | → #172 · 2026-10-06 re-check: v8.58 adds a text-only inline add; tags field still missing in v8.61.5 · **2026-10-07 re-audit vs datawatch v8.66.1: tags still missing — `addMemoryQuick` app.js:15507 posts `{content}` only** |
 | element | Results list max-height 400 scroll | ✓ | n/a (LazyColumn) | ✓ | aligned | | |
 | **7.3 Memory Maintenance** | | | | | | | |
 | element | 2×2 grid: Similarity-stale eviction (days, Dry-run/Apply), Spellcheck, Extract facts, Schema version check | ✓ app.js:23425–23456 | ✓ eviction dry-run only + "Apply … web UI only" | ✓ Dry-run only ("Apply … web UI only") | aligned | decided D89b | per D89b iOS correct; Android still allows Apply · per D89b (2026-10-04) |
@@ -114,6 +114,8 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 
 ## Coverage
 rows: 94 · aligned: 91 · ios-missing: 0 · android-missing: 0 · pwa-missing: 2 · misaligned: 0 · n/a: 1
+
+Re-audited 2026-10-07: every `pwa-missing` row re-checked against the datawatch web UI at v8.66.1 (GH#172/#182/#186/#189/#191 closed upstream).
 
 ## Decisions (resolved 2026-10-04)
 1. Docs links → D26a: per-card docs links on both apps.
