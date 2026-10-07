@@ -70,22 +70,23 @@ See [CHANGELOG.md](CHANGELOG.md) for every release.
 
 ---
 
-## 🧪 Alpha Testing Program
+## 🧪 Join the beta
 
-**We're seeking alpha testers for Wear OS and Android apps!**
+### Android (Google Play closed testing)
 
-v1.0.0 is production-ready with full feature parity and comprehensive testing. If you're interested in testing the Wear OS companion or Android Auto (AAOS) functionality before the general release, we'd love your feedback.
+We need **12 testers who stay opted in for 14 days** before Google lets the app go to production. Every release reaches testers through Play, after Google's review.
 
-**Interested?** Contact **[@dmz006](https://github.com/dmz006)** via:
-- GitHub Issues: [datawatch-app/issues](https://github.com/dmz006/datawatch-app/issues)
-- Direct message on GitHub
+1. **Join the tester group:** [groups.google.com/g/datawatch-testers](https://groups.google.com/g/datawatch-testers). Use the Google account your phone uses for Play.
+2. **Opt in:** [play.google.com/apps/testing/com.dmzs.datawatchclient](https://play.google.com/apps/testing/com.dmzs.datawatchclient). Open it on the web or your phone and tap **Become a tester**.
+3. **Install** from the Play Store link on that page, and stay opted in.
 
-What we're testing:
-- ✅ Wear OS session monitoring and voice reply
-- ✅ Android Auto (AAOS) integration for vehicle displays
-- ✅ Cross-platform data synchronization
-- ✅ Real-world daemon connectivity (Tailscale, LAN, remote)
-- ✅ Performance on various devices
+Android Auto support is part of the phone app. The Wear OS companion joins closed testing soon.
+
+### iPhone and iPad (TestFlight)
+
+The public TestFlight link is coming as soon as Apple finishes beta review.
+
+Either way, you need your own [datawatch](https://github.com/dmz006/datawatch) server (LAN, VPN or Tailscale) and its bearer token. Send feedback through [datawatch-app issues](https://github.com/dmz006/datawatch-app/issues) or the email shown in the Play / TestFlight listing.
 
 ---
 

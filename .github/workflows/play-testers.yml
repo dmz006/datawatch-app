@@ -1,0 +1,33 @@
+name: Play — set closed-test tester group
+
+# Attach a Google Group to a Play closed-testing track (default `alpha`; use
+# `wear:<track>` for the Wear OS closed track once it exists in Play Console).
+
+on:
+  workflow_dispatch:
+    inputs:
+      group:
+        description: 'Google Group email'
+        type: string
+        default: 'datawatch-testers@googlegroups.com'
+      track:
+        description: 'Track'
+        type: string
+        default: 'alpha'
+
+permissions:
+  contents: read
+
+jobs:
+  testers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set tester group
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
+        run: |
+          set -euo pipefail
+          pip install --quiet google-auth requests
+          python3 scripts/play_testers.py --package com.dmzs.datawatchclient \
+            --track "${{ inputs.track }}" --group "${{ inputs.group }}"
