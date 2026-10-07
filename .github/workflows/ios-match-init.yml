@@ -42,7 +42,7 @@ jobs:
       MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}
       MATCH_GIT_BASIC_AUTHORIZATION_IN: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Prefer a raw PAT and encode it here (no base64 pitfalls on the operator's
       # side). Falls back to a pre-encoded MATCH_GIT_BASIC_AUTHORIZATION, with any
