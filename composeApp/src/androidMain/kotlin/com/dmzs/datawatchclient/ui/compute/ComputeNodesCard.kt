@@ -325,11 +325,19 @@ private fun ComputeNodeRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            // FlowRow: with a long node name the chip / cap= label move to the next
+            // line whole instead of being squeezed to one character per line.
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            androidx.compose.foundation.layout.FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.Center,
             ) {
-                Text(node.name, fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    node.name,
+                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.align(Alignment.CenterVertically),
+                )
                 // PWA `auto` pill (auto_created nodes).
                 if (node.autoCreated) {
                     Text(
@@ -371,6 +379,9 @@ private fun ComputeNodeRow(
                     computeNodeCapLabel(node),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.align(Alignment.CenterVertically),
                 )
                 // Auto-disabled badge
                 if (!node.enabled && node.disabledReason != null) {

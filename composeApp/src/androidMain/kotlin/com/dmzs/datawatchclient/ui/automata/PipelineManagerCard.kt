@@ -99,11 +99,8 @@ internal fun PipelineManagerCard(
                 PipelineRow(p, onCancel = {
                     scope.launch {
                         runCatching {
-                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                            val sp =
-                                ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
-                            ServiceLocator.transportFor(sp).cancelPipeline(p.id)
+                            val tr = com.dmzs.datawatchclient.ui.compute.resolveActiveTransport() ?: return@runCatching
+                            tr.cancelPipeline(p.id)
                         }
                         runCatching { load() }
                     }

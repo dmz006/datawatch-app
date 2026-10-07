@@ -42,22 +42,31 @@ public fun CostRatesCard() {
     var editedIn by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var editedOut by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var error by remember { mutableStateOf<String?>(null) }
+    var loaded by remember { mutableStateOf(false) }
     var saveStatus by remember { mutableStateOf("") }
 
     fun load() {
         scope.launch {
-            val activeId = ServiceLocator.activeServerStore.get()
-            val profile =
-                ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
-            ServiceLocator.transportFor(profile).getCostRates().fold(
+            // Same resolution as the other Compute cards: the active server, else the
+            // first enabled one. (Requiring an explicit active id left the card empty
+            // with "daemon unavailable" on a fresh install.)
+            val transport =
+                com.dmzs.datawatchclient.ui.compute.resolveActiveTransport() ?: run {
+                    loaded = true
+                    return@launch
+                }
+            transport.getCostRates().fold(
                 onSuccess = { dto ->
+                    loaded = true
                     rates = dto.rates
                     editedIn = dto.rates.mapValues { (_, v) -> v.inPerK?.toString() ?: "" }
                     editedOut = dto.rates.mapValues { (_, v) -> v.outPerK?.toString() ?: "" }
                     error = null
                 },
-                onFailure = { error = it.message },
+                onFailure = {
+                    loaded = true
+                    error = it.message
+                },
             )
         }
     }
@@ -68,6 +77,10 @@ public fun CostRatesCard() {
         title = stringResource(R.string.cost_rates_title),
     ) {
         Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
+            if (!loaded) {
+                com.dmzs.datawatchclient.ui.common.PwaLoadingText()
+                return@Column
+            }
             if (error != null || rates.isEmpty()) {
                 Text(
                     stringResource(R.string.cost_rates_none),
@@ -139,10 +152,7 @@ public fun CostRatesCard() {
             ) {
                 Button(onClick = {
                     scope.launch {
-                        val activeId = ServiceLocator.activeServerStore.get()
-                        val profile =
-                            ServiceLocator.profileRepository.observeAll().first()
-                                .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
+                        val transport = com.dmzs.datawatchclient.ui.compute.resolveActiveTransport() ?: return@launch
                         val newRates =
                             rates.keys.associateWith { n ->
                                 CostRateDto(
@@ -150,7 +160,7 @@ public fun CostRatesCard() {
                                     outPerK = editedOut[n]?.toDoubleOrNull(),
                                 )
                             }
-                        ServiceLocator.transportFor(profile).saveCostRates(newRates).fold(
+                        transport.saveCostRates(newRates).fold(
                             onSuccess = {
                                 saveStatus = "Saved"
                                 load()

@@ -38,11 +38,8 @@ public fun SecretsStatusCard() {
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        val activeId = ServiceLocator.activeServerStore.get()
-        val profile =
-            ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == activeId && it.enabled } ?: return@LaunchedEffect
-        ServiceLocator.transportFor(profile).getSecretsStatus().fold(
+        val transport = com.dmzs.datawatchclient.ui.compute.resolveActiveTransport() ?: return@LaunchedEffect
+        transport.getSecretsStatus().fold(
             onSuccess = { s ->
                 status = s
                 error = null

@@ -142,10 +142,7 @@ public class ToolingViewModel : ViewModel() {
     }
 
     private suspend fun resolveTransport(): com.dmzs.datawatchclient.transport.TransportClient? {
-        val activeId = ServiceLocator.activeServerStore.get()
-        val profile =
-            ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == activeId && it.enabled } ?: return null
-        return ServiceLocator.transportFor(profile)
+        // Active server, else the first enabled one (shared Compute-card rule).
+        return com.dmzs.datawatchclient.ui.compute.resolveActiveTransport()
     }
 }
