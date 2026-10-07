@@ -252,7 +252,7 @@ private struct SettingsPushCard: View {
         IosSettingsConfig.shared.sendTestPush(profile: profile) { err in
             DispatchQueue.main.async {
                 busy = false
-                message = err.map { L("Test failed") + ": " + $0 } ?? L("Test notification sent.")
+                message = err.map { L("Test failed") + ": " + L($0) } ?? L("Test notification sent.")
             }
         }
     }

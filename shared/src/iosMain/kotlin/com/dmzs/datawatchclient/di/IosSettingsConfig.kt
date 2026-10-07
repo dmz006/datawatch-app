@@ -382,15 +382,45 @@ public object IosSettingsConfig {
     public fun apnsRegistered(profile: ServerProfile): Boolean =
         !IosServiceLocator.pushStore.deviceIdFor(profile.id).isNullOrEmpty()
 
-    /** POST /api/push/notify — server-side test notification (PWA pushSendTest). */
+    /**
+     * Test push to this iPhone: POST /api/push/apns/test for this device's
+     * registration (datawatch v8.63+, real APNs delivery). Servers without the
+     * endpoint (404) fall back to POST /api/push/notify (PWA pushSendTest).
+     */
     public fun sendTestPush(
         profile: ServerProfile,
         onDone: (String?) -> Unit,
     ) {
         scope.launch {
-            IosServiceLocator.transportFor(profile).sendTestWebPushNotification().fold(
-                onSuccess = { onDone(null) },
-                onFailure = { onDone(err(it, "Test failed.")) },
+            val tr = IosServiceLocator.transportFor(profile)
+            val deviceId = IosServiceLocator.pushStore.deviceIdFor(profile.id)
+            if (deviceId.isNullOrEmpty()) {
+                onDone("This device is not registered with the server yet. Tap Re-register this device.")
+                return@launch
+            }
+            tr.sendApnsTest(deviceId).fold(
+                onSuccess = { body ->
+                    val first = (body["results"] as? JsonArray)?.firstOrNull() as? JsonObject
+                    val ok = (first?.get("ok") as? JsonPrimitive)?.content == "true"
+                    onDone(if (ok) null else (first?.get("error") as? JsonPrimitive)?.content ?: "No APNs device was sent to.")
+                },
+                onFailure = { e ->
+                    val notFound = e is com.dmzs.datawatchclient.transport.TransportError.NotFound
+                    when {
+                        // Stale registration: the server forgot this device.
+                        notFound && e.message.orEmpty().contains("device not found") ->
+                            onDone("This device is not registered with the server yet. Tap Re-register this device.")
+                        // Server older than v8.63 (no APNs test endpoint).
+                        notFound ->
+                            tr.sendTestWebPushNotification().fold(
+                                onSuccess = { onDone(null) },
+                                onFailure = { onDone(err(it, "Test failed.")) },
+                            )
+                        (e as? com.dmzs.datawatchclient.transport.TransportError.ServerError)?.status == 503 ->
+                            onDone("APNs is not set up on this server (push.apns in the server config).")
+                        else -> onDone(com.dmzs.datawatchclient.transport.AcmeStatusFormat.errorText(err(e, "Test failed.")))
+                    }
+                },
             )
         }
     }

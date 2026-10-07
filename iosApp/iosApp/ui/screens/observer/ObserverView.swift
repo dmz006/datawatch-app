@@ -29,7 +29,7 @@ final class ObserverViewModel: ObservableObject {
     @Published private(set) var webSearchError: String? = nil
 
     private(set) var profile: ServerProfile?
-    private var extras = IosStatsExtras(hostname: "", activeSessions: -1, rtkLatestVersion: "")
+    private var extras = IosStatsExtras(hostname: "", activeSessions: -1, rtkLatestVersion: "", certificates: [])
     private var maxSessions: Int32 = 0
     private var liveTask: Task<Void, Never>? = nil
     private var wsSubscription: IosSubscription? = nil
@@ -115,7 +115,7 @@ final class ObserverViewModel: ObservableObject {
         matrix = nil
         webSearch = nil
         webSearchError = nil
-        extras = IosStatsExtras(hostname: "", activeSessions: -1, rtkLatestVersion: "")
+        extras = IosStatsExtras(hostname: "", activeSessions: -1, rtkLatestVersion: "", certificates: [])
         maxSessions = 0
     }
 

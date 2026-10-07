@@ -1689,6 +1689,14 @@ public interface TransportClient {
         kind: String,
     ): Result<List<String>> = Result.failure(UnsupportedOperationException("computeNodeModelNames"))
 
+    /**
+     * POST /api/push/apns/test (datawatch v8.63+): send a test push to one
+     * registered APNs device ([deviceId]) or, when null, to all of them.
+     * Returns `{"sent": n, "results": [{device_id, ok, error?}]}`.
+     */
+    public suspend fun sendApnsTest(deviceId: String?): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("sendApnsTest"))
+
     /** BL413 — GET /api/acme/status (web v8.62 Let's Encrypt status). */
     public suspend fun acmeStatus(): Result<kotlinx.serialization.json.JsonObject> =
         Result.failure(UnsupportedOperationException("acmeStatus"))

@@ -1876,3 +1876,8 @@
 "Verifying…" = "Wird geprüft…";
 "Verify OK — DNS resolves, ACME directory reachable" = "Prüfung OK — DNS löst auf, ACME-Verzeichnis erreichbar";
 "Verify found issues — check the domains list for details" = "Prüfung hat Probleme gefunden — Details in der Domainliste";
+
+/* APNs test push (datawatch v8.63) */
+"This device is not registered with the server yet. Tap Re-register this device." = "Dieses Gerät ist beim Server noch nicht registriert. Tippe auf „Dieses Gerät erneut registrieren“.";
+"APNs is not set up on this server (push.apns in the server config)." = "APNs ist auf diesem Server nicht eingerichtet (push.apns in der Serverkonfiguration).";
+"No APNs device was sent to." = "Es wurde an kein APNs-Gerät gesendet.";

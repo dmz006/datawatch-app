@@ -13,6 +13,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - **Observer › Certificates card:** each Let's Encrypt domain with days until expiry: green over 14 days, amber at 14 or fewer, red when not issued. Hidden when Let's Encrypt is off. Android and iOS.
 
 ### Fixed
+- **iOS: "Send test notification" now sends a real push to this iPhone** through the server's APNs test (datawatch v8.63+), and says when the device isn't registered or APNs isn't set up on the server. Older servers keep the previous test.
 - **Android: saving an LLM no longer says "Save failed" when it worked.** The server answers a save with a short confirmation, which the app could not read.
 
 ## [1.28.6] — 2026-10-07

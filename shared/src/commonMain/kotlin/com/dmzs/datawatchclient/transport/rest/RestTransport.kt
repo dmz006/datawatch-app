@@ -3817,6 +3817,19 @@ public class RestTransport(
             }.filter { it.isNotEmpty() }
         }
 
+    override suspend fun sendApnsTest(deviceId: String?): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/push/apns/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        if (!deviceId.isNullOrBlank()) put("device_id", kotlinx.serialization.json.JsonPrimitive(deviceId))
+                    },
+                )
+            }.body()
+        }
+
     override suspend fun acmeStatus(): Result<kotlinx.serialization.json.JsonObject> =
         request {
             client.get("${profile.baseUrl}/api/acme/status") {
