@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Notes
+- On iOS, a "?" link jumps to its section with datawatch v8.63.3 or later (the docs-viewer fix shipped there). Older servers open the right page at the top.
+
 ## [1.28.7] — 2026-10-07
 
 ### Added
