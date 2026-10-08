@@ -20,7 +20,9 @@
              mark them incompatible. -->
         <uses-library android:name="com.google.android.wearable" android:required="false"/>
 
-        <meta-data android:name="com.google.android.wearable.standalone" android:value="true"/>
+        <!-- Not standalone: the watch gets everything through the phone app (Data Layer)
+             and never holds a server token, so it needs the phone app installed. -->
+        <meta-data android:name="com.google.android.wearable.standalone" android:value="false"/>
 
         <!--
             Explicit icon on the activity too, because the Galaxy

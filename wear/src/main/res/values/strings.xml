@@ -154,4 +154,9 @@
     <string name="wear_approve_timeout">Auto-dismiss in %ds</string>
     <string name="wear_approve_success">Gate approved</string>
     <string name="wear_approve_dismissed">Dismissed</string>
+    <string name="wear_qc_approve">✓ Approve</string>
+    <string name="wear_qc_reject">✗ Reject</string>
+    <string name="wear_qc_skip">⏭ Skip</string>
+    <string name="wear_qc_esc">⎋ ESC</string>
+    <string name="wear_qc_quit">⏏ Quit</string>
 </resources>

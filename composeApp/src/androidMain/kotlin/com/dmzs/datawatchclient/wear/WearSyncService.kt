@@ -898,7 +898,13 @@ public class WearSyncService(
             // frame is sent immediately after upgrade; the outbound
             // writer collects from WsOutbound.frames once subscribed.
             delay(WATCH_REPLY_SUBSCRIBE_GRACE_MS)
-            WsOutbound.sendInput(sessionId, text)
+            // Watch quick replies use the web UI card set; ESC goes as a tmux key.
+            val key = com.dmzs.datawatchclient.transport.QuickCommandSets.sendKeyName(text)
+            if (key != null) {
+                WsOutbound.sendCommand(sessionId, "sendkey $sessionId: $key")
+            } else {
+                WsOutbound.sendInput(sessionId, text)
+            }
             // Hold the WS open long enough for the frame to flush,
             // then cancel so we don't keep a socket open for nothing.
             delay(WATCH_REPLY_DRAIN_MS)

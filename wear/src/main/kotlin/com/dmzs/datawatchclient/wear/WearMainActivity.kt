@@ -1888,29 +1888,51 @@ private fun SessionVoiceStatusRow(voice: VoiceUiState) {
     }
 }
 
+/**
+ * Waiting-session quick replies: the web UI's session-card set
+ * (QuickCommandSets.CARD_SYSTEM) minus the tmux prefix and Custom, which don't
+ * suit a watch. ESC travels as a tmux key (the phone maps `__esc__`).
+ */
 @Composable
 private fun SessionWaitingButtons(onQuickReply: (String) -> Unit, onStop: () -> Unit) {
-    Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            stringResource(R.string.wear_action_continue),
-            style = MaterialTheme.typography.button,
-            color = MaterialTheme.colors.primary,
-            modifier = Modifier
-                .background(MaterialTheme.colors.primary.copy(alpha = 0.2f),
-                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
-                .clickable { onQuickReply("y") }
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+    val primary = MaterialTheme.colors.primary
+    val error = MaterialTheme.colors.error
+    val chips: List<Triple<String, Color, () -> Unit>> =
+        listOf(
+            Triple(stringResource(R.string.wear_qc_approve), Color(0xFF22C55E)) { onQuickReply("yes") },
+            Triple(stringResource(R.string.wear_qc_reject), error) { onQuickReply("no") },
+            Triple(stringResource(R.string.wear_action_continue), primary) { onQuickReply("continue") },
+            Triple(stringResource(R.string.wear_qc_skip), primary) { onQuickReply("skip") },
+            Triple(stringResource(R.string.wear_qc_esc), primary) {
+                onQuickReply(com.dmzs.datawatchclient.transport.QuickCommandSets.ESC)
+            },
+            Triple(stringResource(R.string.wear_qc_quit), primary) { onQuickReply("/exit") },
+            Triple(stringResource(R.string.wear_action_stop), error, onStop),
         )
-        Text(
-            stringResource(R.string.wear_action_stop),
-            style = MaterialTheme.typography.button,
-            color = MaterialTheme.colors.error,
-            modifier = Modifier
-                .background(MaterialTheme.colors.error.copy(alpha = 0.2f),
-                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
-                .clickable { onStop() }
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-        )
+    Column(
+        modifier = Modifier.padding(top = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        chips.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                row.forEach { (label, color, onClick) ->
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.button,
+                        color = color,
+                        modifier =
+                            Modifier
+                                .background(
+                                    color.copy(alpha = 0.2f),
+                                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                )
+                                .clickable(onClick = onClick)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+        }
     }
 }
 

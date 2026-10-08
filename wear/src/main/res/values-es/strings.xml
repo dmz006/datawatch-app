@@ -95,4 +95,9 @@
     <string name="wear_session_state_error">Error</string>
     <string name="wear_automata_page_title">Autómatas</string>
     <string name="wear_automata_empty">No hay autómatas en ejecución</string>
+    <string name="wear_qc_approve">✓ Aprobar</string>
+    <string name="wear_qc_reject">✗ Rechazar</string>
+    <string name="wear_qc_skip">⏭ Omitir</string>
+    <string name="wear_qc_esc">⎋ ESC</string>
+    <string name="wear_qc_quit">⏏ Salir</string>
 </resources>

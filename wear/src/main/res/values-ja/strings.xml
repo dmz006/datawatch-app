@@ -95,4 +95,9 @@
     <string name="wear_session_state_error">エラー</string>
     <string name="wear_automata_page_title">オートマタ</string>
     <string name="wear_automata_empty">実行中のオートマタはありません</string>
+    <string name="wear_qc_approve">✓ 承認</string>
+    <string name="wear_qc_reject">✗ 却下</string>
+    <string name="wear_qc_skip">⏭ スキップ</string>
+    <string name="wear_qc_esc">⎋ ESC</string>
+    <string name="wear_qc_quit">⏏ 終了</string>
 </resources>
