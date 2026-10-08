@@ -1,7 +1,10 @@
 name: Play — set closed-test tester group
 
-# Attach a Google Group to a Play closed-testing track (default `alpha`; use
-# `wear:<track>` for the Wear OS closed track once it exists in Play Console).
+# Attach a Google Group to a Play testing track through the API.
+# NOTE: Google refuses this for tracks upgraded to the current closed/open
+# testing (403 "switch back to communities-based testing") — that includes
+# `alpha` here. Add groups for those in Play Console › Closed testing ›
+# Testers instead. Kept for legacy tracks.
 
 on:
   workflow_dispatch:
