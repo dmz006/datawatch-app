@@ -57,7 +57,14 @@ jobs:
           set -euo pipefail
           ver="${{ inputs.server_version }}"
           if [ -z "$ver" ]; then
-            ver=$(gh release view -R dmz006/datawatch --json tagName -q .tagName)
+            # Newest release that ships a darwin_arm64 binary: patch releases
+            # (e.g. v8.73.2) are published without binaries.
+            for t in $(gh release list -R dmz006/datawatch --limit 30 --json tagName -q '.[].tagName'); do
+              if gh release view "$t" -R dmz006/datawatch --json assets -q '.assets[].name' | grep -q "_darwin_arm64.tar.gz$"; then
+                ver="$t"; break
+              fi
+            done
+            [ -n "$ver" ] || { echo "::error::no datawatch release with a darwin_arm64 binary"; exit 1; }
           fi
           ver="${ver#v}"
           echo "datawatch server v$ver"
