@@ -21,8 +21,6 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### CI
 - **The README CI badge no longer shows false failures:** each push to main gets its own CI / iOS Build run instead of cancelling the previous one.
-
-### CI
 - **Release parity.** Every release now submits its TestFlight build for Beta App Review, adds it to the external group, and ends with a `release-parity` check. The check fails the release unless Play internal and closed testing (phone and Wear) and TestFlight all carry the tagged build. Run it any time with `release-parity.yml` (read-only). The rule is in AGENT.md § Release parity.
 - **App Store listing prep** (`asc-prepare.yml`, read-and-set, submits nothing):
   - age rating 4+;
