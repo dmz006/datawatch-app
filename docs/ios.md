@@ -173,11 +173,11 @@ Change any of them in iOS **Settings › datawatch**.
 
 ## Known limitations
 
-- **Push notifications while the app is closed are coming with a datawatch server
-  update.** The app already asks permission and registers with Apple's push service, and
-  the server needs its Apple push sender before notifications can be delivered. Until
-  then, alerts appear only while the app is open: a session that waits for input for
-  about 45 seconds raises a local notification.
+- **Push notifications while the app is closed** need datawatch 8.65 or later with its
+  Apple push sender (`push.apns`) configured — see the server's
+  [push notifications how-to](https://github.com/dmz006/datawatch/blob/main/docs/howto/push-notifications.md).
+  Without it, alerts appear only while the app is open: a session that waits for input
+  for about 45 seconds raises a local notification.
 - **Reordering sessions:** press and hold a session, then drag it (a quick swipe scrolls
   instead). The session's menu also has **Move up** / **Move down**.
 - **No Live Activities or Apple Watch app yet.**

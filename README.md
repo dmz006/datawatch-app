@@ -82,9 +82,10 @@ We need **12 testers who stay opted in for 14 days** before Google lets the app 
 
 Android Auto support is part of the phone app. The Wear OS companion is in the same closed test: install it on your watch from Play once you've opted in.
 
-### iPhone and iPad (TestFlight)
+### iPhone and iPad (TestFlight, then the App Store)
 
-The public TestFlight link is coming as soon as Apple finishes beta review.
+The public TestFlight link is coming as soon as Apple finishes beta review. The App Store
+listing (free, every country) is prepared and follows once the beta wraps up.
 
 Either way, you need your own [datawatch](https://github.com/dmz006/datawatch) server (LAN, VPN or Tailscale) and its bearer token. Send feedback through [datawatch-app issues](https://github.com/dmz006/datawatch-app/issues) or the email shown in the Play / TestFlight listing.
 
@@ -211,8 +212,8 @@ under Settings › Comms › Servers. Full guide: [docs/ios.md](docs/ios.md).
 **Requirements:** iOS / iPadOS 16.0+, and your own datawatch server reachable over HTTPS
 (same LAN, a VPN, or Tailscale). The app has no cloud service of its own.
 
-**Not yet:** push notifications while the app is closed arrive with an upcoming datawatch
-server update (until then alerts show while the app is open).
+**Push notifications:** alerts arrive even when the app is closed (APNs, through your
+datawatch server — set up `push.apns` on the server; and the server's [push how-to](https://github.com/dmz006/datawatch/blob/main/docs/howto/push-notifications.md)).
 
 **Siri and widgets:** "Hey Siri, tell datawatch" sends a reply to a session after you
 confirm; Home Screen / Lock Screen widgets show session counts and server load; a

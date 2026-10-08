@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### CI
+- **Release parity.** Every release now submits its TestFlight build for Beta App Review, adds it to the external group, and ends with a `release-parity` check. The check fails the release unless Play internal and closed testing (phone and Wear) and TestFlight all carry the tagged build. Run it any time with `release-parity.yml` (read-only). The rule is in AGENT.md § Release parity.
+- **App Store listing prep** (`asc-prepare.yml`, read-and-set, submits nothing):
+  - age rating 4+;
+  - no third-party content;
+  - Free in every country;
+  - App Review contact and demo sign-in;
+  - the App Store version set to the current release with its newest build attached.
+
+### Docs
+- README and docs/ios.md: push notifications work with datawatch 8.65+ (`push.apns`), so the "coming later" note is gone. The App Store description gains push, Siri, widgets and the Control Center control.
+
 ## [1.28.14] — 2026-10-08
 
 ### Fixed

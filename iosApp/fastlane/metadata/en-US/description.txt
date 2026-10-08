@@ -15,6 +15,12 @@ VOICE
 ALERTS
 • One inbox for every server: input needed, completed, rate limited, errors and guardrail verdicts.
 • Reply in place, mute the alert dock, or jump straight to the session that raised the alert.
+• Push notifications reach you even when the app is closed; tap one to open the session.
+
+SIRI, WIDGETS AND CONTROLS
+• "Hey Siri, tell datawatch…" sends a reply to a session after you confirm (Face ID when the app lock is on).
+• Home Screen and Lock Screen widgets show session counts and server load.
+• A Control Center control opens the app in one tap (iOS 18 and later).
 
 AUTOMATA
 • Create, review and approve automata: multi-story plans that the server breaks into tasks and runs with your agents.
