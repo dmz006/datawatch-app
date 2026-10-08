@@ -250,7 +250,9 @@ platform :ios do
     if ENV["ENABLE_PUBLIC_LINK"] == "true"
       begin
         group.update(attributes: { public_link_enabled: true, public_link_limit_enabled: false })
+        fresh = app.get_beta_groups(filter: { name: group_name }).find { |g| g.name == group_name }
         UI.success("Public link enabled for '#{group_name}'")
+        UI.success("PUBLIC_LINK=#{fresh&.public_link}") if fresh&.public_link
       rescue => e
         UI.important("Public link not enabled yet (needs an approved build): #{e.message}")
       end
