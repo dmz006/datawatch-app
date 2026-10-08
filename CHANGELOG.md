@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ## [Unreleased]
 
 ### Fixed
+- **Android Sessions:** a dark disc no longer covers a Server chip. The resting pull-to-refresh indicator drew over the chip bar.
+- **Android Sessions:** while a remote server shows its connection status, the generic "Disconnected — showing cached data" banner is hidden. It repeated the same error with raw URLs.
+
+### Fixed
 - **Observer never shows a "local" card** (operator, 2026-10-08). System Statistics showed the server twice: once as "local" from `/api/stats` (iOS even titled it "local"), and again as its own observer peer. Now:
   - The server appears once, by name. The `/api/stats` card shows only when no observer peer is the server itself; the match is on `/api/health`'s host name.
   - When that card does show, it is titled with the host name (or your saved server name).

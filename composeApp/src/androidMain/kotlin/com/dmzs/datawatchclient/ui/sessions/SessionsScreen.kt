@@ -85,6 +85,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -316,7 +317,16 @@ public fun SessionsScreen(
                 showAll = true,
                 onSelectAll = vm::selectAllServers,
             )
-            state.banner?.let {
+            // #236.2 — a proxied remote with nothing on screen yet shows its real
+            // connection status instead of an endless skeleton (PWA v8.73.2).
+            val fedStatus =
+                com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
+                    state.activeProfile?.id,
+                    state.allServersMode,
+                )
+            // While a proxied remote shows its connection status, that pane says what's
+            // wrong; the generic "Disconnected" banner would repeat it with raw URLs.
+            state.banner?.takeIf { fedStatus == null }?.let {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Text(
                         it,
@@ -357,13 +367,6 @@ public fun SessionsScreen(
 
             val visible =
                 if (watchFilter) state.visibleSessions.filter { it.id in watchedIds } else state.visibleSessions
-            // #236.2 — a proxied remote with nothing on screen yet shows its real
-            // connection status instead of an endless skeleton (PWA v8.73.2).
-            val fedStatus =
-                com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
-                    state.activeProfile?.id,
-                    state.allServersMode,
-                )
             if (visible.isEmpty()) {
                 if (fedStatus != null) {
                     com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
@@ -394,8 +397,14 @@ public fun SessionsScreen(
                         pullState.endRefresh()
                     }
                 }
+                // clipToBounds: the resting pull-to-refresh indicator sits just above the
+                // list and otherwise drew a dark disc over the Server chip bar.
                 androidx.compose.foundation.layout.Box(
-                    modifier = Modifier.fillMaxSize().nestedScroll(pullState.nestedScrollConnection),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clipToBounds()
+                            .nestedScroll(pullState.nestedScrollConnection),
                 ) {
                     androidx.compose.foundation.Image(
                         painter =
