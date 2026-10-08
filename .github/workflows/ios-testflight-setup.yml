@@ -17,6 +17,10 @@ name: iOS — external TestFlight setup
 on:
   workflow_dispatch:
     inputs:
+      report_only:
+        description: 'Only report the current build''s TestFlight state and public link (changes nothing)'
+        type: boolean
+        default: false
       upload_listing:
         description: 'Also upload App Store listing text + screenshots (does not submit the App Store version)'
         type: boolean
@@ -73,6 +77,7 @@ jobs:
           BETA_REVIEW_CONTACT_EMAIL: ${{ secrets.BETA_REVIEW_CONTACT_EMAIL }}
           BETA_REVIEW_DEMO_URL: ${{ secrets.BETA_REVIEW_DEMO_URL }}
           BETA_REVIEW_DEMO_TOKEN: ${{ secrets.BETA_REVIEW_DEMO_TOKEN }}
+          REPORT_ONLY: ${{ inputs.report_only }}
           UPLOAD_LISTING: ${{ inputs.upload_listing }}
           SUBMIT_FOR_BETA_REVIEW: ${{ inputs.submit_for_beta_review }}
           ENABLE_PUBLIC_LINK: ${{ inputs.enable_public_link }}

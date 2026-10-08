@@ -130,6 +130,18 @@ platform :ios do
     app = Spaceship::ConnectAPI::App.find(BUNDLE_ID)
     UI.user_error!("App #{BUNDLE_ID} not found in App Store Connect") unless app
 
+    # REPORT_ONLY=true: print the TestFlight state of the current build (and the
+    # group's public link if enabled) and change nothing.
+    if ENV["REPORT_ONLY"] == "true"
+      code = ENV.fetch("DATAWATCH_APP_VERSION_CODE")
+      b = app.get_builds(filter: { version: code }).first
+      d = b&.get_build_beta_details&.first
+      UI.message("REPORT build=#{code} processing=#{b&.processing_state} external=#{d&.external_build_state}")
+      g = app.get_beta_groups(filter: { name: ENV.fetch("EXTERNAL_GROUP", "Beta testers") }).first
+      UI.message("REPORT public_link_enabled=#{g&.public_link_enabled} public_link=#{g&.public_link}")
+      next
+    end
+
     # Test Information › Beta App Description etc.
     loc_attrs = {
       description: read.call("beta/description.txt"),
