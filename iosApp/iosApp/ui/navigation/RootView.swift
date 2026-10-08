@@ -186,9 +186,13 @@ struct RootView: View {
         .dwThemed()
         .onChange(of: selectedTab) { tab in
             // Programmatic switches (deep links, restore) to an overflow tab open it in More.
+            // Switches to a bar tab leave More, or a notification tap / deep link
+            // opened from Settings would stay on More.
             if overflowTabs.contains(tab) {
                 showingMore = true
                 if morePath.last != tab { morePath = [tab] }
+            } else {
+                showingMore = false
             }
         }
         .onChange(of: morePath) { path in
