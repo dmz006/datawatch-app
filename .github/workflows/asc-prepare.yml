@@ -1,0 +1,34 @@
+name: iOS — prepare App Store listing
+
+# Sets age rating (4+), content rights, Free price, all-territory availability
+# and the App Store version's review contact / demo sign-in via the App Store
+# Connect API (scripts/asc_prepare.py). Idempotent; submits nothing.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare listing
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          ASC_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          BUNDLE_ID: com.dmzs.datawatchclient
+          REVIEW_FIRST: ${{ secrets.BETA_REVIEW_CONTACT_FIRST_NAME }}
+          REVIEW_LAST: ${{ secrets.BETA_REVIEW_CONTACT_LAST_NAME }}
+          REVIEW_PHONE: ${{ secrets.BETA_REVIEW_CONTACT_PHONE }}
+          REVIEW_EMAIL: ${{ secrets.BETA_REVIEW_CONTACT_EMAIL }}
+          DEMO_URL: ${{ secrets.BETA_REVIEW_DEMO_URL }}
+          DEMO_TOKEN: ${{ secrets.BETA_REVIEW_DEMO_TOKEN }}
+          REVIEW_NOTES_FILE: iosApp/fastlane/metadata/review_information/notes.txt
+        run: |
+          set -euo pipefail
+          pip install --quiet "pyjwt[crypto]" requests
+          python3 scripts/asc_prepare.py
