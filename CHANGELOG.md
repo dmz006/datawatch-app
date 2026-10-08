@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.16] — 2026-10-08
+
 ### Fixed
 - **Android Sessions:** a dark disc no longer covers a Server chip. The resting pull-to-refresh indicator drew over the chip bar.
 - **Android Sessions:** while a remote server shows its connection status, the generic "Disconnected — showing cached data" banner is hidden. It repeated the same error with raw URLs.
@@ -42,7 +44,6 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - Show the server's own "missing capability" text for a 403 once the server sends it (datawatch is adding capability-aware denials). Until then a 401 or 403 shows the token message.
 - Grey out unreachable servers in the picker. The web UI has deferred this too.
 
-## [1.28.16] — 2026-10-08
 
 ### Fixed
 - **Wear Monitor:** the DISK gauge no longer draws on top of the CPU gauge.
