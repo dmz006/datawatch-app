@@ -91,9 +91,64 @@ adbq wm dismiss-keyguard || true
 # Status bar demo mode: 09:41, full battery, Wi-Fi, no notification icons.
 # Re-applied before every shot: SystemUI drops it if it restarts, and it is
 # not listening yet right after sys.boot_completed.
+#
+# Tablets (wm density changed after boot, fresh read-only AVD) need more care;
+# the CI tablet shots showed the real clock and notification icons because:
+#  1. first-boot setup resets sysui_demo_allowed to 0 shortly after boot, so
+#     the early `settings put` below is lost and `demo enter` is ignored;
+#  2. re-enabling it at runtime and entering demo mode leaves the tablet status
+#     bar blank (DemoModeController logs "Error running demo command …
+#     NullPointerException" for `enter`), even after `demo exit`.
+# A SystemUI restart with the setting already on fixes both (verified on the
+# API 35 google_apis image at 1200x1920@240 and 2560x1600@320). So: once
+# before the first shot, and whenever the setting was reset, restart SystemUI
+# (adb root — emulator images are userdebug); after every screencap, check that
+# the clock area is not blank and redo the shot after another restart if it is.
 adbq settings put global sysui_demo_allowed 1
 demo() { adbq am broadcast -a com.android.systemui.demo -e command "$@"; }
+demo_allowed() { [ "$(adb shell settings get global sysui_demo_allowed | tr -d '\r')" = 1 ]; }
+restart_systemui() {
+  echo "restarting SystemUI"
+  adb root >/dev/null 2>&1 || true
+  sleep 3
+  adb wait-for-device
+  adb shell pkill -f com.android.systemui >/dev/null 2>&1 \
+    || { echo "::warning::cannot restart SystemUI (no adb root)"; return 0; }
+  for _ in $(seq 1 30); do
+    sleep 2
+    adb shell pidof com.android.systemui >/dev/null 2>&1 && break
+  done
+  sleep 12  # status bar re-inflation
+}
+systemui_fresh=0
 statusbar_demo() {
+  if ! demo_allowed || [ "$systemui_fresh" = 0 ]; then
+    demo_allowed || echo "sysui_demo_allowed was reset; re-enabling"
+    adbq settings put global sysui_demo_allowed 1
+    restart_systemui
+    systemui_fresh=1
+  fi
+  statusbar_demo_once
+}
+# Bright pixels in the status-bar clock area (left 10 %, top 48 dp) of a raw
+# screencap; 0 means a blank status bar. stdlib only (raw RGBA, no PNG decode).
+clock_pixels() {
+  adb exec-out screencap | python3 -c '
+import sys
+d = sys.stdin.buffer.read()
+w, h = int.from_bytes(d[0:4], "little"), int.from_bytes(d[4:8], "little")
+px = d[len(d) - w * h * 4:]
+dens = int(sys.argv[1])
+band = 48 * dens // 160
+n = 0
+for y in range(band // 5, band * 9 // 10):
+    row = px[y * w * 4:(y * w + w // 10) * 4]
+    for i in range(0, len(row), 4):
+        if row[i] + row[i + 1] + row[i + 2] > 600:
+            n += 1
+print(n)' "$DENSITY"
+}
+statusbar_demo_once() {
   demo enter
   demo clock -e hhmm 0941
   demo battery -e level 100 -e plugged false -e powersave false
@@ -136,9 +191,17 @@ png_size() { # file -> "WxH" from the PNG IHDR
 }
 
 shot() { # file
-  statusbar_demo
-  sleep 2
-  adb exec-out screencap -p > "$1"
+  local try n
+  for try in 1 2 3; do
+    statusbar_demo
+    sleep 2
+    n=$(clock_pixels)
+    adb exec-out screencap -p > "$1"
+    [ "${n:-0}" -ge 20 ] && break
+    echo "status bar looks blank ($n bright px, try $try); restarting SystemUI"
+    systemui_fresh=0
+  done
+  [ "${n:-0}" -ge 20 ] || echo "::warning::$1: status bar still blank"
   echo "$(png_size "$1") $1"
 }
 
