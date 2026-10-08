@@ -205,7 +205,7 @@ jobs:
 
       # Closed testing (Play track `alpha`) gets the same build: promoted from
       # internal, no re-upload. Google reviews each closed-track update before
-      # testers see it. Phone only — Wear has no closed track.
+      # testers see it. Phone → `alpha`; Wear → `wear:Wear closed testing`.
       - name: Promote to closed testing (alpha)
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
@@ -215,6 +215,9 @@ jobs:
           CODE=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)
           python3 scripts/play_promote.py --package com.dmzs.datawatchclient \
             --from-track internal --to-track alpha --version-code "$CODE"
+          # Wear OS closed track (created 2026-10-07); Wear version codes are 100000 + phone code.
+          python3 scripts/play_promote.py --package com.dmzs.datawatchclient \
+            --from-track wear:internal --to-track "wear:Wear closed testing" --version-code "$((100000 + CODE))"
 
       - name: Clean up key file
         if: always()

@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ## [Unreleased]
 
 ### CI
+- **Wear OS releases go to Wear closed testing too** (track `wear:Wear closed testing`), promoted from Wear internal alongside the phone build.
+
+### CI
 - **Every release now also goes to Play closed testing** (track `alpha`): the build uploaded to internal is promoted, with no second upload. Google reviews each closed-testing update before testers get it. `play-promote.yml` promotes by hand (e.g. to catch the closed track up); `play-tracks.yml` lists each track's current version (read-only).
 
 ## [1.28.13] — 2026-10-07
