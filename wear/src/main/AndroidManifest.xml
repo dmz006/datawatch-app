@@ -15,7 +15,10 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
 
-        <uses-library android:name="com.google.android.wearable" android:required="true"/>
+        <!-- Optional: the legacy Wear support library is unused, and newer watches (e.g.
+             Galaxy Watch8, Wear OS 6) may not ship it; required="true" made Play
+             mark them incompatible. -->
+        <uses-library android:name="com.google.android.wearable" android:required="false"/>
 
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true"/>
 
