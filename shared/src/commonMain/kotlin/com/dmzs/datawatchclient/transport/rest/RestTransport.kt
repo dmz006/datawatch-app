@@ -137,6 +137,13 @@ public class RestTransport(
             runCatching { res.body<HealthDto>() }
         }
 
+    override suspend fun serverHostname(): Result<String?> =
+        request {
+            client.get("${profile.baseUrl}/api/health") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body<HealthDto>().hostname?.takeIf { it.isNotBlank() }
+        }
+
     override suspend fun listSessions(): Result<List<Session>> =
         request {
             // Datawatch returns /api/sessions as a bare JSON array, not wrapped in

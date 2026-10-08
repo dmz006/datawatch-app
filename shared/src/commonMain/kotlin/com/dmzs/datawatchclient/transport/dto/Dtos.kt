@@ -177,6 +177,7 @@ public data class SessionInputResponseDto(
 public data class HealthDto(
     val ok: Boolean = true,
     val version: String? = null,
+    val hostname: String? = null,
 )
 
 @Serializable

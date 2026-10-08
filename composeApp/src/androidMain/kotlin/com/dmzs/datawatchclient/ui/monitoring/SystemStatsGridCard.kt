@@ -40,7 +40,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Observer — System Stats Grid (BL379 parity).
- * One card per system: local server (from /api/stats) + each observer peer
+ * One card per system, by name: each observer peer, plus the server's own
+ * /api/stats card only when no peer is the server itself (never a "local" card)
  * (/api/observer/peers/{name}/stats). Shows CPU/RAM/GPU progress bars
  * matching the PWA's perSystemGrid. Refreshes every 10 s.
  */
@@ -72,7 +73,7 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
                 com.dmzs.datawatchclient.ui.common.PwaLoadingText()
             } else {
                 state.local?.let { local ->
-                    LocalSystemCard(local)
+                    LocalSystemCard(local, state.localTitle)
                     if (state.peers.isNotEmpty()) {
                         androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
                     }
@@ -87,7 +88,10 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
 }
 
 @Composable
-private fun LocalSystemCard(stats: StatsDto) {
+private fun LocalSystemCard(
+    stats: StatsDto,
+    title: String,
+) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -96,17 +100,10 @@ private fun LocalSystemCard(stats: StatsDto) {
         ) {
             Box(modifier = Modifier.size(8.dp).background(Color(0xFF10B981), CircleShape))
             Text(
-                "local",
+                title,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )
-            Box(
-                modifier = Modifier
-                    .background(Color(0xFF3B82F6).copy(alpha = 0.18f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 5.dp, vertical = 1.dp),
-            ) {
-                Text("local", style = MaterialTheme.typography.labelSmall, color = Color(0xFF3B82F6))
-            }
         }
 
         val cpuLoad = stats.cpuLoad1 ?: 0.0
@@ -323,7 +320,10 @@ public class SystemStatsGridViewModel(
 ) : ViewModel() {
     public data class UiState(
         val loading: Boolean = true,
+        /** The server's own `/api/stats` card; null when an observer peer already is the server. */
         val local: StatsDto? = null,
+        /** Title for that card: the server's host name, else its saved name — never "local". */
+        val localTitle: String = "",
         val peers: List<Pair<ObserverPeerDto, ComputeNodeDetailDto?>> = emptyList(),
     )
 
@@ -332,13 +332,22 @@ public class SystemStatsGridViewModel(
 
     public fun refresh() {
         viewModelScope.launch {
-            val (_, transport) = resolver.resolve() ?: return@launch
-            val local = transport.stats().getOrNull()
-            val peers = transport.observerPeers().getOrNull()?.peers.orEmpty().map { peer ->
+            val (profile, transport) = resolver.resolve() ?: return@launch
+            val stats = transport.stats().getOrNull()
+            val hostname = transport.serverHostname().getOrNull()
+            val peerList = transport.observerPeers().getOrNull()?.peers.orEmpty()
+            val peers = peerList.map { peer ->
                 val detail = runCatching { transport.getObserverPeerStats(peer.name).getOrNull() }.getOrNull()
                 peer to detail
             }
-            _state.value = UiState(loading = false, local = local, peers = peers)
+            val selfIsPeer = com.dmzs.datawatchclient.transport.ServerSelfCard.peerIsServer(hostname, peerList)
+            _state.value =
+                UiState(
+                    loading = false,
+                    local = stats.takeUnless { selfIsPeer },
+                    localTitle = com.dmzs.datawatchclient.transport.ServerSelfCard.title(hostname, profile.displayName),
+                    peers = peers,
+                )
         }
     }
 }

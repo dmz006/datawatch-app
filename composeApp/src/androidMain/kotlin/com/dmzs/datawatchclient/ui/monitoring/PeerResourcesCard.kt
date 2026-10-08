@@ -101,14 +101,8 @@ private fun LocalNodeRow(node: ComputeNodeDto, detail: ComputeNodeDetailDto?) {
                     shape = androidx.compose.foundation.shape.CircleShape,
                 ),
             )
+            // The server's own node, by name only — no "local" tag (operator, 2026-10-08).
             Text(node.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            Box(
-                modifier = Modifier
-                    .background(Color(0xFF3B82F6).copy(alpha = 0.18f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            ) {
-                Text("local", style = MaterialTheme.typography.labelSmall, color = Color(0xFF3B82F6))
-            }
         }
         if (detail == null) {
             Text(

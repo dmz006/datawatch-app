@@ -60,14 +60,6 @@ private struct SystemCardView: View {
                     .foregroundStyle(DatawatchColors.onSurface)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                if card.isLocal {
-                    Text("local")
-                        .font(.caption2)
-                        .foregroundStyle(Color.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(DatawatchColors.primary, in: RoundedRectangle(cornerRadius: 3))
-                }
                 Spacer(minLength: 0)
             }
             ForEach(Array(card.bars.enumerated()), id: \.offset) { _, bar in

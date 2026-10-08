@@ -30,6 +30,9 @@ public interface TransportClient {
     /** GET /api/health. */
     public suspend fun ping(): Result<Unit>
 
+    /** GET /api/health `hostname`: the server's own host name (Observer titles its card with it). */
+    public suspend fun serverHostname(): Result<String?> = Result.failure(UnsupportedOperationException("serverHostname"))
+
     /** GET /api/sessions. */
     public suspend fun listSessions(): Result<List<Session>>
 

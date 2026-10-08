@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Observer never shows a "local" card** (operator, 2026-10-08). System Statistics showed the server twice: once as "local" from `/api/stats` (iOS even titled it "local"), and again as its own observer peer. Now:
+  - The server appears once, by name. The `/api/stats` card shows only when no observer peer is the server itself; the match is on `/api/health`'s host name.
+  - When that card does show, it is titled with the host name (or your saved server name).
+  - The "local" tag is gone from the System Statistics and compute-node cards.
+  - The web UI's copy of this is tracked in dmz006/datawatch#194.
+
 ## [1.28.16] — 2026-10-08
 
 ### Fixed

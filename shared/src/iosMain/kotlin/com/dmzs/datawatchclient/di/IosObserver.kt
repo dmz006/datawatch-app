@@ -250,6 +250,7 @@ public object IosObserver {
             val snapshot =
                 coroutineScope {
                     val localJob = async { tr.fetchStatsJson().getOrNull() }
+                    val hostJob = async { tr.serverHostname().getOrNull() }
                     val acmeJob = async { tr.acmeStatus().getOrNull() }
                     val nodesJob = async { tr.listComputeNodes().getOrNull().orEmpty() }
                     val peersRes = tr.observerPeers()
@@ -268,7 +269,13 @@ public object IosObserver {
                     }
                     val now = Clock.System.now().toEpochMilliseconds()
                     val grid = mutableListOf<IosSystemCard>()
-                    local?.let { localCard(it) }?.let { grid.add(it) }
+                    // One card per machine, by name: the /api/stats card only when no
+                    // observer peer is the server itself, titled with its host name.
+                    val hostname = hostJob.await() ?: local?.str("hostname")
+                    if (!com.dmzs.datawatchclient.transport.ServerSelfCard.peerIsServer(hostname, peers)) {
+                        val title = com.dmzs.datawatchclient.transport.ServerSelfCard.title(hostname, profile.displayName)
+                        local?.let { localCard(it, title) }?.let { grid.add(it) }
+                    }
                     val rows = mutableListOf<IosPeerRow>()
                     for ((p, snap) in snaps) {
                         val age = ageOf(p.lastPushAt, now)
@@ -313,7 +320,10 @@ public object IosObserver {
         }
     }
 
-    private fun localCard(d: JsonObject): IosSystemCard? {
+    private fun localCard(
+        d: JsonObject,
+        title: String,
+    ): IosSystemCard? {
         if (d.str("timestamp") == null) return null
         val cores = d.dbl("cpu_cores") ?: 0.0
         val l1 = d.dbl("cpu_load_avg_1") ?: 0.0
@@ -339,7 +349,7 @@ public object IosObserver {
             val total = (d.dbl("gpu_mem_total_mb") ?: 0.0) * 1048576
             if (total > 0) bars.add(IosObsBar("GPU VRAM", pctFrac(used, total), "accent2", "${gb(used)} / ${gb(total)}"))
         }
-        return IosSystemCard(d.str("hostname") ?: "local", true, "success", bars, emptyList())
+        return IosSystemCard(title, false, "success", bars, emptyList())
     }
 
     private fun peerCard(
