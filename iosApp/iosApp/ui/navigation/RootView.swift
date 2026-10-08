@@ -196,7 +196,9 @@ struct RootView: View {
             }
         }
         .onChange(of: morePath) { path in
-            if let last = path.last, last != selectedTab { selectedTab = last }
+            // Only while More is showing: a cold start restored to Settings sets
+            // morePath, and its late change must not undo a launch switch to a bar tab.
+            if showingMore, let last = path.last, last != selectedTab { selectedTab = last }
         }
         .onAppear {
             if overflowTabs.contains(selectedTab) {
