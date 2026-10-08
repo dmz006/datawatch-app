@@ -90,7 +90,7 @@ internal fun CouncilCard() {
     suspend fun loadAll() {
         val activeId = ServiceLocator.activeServerStore.get()
         val sp =
-            ServiceLocator.profileRepository.observeAll()
+            ServiceLocator.profilesWithProxied()
                 .first { list -> list.any { it.enabled } }
                 .let { list ->
                     if (activeId == null) {
@@ -121,7 +121,7 @@ internal fun CouncilCard() {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
                 val sp =
-                    ServiceLocator.profileRepository.observeAll()
+                    ServiceLocator.profilesWithProxied()
                         .first { list -> list.any { it.enabled } }
                         .let { list ->
                             if (activeId == null) {
@@ -153,7 +153,7 @@ internal fun CouncilCard() {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
                 val sp =
-                    ServiceLocator.profileRepository.observeAll()
+                    ServiceLocator.profilesWithProxied()
                         .first { list -> list.any { it.enabled } }
                         .let { list ->
                             if (activeId == null) {
@@ -180,7 +180,7 @@ internal fun CouncilCard() {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
                 val sp =
-                    ServiceLocator.profileRepository.observeAll()
+                    ServiceLocator.profilesWithProxied()
                         .first { list -> list.any { it.enabled } }
                         .let { list ->
                             if (activeId == null) {
@@ -399,7 +399,7 @@ internal fun CouncilCard() {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
                             val sp =
-                                ServiceLocator.profileRepository.observeAll()
+                                ServiceLocator.profilesWithProxied()
                                     .first { list -> list.any { it.enabled } }
                                     .let { list ->
                                         if (activeId == null) {
@@ -455,7 +455,7 @@ internal fun CouncilCard() {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
                         val sp =
-                            ServiceLocator.profileRepository.observeAll()
+                            ServiceLocator.profilesWithProxied()
                                 .first { list -> list.any { it.enabled } }
                                 .let { list ->
                                     if (activeId == null) {
@@ -506,7 +506,7 @@ internal fun CouncilCard() {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
                             val sp =
-                                ServiceLocator.profileRepository.observeAll()
+                                ServiceLocator.profilesWithProxied()
                                     .first { list -> list.any { it.enabled } }
                                     .let { list ->
                                         if (activeId == null) {

@@ -72,7 +72,7 @@ public fun TestWhisperCard() {
     LaunchedEffect(Unit) {
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
-            ServiceLocator.profileRepository.observeAll().first()
+            ServiceLocator.profilesWithProxied().first()
                 .firstOrNull { it.id == activeId && it.enabled }
         if (profile != null) {
             ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
@@ -96,7 +96,7 @@ public fun TestWhisperCard() {
         scope.launch {
             val activeId = ServiceLocator.activeServerStore.get()
             val profile =
-                ServiceLocator.profileRepository.observeAll().first()
+                ServiceLocator.profilesWithProxied().first()
                     .firstOrNull { it.id == activeId && it.enabled }
             if (profile == null) {
                 status = "no active profile"

@@ -78,7 +78,7 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
     var backends by remember { mutableStateOf<List<String>>(emptyList()) }
 
     suspend fun resolveProfile(): ServerProfile? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         return profiles.firstOrNull {
             it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
@@ -358,7 +358,7 @@ private fun AcmeStatusBlock() {
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
 
     suspend fun transport() =
-        ServiceLocator.profileRepository.observeAll().first().let { profiles ->
+        ServiceLocator.profilesWithProxied().first().let { profiles ->
             val activeId = ServiceLocator.activeServerStore.get()
             (
                 profiles.firstOrNull { it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS }

@@ -71,7 +71,7 @@ public fun NewSessionScreen(
     onStarted: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
-    val profiles by ServiceLocator.profileRepository.observeAll()
+    val profiles by ServiceLocator.profilesWithProxied()
         .collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe()
         .collectAsState(initial = null)

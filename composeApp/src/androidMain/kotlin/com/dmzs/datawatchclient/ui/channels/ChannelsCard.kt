@@ -65,7 +65,7 @@ public fun ChannelsCard() {
     }
 
     suspend fun refresh() {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             profiles.firstOrNull {
@@ -149,7 +149,7 @@ public fun ChannelsCard() {
                     checked = enabled,
                     onCheckedChange = { on ->
                         scope.launch {
-                            val profiles = ServiceLocator.profileRepository.observeAll().first()
+                            val profiles = ServiceLocator.profilesWithProxied().first()
                             val activeId = ServiceLocator.activeServerStore.get()
                             val profile =
                                 profiles.firstOrNull {
@@ -169,7 +169,7 @@ public fun ChannelsCard() {
                 IconButton(
                     onClick = {
                         scope.launch {
-                            val profiles = ServiceLocator.profileRepository.observeAll().first()
+                            val profiles = ServiceLocator.profilesWithProxied().first()
                             val activeId = ServiceLocator.activeServerStore.get()
                             val profile =
                                 profiles.firstOrNull {
@@ -247,7 +247,7 @@ public fun ChannelsCard() {
             onCreate = { type, id, enabled ->
                 addOpen = false
                 scope.launch {
-                    val profiles = ServiceLocator.profileRepository.observeAll().first()
+                    val profiles = ServiceLocator.profilesWithProxied().first()
                     val activeId = ServiceLocator.activeServerStore.get()
                     val profile =
                         profiles.firstOrNull {
@@ -285,7 +285,7 @@ public fun ChannelsCard() {
             onSend = { text ->
                 testChannel = null
                 scope.launch {
-                    val profiles = ServiceLocator.profileRepository.observeAll().first()
+                    val profiles = ServiceLocator.profilesWithProxied().first()
                     val activeId = ServiceLocator.activeServerStore.get()
                     val profile =
                         profiles.firstOrNull {

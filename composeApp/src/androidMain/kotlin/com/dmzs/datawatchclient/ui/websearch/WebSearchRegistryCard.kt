@@ -53,7 +53,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private suspend fun resolveTransport() =
-    ServiceLocator.profileRepository.observeAll().first().let { profiles ->
+    ServiceLocator.profilesWithProxied().first().let { profiles ->
         val activeId = ServiceLocator.activeServerStore.get()
         (
             profiles.firstOrNull {

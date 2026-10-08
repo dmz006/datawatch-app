@@ -164,7 +164,8 @@ public class AlertsViewModel : ViewModel() {
     // the user flips the active server.
     private val activeProfileFlow =
         combine(
-            ServiceLocator.profileRepository.observeAll(),
+            // #234 — real profiles + proxied remotes.
+            ServiceLocator.profilesWithProxied(),
             ServiceLocator.activeServerStore.observe(),
         ) { profiles, id ->
             if (id == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
@@ -461,7 +462,7 @@ public class AlertsViewModel : ViewModel() {
         }
 
     private val _computedActiveProfile =
-        combine(_allProfiles, ServiceLocator.activeServerStore.observe()) { profiles, id ->
+        combine(ServiceLocator.profilesWithProxied(), ServiceLocator.activeServerStore.observe()) { profiles, id ->
             if (id == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
             profiles.firstOrNull { it.id == id && it.enabled }
                 ?: profiles.firstOrNull { it.enabled }

@@ -410,7 +410,7 @@ public class DocsSearchViewModel : ViewModel() {
 
     private suspend fun resolveTransport(): com.dmzs.datawatchclient.transport.TransportClient? {
         val activeId = ServiceLocator.activeServerStore.get()
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val enabled = profiles.filter { it.enabled }
         // Fall back to first enabled profile when in all-servers mode or no match
         val profile = enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull() ?: return null

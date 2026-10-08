@@ -866,7 +866,7 @@ private fun SmokeProgressCard(smoke: SmokeProgressDto?) {
                     scope.launch {
                         runCatching {
                             val id = ServiceLocator.activeServerStore.get()
-                            val profiles = ServiceLocator.profileRepository.observeAll().first()
+                            val profiles = ServiceLocator.profilesWithProxied().first()
                             val p = profiles.firstOrNull { it.id == id } ?: profiles.firstOrNull()
                             p?.let { ServiceLocator.transportFor(it).clearSmokeProgress() }
                         }

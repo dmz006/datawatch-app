@@ -44,7 +44,7 @@ public fun EncryptionStatusCard() {
     LaunchedEffect(Unit) {
         val id = ServiceLocator.activeServerStore.get()
         val enabled =
-            ServiceLocator.profileRepository.observeAll().first()
+            ServiceLocator.profilesWithProxied().first()
                 .filter { it.enabled }
         val p = enabled.firstOrNull { it.id == id } ?: enabled.firstOrNull()
         if (p != null) {

@@ -41,7 +41,7 @@ public fun AuditLogCard() {
     var banner by remember { mutableStateOf<String?>(null) }
 
     suspend fun reload() {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {

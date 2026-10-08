@@ -298,7 +298,7 @@ private fun asBool(e: kotlinx.serialization.json.JsonElement): Boolean =
  * back to the first enabled profile.
  */
 private suspend fun resolveActiveProfile() =
-    ServiceLocator.profileRepository.observeAll().first().let { profiles ->
+    ServiceLocator.profilesWithProxied().first().let { profiles ->
         val activeId = ServiceLocator.activeServerStore.get()
         profiles.firstOrNull {
             it.id == activeId && it.enabled &&

@@ -42,7 +42,7 @@ public fun SessionAnalyticsCard() {
     var banner by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(rangeDays) {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {

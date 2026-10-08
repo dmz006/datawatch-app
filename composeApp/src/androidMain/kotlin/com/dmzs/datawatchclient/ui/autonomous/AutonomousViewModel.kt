@@ -157,7 +157,8 @@ public class AutonomousViewModel(
 
     @Suppress("ktlint:standard:property-naming")
     private val _computedActiveProfile: StateFlow<ServerProfile?> by lazy {
-        combine(_allProfiles, _activeId) { profiles, storedId ->
+        // #234 — resolve over real profiles + proxied remotes.
+        combine(ServiceLocator.profilesWithProxied(), _activeId) { profiles, storedId ->
             val enabled = profiles.filter { it.enabled }
             if (storedId == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
             storedId?.let { id -> enabled.firstOrNull { it.id == id } } ?: enabled.firstOrNull()

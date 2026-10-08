@@ -148,7 +148,7 @@ public class FilePickerViewModel : ViewModel() {
     }
 
     private suspend fun resolveActiveProfile(): ServerProfile? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val overrideId = overrideProfileId
         val profile =
             if (overrideId != null) {

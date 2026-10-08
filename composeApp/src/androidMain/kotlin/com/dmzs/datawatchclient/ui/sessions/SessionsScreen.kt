@@ -2190,7 +2190,7 @@ internal fun QuickCommandsSheet(
                                             .activeServerStore.get()
                                     val profiles =
                                         com.dmzs.datawatchclient.di.ServiceLocator
-                                            .profileRepository.observeAll().first()
+                                            .profilesWithProxied().first()
                                     val profile =
                                         profiles.firstOrNull { it.id == activeId && it.enabled }
                                             ?: profiles.firstOrNull { it.enabled }

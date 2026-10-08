@@ -52,7 +52,7 @@ public fun ChannelRoutingCard() {
     suspend fun transport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
         val enabled =
-            ServiceLocator.profileRepository.observeAll().first()
+            ServiceLocator.profilesWithProxied().first()
                 .filter { it.enabled }
         val p = enabled.firstOrNull { it.id == id } ?: enabled.firstOrNull()
         return if (p != null) ServiceLocator.transportFor(p) else null

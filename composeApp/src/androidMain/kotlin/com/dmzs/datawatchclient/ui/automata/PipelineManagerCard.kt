@@ -52,7 +52,7 @@ internal fun PipelineManagerCard(
                 return
             }
         val sp =
-            ServiceLocator.profileRepository.observeAll().first()
+            ServiceLocator.profilesWithProxied().first()
                 .firstOrNull { it.id == activeId && it.enabled } ?: run {
                 loading = false
                 return

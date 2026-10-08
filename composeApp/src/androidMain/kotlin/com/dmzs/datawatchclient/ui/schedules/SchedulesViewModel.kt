@@ -188,7 +188,7 @@ public class SchedulesViewModel : ViewModel() {
     }
 
     private suspend fun resolveActiveProfile(): ServerProfile? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             profiles.firstOrNull {

@@ -54,7 +54,7 @@ internal fun LanguagePickerCard() {
     var expanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             profiles.firstOrNull { it.id == activeId } ?: profiles.firstOrNull()
@@ -100,7 +100,7 @@ internal fun LanguagePickerCard() {
                             current = code
                             if (code != "auto") {
                                 scope.launch {
-                                    val profiles = ServiceLocator.profileRepository.observeAll().first()
+                                    val profiles = ServiceLocator.profilesWithProxied().first()
                                     val activeId = ServiceLocator.activeServerStore.get()
                                     val profile =
                                         profiles.firstOrNull { it.id == activeId }

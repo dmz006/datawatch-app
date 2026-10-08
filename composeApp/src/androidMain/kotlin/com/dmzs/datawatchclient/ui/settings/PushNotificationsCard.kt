@@ -50,7 +50,8 @@ internal fun PushNotificationsCard() {
     val deliveryTier by PushTierManager.tier.collectAsState()
 
     suspend fun transport(): TransportClient? {
-        val id = ServiceLocator.activeServerStore.get()
+        // Push stays keyed to real profiles: a proxied remote (#234) shows its parent's.
+        val id = ServiceLocator.activeServerStore.getReal()
         val profiles = ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
         val p = profiles.firstOrNull { it.id == id } ?: profiles.firstOrNull()
         return p?.let { ServiceLocator.transportFor(it) }

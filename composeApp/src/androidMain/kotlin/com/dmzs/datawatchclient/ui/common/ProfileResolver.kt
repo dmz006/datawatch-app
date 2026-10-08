@@ -40,7 +40,7 @@ public fun interface ProfileResolver {
         public val Default: ProfileResolver =
             ProfileResolver {
                 val activeId = ServiceLocator.activeServerStore.get()
-                val profiles = ServiceLocator.profileRepository.observeAll().first()
+                val profiles = ServiceLocator.profilesWithProxied().first()
                 val profile =
                     if (activeId == null) {
                         profiles.firstOrNull { it.enabled }

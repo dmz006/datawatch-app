@@ -74,7 +74,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 internal suspend fun resolveActiveTransport() =
-    ServiceLocator.profileRepository.observeAll().first().let { profiles ->
+    ServiceLocator.profilesWithProxied().first().let { profiles ->
         val activeId = ServiceLocator.activeServerStore.get()
         (
             profiles.firstOrNull {

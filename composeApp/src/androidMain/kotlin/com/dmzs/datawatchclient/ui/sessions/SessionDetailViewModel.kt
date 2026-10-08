@@ -229,7 +229,7 @@ public class SessionDetailViewModel(
     }
 
     private suspend fun resolveProfile(): ServerProfile? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         // Prefer the profile that actually owns this session (its cached row in
         // SessionRepository has the server_profile_id). Falls back to the
         // user's active-server selection, then to the first enabled profile.

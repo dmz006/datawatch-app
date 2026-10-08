@@ -78,7 +78,7 @@ internal fun DashboardCardsCard() {
 
     suspend fun resolveTransport(): com.dmzs.datawatchclient.transport.TransportClient? {
         val activeId = ServiceLocator.activeServerStore.get()
-        return ServiceLocator.profileRepository.observeAll()
+        return ServiceLocator.profilesWithProxied()
             .first { list -> list.any { it.enabled } }
             .let { list ->
                 if (activeId == null) {
@@ -101,7 +101,7 @@ internal fun DashboardCardsCard() {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
             val sp =
-                ServiceLocator.profileRepository.observeAll()
+                ServiceLocator.profilesWithProxied()
                     .first { list -> list.any { it.enabled } }
                     .let { list ->
                         if (activeId == null) {
