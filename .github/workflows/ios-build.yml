@@ -20,8 +20,10 @@ on:
       - 'gradle/libs.versions.toml'
       - '.github/workflows/ios-build.yml'
 
+# Every push to main gets its own run: cancelling a superseded main run made the
+# README badge show a failure that wasn't one. Other refs still cancel stale runs.
 concurrency:
-  group: ios-${{ github.ref }}
+  group: ios-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'latest' }}
   cancel-in-progress: true
 
 env:
