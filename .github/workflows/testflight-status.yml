@@ -1,0 +1,33 @@
+name: TestFlight status (read-only)
+
+# Prints the TestFlight processing and Beta App Review state of the current
+# gradle.properties build (scripts/release_parity.py ios-status). Ubuntu only, so
+# polling it never takes a macOS runner. Changes nothing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'Build number (empty = DATAWATCH_APP_VERSION_CODE)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Beta App Review state
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          ASC_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          pip install --quiet "pyjwt[crypto]" requests
+          code="${{ inputs.code }}"
+          [ -n "$code" ] || code=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)
+          python3 scripts/release_parity.py ios-status --code "$code"

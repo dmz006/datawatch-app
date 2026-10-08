@@ -4,6 +4,8 @@
   release_parity.py wait-ios  --code N [--timeout-min 60]
       Wait until App Store Connect has processed build N (VALID). Exit 1 on
       timeout or a failed/invalid build.
+  release_parity.py ios-status --code N
+      Print the TestFlight processing + external (Beta App Review) state of build N.
   release_parity.py verify    --code N
       Read-only check, exit 1 if any channel is behind:
         Play internal + alpha (phone) carry N
@@ -109,10 +111,14 @@ def verify(code: str) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["wait-ios", "verify"])
+    ap.add_argument("mode", choices=["wait-ios", "verify", "ios-status"])
     ap.add_argument("--code", required=True)
     ap.add_argument("--timeout-min", type=int, default=60)
     a = ap.parse_args()
+    if a.mode == "ios-status":
+        processing, external = ios_build(a.code)
+        print(f"REPORT build={a.code} processing={processing} external={external}")
+        return 0
     return wait_ios(a.code, a.timeout_min) if a.mode == "wait-ios" else verify(a.code)
 
 
