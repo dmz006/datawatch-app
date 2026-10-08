@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -189,10 +190,17 @@ public class AlertsViewModel : ViewModel() {
         loadPersistedTabState()
         // Polling loop. Cancelled automatically on VM clear.
         viewModelScope.launch {
+            // #236.6/7 — collectLatest, not collect: the body below polls
+            // forever, so with plain collect a server switch was never picked
+            // up while the VM lived (PWA v8.73.5 had the same "Alerts ignores
+            // the picker" gap). distinctUntilChanged keeps a remote-list
+            // refresh from restarting the poll for the same server.
             combine(
                 activeProfileFlow,
                 _allServersModeFlow,
-            ) { profile, allMode -> Pair(profile, allMode) }.collect { (profile, allMode) ->
+            ) { profile, allMode -> Pair(profile, allMode) }
+                .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
+                .collectLatest { (profile, allMode) ->
                 _alerts.value = emptyList()
                 _groupProfileNames.value = emptyMap()
                 while (true) {

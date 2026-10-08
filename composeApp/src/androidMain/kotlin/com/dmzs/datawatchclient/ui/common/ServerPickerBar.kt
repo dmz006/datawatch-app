@@ -40,7 +40,8 @@ import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
  * semibold text; the rest sit on `--bg3` with a 1dp `--border` stroke.
  *
  * Hidden when there is nothing to pick (fewer than two choices), mirroring
- * the PWA hiding the bar when no remote servers are registered.
+ * the PWA hiding the bar when no remote servers are registered — except
+ * while the remote list is first loading, when it reads "Loading servers…".
  *
  * #234 — remote servers configured on each profile (reached through its
  * `/api/proxy/<name>`) get a chip right after their parent: "parent › remote",
@@ -61,7 +62,10 @@ internal fun ServerPickerBar(
 ) {
     val real = profiles.filter { it.enabled && !ProxiedServers.isProxied(it.id) }
     val enabled = rememberProxiedPickerProfiles(real)
-    if (enabled.size < 2) return
+    // PWA `server_picker_loading` placeholder (v8.73.2): while a server's
+    // remote list is first being fetched the bar says so instead of hiding.
+    val loading = rememberProxiedPickerLoading(real)
+    if (enabled.size < 2 && !loading) return
     val dw = LocalDatawatchColors.current
     Column(modifier = Modifier.fillMaxWidth().background(dw.bg2)) {
         Row(
@@ -78,20 +82,29 @@ internal fun ServerPickerBar(
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (showAll) {
+            if (showAll && enabled.size >= 2) {
                 ServerChip(
                     label = stringResource(R.string.server_all_label),
                     active = allMode,
                     onClick = onSelectAll,
                 )
             }
-            val effectiveActive =
-                if (allMode && showAll) null else (enabled.firstOrNull { it.id == activeId } ?: enabled.first()).id
-            enabled.forEach { p ->
-                ServerChip(
-                    label = ProxiedServers.chipLabel(p, real.size),
-                    active = p.id == effectiveActive,
-                    onClick = { onSelect(p.id) },
+            if (enabled.size >= 2) {
+                val effectiveActive =
+                    if (allMode && showAll) null else (enabled.firstOrNull { it.id == activeId } ?: enabled.first()).id
+                enabled.forEach { p ->
+                    ServerChip(
+                        label = ProxiedServers.chipLabel(p, real.size),
+                        active = p.id == effectiveActive,
+                        onClick = { onSelect(p.id) },
+                    )
+                }
+            }
+            if (loading) {
+                Text(
+                    stringResource(R.string.server_picker_loading),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -110,6 +123,17 @@ internal fun rememberProxiedPickerProfiles(real: List<ServerProfile>): List<Serv
     LaunchedEffect(Unit) { ProxiedServersCoordinator.refreshNow() }
     val plain = real.filterNot { ProxiedServers.isProxied(it.id) }
     return ProxiedServers.groupedForPicker(plain, byParent.values.flatten())
+}
+
+/**
+ * #236.1 / PWA `server_picker_loading` — true while a remote-list refresh is
+ * running and some enabled server in [real] has never been listed yet.
+ */
+@Composable
+internal fun rememberProxiedPickerLoading(real: List<ServerProfile>): Boolean {
+    val inFlight by ServiceLocator.proxiedServers.inFlight.collectAsState()
+    val byParent by ServiceLocator.proxiedServers.byParent.collectAsState()
+    return ServiceLocator.proxiedServers.firstLoadPending(real, inFlight, byParent)
 }
 
 /** "via <parent>" subtitle for a proxied remote, or null for a real profile. */

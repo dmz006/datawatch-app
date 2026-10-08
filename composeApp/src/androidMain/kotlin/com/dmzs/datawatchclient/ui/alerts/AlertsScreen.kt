@@ -116,6 +116,17 @@ public fun AlertsScreen(
                 showAll = true,
                 onSelectAll = vm::selectAllServers,
             )
+            // #236.2 — a proxied remote that can't be reached shows the real error
+            // (and a way back) instead of an endless loader (PWA v8.73.5+).
+            val fedStatus =
+                com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
+                    state.activeProfile?.id,
+                    state.allServersMode,
+                )
+            if (fedStatus?.phase == com.dmzs.datawatchclient.transport.FedConnPhase.ERROR) {
+                com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
+                return@Column
+            }
             // Error banner
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -514,6 +525,13 @@ private fun AlertsTopBar(
                                     onSelectProfile(p.id)
                                     pickerOpen = false
                                 },
+                            )
+                        }
+                        if (com.dmzs.datawatchclient.ui.common.rememberProxiedPickerLoading(state.allProfiles)) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.server_picker_loading)) },
+                                onClick = { pickerOpen = false },
+                                enabled = false,
                             )
                         }
                     }

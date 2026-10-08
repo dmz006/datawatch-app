@@ -193,6 +193,20 @@ public object ServiceLocator {
     }
 
     /**
+     * #236.2 / #235 — "Connecting to <remote>…" / error status while the active
+     * server is a proxied remote and no real data has arrived yet. Fed the
+     * active profile by [ProxiedServersCoordinator]; a successful probe stores
+     * its session list so the Sessions tab fills straight away.
+     */
+    public val fedConnMonitor: com.dmzs.datawatchclient.transport.FederatedConnectionMonitor by lazy {
+        com.dmzs.datawatchclient.transport.FederatedConnectionMonitor(
+            scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO),
+            probe = { profile -> transportFor(profile).listSessions() },
+            onSessions = { profile, sessions -> sessionRepository.replaceAll(profile.id, sessions) },
+        )
+    }
+
+    /**
      * Real profiles followed by every enabled parent's proxied remotes
      * (virtual profiles, never persisted). Use wherever the ACTIVE profile is
      * resolved by id; keep [profileRepository] for surfaces that iterate real

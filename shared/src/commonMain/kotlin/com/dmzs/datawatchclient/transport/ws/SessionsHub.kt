@@ -40,3 +40,25 @@ public object SessionsHub {
     public fun emitFullList(update: SessionsUpdate) { _fullListFlow.tryEmit(update) }
     public fun emitSingle(update: SessionStateUpdate) { _singleSessionFlow.tryEmit(update) }
 }
+
+/**
+ * #236.5 (PWA v8.73.4) — the rule that keeps a single server's WebSocket
+ * `sessions` push from clobbering the merged "All servers" list: in All mode
+ * the visible list is only ever the merged fetch; a push may replace the
+ * visible list only for the single server being shown.
+ */
+public object SessionListSource {
+    /** The list to show: the merged All-servers list, or the active server's own. */
+    public fun pick(
+        allServersMode: Boolean,
+        perProfile: List<Session>,
+        merged: List<Session>,
+    ): List<Session> = if (allServersMode) merged else perProfile
+
+    /** Whether a full-list push for [pushProfileId] may replace what's on screen. */
+    public fun acceptsPush(
+        allServersMode: Boolean,
+        activeProfileId: String?,
+        pushProfileId: String,
+    ): Boolean = !allServersMode && activeProfileId != null && activeProfileId == pushProfileId
+}

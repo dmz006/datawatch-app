@@ -188,6 +188,17 @@ public fun DashboardScreen(
                 allMode = false,
                 onSelect = vm::selectProfile,
             )
+            // #236.2 — a proxied remote that can't be reached shows the real error
+            // (and a way back) instead of an endless loader (PWA v8.73.5+).
+            val fedStatus =
+                com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
+                    state.activeProfile?.id,
+                    false,
+                )
+            if (fedStatus?.phase == com.dmzs.datawatchclient.transport.FedConnPhase.ERROR) {
+                com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
+                return@Column
+            }
             DashboardStatStrip(dashStatStrip(state.sessions, state.boards, state.costTodayUsd, state.prds.size))
             // tree and orbital are synonyms for the same constellation view.
             val rendered = mutableSetOf<String>()

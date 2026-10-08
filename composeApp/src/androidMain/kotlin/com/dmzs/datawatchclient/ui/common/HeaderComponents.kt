@@ -318,6 +318,14 @@ internal fun SingleServerPickerTitle(
                         onClick = { onSelect(p.id) },
                     )
                 }
+                // PWA `server_picker_loading` while remotes are first fetched (#236).
+                if (rememberProxiedPickerLoading(profiles)) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.server_picker_loading)) },
+                        onClick = onDismiss,
+                        enabled = false,
+                    )
+                }
             }
         }
     }

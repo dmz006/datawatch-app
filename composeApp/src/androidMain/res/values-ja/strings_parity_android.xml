@@ -85,4 +85,12 @@
     <string name="llm_option_default">(デフォルト)</string>
     <string name="llm_option_none">(なし)</string>
     <string name="server_via_parent">%1$s 経由</string>
+    <!-- #235/#236: connection status for a remote reached through a connected server -->
+    <string name="fed_conn_connecting">%1$s に接続中…</string>
+    <string name="fed_conn_loading_sessions">%1$s からセッションを読み込み中…</string>
+    <string name="fed_conn_error_title">このサーバーに接続できませんでした</string>
+    <string name="fed_conn_error_body">%1$s: %2$s</string>
+    <string name="fed_conn_error_auth">認証に失敗しました — このサーバーには有効なトークンが設定されていません</string>
+    <string name="fed_conn_back_to_local">%1$s に戻る</string>
+    <string name="server_picker_loading">サーバーを読み込み中…</string>
 </resources>

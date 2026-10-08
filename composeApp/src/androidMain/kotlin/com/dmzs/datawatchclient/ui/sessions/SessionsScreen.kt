@@ -357,8 +357,17 @@ public fun SessionsScreen(
 
             val visible =
                 if (watchFilter) state.visibleSessions.filter { it.id in watchedIds } else state.visibleSessions
+            // #236.2 — a proxied remote with nothing on screen yet shows its real
+            // connection status instead of an endless skeleton (PWA v8.73.2).
+            val fedStatus =
+                com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
+                    state.activeProfile?.id,
+                    state.allServersMode,
+                )
             if (visible.isEmpty()) {
-                if (state.refreshing) {
+                if (fedStatus != null) {
+                    com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
+                } else if (state.refreshing) {
                     SessionSkeletonList()
                 } else {
                     EmptyState(

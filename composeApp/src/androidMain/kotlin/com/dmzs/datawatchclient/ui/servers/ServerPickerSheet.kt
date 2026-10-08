@@ -32,6 +32,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.ui.common.proxiedParentName
+import com.dmzs.datawatchclient.ui.common.rememberProxiedPickerLoading
 import com.dmzs.datawatchclient.ui.common.rememberProxiedPickerProfiles
 
 /**
@@ -77,6 +78,17 @@ public fun ServerPickerSheet(
                         ServiceLocator.activeServerStore.set(p.id)
                         onDismiss()
                     },
+                )
+                HorizontalDivider()
+            }
+            // PWA three-finger modal `server_picker_loading` (v8.73.2): the list
+            // loads eagerly; this line shows while a server's remotes are first fetched.
+            if (rememberProxiedPickerLoading(profiles)) {
+                Text(
+                    stringResource(R.string.server_picker_loading),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                 )
                 HorizontalDivider()
             }
