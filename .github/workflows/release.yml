@@ -41,7 +41,7 @@ jobs:
     name: Test gate (version parity + check/detekt/ktlint)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag_name || github.ref }}
       - name: Ensure gradle.properties and Version.kt agree
@@ -58,13 +58,13 @@ jobs:
             exit 1
           fi
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
         if: hashFiles('gradlew') != ''
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: check + detekt + ktlint
         if: hashFiles('gradlew') != ''
         run: ./gradlew check detekt ktlintCheck --no-daemon --stacktrace
@@ -74,17 +74,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag_name || github.ref }}
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
         if: hashFiles('gradlew') != ''
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Write signing keystore
         if: hashFiles('gradlew') != ''
@@ -118,7 +118,7 @@ jobs:
 
       - name: Create GitHub release
         if: hashFiles('gradlew') != ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag_name || github.ref_name }}
           files: |
@@ -132,7 +132,7 @@ jobs:
 
       - name: Placeholder release (pre-scaffold tags)
         if: hashFiles('gradlew') == ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           body: |
@@ -150,16 +150,16 @@ jobs:
     # Secrets and variables → Actions → Variables when the Play key is configured.
     if: ${{ vars.PLAY_PUBLISHER_KEY_CONFIGURED == 'true' && needs.build-bundles.result == 'success' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag_name || github.ref }}
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Write signing keystore
         env:
@@ -236,18 +236,18 @@ jobs:
     needs: test
     if: ${{ vars.IOS_SIGNING_CONFIGURED == 'true' && needs.test.result == 'success' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag_name || github.ref }}
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: Cache Kotlin/Native artifacts
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -350,7 +350,7 @@ jobs:
           fastlane beta
 
       - name: Attach IPA to GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag_name || github.ref_name }}
           files: iosApp/build/DatawatchClient.ipa
@@ -369,7 +369,7 @@ jobs:
     needs: testflight
     if: ${{ needs.testflight.result == 'success' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag_name || github.ref }}
       - name: Export version env vars
@@ -415,7 +415,7 @@ jobs:
     needs: [publish-play, testflight-beta]
     if: ${{ always() && needs.publish-play.result != 'skipped' && needs.testflight-beta.result != 'skipped' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag_name || github.ref }}
       - name: Every channel carries this build

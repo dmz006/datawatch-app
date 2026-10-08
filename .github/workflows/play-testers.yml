@@ -30,7 +30,7 @@ jobs:
   testers:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set tester group
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
