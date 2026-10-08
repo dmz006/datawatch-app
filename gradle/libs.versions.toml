@@ -32,7 +32,7 @@ ktlint-plugin = "12.3.0"
 gradle-play-publisher = "3.10.0"
 junit5 = "5.10.2"
 turbine = "1.1.0"
-mockwebserver = "4.12.0"
+mockwebserver = "5.5.0"
 
 [libraries]
 # Build tooling (root buildscript classpath) — overrides the R8 bundled with AGP.
