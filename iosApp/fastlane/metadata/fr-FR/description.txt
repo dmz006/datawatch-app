@@ -22,8 +22,8 @@ SIRI, WIDGETS ET COMMANDES
 • Des widgets pour l'écran d'accueil et l'écran verrouillé affichent le nombre de sessions et la charge des serveurs.
 • Une commande du Centre de contrôle ouvre l'app d'un toucher (iOS 18 ou ultérieur).
 
-AUTOMATA
-• Créez, examinez et approuvez des Automata : des plans en plusieurs histoires que le serveur découpe en tâches et exécute avec vos agents.
+AUTOMATES
+• Créez, examinez et approuvez des automates : des plans en plusieurs histoires que le serveur découpe en tâches et exécute avec vos agents.
 • Suivez l'avancement histoire par histoire : graphe de dépendances, verdicts, décisions, mémoire et sessions de travail.
 • Utilisez des modèles, le mode guidé et des modèles d'IA spécifiques par histoire ou par tâche.
 

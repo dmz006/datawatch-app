@@ -31,7 +31,7 @@
     <string name="wear_action_cancel">Abbrechen</string>
     <string name="wear_action_send">Senden</string>
 
-    <string name="wear_prds_empty">Keine Pläne in Überprüfung.</string>
+    <string name="wear_prds_empty">Keine Automaten in Überprüfung.</string>
     <string name="wear_prds_pending">%1$d ausstehend</string>
 
     <string name="wear_servers_empty">Keine aktiven Server</string>
@@ -93,4 +93,6 @@
     <string name="wear_session_state_waiting">Wartet</string>
     <string name="wear_session_state_done">Fertig</string>
     <string name="wear_session_state_error">Fehler</string>
+    <string name="wear_automata_page_title">Automaten</string>
+    <string name="wear_automata_empty">Keine laufenden Automaten</string>
 </resources>

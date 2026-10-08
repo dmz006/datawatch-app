@@ -4,7 +4,7 @@
 
     <!-- ── Bottom navigation ── -->
     <string name="nav_sessions">セッション</string>
-    <string name="nav_autonomous">自律</string>
+    <string name="nav_autonomous">オートマタ</string>
     <string name="nav_alerts">アラート</string>
     <string name="nav_settings">設定</string>
 
@@ -312,10 +312,10 @@
     <string name="automata_detail_stories">ストーリーとタスク</string>
     <string name="automata_detail_title">タイトル</string>
     <string name="automata_detail_verdicts">ガードレール評価</string>
-    <string name="automata_empty_active">アクティブなオートマトンはありません。⚡で起動してください。</string>
-    <string name="automata_empty_history">完了したオートマトンはありません。</string>
+    <string name="automata_empty_active">アクティブなオートマタはありません。⚡で起動してください。</string>
+    <string name="automata_empty_history">完了したオートマタはありません。</string>
     <string name="automata_empty_templates">テンプレートがありません。</string>
-    <string name="automata_filter_search">オートマトンを検索…</string>
+    <string name="automata_filter_search">オートマタを検索…</string>
     <string name="automata_header_howto">使い方ガイド</string>
     <string name="automata_history_off">アクティブ</string>
     <string name="automata_history_on">履歴</string>
@@ -459,14 +459,14 @@
     <string name="prd_edit_story_title_prefix">ストーリーを編集</string>
     <string name="prd_edit_task_files_title">タスクファイルの編集</string>
     <string name="prd_edit_task_title_prefix">タスクを編集</string>
-    <string name="prd_list_empty">一致するPRDがありません。</string>
+    <string name="prd_list_empty">一致するオートマタがありません。</string>
     <string name="prd_more_actions">その他のアクション</string>
     <string name="prd_new_backend_label">バックエンド</string>
     <string name="prd_new_effort_label">努力レベル</string>
     <string name="prd_new_model_label">モデル（任意）</string>
     <string name="prd_new_spec_label">仕様 — 機能を平易な言葉で説明</string>
     <string name="prd_new_spec_ph">/api/statsにCACHE列を追加…</string>
-    <string name="prd_new_title">新しいPRD</string>
+    <string name="prd_new_title">新しいオートマトン</string>
     <string name="prd_new_title_label">タイトル（任意）</string>
     <string name="prd_new_title_ph">短い見出し</string>
     <string name="prd_no_decisions">まだ決定が記録されていません。</string>
@@ -476,8 +476,8 @@
     <string name="prd_scan_help">オートマトン仕様および関連ファイルに対する静的解析（SAST、秘密、依存関係、LLM グレーダー）。設定されたスキャナーを実行し、判定と発見を報告します。</string>
     <string name="prd_scan_run_title">設定されたすべてのスキャナーをこのオートマトンに対して実行</string>
     <string name="prd_set_llm_hint">タスク別オーバーライドがないタスクはこれらの値を継承。空 = グローバルsession.llm_backendデフォルト。</string>
-    <string name="prd_set_llm_title">PRDレベルのワーカーLLM</string>
-    <string name="prd_set_story_profile_hint">空 = PRDのデフォルト実行プロファイルを継承。名前を指定するとこのストーリーのみ上書き。</string>
+    <string name="prd_set_llm_title">オートマトンレベルのワーカーLLM</string>
+    <string name="prd_set_story_profile_hint">空 = オートマトンのデフォルト実行プロファイルを継承。名前を指定するとこのストーリーのみ上書き。</string>
     <string name="prd_set_story_profile_title">実行プロファイルの上書き</string>
     <string name="prd_settings_guided_label">ガイドモード — 各ストーリーの後にオペレーターのために一時停止</string>
     <string name="prd_settings_modal_title">オートマトンの設定</string>
@@ -503,7 +503,7 @@
     <string name="prd_stories_tasks">ストーリーとタスク</string>
     <string name="prd_story_desc_label">説明</string>
     <string name="prd_story_title_label">タイトル</string>
-    <string name="prd_task_llm_hint">タスク別LLMオーバーライド — 空の場合はPRDからグローバルを継承。</string>
+    <string name="prd_task_llm_hint">タスク別LLMオーバーライド — 空の場合はオートマトン、続いてグローバル設定を継承。</string>
     <string name="prd_view_spec">仕様を表示</string>
     <string name="profile_agent_settings_section">エージェント設定</string>
     <string name="profile_claude_key_secret_label">Claude認証キーシークレット</string>
@@ -1153,9 +1153,9 @@
     <string name="llm_field_permission_mode">権限モード</string>
     <string name="llm_field_default_effort">デフォルト努力レベル</string>
     <string name="llm_field_fallback_chain">フォールバックチェーン（カンマ区切りのプロファイル名）</string>
-    <string name="automata_confirm_batch_cancel">選択した%1$d件のオートマトンをキャンセルしますか?</string>
-    <string name="automata_confirm_batch_delete_title">オートマトンを削除</string>
-    <string name="automata_confirm_batch_delete">選択した%1$d件のオートマトンを完全に削除しますか?</string>
+    <string name="automata_confirm_batch_cancel">選択した%1$d件のオートマタをキャンセルしますか?</string>
+    <string name="automata_confirm_batch_delete_title">オートマタを削除</string>
+    <string name="automata_confirm_batch_delete">選択した%1$d件のオートマタを完全に削除しますか?</string>
 
     <!-- ── Sprint 31 i18n — Council persona CRUD + built-in badge (v1.00.0) ── -->
     <string name="council_personas_title">カウンシルペルソナ</string>
@@ -1321,7 +1321,7 @@
     <string name="tmpl_builtin_badge">組み込み</string>
     <string name="tmpl_used_count">%1$d回使用</string>
     <string name="prd_instantiate_vars_label">テンプレート変数 (k=v,k=v)</string>
-    <string name="automata_filter_toggle">オートマトンのフィルターを切り替え</string>
+    <string name="automata_filter_toggle">オートマタのフィルターを切り替え</string>
     <!-- Project / cluster profile editor (form + YAML view) -->
     <string name="pfe_form_view">フォームビュー</string>
     <string name="pfe_yaml_view">YAMLビュー</string>

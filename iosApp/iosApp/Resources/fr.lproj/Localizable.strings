@@ -712,7 +712,7 @@
 "Last response" = "Dernière réponse";
 "Last snapshot" = "Dernier instantané";
 "Launch" = "Lancer";
-"Launch Automaton" = "Lancer l'Automate";
+"Launch Automaton" = "Lancer l'automate";
 "Launch automaton" = "Lancer l'automate";
 "Layout not saved" = "Disposition non enregistrée";
 "Learning" = "Apprentissage";
@@ -770,7 +770,7 @@
 "Max parallel automata" = "Automates parallèles max.";
 "Max parallel tasks" = "Tâches parallèles max.";
 "Max parallel tasks (0 = default 3)" = "Tâches parallèles max. (0 = 3 par défaut)";
-"Max recursion depth (0 disables spawn-automaton)" = "Profondeur de récursion max. (0 désactive spawn-automaton)";
+"Max recursion depth (0 disables spawn-automaton)" = "Profondeur de récursion max. (0 désactive la création d'automates enfants)";
 "Memories" = "Mémoires";
 "Memory" = "Mémoire";
 "Memory %" = "Mémoire %";

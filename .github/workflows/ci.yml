@@ -53,6 +53,10 @@ jobs:
             exit 1
           fi
 
+      # AGENT.md § Terminology Rule: de/es/fr/ja copy uses the translated word.
+      - name: Automata terminology in translations
+        run: python3 scripts/check-automata-terms.py
+
   build-and-test:
     name: Build + test
     runs-on: ubuntu-latest

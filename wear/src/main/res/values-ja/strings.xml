@@ -31,7 +31,7 @@
     <string name="wear_action_cancel">キャンセル</string>
     <string name="wear_action_send">送信</string>
 
-    <string name="wear_prds_empty">レビュー中のプランなし。</string>
+    <string name="wear_prds_empty">レビュー中のオートマタなし。</string>
     <string name="wear_prds_pending">%1$d 件保留中</string>
 
     <string name="wear_servers_empty">有効なサーバーなし</string>
@@ -93,4 +93,6 @@
     <string name="wear_session_state_waiting">待機中</string>
     <string name="wear_session_state_done">完了</string>
     <string name="wear_session_state_error">エラー</string>
+    <string name="wear_automata_page_title">オートマタ</string>
+    <string name="wear_automata_empty">実行中のオートマタはありません</string>
 </resources>

@@ -31,7 +31,7 @@
     <string name="wear_action_cancel">Cancelar</string>
     <string name="wear_action_send">Enviar</string>
 
-    <string name="wear_prds_empty">Sin planes en revisión.</string>
+    <string name="wear_prds_empty">Sin autómatas en revisión.</string>
     <string name="wear_prds_pending">%1$d pendiente(s)</string>
 
     <string name="wear_servers_empty">Sin servidores habilitados</string>
@@ -93,4 +93,6 @@
     <string name="wear_session_state_waiting">En espera</string>
     <string name="wear_session_state_done">Completado</string>
     <string name="wear_session_state_error">Error</string>
+    <string name="wear_automata_page_title">Autómatas</string>
+    <string name="wear_automata_empty">No hay autómatas en ejecución</string>
 </resources>

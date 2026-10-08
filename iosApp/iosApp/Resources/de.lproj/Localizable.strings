@@ -207,10 +207,10 @@
 "Automata section" = "Automaten-Bereich";
 "Automata type" = "Automatentyp";
 "Automata-DAG orchestrator" = "Automaten-DAG-Orchestrator";
-"Automaton actions" = "Automat-Aktionen";
+"Automaton actions" = "Automaten-Aktionen";
 "Automaton created (%@). Find it in the Automata tab." = "Automat erstellt (%@). Du findest ihn im Tab Automaten.";
-"Automaton section" = "Automat-Bereich";
-"Automaton settings" = "Automat-Einstellungen";
+"Automaton section" = "Automaten-Bereich";
+"Automaton settings" = "Automaten-Einstellungen";
 "Automaton-shared" = "Automatenweit geteilt";
 "Autonomous Automata planning" = "Autonome Automaten-Planung";
 "Autonomous Config" = "Autonome Konfiguration";
@@ -256,8 +256,8 @@
 "Cache hits" = "Cache-Treffer";
 "Cancel" = "Abbrechen";
 "Cancel %@" = "%@ abbrechen";
-"Cancel automaton" = "Automat abbrechen";
-"Cancel automaton?" = "Automat abbrechen?";
+"Cancel automaton" = "Automaten abbrechen";
+"Cancel automaton?" = "Automaten abbrechen?";
 "Cancel below, then re-trigger Plan after verifying the LLM's compute node is reachable in Compute Nodes." = "Unten abbrechen und „Planen“ erneut auslösen, nachdem unter Compute-Nodes geprüft wurde, dass der Compute-Node des LLM erreichbar ist.";
 "Cancel council run" = "Council-Lauf abbrechen";
 "Cancel run" = "Lauf abbrechen";
@@ -379,7 +379,7 @@
 "Council settings" = "Council-Einstellungen";
 "Council start failed" = "Council-Start fehlgeschlagen";
 "Create" = "Erstellen";
-"Create Fix Automaton" = "Korrektur-Automat erstellen";
+"Create Fix Automaton" = "Korrektur-Automaten erstellen";
 "Created" = "Erstellt";
 "Cron: %@" = "Cron: %@";
 "Cross-host envelope view" = "Hostübergreifende Envelope-Ansicht";
@@ -488,7 +488,7 @@
 "ESC — Exit Scroll" = "ESC — Scrollen beenden";
 "Edit" = "Bearbeiten";
 "Edit %@" = "%@ bearbeiten";
-"Edit Automaton" = "Automat bearbeiten";
+"Edit Automaton" = "Automaten bearbeiten";
 "Edit ComputeNode" = "ComputeNode bearbeiten";
 "Edit LLM" = "LLM bearbeiten";
 "Edit Server" = "Server bearbeiten";
@@ -770,7 +770,7 @@
 "Max parallel automata" = "Max. parallele Automaten";
 "Max parallel tasks" = "Max. parallele Tasks";
 "Max parallel tasks (0 = default 3)" = "Max. parallele Tasks (0 = Standard 3)";
-"Max recursion depth (0 disables spawn-automaton)" = "Max. Rekursionstiefe (0 deaktiviert spawn-automaton)";
+"Max recursion depth (0 disables spawn-automaton)" = "Max. Rekursionstiefe (0 deaktiviert das Erzeugen untergeordneter Automaten)";
 "Memories" = "Erinnerungen";
 "Memory" = "Speicher";
 "Memory %" = "Speicher %";
@@ -961,7 +961,7 @@
 "Open parent automaton %@" = "Übergeordneten Automaten %@ öffnen";
 "Open parent session" = "Übergeordnete Sitzung öffnen";
 "Open session" = "Sitzung öffnen";
-"Open the Launch Automaton howto — covers every wizard field including Advanced switches" = "Anleitung „Automat starten“ öffnen — erklärt jedes Assistentenfeld inklusive erweiterter Schalter";
+"Open the Launch Automaton howto — covers every wizard field including Advanced switches" = "Anleitung „Automaten starten“ öffnen — erklärt jedes Assistentenfeld inklusive erweiterter Schalter";
 "Open the worker session that ran this story" = "Worker-Sitzung öffnen, die diese Story ausgeführt hat";
 "Open worker session %@" = "Worker-Sitzung %@ öffnen";
 "OpenAPI Spec" = "OpenAPI-Spezifikation";
@@ -1135,7 +1135,7 @@
 "Registered with this server" = "Bei diesem Server registriert";
 "Registration refreshed." = "Registrierung aktualisiert.";
 "Reject" = "Ablehnen";
-"Reject automaton" = "Automat ablehnen";
+"Reject automaton" = "Automaten ablehnen";
 "Reject story" = "Story ablehnen";
 "Reload" = "Neu laden";
 "Reload plugins" = "Plugins neu laden";
@@ -1562,7 +1562,7 @@
 "Webhook Secret" = "Webhook-Secret";
 "What do you want to accomplish?" = "Was möchtest du erreichen?";
 "What should change?" = "Was soll sich ändern?";
-"What should happen to this Automaton's memories?" = "Was soll mit den Erinnerungen dieses Automatons geschehen?";
+"What should happen to this Automaton's memories?" = "Was soll mit den Erinnerungen dieses Automaten geschehen?";
 "What should happen to this session's memories?" = "Was soll mit den Erinnerungen dieser Sitzung geschehen?";
 "What you are working on right now" = "Woran du gerade arbeitest";
 "When" = "Wann";

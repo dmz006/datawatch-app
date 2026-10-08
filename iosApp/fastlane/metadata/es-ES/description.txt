@@ -22,8 +22,8 @@ SIRI, WIDGETS Y CONTROLES
 • Los widgets de la pantalla de inicio y de la pantalla bloqueada muestran el número de sesiones y la carga del servidor.
 • Un control del Centro de control abre la app con un toque (iOS 18 o posterior).
 
-AUTOMATA
-• Crea, revisa y aprueba Automata: planes de varias historias que el servidor divide en tareas y ejecuta con tus agentes.
+AUTÓMATAS
+• Crea, revisa y aprueba autómatas: planes de varias historias que el servidor divide en tareas y ejecuta con tus agentes.
 • Sigue el progreso historia a historia, con el grafo de dependencias, veredictos, decisiones, memoria y las sesiones de trabajo que realizan la tarea.
 • Usa plantillas, el modo guiado y modelos específicos por historia o por tarea.
 

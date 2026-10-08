@@ -4,7 +4,7 @@
 
     <!-- ── Bottom navigation ── -->
     <string name="nav_sessions">Sesiones</string>
-    <string name="nav_autonomous">Autónomo</string>
+    <string name="nav_autonomous">Autómatas</string>
     <string name="nav_alerts">Alertas</string>
     <string name="nav_settings">Ajustes</string>
 
@@ -180,7 +180,7 @@
     <string name="autonomous_template_label">plantilla</string>
     <string name="autonomous_story_count">%1$d historias</string>
 
-    <string name="new_prd_title">Nuevo Autómata</string>
+    <string name="new_prd_title">Nuevo autómata</string>
     <string name="new_prd_name_label">Nombre (requerido)</string>
     <string name="new_prd_display_title_label">Título (opcional)</string>
     <string name="new_prd_profile_label">Perfil</string>
@@ -205,12 +205,12 @@
     <string name="prd_tab_decisions">Decisiones</string>
     <string name="prd_tab_decisions_empty">No hay decisiones registradas aún.</string>
     <string name="prd_tab_scan">Análisis</string>
-    <string name="prd_detail_reject_title">¿Rechazar Autómata?</string>
+    <string name="prd_detail_reject_title">¿Rechazar autómata?</string>
     <string name="prd_detail_reject_reason_label">Motivo (requerido)</string>
     <string name="prd_detail_revise_title">Solicitar revisiones</string>
     <string name="prd_detail_revise_label">¿Qué necesita revisión?</string>
     <string name="prd_detail_set_llm_title">Establecer override de LLM</string>
-    <string name="prd_detail_edit_prd_title">Editar Autómata</string>
+    <string name="prd_detail_edit_prd_title">Editar autómata</string>
     <string name="prd_detail_spec_label">Especificación</string>
     <string name="prd_detail_edit_story_title">Editar historia</string>
     <string name="prd_detail_title_label">Título</string>
@@ -297,7 +297,7 @@
     <string name="automata_batch_cancel">Cancelar todo</string>
     <string name="automata_batch_delete">Eliminar</string>
     <string name="automata_batch_run">Ejecutar todo</string>
-    <string name="automata_btn_launch">Lanzar Autómata</string>
+    <string name="automata_btn_launch">Lanzar autómata</string>
     <string name="automata_detail_back">Autómatas</string>
     <string name="automata_detail_backend">Backend</string>
     <string name="automata_detail_created">Creado</string>
@@ -362,7 +362,7 @@
     <string name="automata_wizard_inferred_auto">← detectado automáticamente</string>
     <string name="automata_wizard_intent">¿Qué desea lograr?</string>
     <string name="automata_wizard_intent_placeholder">ej. Añadir columna CACHE a /api/stats…</string>
-    <string name="automata_wizard_launch">⚡ Lanzar Autómata</string>
+    <string name="automata_wizard_launch">⚡ Lanzar autómata</string>
     <string name="automata_wizard_model">Modelo</string>
     <string name="automata_wizard_permission">Modo de permiso</string>
     <string name="automata_wizard_rules">Verificación de reglas (tras escaneo)</string>
@@ -370,7 +370,7 @@
     <string name="automata_wizard_skills">Skills (disponibles — activar en el perfil de agente)</string>
     <string name="automata_wizard_story_approval">Aprobación por historia</string>
     <string name="automata_wizard_template_link">O empezar desde una plantilla →</string>
-    <string name="automata_wizard_title">Lanzar Autómata</string>
+    <string name="automata_wizard_title">Lanzar autómata</string>
     <string name="automata_wizard_type">Tipo</string>
     <string name="automata_wizard_workspace">Espacio de trabajo</string>
     <string name="btn_cancel">Cancelar</string>
@@ -1309,7 +1309,7 @@
     <string name="session_drag_handle">Arrastra para reordenar</string>
     <!-- Automata story/task LLM overrides, live planning, template badges -->
     <string name="prd_set_story_llm_title">Anular LLM de historia</string>
-    <string name="prd_story_llm_hint">Anulación de LLM por historia — vacío hereda del Autómata y luego de la configuración global. Todas las tareas de esta historia heredan esto salvo que tengan su propia anulación.</string>
+    <string name="prd_story_llm_hint">Anulación de LLM por historia — vacío hereda del autómata y luego de la configuración global. Todas las tareas de esta historia heredan esto salvo que tengan su propia anulación.</string>
     <string name="prd_story_llm_btn">Anular el LLM de esta historia</string>
     <string name="prd_story_profile_inherit">(heredar predeterminado del autómata)</string>
     <string name="prd_task_spawn_badge">↳ spawn</string>

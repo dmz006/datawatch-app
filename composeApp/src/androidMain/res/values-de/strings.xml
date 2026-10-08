@@ -4,7 +4,7 @@
 
     <!-- ── Bottom navigation ── -->
     <string name="nav_sessions">Sitzungen</string>
-    <string name="nav_autonomous">Autonom</string>
+    <string name="nav_autonomous">Automaten</string>
     <string name="nav_alerts">Alarme</string>
     <string name="nav_settings">Einstellungen</string>
 
@@ -362,7 +362,7 @@
     <string name="automata_wizard_inferred_auto">← automatisch erkannt</string>
     <string name="automata_wizard_intent">Was möchten Sie erreichen?</string>
     <string name="automata_wizard_intent_placeholder">z.B. CACHE-Spalte zu /api/stats hinzufügen…</string>
-    <string name="automata_wizard_launch">⚡ Automaten starten</string>
+    <string name="automata_wizard_launch">⚡ Automat starten</string>
     <string name="automata_wizard_model">Modell</string>
     <string name="automata_wizard_permission">Berechtigungsmodus</string>
     <string name="automata_wizard_rules">Regelprüfung (nach Scan)</string>
@@ -370,7 +370,7 @@
     <string name="automata_wizard_skills">Skills (verfügbar — im Agentenprofil aktivieren)</string>
     <string name="automata_wizard_story_approval">Pro-Story-Genehmigung</string>
     <string name="automata_wizard_template_link">Oder aus einer Vorlage starten →</string>
-    <string name="automata_wizard_title">Automaten starten</string>
+    <string name="automata_wizard_title">Automat starten</string>
     <string name="automata_wizard_type">Typ</string>
     <string name="automata_wizard_workspace">Arbeitsbereich</string>
     <string name="btn_cancel">Abbrechen</string>
@@ -473,14 +473,14 @@
     <string name="prd_no_stories">Noch keine Storys.</string>
     <string name="prd_no_tasks">Keine Aufgaben.</string>
     <string name="prd_revision_prompt">Was muss überarbeitet werden?</string>
-    <string name="prd_scan_help">Statische Analyse (SAST, Secrets, Abhängigkeiten, LLM-Grader) über die Automat-Spec und zugehörige Dateien. Führt die konfigurierten Scanner aus und meldet ein Urteil und Befunde.</string>
+    <string name="prd_scan_help">Statische Analyse (SAST, Secrets, Abhängigkeiten, LLM-Grader) über die Automaten-Spec und zugehörige Dateien. Führt die konfigurierten Scanner aus und meldet ein Urteil und Befunde.</string>
     <string name="prd_scan_run_title">Alle konfigurierten Scanner gegen diesen Automaten ausführen</string>
     <string name="prd_set_llm_hint">Aufgaben ohne Override erben diese Werte. Leer = globaler session.llm_backend-Standard.</string>
-    <string name="prd_set_llm_title">Automat-Worker-LLM</string>
+    <string name="prd_set_llm_title">Automaten-Worker-LLM</string>
     <string name="prd_set_story_profile_hint">Leer = Standardausführungsprofil des Automaten erben. Ein Name überschreibt nur diese Story.</string>
     <string name="prd_set_story_profile_title">Ausführungsprofil überschreiben</string>
     <string name="prd_settings_guided_label">Geführter Modus — nach jeder Story für Review pausieren</string>
-    <string name="prd_settings_modal_title">Automat-Einstellungen</string>
+    <string name="prd_settings_modal_title">Automaten-Einstellungen</string>
     <string name="prd_settings_save_failed">Speichern fehlgeschlagen</string>
     <string name="prd_settings_saved">Einstellungen gespeichert</string>
     <string name="prd_settings_skills_hint">Skill-IDs aus /api/skills, die an jede Task-Session übergeben werden.</string>
@@ -1311,17 +1311,17 @@
     <string name="prd_set_story_llm_title">Story-LLM-Überschreibung</string>
     <string name="prd_story_llm_hint">Story-spezifische LLM-Überschreibung — leer erbt vom Automaten dann die globale Konfiguration. Alle Aufgaben in dieser Story erben diesen Wert, sofern sie keine eigene Überschreibung haben.</string>
     <string name="prd_story_llm_btn">LLM für diese Story überschreiben</string>
-    <string name="prd_story_profile_inherit">(Automaton-Standard erben)</string>
+    <string name="prd_story_profile_inherit">(Automaten-Standard erben)</string>
     <string name="prd_task_spawn_badge">↳ spawn</string>
     <string name="prd_task_spawn_hint">Diese Aufgabe ist die Spezifikation eines Kind-Automaten; der Executor plant, genehmigt und startet ihn</string>
     <string name="prd_task_child_link">→ Kind %1$s</string>
-    <string name="decompose_in_progress">Automaton wird zerlegt…</string>
+    <string name="decompose_in_progress">Automat wird zerlegt…</string>
     <string name="decompose_story_count">%1$d Stories generiert</string>
     <string name="decompose_error">Zerlegung fehlgeschlagen</string>
     <string name="tmpl_builtin_badge">integriert</string>
     <string name="tmpl_used_count">%1$d× verwendet</string>
     <string name="prd_instantiate_vars_label">Vorlagenvariablen (k=v,k=v)</string>
-    <string name="automata_filter_toggle">Automata-Filter umschalten</string>
+    <string name="automata_filter_toggle">Automaten-Filter umschalten</string>
     <!-- Project / cluster profile editor (form + YAML view) -->
     <string name="pfe_form_view">Formular-Ansicht</string>
     <string name="pfe_yaml_view">YAML-Ansicht</string>

@@ -8,6 +8,20 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **iPhone: switching tabs from More now works.** With Settings or Dashboard open (they sit behind More), a notification tap, deep link or restore that switched to another tab stayed on the More screen.
+- **Wear: Galaxy Watch8 and other Wear OS 6 watches are no longer "not compatible" on Play.** The manifest required an old Wear library (`com.google.android.wearable`) that the app never uses; it is now optional.
+- **"Automaton/Automata" translated everywhere** (AGENT.md § Terminology Rule): German Automat/Automaten, Spanish autómata/autómatas, French automate/automates, Japanese オートマトン/オートマタ.
+  - Android phone, Wear, iOS app strings and the four App Store listings no longer leave the English word.
+  - Japanese no longer says "PRD" anywhere.
+  - The Automata tab label says Automaten / Autómatas / Automates / オートマタ instead of "Autonom" / "Autónomo" / "Autonome" / "自律".
+  - Wear's Automata page title and empty state are translated.
+  - A CI check (`scripts/check-automata-terms.py`) blocks regressions.
+  - The web UI's copy is tracked in dmz006/datawatch#193.
+
+### CI
+- **The README CI badge no longer shows false failures:** each push to main gets its own CI / iOS Build run instead of cancelling the previous one.
+
 ### CI
 - **Release parity.** Every release now submits its TestFlight build for Beta App Review, adds it to the external group, and ends with a `release-parity` check. The check fails the release unless Play internal and closed testing (phone and Wear) and TestFlight all carry the tagged build. Run it any time with `release-parity.yml` (read-only). The rule is in AGENT.md § Release parity.
 - **App Store listing prep** (`asc-prepare.yml`, read-and-set, submits nothing):

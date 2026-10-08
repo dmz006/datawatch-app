@@ -22,8 +22,8 @@ SIRI, WIDGETS UND STEUERELEMENTE
 • Widgets für Home-Bildschirm und Sperrbildschirm zeigen Sitzungszahlen und Serverlast.
 • Ein Steuerelement im Kontrollzentrum öffnet die App mit einem Tipp (ab iOS 18).
 
-AUTOMATA
-• Erstelle, prüfe und genehmige Automata: mehrstufige Pläne aus Stories, die der Server in Tasks zerlegt und mit deinen Agenten ausführt.
+AUTOMATEN
+• Erstelle, prüfe und genehmige Automaten: mehrstufige Pläne aus Stories, die der Server in Tasks zerlegt und mit deinen Agenten ausführt.
 • Verfolge den Fortschritt Story für Story, mit Abhängigkeitsgraph, Urteilen, Entscheidungen, Gedächtnis und den Worker-Sitzungen, die die Arbeit erledigen.
 • Nutze Vorlagen, den geführten Modus und Modell-Overrides pro Story oder pro Task.
 

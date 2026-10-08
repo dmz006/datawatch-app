@@ -205,7 +205,7 @@
 "Automata" = "オートマタ";
 "Automata Orchestrator" = "オートマタ・オーケストレーター";
 "Automata section" = "オートマタセクション";
-"Automata type" = "オートマタの種類";
+"Automata type" = "オートマトンの種類";
 "Automata-DAG orchestrator" = "オートマタ DAG オーケストレーター";
 "Automaton actions" = "オートマトンのアクション";
 "Automaton created (%@). Find it in the Automata tab." = "オートマトンを作成しました（%@）。オートマタタブで確認できます。";
@@ -770,7 +770,7 @@
 "Max parallel automata" = "最大並列オートマタ数";
 "Max parallel tasks" = "最大並列タスク数";
 "Max parallel tasks (0 = default 3)" = "最大並列タスク数（0 = 既定の 3）";
-"Max recursion depth (0 disables spawn-automaton)" = "最大再帰深度（0 で spawn-automaton を無効化）";
+"Max recursion depth (0 disables spawn-automaton)" = "最大再帰深度（0 で子オートマトンの生成を無効化）";
 "Memories" = "メモリー";
 "Memory" = "メモリ";
 "Memory %" = "メモリ %";
@@ -1241,7 +1241,7 @@
 "Search" = "検索";
 "Search Usage" = "検索の利用状況";
 "Search alerts…" = "アラート検索…";
-"Search automata…" = "オートマトンを検索…";
+"Search automata…" = "オートマタを検索…";
 "Search automaton memories…" = "オートマトンのメモリーを検索…";
 "Search history" = "検索履歴";
 "Search memories…" = "メモリーを検索…";
