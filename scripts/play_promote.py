@@ -13,6 +13,15 @@ import json
 import os
 import sys
 
+
+def _err(r) -> str:
+    """API error message without braces (GitHub masks a lone "{" from the key JSON)."""
+    try:
+        e = r.json().get("error", {})
+        return f"{r.status_code} {e.get('status', '')}: {e.get('message', '')}"
+    except ValueError:
+        return f"{r.status_code} {r.text[:300]}"
+
 import google.auth.transport.requests as gtr
 from google.oauth2 import service_account
 
@@ -46,11 +55,11 @@ def main() -> int:
         new["status"] = "completed"
         r = s.put(f"{base}/{edit}/tracks/{a.to_track}", json={"track": a.to_track, "releases": [new]})
         if not r.ok:
-            print(f"::error::update {a.to_track} failed: {r.status_code} {r.text[:400]}")
+            print(f"::error::update {a.to_track} failed: {_err(r)}")
             return 1
         c = s.post(f"{base}/{edit}:commit")
         if not c.ok:
-            print(f"::error::commit failed: {c.status_code} {c.text[:400]}")
+            print(f"::error::commit failed: {_err(c)}")
             return 1
         committed = True
         print(f"Promoted {new.get('name', '')} ({','.join(new['versionCodes'])}) {a.from_track} -> {a.to_track}")
