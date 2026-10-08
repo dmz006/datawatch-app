@@ -68,7 +68,7 @@ internal fun SkillRegistriesCard() {
     suspend fun loadAll() {
         val activeId = ServiceLocator.activeServerStore.get()
         val sp =
-            ServiceLocator.profileRepository.observeAll()
+            ServiceLocator.profilesWithProxied()
                 .first { list -> list.any { it.enabled } }
                 .let { list ->
                     if (activeId == null) {
@@ -95,7 +95,7 @@ internal fun SkillRegistriesCard() {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
                         val sp =
-                            ServiceLocator.profileRepository.observeAll()
+                            ServiceLocator.profilesWithProxied()
                                 .first { list -> list.any { it.enabled } }
                                 .let { list ->
                                     if (activeId == null) {
@@ -131,7 +131,7 @@ internal fun SkillRegistriesCard() {
                                 connectingName = reg.name
                                 val activeId = ServiceLocator.activeServerStore.get()
                                 val sp =
-                                    ServiceLocator.profileRepository.observeAll()
+                                    ServiceLocator.profilesWithProxied()
                                         .first { list -> list.any { it.enabled } }
                                         .let { list ->
                                             if (activeId == null) {
@@ -152,7 +152,7 @@ internal fun SkillRegistriesCard() {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
                                 val sp =
-                                    ServiceLocator.profileRepository.observeAll()
+                                    ServiceLocator.profilesWithProxied()
                                         .first { list -> list.any { it.enabled } }
                                         .let { list ->
                                             if (activeId == null) {
@@ -192,7 +192,7 @@ internal fun SkillRegistriesCard() {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
                         val sp =
-                            ServiceLocator.profileRepository.observeAll()
+                            ServiceLocator.profilesWithProxied()
                                 .first { list -> list.any { it.enabled } }
                                 .let { list ->
                                     if (activeId == null) {
@@ -218,7 +218,7 @@ internal fun SkillRegistriesCard() {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
                         val sp =
-                            ServiceLocator.profileRepository.observeAll()
+                            ServiceLocator.profilesWithProxied()
                                 .first { list -> list.any { it.enabled } }
                                 .let { list ->
                                     if (activeId == null) {
@@ -247,7 +247,7 @@ internal fun SkillRegistriesCard() {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
                         val sp =
-                            ServiceLocator.profileRepository.observeAll()
+                            ServiceLocator.profilesWithProxied()
                                 .first { list -> list.any { it.enabled } }
                                 .let { list ->
                                     if (activeId == null) {
@@ -461,7 +461,7 @@ private fun BrowseSkillsDialog(
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
             val sp =
-                ServiceLocator.profileRepository.observeAll()
+                ServiceLocator.profilesWithProxied()
                     .first { list -> list.any { it.enabled } }
                     .let { list ->
                         if (activeId == null) {

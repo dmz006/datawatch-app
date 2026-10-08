@@ -19,7 +19,9 @@ struct DocsLinkButton: View {
 
     private var docsURL: URL? {
         guard let profile, let target = DocsLinks.shared.forKey(key: key) else { return nil }
-        return URL(string: DocsLinks.shared.viewerUrl(baseUrl: profile.baseUrl, target: target))
+        // Docs are server-local: a proxied remote (#234) opens its parent's docs.
+        let base = IosProxiedServers.shared.docsBaseUrl(profile: profile)
+        return URL(string: DocsLinks.shared.viewerUrl(baseUrl: base, target: target))
     }
 
     var body: some View {

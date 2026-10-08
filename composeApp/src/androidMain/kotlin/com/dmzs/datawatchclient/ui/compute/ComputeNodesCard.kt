@@ -111,7 +111,7 @@ public fun ComputeNodesCard(
     var showMigrationModal by remember { mutableStateOf(false) }
 
     suspend fun resolveTransport(): TransportClient? =
-        ServiceLocator.profileRepository.observeAll().first().let { profiles ->
+        ServiceLocator.profilesWithProxied().first().let { profiles ->
             val activeId = ServiceLocator.activeServerStore.get()
             (
                 profiles.firstOrNull {

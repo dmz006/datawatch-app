@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import DatawatchShared
 
 /// D65a: Android's three-finger swipe-up opens the server picker. Installed on
 /// the key window as a UISwipeGestureRecognizer that never cancels or delays
@@ -33,7 +34,8 @@ extension Notification.Name {
     static let dwShowServerPicker = Notification.Name("dw.showServerPicker")
 }
 
-/// Server picker dialog shown by the gesture (only when 2+ servers).
+/// Server picker dialog shown by the gesture (only when 2+ choices, remotes
+/// reached through a server's /api/proxy included).
 struct ServerPickerDialogModifier: ViewModifier {
     @EnvironmentObject private var store: ServerProfileStore
     @State private var show = false
@@ -42,15 +44,26 @@ struct ServerPickerDialogModifier: ViewModifier {
         content
             .onAppear { ServerSwitchGesture.shared.install() }
             .onReceive(NotificationCenter.default.publisher(for: .dwShowServerPicker)) { _ in
-                if store.enabledProfiles.count > 1 { show = true }
+                store.refreshProxied()
+                if store.pickerProfiles.count > 1 { show = true }
             }
             .confirmationDialog("Switch server", isPresented: $show, titleVisibility: .visible) {
-                ForEach(store.enabledProfiles, id: \.id) { p in
-                    Button(p.id == store.activeProfile?.id ? "✓ \(p.displayName)" : p.displayName) {
+                // #234: each server followed by its remotes ("workstation › demo").
+                ForEach(store.pickerProfiles, id: \.id) { p in
+                    Button(p.id == store.activeProfile?.id ? "✓ \(label(p))" : label(p)) {
                         store.selectActive(p.id)
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             }
+    }
+
+    /// Dialog buttons can't indent or carry a subtitle, so a remote reads
+    /// "↳ workstation › demo (via workstation)".
+    private func label(_ p: ServerProfile) -> String {
+        guard let parent = IosProxiedServers.shared.parentName(profile: p, real: store.profiles) else {
+            return p.displayName
+        }
+        return "↳ \(p.displayName) (" + String(format: L("via %@"), parent) + ")"
     }
 }

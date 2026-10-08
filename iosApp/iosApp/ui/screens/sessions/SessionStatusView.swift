@@ -14,7 +14,10 @@ struct SessionStatusView: View {
 
     private var board: SessionStatusBoardDto? { snapshot?.board }
     private var telemetry: SessionTelemetryDto? { snapshot?.telemetry }
-    private var hooksDocURL: URL? { URL(string: profile.baseUrl + "/diagrams.html#docs/howto/claude-hooks.md") }
+    private var hooksDocURL: URL? {
+        // Docs are server-local: a proxied remote (#234) opens its parent's docs.
+        URL(string: IosProxiedServers.shared.docsBaseUrl(profile: profile) + "/diagrams.html#docs/howto/claude-hooks.md")
+    }
 
     var body: some View {
         ScrollView {

@@ -215,8 +215,9 @@ public fun PwaSectionTitle(
  */
 @Composable
 internal fun DocsInlineButton(docsPath: String) {
+    // Docs are server-local: a proxied remote (#234) links its parent's docs.
     val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
-    val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
+    val activeId by ServiceLocator.activeServerStore.observeReal().collectAsState(initial = null)
     val activeProfile =
         remember(profiles, activeId) {
             val enabled = profiles.filter { it.enabled }

@@ -56,7 +56,7 @@ public fun RoutingRulesCard() {
     suspend fun transport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
         val p =
-            ServiceLocator.profileRepository.observeAll().first()
+            ServiceLocator.profilesWithProxied().first()
                 .firstOrNull { it.id == id && it.enabled }
         return if (p != null) ServiceLocator.transportFor(p) else null
     }

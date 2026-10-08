@@ -44,7 +44,7 @@ public fun CooldownCard() {
     var reason by remember { mutableStateOf("") }
 
     suspend fun transport(): TransportClient? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         return if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
             profiles.firstOrNull { it.enabled }

@@ -66,7 +66,7 @@ public fun DetectionFiltersCard() {
     var banner by remember { mutableStateOf<String?>(null) }
 
     suspend fun resolveProfile() =
-        ServiceLocator.profileRepository.observeAll().first().let { profiles ->
+        ServiceLocator.profilesWithProxied().first().let { profiles ->
             val activeId = ServiceLocator.activeServerStore.get()
             profiles.firstOrNull {
                 it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS

@@ -1922,3 +1922,6 @@
 "Guardrails" = "Garde-fous";
 "Running guardrail:" = "Exécution du garde-fou :";
 "Guardrail error:" = "Erreur du garde-fou :";
+
+/* Server picker: remote reached through a connected server (#234) */
+"via %@" = "via %@";

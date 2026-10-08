@@ -84,4 +84,5 @@
     <string name="llm_test_running">Probando…</string>
     <string name="llm_option_default">(predeterminado)</string>
     <string name="llm_option_none">(ninguno)</string>
+    <string name="server_via_parent">vía %1$s</string>
 </resources>

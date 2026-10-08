@@ -7,7 +7,8 @@ import DatawatchShared
 /// Opens `<server>/<path>` in the system browser (docs / API links).
 func openServerPath(_ profile: ServerProfile?, _ path: String) {
     guard let profile else { return }
-    var base = profile.baseUrl
+    // Browser pages are server-local: a proxied remote (#234) opens its parent's.
+    var base = IosProxiedServers.shared.docsBaseUrl(profile: profile)
     if base.hasSuffix("/") { base = String(base.dropLast()) }
     if let url = URL(string: base + path) {
         UIApplication.shared.open(url)

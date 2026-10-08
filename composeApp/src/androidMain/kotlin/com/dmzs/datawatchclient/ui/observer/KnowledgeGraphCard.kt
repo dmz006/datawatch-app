@@ -46,7 +46,7 @@ internal fun KnowledgeGraphCard() {
 
     suspend fun transport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
-        val profiles = ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
+        val profiles = ServiceLocator.profilesWithProxied().first().filter { it.enabled }
         val p = profiles.firstOrNull { it.id == id } ?: profiles.firstOrNull()
         return p?.let { ServiceLocator.transportFor(it) }
     }

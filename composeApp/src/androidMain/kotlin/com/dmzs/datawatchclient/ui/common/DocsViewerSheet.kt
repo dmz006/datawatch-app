@@ -417,7 +417,7 @@ private fun DocsSearchDialog(
     var voiceRecorder by remember { mutableStateOf<VoiceRecorder?>(null) }
     var showVoiceDialog by remember { mutableStateOf(false) }
     var transcribingVoice by remember { mutableStateOf(false) }
-    val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
+    val profiles by ServiceLocator.profilesWithProxied().collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
 
     val micPermissionLauncher =

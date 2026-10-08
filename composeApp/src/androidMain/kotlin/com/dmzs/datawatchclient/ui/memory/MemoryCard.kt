@@ -87,7 +87,7 @@ public fun MemoryCard() {
     var timelineMemories by remember { mutableStateOf<List<JsonObject>>(emptyList()) }
 
     suspend fun resolveProfile(): ServerProfile? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         return profiles.firstOrNull {
             it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS

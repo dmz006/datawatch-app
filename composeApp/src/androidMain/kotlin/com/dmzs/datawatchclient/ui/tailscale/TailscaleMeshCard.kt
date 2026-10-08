@@ -53,14 +53,14 @@ public fun TailscaleMeshCard() {
 
     suspend fun activeTransport() =
         run {
-            val profiles = ServiceLocator.profileRepository.observeAll().first()
+            val profiles = ServiceLocator.profilesWithProxied().first()
             val activeId = ServiceLocator.activeServerStore.get()
             profiles.firstOrNull { it.id == activeId && it.enabled }
                 ?.let { ServiceLocator.transportFor(it) }
         }
 
     LaunchedEffect(Unit) {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             profiles.firstOrNull { it.id == activeId && it.enabled }

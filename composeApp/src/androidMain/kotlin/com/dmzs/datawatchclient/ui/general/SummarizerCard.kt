@@ -56,7 +56,7 @@ public fun SummarizerCard() {
     var testResult by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             profiles.firstOrNull { it.id == activeId && it.enabled }
@@ -105,7 +105,7 @@ public fun SummarizerCard() {
                 onCheckedChange = { checked ->
                     enabled = checked
                     scope.launch {
-                        val profiles = ServiceLocator.profileRepository.observeAll().first()
+                        val profiles = ServiceLocator.profilesWithProxied().first()
                         val activeId = ServiceLocator.activeServerStore.get()
                         val profile =
                             profiles.firstOrNull { it.id == activeId && it.enabled }
@@ -153,7 +153,7 @@ public fun SummarizerCard() {
                                 llmPickerExpanded = false
                                 llmRef = name
                                 scope.launch {
-                                    val profiles = ServiceLocator.profileRepository.observeAll().first()
+                                    val profiles = ServiceLocator.profilesWithProxied().first()
                                     val activeId = ServiceLocator.activeServerStore.get()
                                     val profile =
                                         profiles.firstOrNull { it.id == activeId && it.enabled }
@@ -211,7 +211,7 @@ public fun SummarizerCard() {
                             isTesting = true
                             testResult = null
                             scope.launch {
-                                val profiles = ServiceLocator.profileRepository.observeAll().first()
+                                val profiles = ServiceLocator.profilesWithProxied().first()
                                 val activeId = ServiceLocator.activeServerStore.get()
                                 val profile =
                                     profiles.firstOrNull { it.id == activeId && it.enabled }

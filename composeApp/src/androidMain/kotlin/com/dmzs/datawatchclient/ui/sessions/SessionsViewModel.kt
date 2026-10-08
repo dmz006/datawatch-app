@@ -323,7 +323,8 @@ public class SessionsViewModel : ViewModel() {
 
     private val activeProfile: StateFlow<ServerProfile?> =
         combine(
-            allProfiles,
+            // #234 — real profiles + proxied remotes (virtual, never persisted).
+            ServiceLocator.profilesWithProxied(),
             activeId,
         ) { profiles, storedId ->
             val enabled = profiles.filter { it.enabled }

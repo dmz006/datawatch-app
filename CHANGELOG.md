@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- **Reach every remote server through the connected one (#234, PWA parity).** Remote servers configured on a datawatch server (Settings › Comms › Remote Servers) now show up in the app without their own login, the same way the web UI reaches them through `/api/proxy/<name>`.
+  - The **Server:** chip bar on Sessions, Automata, Alerts, Dashboard and Observer lists each remote right after its server ("workstation › demo", or just "demo" when you have one server). Android's Alerts tab gains the bar.
+  - The switch-server sheet (Android) and three-finger switch dialog (iPhone) list each remote under its server, "via workstation".
+  - A remote uses its server's token and certificate settings; nothing new is stored. Live terminal and status updates go through `/api/proxy/<name>/ws`.
+  - If a remote is removed, the app switches back to its server.
+  - Widgets, Wear, Android Auto, Siri and push stay on your own servers and show the parent server while a remote is selected. Help and docs links open the parent server's docs.
+
 ## [1.28.16] — 2026-10-08
 
 ### Fixed

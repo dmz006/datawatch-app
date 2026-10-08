@@ -1,10 +1,12 @@
 package com.dmzs.datawatchclient.di
 
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.transport.ProxiedServers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -450,7 +452,8 @@ public object IosSettingsConfig {
 
     /** True when [profile]'s server has accepted this device's APNs registration. */
     public fun apnsRegistered(profile: ServerProfile): Boolean =
-        !IosServiceLocator.pushStore.deviceIdFor(profile.id).isNullOrEmpty()
+        // Push stays keyed to real profiles: a proxied remote (#234) shows its parent's.
+        !IosServiceLocator.pushStore.deviceIdFor(ProxiedServers.parentIdOf(profile.id)).isNullOrEmpty()
 
     /**
      * Test push to this iPhone: POST /api/push/apns/test for this device's
@@ -462,8 +465,17 @@ public object IosSettingsConfig {
         onDone: (String?) -> Unit,
     ) {
         scope.launch {
-            val tr = IosServiceLocator.transportFor(profile)
-            val deviceId = IosServiceLocator.pushStore.deviceIdFor(profile.id)
+            // Push stays keyed to real profiles: a proxied remote (#234) tests its parent.
+            val target =
+                if (ProxiedServers.isProxied(profile.id)) {
+                    val parentId = ProxiedServers.parentIdOf(profile.id)
+                    IosServiceLocator.profileRepository.observeAll().first()
+                        .firstOrNull { it.id == parentId } ?: profile
+                } else {
+                    profile
+                }
+            val tr = IosServiceLocator.transportFor(target)
+            val deviceId = IosServiceLocator.pushStore.deviceIdFor(target.id)
             if (deviceId.isNullOrEmpty()) {
                 onDone("This device is not registered with the server yet. Tap Re-register this device.")
                 return@launch

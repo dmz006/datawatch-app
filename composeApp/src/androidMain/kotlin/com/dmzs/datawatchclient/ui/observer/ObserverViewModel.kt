@@ -36,7 +36,8 @@ public class ObserverViewModel : ViewModel() {
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _computedActiveProfile: StateFlow<ServerProfile?> =
-        combine(_allProfiles, _activeId) { profiles, storedId ->
+        // #234 — resolve over real profiles + proxied remotes.
+        combine(ServiceLocator.profilesWithProxied(), _activeId) { profiles, storedId ->
             val enabled = profiles.filter { it.enabled }
             if (storedId == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine enabled.firstOrNull()
             storedId?.let { id -> enabled.firstOrNull { it.id == id } } ?: enabled.firstOrNull()
