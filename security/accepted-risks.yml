@@ -1,14 +1,86 @@
-# Accepted / dismissed security findings — the app's equivalent of datawatch's
-# .trivyignore. Every Dependabot / code-scanning dismissal that waits on an
-# upstream fix MUST have an entry here so .github/workflows/sca-fix-watch.yml
-# can tell us when a STABLE (non-alpha/beta/RC/milestone) release containing the
-# fix ships. Remove the entry once the fix is adopted.
+# Accepted (dismissed / ignored) security findings — the app's equivalent of
+# datawatch's .trivyignore. Security acceptance standard (operator, 2026-10-08;
+# shared with datawatch): AGENT.md § "Security acceptance standard".
 #
-# fields:
-#   id          GitHub alert reference (dependabot/<n> or code-scanning/<n>)
-#   group/artifact  Maven coordinates checked on Maven Central
-#   fixed_in    first patched version per the advisory (may be a pre-release)
-#   catalog     gradle/libs.versions.toml version key to bump (if direct)
-#   reason      why it's accepted until then
+# Every Dependabot / code-scanning dismissal, and every accepted vulnerability in
+# bundled JS (xterm.js, Mermaid) or a container image, MUST have an entry here.
+# No acceptance without an impact analysis. Acceptance is self-service when the
+# entry is complete and `python3 scripts/check_accepted_risks.py` passes (CI runs
+# it); add or renew entries in their own commit, never bundled with other work.
+# Escalate to the operator when impact.reachable is "yes" on a HIGH/CRITICAL
+# finding, or when renewing an entry past its first expiry.
+#
+# .github/workflows/sca-fix-watch.yml (scripts/sca_fix_watch.py) runs daily and
+# reports: stable upstream fixes for `dependency` entries, entries past `expires`
+# or due within 14 days, GitHub dismissals with no entry here, and OSV
+# vulnerabilities in the bundled JS that are not accepted here. Remove an entry
+# once its fix is adopted.
+#
+# Fields (all required unless marked optional):
+#   id            dependabot/<n> | code-scanning/<n> | osv/<OSV or GHSA ID> | cve/<CVE-ID>
+#   kind          dependency | code-scanning | bundled-js | container
+#   package       dependency: Maven coordinates group:artifact (checked on Maven
+#                 Central); bundled-js: npm name as published (@xterm/xterm,
+#                 @xterm/addon-fit, @xterm/addon-search, mermaid);
+#                 code-scanning: the rule id; container: image name
+#   severity      low | medium | moderate | high | critical
+#   fixed_in      (optional) first patched version per the advisory (may be a
+#                 pre-release; the watch only reports a STABLE release >= it)
+#   catalog       (optional) gradle/libs.versions.toml version key to bump
+#   impact:
+#     traced      true when the vulnerable code path was traced in our code
+#     reachable   "yes" | "no" | "unknown" (quote it — YAML 1.1 reads bare yes/no as booleans)
+#     analysis    why the finding is (not) exploitable here; required always
+#   added         YYYY-MM-DD the entry was added (or last re-reviewed)
+#   expires       YYYY-MM-DD; at most added+90d when traced, added+30d when not
+#   validated_by  GitHub login of whoever did the impact analysis, or "claude-session"
+#                 (records who validated it; not an operator sign-off)
+#   reason        why it is accepted (until when / what would end it)
 risks:
-  # (none) — dependabot/71 (kotlin-gradle-plugin) fixed by Kotlin 2.4.20.
+  - id: code-scanning/14
+    kind: code-scanning
+    package: java/android/insecure-local-authentication
+    severity: medium
+    impact:
+      traced: true
+      reachable: "yes"
+      analysis: >-
+        Our own code path in BiometricGate.kt, by design. The main app unlock is
+        CryptoObject-bound to a Class-3 Android Keystore key, so a successful
+        callback without the CryptoObject cannot unlock it. This
+        OS-verified biometric/PIN prompt without a CryptoObject runs only when
+        that key cannot be created (device or Keystore limitation), so the user
+        is not locked out permanently. The prompt is still verified by the OS
+        (BiometricPrompt with device credential); the toggle that turns the lock
+        off sits inside the gated UI. Acceptable: a crypto-bound unlock is used
+        wherever the platform allows it.
+    added: 2026-10-06
+    expires: 2027-01-04
+    validated_by: dmz006
+    reason: >-
+      Dismissed won't-fix by dmz006 on 2026-10-06. Intentional fallback: main
+      unlock is CryptoObject-bound (Class-3 Keystore key); this OS-verified
+      biometric/PIN prompt runs only if that key can't be created, to avoid
+      permanent lockout (toggle is inside the gated UI). Issue #208.
+
+  - id: code-scanning/15
+    kind: code-scanning
+    package: java/android/insecure-local-authentication
+    severity: medium
+    impact:
+      traced: true
+      reachable: "yes"
+      analysis: >-
+        Second call site of the same fallback in BiometricGate.kt as
+        code-scanning/14, by design. The main unlock is CryptoObject-bound to a
+        Class-3 Keystore key; the OS-verified biometric/PIN prompt without a
+        CryptoObject is used only when that key cannot be created, so the user is
+        not locked out permanently. Acceptable for the same reasons as #14.
+    added: 2026-10-06
+    expires: 2027-01-04
+    validated_by: dmz006
+    reason: >-
+      Dismissed won't-fix by dmz006 on 2026-10-06. Same intentional fallback as
+      #14: main unlock is CryptoObject-bound (Class-3 Keystore key);
+      OS-verified biometric/PIN prompt only if that key can't be created, to
+      avoid permanent lockout. Issue #208.
