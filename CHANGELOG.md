@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.14] — 2026-10-08
+
 ### Fixed
 - **Quick commands match the web UI.**
   - **Android session-card sheet:** now shows exactly the web UI's list: approve, reject, continue, skip, ESC, tmux prefix (Ctrl-b), quit, then your saved commands and Custom. It used to show a different server-provided list, and ESC / Ctrl-b now work from the card.
