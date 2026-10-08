@@ -1,0 +1,39 @@
+name: Play — replace listing images
+
+# Replaces one image set on the Play store listing (e.g. Wear screenshots) with
+# the PNGs in a repo folder (scripts/play_listing_images.py). No bundle upload;
+# the listing change goes through Google's review.
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_type:
+        description: 'Image set'
+        type: choice
+        options: [wearScreenshots, phoneScreenshots, sevenInchScreenshots, tenInchScreenshots]
+        default: wearScreenshots
+      dir:
+        description: 'Repo folder with the PNGs (uploaded in name order)'
+        type: string
+        default: docs/media/watch/store
+      language:
+        description: 'Listing language'
+        type: string
+        default: en-US
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace listing images
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
+        run: |
+          set -euo pipefail
+          pip install --quiet google-auth requests
+          python3 scripts/play_listing_images.py --package com.dmzs.datawatchclient \
+            --language "${{ inputs.language }}" --type "${{ inputs.image_type }}" --dir "${{ inputs.dir }}"
