@@ -93,11 +93,11 @@ Either way, you need your own [datawatch](https://github.com/dmz006/datawatch) s
 
 ## At a glance
 
-| Phone | Watch |
-|:---:|:---:|
-| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) |
+| Phone | Watch | Android Auto (AAOS) | Web app (PWA) |
+|:---:|:---:|:---:|:---:|
+| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![auto slideshow](docs/media/auto-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
 
-*Slideshows loop at ~2.5 s per frame: v1.28.16 with neutral demo data, captured by `android-screenshots.yml` and the Wear demo mode. Android Auto and web-app (PWA) captures are being redone with the same demo data.*
+*Slideshows loop at ~2.5 s per frame: v1.28.16 with neutral demo data, captured by `android-screenshots.yml` (phone, Android Automotive, and the datawatch web app it pairs with) and the Wear demo mode.*
 
 ## What it does
 
@@ -183,7 +183,18 @@ The app runs natively on **Android Automotive OS** (AAOS) — no phone required.
 Install the APK directly on any AAOS head unit and connect to your datawatch
 daemon over Tailscale or local Wi-Fi.
 
-*Fresh Android Auto screenshots with neutral demo data are being captured.*
+<table>
+<tr>
+<td align="center"><img src="docs/media/auto/1-home.png" width="270"/><br/><sub>Home</sub></td>
+<td align="center"><img src="docs/media/auto/2-sessions.png" width="270"/><br/><sub>Sessions</sub></td>
+<td align="center"><img src="docs/media/auto/4-automata.png" width="270"/><br/><sub>Automata</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/media/auto/5-monitor.png" width="270"/><br/><sub>Monitor</sub></td>
+<td align="center"><img src="docs/media/auto/6-about.png" width="270"/><br/><sub>About</sub></td>
+<td align="center"><img src="docs/media/auto/3-session.png" width="270"/><br/><sub>Session</sub></td>
+</tr>
+</table>
 
 Surfaces available on AAOS: **Sessions**, **Alerts** (grouped by session, inline reply/schedule/open), and **Settings** (Monitor · General · Comms · LLM · About). The eye watermark and server-selector dropdown carry over from the phone layout.
 
