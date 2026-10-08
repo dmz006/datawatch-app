@@ -74,7 +74,9 @@ public object IosSurfaces {
         scope.launch {
             try {
                 val profiles = IosServiceLocator.profileRepository.observeAll().first()
-                configStore.put(WidgetConfig.from(profiles, activeProfileId).encode())
+                // A proxied remote (#234) publishes its parent: widgets stay on real servers.
+                val realId = com.dmzs.datawatchclient.transport.ProxiedServers.realIdOf(activeProfileId)
+                configStore.put(WidgetConfig.from(profiles, realId).encode())
             } catch (_: Throwable) {
                 // Best effort: the widget keeps its previous configuration.
             }
@@ -103,7 +105,8 @@ public object IosSurfaces {
         scope.launch {
             try {
                 val enabled = IosServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
-                val profile = enabled.firstOrNull { it.id == activeProfileId } ?: enabled.firstOrNull()
+                val realId = com.dmzs.datawatchclient.transport.ProxiedServers.realIdOf(activeProfileId)
+                val profile = enabled.firstOrNull { it.id == realId } ?: enabled.firstOrNull()
                 if (profile == null) {
                     onResult(null)
                     return@launch

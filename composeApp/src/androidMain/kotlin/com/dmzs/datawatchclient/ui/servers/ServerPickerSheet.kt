@@ -26,9 +26,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.ui.common.proxiedParentName
+import com.dmzs.datawatchclient.ui.common.rememberProxiedPickerLoading
+import com.dmzs.datawatchclient.ui.common.rememberProxiedPickerProfiles
 
 /**
  * Bottom-sheet server picker. Triggered from the three-finger upward swipe gesture
@@ -45,28 +50,46 @@ public fun ServerPickerSheet(
     val profiles by ServiceLocator.profileRepository.observeAll()
         .collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
+    // #234 — each profile followed by its remotes reached through /api/proxy.
+    val rows = rememberProxiedPickerProfiles(profiles)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
             Text(
-                "Switch server",
+                stringResource(R.string.settings_switch_server),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
             )
             HorizontalDivider()
             if (profiles.isEmpty()) {
                 Text(
-                    "No servers configured.",
+                    stringResource(R.string.sessions_no_servers),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(24.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            profiles.forEach { p ->
-                ProfileRow(profile = p, isActive = p.id == activeId, onSelect = {
-                    ServiceLocator.activeServerStore.set(p.id)
-                    onDismiss()
-                })
+            rows.forEach { p ->
+                ProfileRow(
+                    profile = p,
+                    viaParent = proxiedParentName(p, profiles),
+                    isActive = p.id == activeId,
+                    onSelect = {
+                        ServiceLocator.activeServerStore.set(p.id)
+                        onDismiss()
+                    },
+                )
+                HorizontalDivider()
+            }
+            // PWA three-finger modal `server_picker_loading` (v8.73.2): the list
+            // loads eagerly; this line shows while a server's remotes are first fetched.
+            if (rememberProxiedPickerLoading(profiles)) {
+                Text(
+                    stringResource(R.string.server_picker_loading),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                )
                 HorizontalDivider()
             }
             Row(
@@ -80,8 +103,8 @@ public fun ServerPickerSheet(
                 IconButton(onClick = {
                     onAdd()
                     onDismiss()
-                }) { Icon(Icons.Filled.Add, contentDescription = "Add server") }
-                Text("Add server", style = MaterialTheme.typography.bodyLarge)
+                }) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.sessions_add_server)) }
+                Text(stringResource(R.string.sessions_add_server), style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
@@ -90,18 +113,24 @@ public fun ServerPickerSheet(
 @Composable
 private fun ProfileRow(
     profile: ServerProfile,
+    viaParent: String?,
     isActive: Boolean,
     onSelect: () -> Unit,
 ) {
+    // A proxied remote sits indented under its parent: "workstation › demo",
+    // subtitle "via workstation".
+    val indent = if (viaParent != null) 24.dp else 0.dp
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect).padding(24.dp),
+        modifier =
+            Modifier.fillMaxWidth().clickable(onClick = onSelect)
+                .padding(start = 24.dp + indent, end = 24.dp, top = 24.dp, bottom = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatusDot(enabled = profile.enabled)
         Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
             Text(profile.displayName, style = MaterialTheme.typography.bodyLarge)
             Text(
-                profile.baseUrl,
+                viaParent?.let { stringResource(R.string.server_via_parent, it) } ?: profile.baseUrl,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

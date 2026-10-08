@@ -49,7 +49,7 @@ import com.dmzs.datawatchclient.ui.theme.PwaCard
  */
 
 private suspend fun resolveActiveProfile(): ServerProfile? {
-    val profiles = ServiceLocator.profileRepository.observeAll().first()
+    val profiles = ServiceLocator.profilesWithProxied().first()
     val activeId = ServiceLocator.activeServerStore.get()
     return profiles.firstOrNull {
         it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS

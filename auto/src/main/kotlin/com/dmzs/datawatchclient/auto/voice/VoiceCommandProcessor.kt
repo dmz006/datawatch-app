@@ -217,7 +217,7 @@ private const val MAX_EDIT_DIST: Int = 2
 public suspend fun buildStatusSummary(): StatusSummary {
     return runCatching {
         val activeId =
-            AutoServiceLocator.activeServerStore.get()
+            AutoServiceLocator.activeServerStore.getReal()
                 ?: return@runCatching StatusSummary.noServer()
         val profiles = AutoServiceLocator.profileRepository.observeAll().first()
         val profile =
@@ -259,7 +259,7 @@ public suspend fun buildWhatFailedReport(): String {
     return runCatching {
         val profile =
             run {
-                val activeId = AutoServiceLocator.activeServerStore.get()
+                val activeId = AutoServiceLocator.activeServerStore.getReal()
                 val profiles = AutoServiceLocator.profileRepository.observeAll().first()
                 profiles.firstOrNull { it.id == activeId && it.enabled }
                     ?: profiles.firstOrNull { it.enabled }
@@ -293,7 +293,7 @@ public suspend fun buildApproveFirstPlanResponse(): String =
     runCatching {
         val profile =
             run {
-                val activeId = AutoServiceLocator.activeServerStore.get()
+                val activeId = AutoServiceLocator.activeServerStore.getReal()
                 val profiles = AutoServiceLocator.profileRepository.observeAll().first()
                 profiles.firstOrNull { it.id == activeId && it.enabled }
                     ?: profiles.firstOrNull { it.enabled }
@@ -317,7 +317,7 @@ public suspend fun buildStopFirstPlanResponse(): String =
     runCatching {
         val profile =
             run {
-                val activeId = AutoServiceLocator.activeServerStore.get()
+                val activeId = AutoServiceLocator.activeServerStore.getReal()
                 val profiles = AutoServiceLocator.profileRepository.observeAll().first()
                 profiles.firstOrNull { it.id == activeId && it.enabled }
                     ?: profiles.firstOrNull { it.enabled }
@@ -341,7 +341,7 @@ public suspend fun buildReadPlanResponse(): String =
     runCatching {
         val profile =
             run {
-                val activeId = AutoServiceLocator.activeServerStore.get()
+                val activeId = AutoServiceLocator.activeServerStore.getReal()
                 val profiles = AutoServiceLocator.profileRepository.observeAll().first()
                 profiles.firstOrNull { it.id == activeId && it.enabled }
                     ?: profiles.firstOrNull { it.enabled }

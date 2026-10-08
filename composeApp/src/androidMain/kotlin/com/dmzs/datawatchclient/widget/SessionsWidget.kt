@@ -70,7 +70,7 @@ public class SessionsWidget : AppWidgetProvider() {
         // check, the widget was silently pinned to the first-enabled
         // profile and ignored manual picks from the app / widget
         // tap-to-cycle affordance (2026-04-22 user report).
-        val activeId = ServiceLocator.activeServerStore.get()
+        val activeId = ServiceLocator.activeServerStore.getReal()
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val profile =
             profiles.firstOrNull { it.id == activeId && it.enabled }

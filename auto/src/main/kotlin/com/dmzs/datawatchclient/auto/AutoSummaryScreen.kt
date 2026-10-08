@@ -325,7 +325,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
  */
 internal suspend fun resolveActiveProfile(): ServerProfile? {
     val profiles = AutoServiceLocator.profileRepository.observeAll().first()
-    val activeId = AutoServiceLocator.activeServerStore.get()
+    val activeId = AutoServiceLocator.activeServerStore.getReal()
     val picked = profiles.firstOrNull { it.id == activeId && it.enabled }
     return picked ?: profiles.firstOrNull { it.enabled }
 }

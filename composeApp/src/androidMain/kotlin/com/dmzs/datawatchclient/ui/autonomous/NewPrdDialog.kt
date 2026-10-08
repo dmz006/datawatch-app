@@ -152,7 +152,7 @@ internal fun NewPrdDialog(
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
             val sp =
-                ServiceLocator.profileRepository.observeAll()
+                ServiceLocator.profilesWithProxied()
                     .first { list -> list.any { it.enabled } }
                     .let { list ->
                         if (activeId == null) {

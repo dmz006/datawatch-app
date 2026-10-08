@@ -270,6 +270,19 @@ final class AlertsViewModel: ObservableObject {
         }
     }
 
+    /// onAppear: load when the server changed, else refetch now and resume the
+    /// poll `onDisappear` stopped (`load(from:)` alone returned early for the
+    /// same server, so a revisited tab never polled again).
+    func appear(with newProfiles: [ServerProfile]) {
+        if newProfiles.map({ $0.id }) != profiles.map({ $0.id }) {
+            load(from: newProfiles)
+            return
+        }
+        guard profile != nil else { return }
+        refresh()
+        startPolling()
+    }
+
     /// Sequential loop: the next fetch is scheduled only after the previous one
     /// completes, so a slow server can't stack requests (the Android v1.23.112
     /// pile-up). Visibility-gated by the view's onAppear / onDisappear.
@@ -304,8 +317,21 @@ final class AlertsViewModel: ObservableObject {
         defer { inFlight = false }
         async let alertsResult = ServiceLocatorAsync.listAlerts(profile: profile)
         async let sessionsResult = ServiceLocatorAsync.listSessions(profile: profile)
+        let fetched: Result<(alerts: [DatawatchShared.Alert], unreadCount: Int), Error>
         do {
-            let result = try await alertsResult
+            fetched = .success(try await alertsResult)
+        } catch {
+            fetched = .failure(error)
+        }
+        let live: [DwSession]? = try? await sessionsResult
+        // #236.6/7: the server changed while this ran — drop the stale result and
+        // fetch the new server now (its own refresh() hit the in-flight guard).
+        if self.profile?.id != profile.id || allMode {
+            Task { [weak self] in await self?.refreshAsync() }
+            return
+        }
+        do {
+            let result = try fetched.get()
             alerts = result.alerts
             alertServer = [:]
             unreadCount = result.unreadCount
@@ -315,7 +341,7 @@ final class AlertsViewModel: ObservableObject {
         } catch {
             self.error = error.localizedDescription
         }
-        if let live = try? await sessionsResult { sessions = live }
+        if let live { sessions = live }
         publishBadge()
         isLoading = false
     }
@@ -395,6 +421,9 @@ struct AlertsView: View {
         Group {
             if store.profiles.isEmpty {
                 noProfilesView
+            } else if let fed = store.fedStatus(for: store.activeProfile?.id), fed.phase == "error" {
+                // #236.2: an unreachable proxied remote shows why, not a loader.
+                FedConnStatusView(status: fed)
             } else if vm.isLoading && vm.alerts.isEmpty {
                 LoadingIndicator(message: L("Loading…"))
             } else if let err = vm.error, vm.alerts.isEmpty {
@@ -424,7 +453,7 @@ struct AlertsView: View {
             }
         }
         .onAppear {
-            vm.load(from: shownProfiles)
+            vm.appear(with: shownProfiles)
             if let p = store.activeProfile {
                 IosQuickCommands.shared.loadSaved(profile: p) { list in
                     DispatchQueue.main.async { savedCommands = list }

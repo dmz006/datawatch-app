@@ -59,8 +59,9 @@ import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
  */
 @Composable
 internal fun DocsLinkAction(docsPath: String?) {
+    // Docs are server-local: a proxied remote (#234) links its parent's docs.
     val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
-    val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
+    val activeId by ServiceLocator.activeServerStore.observeReal().collectAsState(initial = null)
     val activeProfile =
         remember(profiles, activeId) {
             val enabled = profiles.filter { it.enabled }
@@ -281,10 +282,16 @@ internal fun SingleServerPickerTitle(
                     enabled = false,
                 )
             } else {
-                profiles.forEach { p ->
+                // #234 — remotes reached through /api/proxy listed under their parent.
+                val rows = rememberProxiedPickerProfiles(profiles)
+                rows.forEach { p ->
+                    val via = proxiedParentName(p, profiles)
                     DropdownMenuItem(
                         text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.padding(start = if (via != null) 16.dp else 0.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
                                 HeaderProfileDot(enabled = p.enabled)
                                 Column(
                                     modifier =
@@ -294,7 +301,7 @@ internal fun SingleServerPickerTitle(
                                 ) {
                                     Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
                                     Text(
-                                        p.baseUrl,
+                                        via?.let { stringResource(R.string.server_via_parent, it) } ?: p.baseUrl,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -309,6 +316,14 @@ internal fun SingleServerPickerTitle(
                             }
                         },
                         onClick = { onSelect(p.id) },
+                    )
+                }
+                // PWA `server_picker_loading` while remotes are first fetched (#236).
+                if (rememberProxiedPickerLoading(profiles)) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.server_picker_loading)) },
+                        onClick = onDismiss,
+                        enabled = false,
                     )
                 }
             }

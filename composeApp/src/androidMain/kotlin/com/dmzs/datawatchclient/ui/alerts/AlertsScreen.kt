@@ -107,6 +107,26 @@ public fun AlertsScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            // PWA `_serverPickerBar` on Alerts: All · each server · its remotes (#234).
+            com.dmzs.datawatchclient.ui.common.ServerPickerBar(
+                profiles = state.allProfiles,
+                activeId = state.activeProfile?.id,
+                allMode = state.allServersMode,
+                onSelect = vm::selectProfile,
+                showAll = true,
+                onSelectAll = vm::selectAllServers,
+            )
+            // #236.2 — a proxied remote that can't be reached shows the real error
+            // (and a way back) instead of an endless loader (PWA v8.73.5+).
+            val fedStatus =
+                com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
+                    state.activeProfile?.id,
+                    state.allServersMode,
+                )
+            if (fedStatus?.phase == com.dmzs.datawatchclient.transport.FedConnPhase.ERROR) {
+                com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
+                return@Column
+            }
             // Error banner
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -473,15 +493,21 @@ private fun AlertsTopBar(
                             Text(stringResource(R.string.sessions_no_servers))
                         }, onClick = { pickerOpen = false }, enabled = false)
                     } else {
-                        state.allProfiles.forEach { p ->
+                        val rows = com.dmzs.datawatchclient.ui.common.rememberProxiedPickerProfiles(state.allProfiles)
+                        rows.forEach { p ->
+                            val via = com.dmzs.datawatchclient.ui.common.proxiedParentName(p, state.allProfiles)
                             DropdownMenuItem(
                                 text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        modifier = Modifier.padding(start = if (via != null) 16.dp else 0.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
                                         AlertsStatusDot(enabled = p.enabled)
                                         Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                                             Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
+                                            val sub = via?.let { stringResource(R.string.server_via_parent, it) }
                                             Text(
-                                                p.baseUrl,
+                                                sub ?: p.baseUrl,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -499,6 +525,13 @@ private fun AlertsTopBar(
                                     onSelectProfile(p.id)
                                     pickerOpen = false
                                 },
+                            )
+                        }
+                        if (com.dmzs.datawatchclient.ui.common.rememberProxiedPickerLoading(state.allProfiles)) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.server_picker_loading)) },
+                                onClick = { pickerOpen = false },
+                                enabled = false,
                             )
                         }
                     }

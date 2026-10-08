@@ -183,7 +183,7 @@ fun CouncilPersonaWizardSheet(
                                         val stepKey = listOf("focus", "stance", "tone", "pushback", "examples")
                                             .getOrElse(page) { "focus" }
                                         val activeId = ServiceLocator.activeServerStore.get()
-                                        val sp = ServiceLocator.profileRepository.observeAll()
+                                        val sp = ServiceLocator.profilesWithProxied()
                                             .first { list -> list.any { it.enabled } }
                                             .let { list ->
                                                 if (activeId == null) list.filter { it.enabled }.firstOrNull()

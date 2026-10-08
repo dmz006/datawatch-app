@@ -113,6 +113,9 @@ phone, watch, or car display:
 - **Voice reply** — tap, speak, confirm — no typing on a two-inch keyboard.
 - **Multi-server** — Tailscale, LAN, and public hosts side-by-side; a "Server:"
   picker bar on every tab, 3-finger swipe to switch, and an "All servers" view.
+  Remote servers configured on a connected server are listed under it and reached
+  through it, with no extra login. Picking one shows whether it's connecting, or
+  why it can't be reached, with a button back to your server.
 - **Automata** — create, plan, approve and run automata; watch planning live; edit
   stories and tasks; templates, dependency graph, verdicts and per-story resources.
 - **Council** — run a multi-persona council debate and watch it live.

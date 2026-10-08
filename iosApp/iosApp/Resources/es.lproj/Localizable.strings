@@ -1922,3 +1922,14 @@
 "Guardrails" = "Guardrails";
 "Running guardrail:" = "Ejecutando guardrail:";
 "Guardrail error:" = "Error de guardrail:";
+
+/* Server picker: remote reached through a connected server (#234) */
+"via %@" = "vía %@";
+
+/* Connection status for a remote reached through a connected server (#235/#236) */
+"Connecting to %@…" = "Conectando con %@…";
+"Loading sessions from %@…" = "Cargando sesiones de %@…";
+"Could not reach this server" = "No se pudo conectar con este servidor";
+"%1$@: %2$@" = "%1$@: %2$@";
+"Authentication failed — this server has no valid token configured" = "Error de autenticación — este servidor no tiene configurado un token válido";
+"Back to %@" = "Volver a %@";

@@ -42,7 +42,7 @@ internal fun AutonomousConfigCard() {
     LaunchedEffect(Unit) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            val sp = ServiceLocator.profileRepository.observeAll()
+            val sp = ServiceLocator.profilesWithProxied()
                 .first { list -> list.any { it.enabled } }
                 .let { list ->
                     if (activeId == null) list.firstOrNull { it.enabled }
@@ -57,7 +57,7 @@ internal fun AutonomousConfigCard() {
         scope.launch {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
-                val sp = ServiceLocator.profileRepository.observeAll()
+                val sp = ServiceLocator.profilesWithProxied()
                     .first { list -> list.any { it.enabled } }
                     .let { list ->
                         if (activeId == null) list.firstOrNull { it.enabled }

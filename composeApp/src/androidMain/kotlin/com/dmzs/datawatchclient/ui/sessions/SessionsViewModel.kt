@@ -13,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.currentCoroutineContext
+import com.dmzs.datawatchclient.transport.ws.SessionListSource
 import com.dmzs.datawatchclient.transport.ws.SessionsHub
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -323,7 +324,8 @@ public class SessionsViewModel : ViewModel() {
 
     private val activeProfile: StateFlow<ServerProfile?> =
         combine(
-            allProfiles,
+            // #234 — real profiles + proxied remotes (virtual, never persisted).
+            ServiceLocator.profilesWithProxied(),
             activeId,
         ) { profiles, storedId ->
             val enabled = profiles.filter { it.enabled }
@@ -411,7 +413,7 @@ public class SessionsViewModel : ViewModel() {
                 perProfileSessionsFlow,
                 _allServersSessions,
             ) { all, single, federated ->
-                if (all) federated else single
+                SessionListSource.pick(all, single, federated)
             }
         // Build the base state from the 16-flow combine (max allowed), then
         // layer in _stateFilter with a second combine so we don't exceed the
@@ -511,9 +513,12 @@ public class SessionsViewModel : ViewModel() {
             .flatMapLatest { profile ->
                 if (profile == null) emptyFlow()
                 else SessionsHub.fullListFlow
-                    .filter { it.serverProfileId == profile.id }
+                    // #236.5 — a push never replaces the merged All-servers list.
+                    .filter { SessionListSource.acceptsPush(allServersMode.value, profile.id, it.serverProfileId) }
                     .onEach { update ->
                         ServiceLocator.sessionRepository.replaceAll(profile.id, update.sessions)
+                        // Real data arrived — a proxied remote's status is stale (PWA).
+                        ServiceLocator.fedConnMonitor.reportData(profile.id)
                         _refreshing.value = false
                         _lastProbeEpochMs.value = System.currentTimeMillis()
                         SessionStateWatcher.onSessionsUpdated(update.sessions, ServiceLocator.context())
@@ -968,6 +973,7 @@ public class SessionsViewModel : ViewModel() {
             transport.listSessions().fold(
                 onSuccess = { sessions ->
                     ServiceLocator.sessionRepository.replaceAll(profile.id, sessions)
+                    ServiceLocator.fedConnMonitor.reportData(profile.id)
                     _refreshing.value = false
                     _banner.value = null
                     _lastProbeEpochMs.value = System.currentTimeMillis()

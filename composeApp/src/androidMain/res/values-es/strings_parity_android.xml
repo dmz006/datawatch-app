@@ -84,4 +84,13 @@
     <string name="llm_test_running">Probando…</string>
     <string name="llm_option_default">(predeterminado)</string>
     <string name="llm_option_none">(ninguno)</string>
+    <string name="server_via_parent">vía %1$s</string>
+    <!-- #235/#236: connection status for a remote reached through a connected server -->
+    <string name="fed_conn_connecting">Conectando con %1$s…</string>
+    <string name="fed_conn_loading_sessions">Cargando sesiones de %1$s…</string>
+    <string name="fed_conn_error_title">No se pudo conectar con este servidor</string>
+    <string name="fed_conn_error_body">%1$s: %2$s</string>
+    <string name="fed_conn_error_auth">Error de autenticación — este servidor no tiene configurado un token válido</string>
+    <string name="fed_conn_back_to_local">Volver a %1$s</string>
+    <string name="server_picker_loading">Cargando servidores…</string>
 </resources>

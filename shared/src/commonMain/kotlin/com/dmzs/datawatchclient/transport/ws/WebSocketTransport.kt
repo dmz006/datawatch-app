@@ -310,13 +310,25 @@ public class WebSocketTransport(
             awaitClose()
         }
 
-    /** Converts `https://host:port` → `wss://host:port/ws` (and http→ws). */
-    internal fun buildWsUrl(baseUrl: String): String {
-        val base = Url(baseUrl)
-        val wsScheme = if (base.protocol.name == "https") "wss" else "ws"
-        val port = if (base.port == base.protocol.defaultPort) "" else ":${base.port}"
-        return "$wsScheme://${base.host}$port/ws"
-    }
+    /**
+     * Converts `https://host:port` → `wss://host:port/ws` (and http→ws).
+     * The base URL's path is kept, so a proxied remote
+     * (`https://host/api/proxy/<name>`) yields `wss://host/api/proxy/<name>/ws`
+     * — the PWA's WS `connect()` proxy path (#234).
+     */
+    internal fun buildWsUrl(baseUrl: String): String = wsUrlFor(baseUrl)
+}
+
+/**
+ * Shared WS URL builder: scheme http→ws / https→wss, default port dropped,
+ * base path kept (trailing slashes trimmed), then `/ws` appended.
+ */
+internal fun wsUrlFor(baseUrl: String): String {
+    val base = Url(baseUrl)
+    val wsScheme = if (base.protocol.name == "https") "wss" else "ws"
+    val port = if (base.port == base.protocol.defaultPort) "" else ":${base.port}"
+    val path = base.encodedPath.trimEnd('/')
+    return "$wsScheme://${base.host}$port$path/ws"
 }
 
 /** Parse a `stats` WS frame and forward to [StatsHub] (B10). */
@@ -402,9 +414,4 @@ private fun tryRouteSessionStateFrame(
 internal fun buildWsUrl(
     baseUrl: String,
     @Suppress("UNUSED_PARAMETER") sessionId: String,
-): String {
-    val base = Url(baseUrl)
-    val wsScheme = if (base.protocol.name == "https") "wss" else "ws"
-    val port = if (base.port == base.protocol.defaultPort) "" else ":${base.port}"
-    return "$wsScheme://${base.host}$port/ws"
-}
+): String = wsUrlFor(baseUrl)

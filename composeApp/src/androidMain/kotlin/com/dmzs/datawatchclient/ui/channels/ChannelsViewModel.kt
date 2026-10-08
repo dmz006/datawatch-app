@@ -67,7 +67,7 @@ public class ChannelsViewModel : ViewModel() {
      */
     public fun setActive(name: String) {
         viewModelScope.launch {
-            val profiles = ServiceLocator.profileRepository.observeAll().first()
+            val profiles = ServiceLocator.profilesWithProxied().first()
             val activeId = ServiceLocator.activeServerStore.get()
             val profile =
                 profiles.firstOrNull { it.id == activeId && it.enabled }
@@ -97,7 +97,7 @@ public class ChannelsViewModel : ViewModel() {
 
     public fun refresh() {
         viewModelScope.launch {
-            val profiles = ServiceLocator.profileRepository.observeAll().first()
+            val profiles = ServiceLocator.profilesWithProxied().first()
             val activeId = ServiceLocator.activeServerStore.get()
             val profile =
                 profiles.firstOrNull { it.id == activeId && it.enabled }

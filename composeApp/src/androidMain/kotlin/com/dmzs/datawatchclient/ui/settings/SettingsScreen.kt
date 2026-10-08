@@ -141,9 +141,13 @@ public fun SettingsScreen(
         .collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe()
         .collectAsState(initial = null)
+    // #234 — real profiles + proxied remotes for the active selection and
+    // the title picker; `profiles` (real only) stays for the Servers card.
+    val withProxied by ServiceLocator.profilesWithProxied()
+        .collectAsState(initial = emptyList())
     val activeProfile: ServerProfile? =
-        remember(profiles, activeId) {
-            val enabled = profiles.filter { it.enabled }
+        remember(withProxied, activeId) {
+            val enabled = withProxied.filter { it.enabled }
             if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
                 enabled.firstOrNull()
             } else {
@@ -188,7 +192,7 @@ public fun SettingsScreen(
                         open = pickerOpen,
                         onToggle = { pickerOpen = !pickerOpen },
                         onDismiss = { pickerOpen = false },
-                        profiles = profiles.filter { it.enabled },
+                        profiles = withProxied.filter { it.enabled },
                         onSelect = { id ->
                             ServiceLocator.activeServerStore.set(id)
                             pickerOpen = false
@@ -966,7 +970,12 @@ private fun AboutCard(activeProfile: ServerProfile?) {
             // S6-1 (#71): single docs link — opens in-app DocsViewerSheet.
             TextButton(
                 onClick = {
-                    docsUrl = "${activeProfile?.baseUrl}/diagrams.html"
+                    // Docs are server-local: a proxied remote (#234) opens its parent's.
+                    val docsBase =
+                        activeProfile?.let {
+                            com.dmzs.datawatchclient.transport.ProxiedServers.docsBaseUrl(it)
+                        }
+                    docsUrl = "$docsBase/diagrams.html"
                 },
             ) {
                 Text(stringResource(R.string.about_docs_link))

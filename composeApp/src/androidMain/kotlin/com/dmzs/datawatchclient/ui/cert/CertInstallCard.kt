@@ -40,8 +40,10 @@ public fun CertInstallCard() {
     var showIPhoneSteps by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        // The certificate to trust is the connected server's — a proxied
+        // remote (#234) resolves to its parent.
         val profiles = ServiceLocator.profileRepository.observeAll().first()
-        val activeId = ServiceLocator.activeServerStore.get()
+        val activeId = ServiceLocator.activeServerStore.getReal()
         val profile =
             profiles.firstOrNull {
                 it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS

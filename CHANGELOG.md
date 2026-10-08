@@ -14,6 +14,29 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
   - When that card does show, it is titled with the host name (or your saved server name).
   - The "local" tag is gone from the System Statistics and compute-node cards.
   - The web UI's copy of this is tracked in dmz006/datawatch#194.
+### Added
+- **Reach every remote server through the connected one (#234, PWA parity).** Remote servers configured on a datawatch server (Settings › Comms › Remote Servers) now show up in the app without their own login, the same way the web UI reaches them through `/api/proxy/<name>`.
+  - The **Server:** chip bar on Sessions, Automata, Alerts, Dashboard and Observer lists each remote right after its server ("workstation › demo", or just "demo" when you have one server). Android's Alerts tab gains the bar.
+  - The switch-server sheet (Android) and three-finger switch dialog (iPhone) list each remote under its server, "via workstation".
+  - A remote uses its server's token and certificate settings; nothing new is stored. Live terminal and status updates go through `/api/proxy/<name>/ws`.
+  - If a remote is removed, the app switches back to its server.
+  - Widgets, Wear, Android Auto, Siri and push stay on your own servers and show the parent server while a remote is selected. Help and docs links open the parent server's docs.
+- **Connection status for a remote server (#235, #236, PWA v8.73.2–v8.73.7).** Picking a remote no longer shows an endless loader.
+  - Sessions shows "Connecting to demo…", then "Loading sessions from demo…", then the sessions. Each step follows a real request to the remote; nothing is timed.
+  - If the remote can't be reached, Sessions, Alerts, Automata, Dashboard and Observer say "Could not reach this server" and give the reason. A missing or wrong token gets its own message: "Authentication failed — this server has no valid token configured". **Back to workstation** returns to the server the remote is reached through. The app keeps retrying and clears the error once the remote answers.
+  - The app checks a remote by loading its sessions, which needs a valid token. It no longer uses `/api/health`, which is public and reports "connected" even with a bad token.
+  - The list of remotes loads at app start and retries with backoff (2 s up to 60 s) after a failure, keeping the last list it had. The chip bar, the server pickers and the three-finger switch dialog say "Loading servers…" while a server's remotes load for the first time.
+
+### Fixed
+- **Android Alerts follows the server picker.** Picking another server while on Alerts kept showing the old server's alerts until you left the tab.
+- **Android Dashboard loads for a remote server** (and for "All"). Its cards stayed empty because the server lookup only knew your own servers.
+- **Observer cards and Automata templates reload when you switch servers**, on Android and iPhone. Before, they kept the previous server's data until you left the tab.
+- **iPhone Alerts and Sessions fetch the new server at once** when you switch during a refresh, instead of up to 30 s later. Alerts also resumes its refresh when you come back to the tab.
+- **"All servers" keeps every server's sessions.** One server's live update can no longer replace the merged list on Android. A test now covers this; the web UI had this bug in v8.73.4.
+
+### Follow-ups
+- Show the server's own "missing capability" text for a 403 once the server sends it (datawatch is adding capability-aware denials). Until then a 401 or 403 shows the token message.
+- Grey out unreachable servers in the picker. The web UI has deferred this too.
 
 ## [1.28.16] — 2026-10-08
 

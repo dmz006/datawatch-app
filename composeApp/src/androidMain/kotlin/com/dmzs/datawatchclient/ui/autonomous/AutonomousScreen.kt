@@ -172,7 +172,7 @@ public fun AutonomousScreen(
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
                 val sp =
-                    ServiceLocator.profileRepository.observeAll()
+                    ServiceLocator.profilesWithProxied()
                         .first { list -> list.any { it.enabled } }
                         .let { list ->
                             if (activeId == null) {
@@ -256,6 +256,17 @@ public fun AutonomousScreen(
                     showAll = true,
                     onSelectAll = vm::selectAllServers,
                 )
+                // #236.2 — a proxied remote that can't be reached shows the real error
+                // (and a way back) instead of an endless loader (PWA v8.73.5+).
+                val fedStatus =
+                    com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
+                        state.activeProfile?.id,
+                        state.allServersMode,
+                    )
+                if (fedStatus?.phase == com.dmzs.datawatchclient.transport.FedConnPhase.ERROR) {
+                    com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
+                    return@Column
+                }
                 // Custom tab row — matches SessionDetailScreen style with icons on right
                 val tabBorderColor = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.border
                 Row(
@@ -335,11 +346,14 @@ public fun AutonomousScreen(
                             vm.instantiatePrdTemplate(id, vars)
                         })
                     else ->
-                        TemplatesTab(
-                            vm = tmplVm,
-                            createOpen = tmplCreateOpen,
-                            onCreateDismiss = { tmplCreateOpen = false },
-                        )
+                        // #236.7 — keyed on the server so a switch refetches templates.
+                        androidx.compose.runtime.key(state.activeProfile?.id) {
+                            TemplatesTab(
+                                vm = tmplVm,
+                                createOpen = tmplCreateOpen,
+                                onCreateDismiss = { tmplCreateOpen = false },
+                            )
+                        }
                 }
             }
             // Multi-select bar (v0.76.0)
@@ -600,7 +614,7 @@ public fun AutonomousScreen(
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
                         val sp =
-                            ServiceLocator.profileRepository.observeAll()
+                            ServiceLocator.profilesWithProxied()
                                 .first { list -> list.any { it.enabled } }
                                 .let { list ->
                                     if (activeId == null) {

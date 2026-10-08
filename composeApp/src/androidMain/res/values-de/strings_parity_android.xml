@@ -84,4 +84,13 @@
     <string name="llm_test_running">Teste…</string>
     <string name="llm_option_default">(Standard)</string>
     <string name="llm_option_none">(keiner)</string>
+    <string name="server_via_parent">über %1$s</string>
+    <!-- #235/#236: connection status for a remote reached through a connected server -->
+    <string name="fed_conn_connecting">Verbindung zu %1$s wird hergestellt…</string>
+    <string name="fed_conn_loading_sessions">Sitzungen von %1$s werden geladen…</string>
+    <string name="fed_conn_error_title">Dieser Server ist nicht erreichbar</string>
+    <string name="fed_conn_error_body">%1$s: %2$s</string>
+    <string name="fed_conn_error_auth">Authentifizierung fehlgeschlagen — für diesen Server ist kein gültiges Token konfiguriert</string>
+    <string name="fed_conn_back_to_local">Zurück zu %1$s</string>
+    <string name="server_picker_loading">Server werden geladen…</string>
 </resources>

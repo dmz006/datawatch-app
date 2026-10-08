@@ -317,7 +317,32 @@ and still need DHU / head-unit passes.
 | Android | Collapsible cards with docs links (remembered per card) | Yes | No | v1.25.0 | `PwaCardTest` | |
 | Shared | Compute node 📡 live detail; model-list envelope | Yes | No | v1.27.1 | `RestTransportParityExtrasTest`, `RestTransportAndroidParityTest` | |
 | Shared | Remote-server test / enable; federation peers | Yes | No | v1.25.0 | `RestTransportIosETest`, `RestTransportIosSettingsDepthTest` | |
+| Shared + Android + iOS | Remote servers reached through the connected server (`/api/proxy/<name>` REST + WS): chip bar + nested picker, parent fallback, widgets/Wear/Auto/push stay on the parent | Yes | No | Unreleased | `ProxiedServersTest`, `WebSocketUrlTest`, `ProxiedRemoteEndToEndTest` (MockWebServer: discovery, REST `/api/proxy/<name>/api/sessions`, WS `/api/proxy/<name>/ws`) | Needs a datawatch server with a Remote Server configured; pick "parent › remote" on each tab and in the switch-server picker |
+| Shared + Android + iOS | Proxied remote connection status (#235/#236): "Connecting to X…" → "Loading sessions from X…" → content, or "Could not reach this server" + reason (auth text on 401/403) + "Back to <server>"; Alerts/Automata/Dashboard/Observer show the error | Yes | No | Unreleased | `FederatedConnectionMonitorTest` (6), `ProxiedRemoteEndToEndTest` (401 → auth error → recovers) | Manual sandbox check below |
+| Shared + Android + iOS | Remote discovery at app start + capped retry (2 s … 60 s, last good list kept); "Loading servers…" in chip bar, pickers and three-finger dialog | Yes | No | Unreleased | `ProxiedServersTest` (backoff, 404 = no remotes, first-load state) | |
+| Shared | Proxied remote reachability probe is authenticated (`/api/sessions`), never the public `/api/health` | Yes | No | Unreleased | `ProxiedRemoteEndToEndTest` | |
+| Shared + Android | A server's WS `sessions` push never replaces the merged All-servers list | Yes | No | Unreleased | `SessionListSourceTest` | iOS keys its merge per server (no shared list to clobber) |
+| Android + iOS | Alerts / Automata / Dashboard / Observer refetch on every server switch (incl. two remotes of one server) | No | No | Unreleased | Manual | Android Alerts poll used `collect` (switch ignored); Dashboard resolved real profiles only |
 | Android + iOS | Config Viewer removed (Raw config stays); splash "Updated to vX" badge removed | No | No | v1.25.1 | Code removal; manual check | |
+
+#### Manual sandbox check — remote reached through a connected server (#234/#236)
+
+Sandbox only, never production; never paste or log the token. Start the local federation
+instance with `/home/dmz/workspace/.datawatch-test-fed/start.sh` (its config has the demo VM as
+the Remote Server `demo`). Add the sandbox as a server in a debug build (emulator or simulator).
+
+1. Fresh launch with the sandbox as the only server: the chip bar shows "Loading servers…", then
+   the `demo` chip. With the sandbox stopped at launch and started a minute later, `demo` appears
+   without opening a picker (retry with backoff).
+2. Pick `demo` on Sessions: "Connecting to demo…", then the demo sessions. Three-finger swipe up:
+   `demo` is listed under the sandbox.
+3. Remove the `demo` token in the sandbox's Remote Servers settings (or set a wrong one) and pick
+   `demo` again: "Could not reach this server" with "demo: Authentication failed — this server has
+   no valid token configured". Alerts, Automata, Dashboard and Observer show the same error.
+   "Back to <sandbox name>" selects the sandbox.
+4. Stop the demo VM's daemon: the error reason is the proxy's own text ("proxy error: …").
+5. Restore the token while the error is showing: within a minute the status clears and sessions load.
+6. "All" on Sessions: demo sessions stay listed after the sandbox's WebSocket pushes its own list.
 
 ### Shell, alerts, observer, dashboard
 

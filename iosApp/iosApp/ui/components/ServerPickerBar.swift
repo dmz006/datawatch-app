@@ -2,7 +2,10 @@ import SwiftUI
 import DatawatchShared
 
 /// PWA `_serverPickerBar` (D2a): "Server:" + one chip per enabled server,
-/// active chip filled accent2. Hidden when only one server is configured.
+/// active chip filled accent2. Hidden when there is only one choice.
+/// #234: each remote reached through a server's `/api/proxy/<name>` gets a chip
+/// right after its parent ("parent › remote", or just "remote" with one server).
+/// While remotes are first being fetched it reads "Loading servers…".
 struct ServerPickerBar: View {
     @EnvironmentObject private var store: ServerProfileStore
     /// Only screens that can aggregate (Sessions) offer "All".
@@ -24,28 +27,44 @@ struct ServerPickerBar: View {
     }
 
     var body: some View {
-        let servers = store.enabledProfiles
-        if servers.count > 1 {
+        let servers = store.pickerProfiles
+        let realCount = Int32(store.enabledProfiles.count)
+        // PWA `server_picker_loading` (#236.1): while a server's remote list is
+        // first fetched the bar says so instead of staying hidden.
+        if servers.count > 1 || store.proxiedLoading {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     Text("Server:")
                         .font(.system(size: 11))
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    if showsAll { allChip }
-                    ForEach(servers, id: \.id) { p in chip(p) }
+                    if servers.count > 1 {
+                        // "All" aggregates real servers, so it needs two of them
+                        // (ServerProfileStore.isAllServers), not one server + remotes.
+                        if showsAll && store.enabledProfiles.count > 1 { allChip }
+                        ForEach(servers, id: \.id) { p in chip(p, realCount: realCount) }
+                    }
+                    if store.proxiedLoading {
+                        Text(L("Loading servers…"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
             }
             .background(DatawatchColors.surface)
             .overlay(alignment: .bottom) { Rectangle().fill(DatawatchColors.border).frame(height: 1) }
+            .onAppear { store.refreshProxied() }
+        } else {
+            // Discover remotes even while the bar is hidden (one server, list not loaded yet).
+            Color.clear.frame(height: 0).onAppear { store.refreshProxied() }
         }
     }
 
-    private func chip(_ p: ServerProfile) -> some View {
+    private func chip(_ p: ServerProfile, realCount: Int32) -> some View {
         let active = !store.isAllServers && store.activeProfile?.id == p.id
         return Button { store.selectActive(p.id) } label: {
-            Text(p.displayName)
+            Text(IosProxiedServers.shared.chipLabel(profile: p, realEnabledCount: realCount))
                 .font(.system(size: 11, weight: active ? .semibold : .regular))
                 .foregroundStyle(active ? Color.white : DatawatchColors.onSurface)
                 .padding(.horizontal, 9)

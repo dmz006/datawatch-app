@@ -82,7 +82,7 @@ internal fun CommBackendsCard() {
 
     LaunchedEffect(Unit) {
         val id = ServiceLocator.activeServerStore.get()
-        val profiles = ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
+        val profiles = ServiceLocator.profilesWithProxied().first().filter { it.enabled }
         val profile =
             profiles.firstOrNull { it.id == id } ?: profiles.firstOrNull() ?: run {
                 unavailable = true

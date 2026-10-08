@@ -53,7 +53,7 @@ public fun FileServiceCard() {
 
     suspend fun activeTransport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
-        val enabled = ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
+        val enabled = ServiceLocator.profilesWithProxied().first().filter { it.enabled }
         val p = enabled.firstOrNull { it.id == id } ?: enabled.firstOrNull()
         return p?.let { ServiceLocator.transportFor(it) }
     }

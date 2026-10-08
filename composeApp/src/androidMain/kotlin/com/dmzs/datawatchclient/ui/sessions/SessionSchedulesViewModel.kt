@@ -93,7 +93,7 @@ public class SessionSchedulesViewModel(
     }
 
     private suspend fun resolveProfile(): ServerProfile? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         // Prefer the session's owning profile (same logic as
         // SessionDetailViewModel.resolveProfile) so "All servers" mode works.
         val owningId =

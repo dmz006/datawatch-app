@@ -30,7 +30,7 @@ public object WidgetActions {
         val enabled =
             ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
         if (enabled.size <= 1) return enabled.firstOrNull()?.id
-        val currentId = ServiceLocator.activeServerStore.get()
+        val currentId = ServiceLocator.activeServerStore.getReal()
         val currentIdx = enabled.indexOfFirst { it.id == currentId }
         val next = enabled[(currentIdx + 1).mod(enabled.size)]
         ServiceLocator.activeServerStore.set(next.id)

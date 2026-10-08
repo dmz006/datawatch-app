@@ -69,7 +69,7 @@ internal fun ChannelDiagnosticsCard() {
     var reload by remember { mutableIntStateOf(0) }
     var hintsOpen by remember { mutableStateOf(false) }
     LaunchedEffect(reload) {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             profiles.firstOrNull { it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS }

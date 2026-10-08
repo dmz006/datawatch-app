@@ -299,7 +299,13 @@ struct SessionsView: View {
     private var content: some View {
         VStack(spacing: 0) {
             ConnectionStatusBanner(state: connectionState)
-            if viewModel.isLoading && viewModel.sessions.isEmpty {
+            if let fed = store.fedStatus(for: viewModel.activeProfile?.id), viewModel.sessions.isEmpty {
+                // #236.2: a proxied remote with nothing on screen shows its real
+                // connection status (not an endless skeleton); the chip bar stays
+                // so another server can be picked.
+                ServerPickerBar(showsAll: true)
+                FedConnStatusView(status: fed)
+            } else if viewModel.isLoading && viewModel.sessions.isEmpty {
                 // D60a: Android SessionSkeletonList (5 shimmer rows, 900 ms).
                 SkeletonListView(rows: 5)
             } else if let errorMsg = viewModel.error, viewModel.sessions.isEmpty {

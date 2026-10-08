@@ -84,21 +84,37 @@ public fun ObserverScreen(
                     allMode = false,
                     onSelect = vm::selectProfile,
                 )
+                // #236.2 — a proxied remote that can't be reached shows the real error
+                // (and a way back) instead of an endless loader (PWA v8.73.5+).
+                val fedStatus =
+                    com.dmzs.datawatchclient.ui.common.rememberFedConnStatus(
+                        state.activeProfile?.id,
+                        false,
+                    )
+                if (fedStatus?.phase == com.dmzs.datawatchclient.transport.FedConnPhase.ERROR) {
+                    com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
+                    return@Column
+                }
                 // Parity D28a — PWA Observer order: one "System Statistics"
                 // block (grid + stats panel + eBPF + plugins + peers + cluster +
                 // channel + comm sub-blocks), then the standalone cards, with
                 // Federated Peers last. Pipelines and Identity live in Settings
                 // only (PWA has no Observer copy).
-                ObserverStatsBlock()
-                com.dmzs.datawatchclient.ui.memory.MemoryCard()
-                com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
-                com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
-                com.dmzs.datawatchclient.ui.monitoring.CooldownCard()
-                com.dmzs.datawatchclient.ui.monitoring.SessionAnalyticsCard()
-                com.dmzs.datawatchclient.ui.monitoring.AuditLogCard()
-                KnowledgeGraphCard()
-                com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
-                com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
+                // #236.7 (PWA v8.73.7) — most cards load once from the active
+                // server; keying them on it makes a server switch refetch every
+                // card immediately instead of after leaving and re-entering the tab.
+                androidx.compose.runtime.key(state.activeProfile?.id) {
+                    ObserverStatsBlock()
+                    com.dmzs.datawatchclient.ui.memory.MemoryCard()
+                    com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
+                    com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
+                    com.dmzs.datawatchclient.ui.monitoring.CooldownCard()
+                    com.dmzs.datawatchclient.ui.monitoring.SessionAnalyticsCard()
+                    com.dmzs.datawatchclient.ui.monitoring.AuditLogCard()
+                    KnowledgeGraphCard()
+                    com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                    com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
+                }
             }
         }
     }

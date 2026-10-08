@@ -473,14 +473,14 @@ private fun HomeShell(
         val profile =
             if (id == null) {
                 kotlinx.coroutines.withTimeoutOrNull(10_000) {
-                    ServiceLocator.profileRepository.observeAll()
+                    ServiceLocator.profilesWithProxied()
                         .first { list -> list.any { it.enabled } }
                         .filter { it.enabled }
                         .firstOrNull()
                 }
             } else {
                 kotlinx.coroutines.withTimeoutOrNull(10_000) {
-                    ServiceLocator.profileRepository.observeAll()
+                    ServiceLocator.profilesWithProxied()
                         .first { list -> list.any { it.id == id && it.enabled } }
                         .firstOrNull { it.id == id && it.enabled }
                 }

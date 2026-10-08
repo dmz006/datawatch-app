@@ -1557,7 +1557,7 @@ private fun TimelineSheet(
     var fetchFailed by remember { mutableStateOf(false) }
     LaunchedEffect(sessionId) {
         val profiles =
-            com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
+            com.dmzs.datawatchclient.di.ServiceLocator.profilesWithProxied().first()
         val owningId =
             runCatching {
                 com.dmzs.datawatchclient.di.ServiceLocator.sessionRepository
@@ -2175,7 +2175,7 @@ private fun ReplyComposer(
                     .sessionRepository.observeForProfileAny(sessionId).first()
             val profiles =
                 com.dmzs.datawatchclient.di.ServiceLocator
-                    .profileRepository.observeAll().first()
+                    .profilesWithProxied().first()
             val profile =
                 sessionRow?.serverProfileId
                     ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
@@ -2231,7 +2231,7 @@ private fun ReplyComposer(
         onDispose {
             val path = pendingImagePath ?: return@onDispose
             scope.launch {
-                val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
+                val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profilesWithProxied().first()
                 val sessionRow =
                     com.dmzs.datawatchclient.di.ServiceLocator
                         .sessionRepository.observeForProfileAny(sessionId).first()
@@ -2300,7 +2300,7 @@ private fun ReplyComposer(
                             .first()
                     val profiles =
                         com.dmzs.datawatchclient.di.ServiceLocator
-                            .profileRepository.observeAll().first()
+                            .profilesWithProxied().first()
                     val profile =
                         sessionRow?.serverProfileId
                             ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
@@ -2461,7 +2461,7 @@ private fun ReplyComposer(
                                     pendingImageName = null
                                     if (path != null) {
                                         scope.launch {
-                                            val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
+                                            val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profilesWithProxied().first()
                                             val sessionRow =
                                                 com.dmzs.datawatchclient.di.ServiceLocator
                                                     .sessionRepository.observeForProfileAny(sessionId).first()

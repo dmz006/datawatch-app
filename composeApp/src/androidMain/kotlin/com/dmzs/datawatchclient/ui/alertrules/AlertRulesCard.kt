@@ -58,7 +58,7 @@ public fun AlertRulesCard() {
     var showAddDialog by remember { mutableStateOf(false) }
 
     suspend fun transport(): TransportClient? {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {

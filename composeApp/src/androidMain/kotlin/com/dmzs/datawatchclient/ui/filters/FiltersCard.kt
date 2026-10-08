@@ -58,7 +58,7 @@ public fun FiltersCard() {
     var banner by remember { mutableStateOf<String?>(null) }
 
     suspend fun refresh() {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profiles = ServiceLocator.profilesWithProxied().first()
         val activeId = ServiceLocator.activeServerStore.get()
         val profile =
             profiles.firstOrNull {
@@ -111,7 +111,7 @@ public fun FiltersCard() {
                     onCheckedChange = { on ->
                         scope.launch {
                             val profile =
-                                ServiceLocator.profileRepository.observeAll().first()
+                                ServiceLocator.profilesWithProxied().first()
                                     .firstOrNull { it.enabled } ?: return@launch
                             ServiceLocator.transportFor(profile)
                                 .updateFilter(id, enabled = on).fold(
@@ -141,7 +141,7 @@ public fun FiltersCard() {
                     onClick = {
                         scope.launch {
                             val profile =
-                                ServiceLocator.profileRepository.observeAll().first()
+                                ServiceLocator.profilesWithProxied().first()
                                     .firstOrNull { it.enabled } ?: return@launch
                             ServiceLocator.transportFor(profile).deleteFilter(id).fold(
                                 onSuccess = { refresh() },
@@ -166,7 +166,7 @@ public fun FiltersCard() {
             onCreate = { pattern, action, value ->
                 scope.launch {
                     val profile =
-                        ServiceLocator.profileRepository.observeAll().first()
+                        ServiceLocator.profilesWithProxied().first()
                             .firstOrNull { it.enabled } ?: return@launch
                     ServiceLocator.transportFor(profile)
                         .createFilter(pattern = pattern, action = action, value = value).fold(

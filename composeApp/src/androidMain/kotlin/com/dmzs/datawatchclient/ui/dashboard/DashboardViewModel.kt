@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -59,7 +59,8 @@ public class DashboardViewModel : ViewModel() {
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _computedActiveProfile: StateFlow<ServerProfile?> =
-        combine(_allProfiles, _activeId) { profiles, storedId ->
+        // #234 — resolve over real profiles + proxied remotes.
+        combine(ServiceLocator.profilesWithProxied(), _activeId) { profiles, storedId ->
             val enabled = profiles.filter { it.enabled }
             if (storedId == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine enabled.firstOrNull()
             storedId?.let { id -> enabled.firstOrNull { it.id == id } } ?: enabled.firstOrNull()
@@ -88,10 +89,24 @@ public class DashboardViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            _computedActiveProfile.collectLatest { _ ->
-                _state.value = _state.value.copy(cardsLoaded = false, cards = emptyList())
-                start()
-            }
+            // #236.7 — re-keyed on the resolved profile id (proxied remotes
+            // included), so a switch refetches at once; a display-name refresh
+            // of the same server doesn't restart the poll.
+            _computedActiveProfile
+                .distinctUntilChanged { a, b -> a?.id == b?.id }
+                .collectLatest { profile ->
+                    _state.value =
+                        _state.value.copy(
+                            cardsLoaded = false,
+                            cards = emptyList(),
+                            sessions = emptyList(),
+                            stats = null,
+                            prds = emptyList(),
+                            boards = emptyList(),
+                            error = null,
+                        )
+                    start(profile)
+                }
         }
     }
 
@@ -107,24 +122,15 @@ public class DashboardViewModel : ViewModel() {
         }
     }
 
-    private suspend fun resolveTransport(): TransportClient? {
-        val activeId = ServiceLocator.activeServerStore.get()
-        return runCatching {
-            ServiceLocator.profileRepository.observeAll()
-                .first { list -> list.any { it.enabled } }
-                .let { list ->
-                    if (activeId == null) {
-                        list.filter { it.enabled }.firstOrNull()
-                    } else {
-                        list.firstOrNull { it.id == activeId && it.enabled }
-                    }
-                }
-                ?.let { ServiceLocator.transportFor(it) }
-        }.getOrNull()
-    }
+    /**
+     * Transport for the resolved active profile. #234/#236 — this used to
+     * look the stored id up among real profiles only, so a proxied remote
+     * (and "All", which falls back to the first server) never loaded.
+     */
+    private fun resolveTransport(): TransportClient? = _computedActiveProfile.value?.let { ServiceLocator.transportFor(it) }
 
-    private suspend fun start() {
-        val transport = resolveTransport()
+    private suspend fun start(profile: ServerProfile?) {
+        val transport = profile?.let { ServiceLocator.transportFor(it) }
         transport?.listDashboardCards()?.onSuccess { cards ->
             _state.value = _state.value.copy(cards = cards)
         }
@@ -132,7 +138,7 @@ public class DashboardViewModel : ViewModel() {
 
         var slowPollTick = 0
         while (currentCoroutineContext().isActive) {
-            val t = resolveTransport()
+            val t = transport
             if (t != null) {
                 t.listSessions()
                     .onSuccess { sessions -> _state.value = _state.value.copy(sessions = sessions, error = null) }

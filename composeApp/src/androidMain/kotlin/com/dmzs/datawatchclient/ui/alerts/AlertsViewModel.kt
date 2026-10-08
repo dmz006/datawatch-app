@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -164,7 +165,8 @@ public class AlertsViewModel : ViewModel() {
     // the user flips the active server.
     private val activeProfileFlow =
         combine(
-            ServiceLocator.profileRepository.observeAll(),
+            // #234 — real profiles + proxied remotes.
+            ServiceLocator.profilesWithProxied(),
             ServiceLocator.activeServerStore.observe(),
         ) { profiles, id ->
             if (id == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
@@ -188,10 +190,17 @@ public class AlertsViewModel : ViewModel() {
         loadPersistedTabState()
         // Polling loop. Cancelled automatically on VM clear.
         viewModelScope.launch {
+            // #236.6/7 — collectLatest, not collect: the body below polls
+            // forever, so with plain collect a server switch was never picked
+            // up while the VM lived (PWA v8.73.5 had the same "Alerts ignores
+            // the picker" gap). distinctUntilChanged keeps a remote-list
+            // refresh from restarting the poll for the same server.
             combine(
                 activeProfileFlow,
                 _allServersModeFlow,
-            ) { profile, allMode -> Pair(profile, allMode) }.collect { (profile, allMode) ->
+            ) { profile, allMode -> Pair(profile, allMode) }
+                .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
+                .collectLatest { (profile, allMode) ->
                 _alerts.value = emptyList()
                 _groupProfileNames.value = emptyMap()
                 while (true) {
@@ -461,7 +470,7 @@ public class AlertsViewModel : ViewModel() {
         }
 
     private val _computedActiveProfile =
-        combine(_allProfiles, ServiceLocator.activeServerStore.observe()) { profiles, id ->
+        combine(ServiceLocator.profilesWithProxied(), ServiceLocator.activeServerStore.observe()) { profiles, id ->
             if (id == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
             profiles.firstOrNull { it.id == id && it.enabled }
                 ?: profiles.firstOrNull { it.enabled }

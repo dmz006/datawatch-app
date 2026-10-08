@@ -329,7 +329,12 @@ struct DashboardView: View {
                 // D2a: shared PWA "Server:" chip bar; selection flows back
                 // through store.activeProfileId → onChange → activate().
                 ServerPickerBar()
-                grid
+                if let fed = store.fedStatus(for: selectedProfile?.id), fed.phase == "error" {
+                    // #236.2: an unreachable proxied remote shows why, not a loader.
+                    FedConnStatusView(status: fed)
+                } else {
+                    grid
+                }
             }
         }
     }
