@@ -2,7 +2,8 @@ name: iOS — prepare App Store listing
 
 # Sets age rating (4+), content rights, Free price, all-territory availability
 # and the App Store version's review contact / demo sign-in via the App Store
-# Connect API (scripts/asc_prepare.py). Idempotent; submits nothing.
+# Connect API, and points the App Store version at the current release + its
+# newest valid build (scripts/asc_prepare.py). Idempotent; submits nothing.
 
 on:
   workflow_dispatch:
@@ -30,5 +31,6 @@ jobs:
           REVIEW_NOTES_FILE: iosApp/fastlane/metadata/review_information/notes.txt
         run: |
           set -euo pipefail
+          export APP_VERSION=$(sed -n 's/^DATAWATCH_APP_VERSION=//p' gradle.properties)
           pip install --quiet "pyjwt[crypto]" requests
           python3 scripts/asc_prepare.py

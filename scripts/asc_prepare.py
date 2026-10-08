@@ -110,8 +110,24 @@ def main() -> int:
 
     ok &= step("price", price)
 
-    # 4. Availability: every territory + new ones.
+    # 4. Availability: every territory + new ones. Once an availability exists
+    # it can't be re-created, so switch on any territory that is still off.
     def availability():
+        cur = S.get(API + f"/v1/apps/{app_id}/appAvailabilityV2", timeout=60)
+        if cur.status_code == 200 and cur.json().get("data"):
+            av = cur.json()["data"]
+            items, url = [], f"/v2/appAvailabilities/{av['id']}/territoryAvailabilities?limit=200"
+            while url:
+                page = call("GET", url)
+                items += page["data"]
+                nxt = page.get("links", {}).get("next")
+                url = nxt.replace(API, "") if nxt else None
+            off = [t for t in items if not t["attributes"].get("available")]
+            for t in off:
+                call("PATCH", f"/v1/territoryAvailabilities/{t['id']}", json={"data": {
+                    "type": "territoryAvailabilities", "id": t["id"], "attributes": {"available": True}}})
+            new = av["attributes"].get("availableInNewTerritories")
+            return f"{len(items)} territories, {len(off)} switched on; new territories automatic: {new}"
         terr = []
         url = "/v1/territories?limit=200"
         while url:
@@ -158,6 +174,30 @@ def main() -> int:
         return f"version {v['attributes'].get('versionString')}: contact + demo sign-in + notes set"
 
     ok &= step("App Store review details", review)
+
+    # 6. App Store version = current release, with its newest valid build attached.
+    def version():
+        want = os.environ.get("APP_VERSION")
+        if not want:
+            return "APP_VERSION unset (skipped)"
+        vers = call("GET", f"/v1/apps/{app_id}/appStoreVersions",
+                    params={"filter[appStoreState]": "PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED"})["data"]
+        if not vers:
+            return "no editable App Store version (skipped)"
+        v = vers[0]
+        if v["attributes"].get("versionString") != want:
+            call("PATCH", f"/v1/appStoreVersions/{v['id']}", json={"data": {
+                "type": "appStoreVersions", "id": v["id"], "attributes": {"versionString": want}}})
+        builds = call("GET", "/v1/builds", params={
+            "filter[app]": app_id, "filter[preReleaseVersion.version]": want,
+            "filter[processingState]": "VALID", "sort": "-uploadedDate", "limit": 1})["data"]
+        if not builds:
+            return f"version {want}; no valid build yet"
+        call("PATCH", f"/v1/appStoreVersions/{v['id']}/relationships/build",
+             json={"data": {"type": "builds", "id": builds[0]["id"]}})
+        return f"version {want}, build {builds[0]['attributes']['version']} attached"
+
+    ok &= step("App Store version + build", version)
     return 0 if ok else 1
 
 
