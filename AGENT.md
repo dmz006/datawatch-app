@@ -211,7 +211,7 @@ voice/TTS strings, store listings, user-facing docs, release notes, error messag
 
 ## Security acceptance standard (operator, 2026-10-08; shared with datawatch)
 
-datawatch tracks the same standard (issue to be linked). It replaces the
+datawatch tracks the same standard in [dmz006/datawatch#197](https://github.com/dmz006/datawatch/issues/197). It replaces the
 2026-10-05 "stable-release watch" rule and keeps everything that rule did.
 
 - **One registry:** `security/accepted-risks.yml`. Every dismissed Dependabot or
