@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.16] — 2026-10-08
+
 ### Fixed
 - **Wear Monitor:** the DISK gauge no longer draws on top of the CPU gauge.
 - **Wear Automata:** the header is no longer clipped by the round screen, and automaton titles wrap to two lines.
