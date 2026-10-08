@@ -438,6 +438,15 @@ private fun HomeShell(
     // render side-by-side. On narrow phones, existing full-screen nav applies.
     val isWide = LocalConfiguration.current.screenWidthDp >= 600
     var selectedSessionId by remember { mutableStateOf<String?>(null) }
+    // Debug screenshot hook (dwOpenSession on a wide screen): open in the detail pane.
+    val debugWideSession by com.dmzs.datawatchclient.ui.debug.DebugLaunchHooks.pendingWideSession.collectAsState()
+    LaunchedEffect(debugWideSession, isWide) {
+        val id = debugWideSession ?: return@LaunchedEffect
+        if (isWide) {
+            selectedSessionId = DeepLinks.shortSessionId(id)
+            com.dmzs.datawatchclient.ui.debug.DebugLaunchHooks.pendingWideSession.value = null
+        }
+    }
 
     // v0.42.5 — probe whether the active server exposes the
     // autonomous surface (`/api/autonomous/prds`). Local-only setups

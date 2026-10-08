@@ -129,6 +129,11 @@ public fun AutonomousScreen(
             vm.fetchFullPrd(openPrdId!!)
         }
     }
+    // Debug screenshot hook (dwOpenAutomaton): open that Automaton once listed.
+    LaunchedEffect(state.prds) {
+        com.dmzs.datawatchclient.ui.debug.DebugLaunchHooks.takeAutomaton(state.prds.map { it.id })
+            ?.let { openPrdId = it }
+    }
     // #178: start/stop WS live updates when the detail dialog opens/closes.
     LaunchedEffect(openPrdId) {
         if (openPrdId != null) vm.startPrdLiveUpdates(openPrdId!!) else vm.stopPrdLiveUpdates()
