@@ -1917,3 +1917,8 @@
 "Connect failed" = "Error al conectar";
 "No plugins found in this registry." = "No se encontraron plugins en este registro.";
 "Open session Status tab" = "Abrir la pestaña Estado de la sesión";
+
+/* Quick-commands Guardrails group */
+"Guardrails" = "Guardrails";
+"Running guardrail:" = "Ejecutando guardrail:";
+"Guardrail error:" = "Error de guardrail:";

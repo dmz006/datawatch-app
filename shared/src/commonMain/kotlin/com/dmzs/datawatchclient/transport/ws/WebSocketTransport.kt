@@ -259,6 +259,15 @@ public class WebSocketTransport(
                         println("WsTransport[global]: connected $wsUrl")
                         // PWA state.connected — drives the iOS reachability dot.
                         WsConnectionHub.opened(profile.id)
+                        // Outbound relay for frames that aren't tied to an open session
+                        // stream (e.g. Sessions-list quick commands sending
+                        // `sendkey <id>: Escape`), keyed per server profile.
+                        val globalWriter =
+                            launch {
+                                WsOutbound.frames
+                                    .filter { it.sessionId == WsOutbound.globalKey(profile.id) }
+                                    .collect { env -> send(env.text) }
+                            }
                         try {
                             for (frame in incoming) {
                                 when (frame) {
@@ -286,6 +295,7 @@ public class WebSocketTransport(
                                 }
                             }
                         } finally {
+                            globalWriter.cancel()
                             WsConnectionHub.closed(profile.id)
                         }
                     }

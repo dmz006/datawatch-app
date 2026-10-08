@@ -986,6 +986,7 @@ public fun SessionDetailScreen(
                                 onResponse = {},
                                 hasResponse = false,
                                 fetchSavedCommands = { vm.fetchSavedCommands() },
+                                onGuardrail = vm::runNamedGuardrail,
                                 whisperConfigured = state.whisperConfigured,
                                 // PWA `▶ ch`: Channel tab active + not waiting → send via MCP channel.
                                 channelSend =
@@ -2108,6 +2109,7 @@ private fun ReplyComposer(
     onResponse: () -> Unit = {},
     hasResponse: Boolean = false,
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
+    onGuardrail: (String) -> Unit = {},
     whisperConfigured: Boolean = false,
     channelSend: Boolean = false,
     onSendChannel: () -> Unit = {},
@@ -2383,6 +2385,7 @@ private fun ReplyComposer(
             fetchSavedCommands = fetchSavedCommands,
             onSend = onQuickReply,
             onCustom = { customCmdOpen = true },
+            onGuardrail = onGuardrail,
         )
         Spacer(modifier = Modifier.weight(1f))
         // ESC — matches PWA savedCmdsQuick ␛ button
@@ -2787,9 +2790,9 @@ private fun SessionModeTab(
 
 /**
  * Parity D21b — PWA `savedCmdsQuick` `<select>`: System commands, the
- * user's saved commands, then "Custom…" (opens [CustomCommandRow]). The
- * PWA's Guardrails group is omitted: the app's transport can only run the
- * session's default guardrail, not a named one.
+ * user's saved commands (server-seeded ones hidden), a Guardrails group
+ * (`▶ sast-scan` …, runs that guardrail on the session) and "Custom…"
+ * (opens [CustomCommandRow]). Sets come from [QuickCommandSets].
  */
 @Composable
 private fun SavedCommandsDropdown(
@@ -2797,26 +2800,26 @@ private fun SavedCommandsDropdown(
     fetchSavedCommands: suspend () -> List<Pair<String, String>>,
     onSend: (String) -> Unit,
     onCustom: () -> Unit,
+    onGuardrail: (String) -> Unit = {},
 ) {
     var open by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     LaunchedEffect(open) {
         if (open) saved = fetchSavedCommands()
     }
-    // PWA system set (app.js loadSavedCmdsQuick); values are what the app's
-    // send path expects (text + CR, or a control byte mapped to sendkey).
+    // Web UI detail System set (QuickCommandSets.DETAIL_SYSTEM), mapped to what the
+    // app's send path expects: text + CR, or a control byte it turns into sendkey.
     val system =
-        listOf(
-            "approve" to "yes\r",
-            "reject" to "no\r",
-            "enter" to "\r",
-            "continue" to "continue\r",
-            "skip" to "skip\r",
-            "abort" to "\u0003",
-            "ESC" to "\u001B",
-            "tmux prefix (Ctrl-b)" to "\u0002",
-            "quit" to "/exit\r",
-        )
+        com.dmzs.datawatchclient.transport.QuickCommandSets.DETAIL_SYSTEM.map { c ->
+            c.label to
+                when (c.value) {
+                    com.dmzs.datawatchclient.transport.QuickCommandSets.ESC -> "\u001B"
+                    com.dmzs.datawatchclient.transport.QuickCommandSets.CTRL_B -> "\u0002"
+                    "\n" -> "\r"
+                    "\u0003" -> "\u0003"
+                    else -> c.value + "\r"
+                }
+        }
     Box {
         androidx.compose.material3.OutlinedButton(
             onClick = { open = true },
@@ -2856,6 +2859,16 @@ private fun SavedCommandsDropdown(
                         },
                     )
                 }
+            }
+            DropdownGroupLabel(stringResource(R.string.session_detail_commands_guardrails))
+            com.dmzs.datawatchclient.transport.QuickCommandSets.GUARDRAILS.forEach { g ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text("▶ $g", style = MaterialTheme.typography.bodySmall) },
+                    onClick = {
+                        open = false
+                        onGuardrail(g)
+                    },
+                )
             }
             HorizontalDivider()
             androidx.compose.material3.DropdownMenuItem(

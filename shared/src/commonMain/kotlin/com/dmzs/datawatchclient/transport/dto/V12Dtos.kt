@@ -90,6 +90,8 @@ public data class FilesMkdirDto(
 public data class SavedCommandDto(
     val name: String,
     val command: String,
+    /** Server-seeded (built-in) command; the session-detail menu hides these like the web UI. */
+    val seeded: Boolean = false,
 )
 
 @Serializable

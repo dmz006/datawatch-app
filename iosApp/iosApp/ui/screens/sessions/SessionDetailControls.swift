@@ -99,9 +99,8 @@ struct SavedCommandsRow: View {
     }
 
     private var userSaved: [IosSavedCommand] {
-        // PWA hides server-seeded commands that duplicate the System set.
-        let systemValues = Set(Self.system.map { $0.value })
-        return saved.filter { !systemValues.contains($0.command) }
+        // Web UI hides server-seeded commands (they duplicate the System set).
+        saved.filter { !$0.seeded }
     }
 
     private var commandsMenu: some View {
@@ -116,6 +115,12 @@ struct SavedCommandsRow: View {
                     ForEach(userSaved, id: \.name) { c in
                         Button(c.name.isEmpty ? c.command : c.name) { send(c.command) }
                     }
+                }
+            }
+            // Web UI "Guardrails" group: run one built-in guardrail on this session.
+            Section(L("Guardrails")) {
+                ForEach(IosGuardrails.shared.builtins, id: \.self) { g in
+                    Button("▶ " + g) { runGuardrail(g) }
                 }
             }
             Section {
@@ -165,6 +170,18 @@ struct SavedCommandsRow: View {
             KeyGlyphButton(glyph: "→", label: "Arrow right", repeats: true) { key("Right") }
             KeyGlyphButton(glyph: "⏎", label: "Enter", repeats: false) { key("Enter") }
         }
+    }
+
+    private func runGuardrail(_ name: String) {
+        AlertDock.shared.post(L("Running guardrail:") + " " + name)
+        IosGuardrails.shared.run(profile: profile, sessionId: session.fullId, guardrail: name, onSuccess: { r in
+            Task { @MainActor in
+                let text = name + ": " + r.outcome + (r.summary.isEmpty ? "" : " — " + String(r.summary.prefix(60)))
+                AlertDock.shared.post(text, level: r.outcome == "pass" ? .success : .error)
+            }
+        }, onError: { err in
+            Task { @MainActor in AlertDock.shared.post(L("Guardrail error:") + " " + err, level: .error) }
+        })
     }
 
     private func load() {

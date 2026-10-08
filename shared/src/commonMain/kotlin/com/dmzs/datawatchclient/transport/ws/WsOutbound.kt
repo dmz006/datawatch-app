@@ -36,6 +36,14 @@ public object WsOutbound {
     public val frames: SharedFlow<WsOutboundEnvelope> = _frames.asSharedFlow()
 
     /**
+     * Routing key for a server's always-open sessions-list socket
+     * (`globalStream`): frames sent with it reach the daemon without a
+     * session stream open. Use for `command` frames that name their session
+     * in the text (e.g. `sendkey <full id>: Escape`).
+     */
+    public fun globalKey(profileId: String): String = "__global__:$profileId"
+
+    /**
      * Queue a single frame for the WS connection subscribed to
      * [sessionId]. Non-blocking; drops when no subscriber is
      * currently collecting (e.g. session detail not open). Safe

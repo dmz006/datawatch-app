@@ -550,9 +550,40 @@ public class SessionDetailViewModel(
         val profile = profileCache ?: return emptyList()
         return com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
             .listCommands().fold(
-                onSuccess = { list -> list.map { it.name to it.command } },
+                // Web UI detail menu hides server-seeded commands (they duplicate System).
+                onSuccess = { list -> com.dmzs.datawatchclient.transport.QuickCommandSets.detailSaved(list).map { it.label to it.value } },
                 onFailure = { emptyList() },
             )
+    }
+
+    /**
+     * Web UI "Guardrails" group (`handleQuickCmd` `__guardrail__<name>`): run one
+     * named guardrail on this session; the outcome goes to the alert dock.
+     */
+    public fun runNamedGuardrail(name: String) {
+        val profile = profileCache ?: return
+        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+            "Running guardrail: $name",
+            com.dmzs.datawatchclient.ui.shell.DockLevel.Info,
+        )
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).runNamedSessionGuardrail(fullIdOrShort(), name).fold(
+                onSuccess = { v ->
+                    val outcome = (v["outcome"] as? kotlinx.serialization.json.JsonPrimitive)?.content ?: "unknown"
+                    val summary = (v["summary"] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        "$name: $outcome" + if (summary.isNotBlank()) " — " + summary.take(60) else "",
+                        if (outcome == "pass") com.dmzs.datawatchclient.ui.shell.DockLevel.Success else com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                    )
+                },
+                onFailure = { err ->
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        "Guardrail error: ${err.message ?: err::class.simpleName}",
+                        com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                    )
+                },
+            )
+        }
     }
 
     /**

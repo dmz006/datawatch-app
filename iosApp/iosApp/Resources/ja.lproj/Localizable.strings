@@ -1917,3 +1917,8 @@
 "Connect failed" = "接続に失敗しました";
 "No plugins found in this registry." = "このレジストリにプラグインはありません。";
 "Open session Status tab" = "セッションのステータスタブを開く";
+
+/* Quick-commands Guardrails group */
+"Guardrails" = "ガードレール";
+"Running guardrail:" = "ガードレール実行中:";
+"Guardrail error:" = "ガードレールのエラー:";

@@ -13,7 +13,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** A saved command from `GET /api/commands`, flattened for Swift. */
-public data class IosSavedCommand(val name: String, val command: String)
+/** [seeded]: server-built-in command; the session-detail menu hides these like the web UI. */
+public data class IosSavedCommand(val name: String, val command: String, val seeded: Boolean = false)
 
 /**
  * Quick commands from the session list (parity B4, PWA `cardSendCmd`). The list has
@@ -30,7 +31,7 @@ public object IosQuickCommands {
     ) {
         scope.launch {
             val list = IosServiceLocator.transportFor(profile).listCommands().getOrNull().orEmpty()
-            onResult(list.map { IosSavedCommand(it.name, it.command) })
+            onResult(list.map { IosSavedCommand(it.name, it.command, it.seeded) })
         }
     }
 

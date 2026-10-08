@@ -470,7 +470,6 @@ public fun SessionsScreen(
                                 onMoveDown = { vm.moveDown(session.id) },
                                 onQuickReply = { text -> vm.quickReply(session.id, text) },
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
-                                fetchSystemCommands = { vm.fetchSystemQuickCommands(session.id) },
                                 fetchCurrentStatus = { vm.fetchCurrentStatus(session.id) },
                                 fetchFreshResponse = { vm.fetchFreshResponse(session.id) },
                                 summarizerEnabled = state.summarizerEnabled,
@@ -1102,7 +1101,6 @@ private fun SessionRow(
     isWatched: Boolean = false,
     onWatchToggle: () -> Unit = {},
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
-    fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     fetchCurrentStatus: suspend () -> CurrentStatusDto? = { null },
     fetchFreshResponse: (suspend () -> Result<String>)? = null,
     summarizerEnabled: Boolean = false,
@@ -1601,7 +1599,6 @@ private fun SessionRow(
     if (quickCmdsOpen) {
         QuickCommandsSheet(
             fetchSavedCommands = fetchSavedCommands,
-            fetchSystemCommands = fetchSystemCommands,
             onSend = { text ->
                 onQuickReply(text)
                 quickCmdsOpen = false
@@ -2057,15 +2054,11 @@ private fun InlineCurrentStatus(
  * in `internal/server/web/app.js`.
  *
  * Three stacks:
- *   1. **System** — yes / no / continue / skip / /exit.
- *   2. **Saved** — server's saved-command library from
- *      `GET /api/commands`, lazy-loaded when the sheet opens.
+ *   1. **System** — the web UI's card set ([QuickCommandSets.CARD_SYSTEM]):
+ *      approve / reject / continue / skip / ESC / tmux prefix (Ctrl-b) / quit.
+ *      ESC and Ctrl-b go out as tmux keys over the sessions socket.
+ *   2. **Saved** — every saved command from `GET /api/commands`.
  *   3. **Custom** — free-form text input with Send.
- *
- * ESC and Ctrl-b (tmux prefix) are deferred — they need the WS
- * `command` channel which the Sessions tab doesn't subscribe to
- * today; users needing those open the session detail. Tracked for
- * a later batch.
  */
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -2073,42 +2066,17 @@ internal fun QuickCommandsSheet(
     fetchSavedCommands: suspend () -> List<Pair<String, String>>,
     onSend: (String) -> Unit,
     onDismiss: () -> Unit,
-    fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     sessionId: String? = null,
     whisperConfigured: Boolean = false,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var systemCmds by remember {
-        mutableStateOf<List<com.dmzs.datawatchclient.transport.QuickCommandItem>>(
-            emptyList(),
-        )
-    }
     var customText by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
         saved = fetchSavedCommands()
-        systemCmds = fetchSystemCommands()
     }
-    // Hard-coded fallback list used when server doesn't expose quick_commands (pre-datawatch#28 daemons).
-    val fallbackSystemCmds =
-        listOf(
-            com.dmzs.datawatchclient.transport.QuickCommandItem("approve", "yes"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("reject", "no"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("continue", "continue"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("skip", "skip"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("quit", "/exit"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("Enter", "\n"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("ESC", ""),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("Ctrl-b", ""),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("↑", "[A"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("↓", "[B"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("→", "[C"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("←", "[D"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("PgUp", "[5~"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("PgDn", "[6~"),
-            com.dmzs.datawatchclient.transport.QuickCommandItem("Tab", "	"),
-        )
-    val effectiveSystemCmds = systemCmds.ifEmpty { fallbackSystemCmds }
+    // Web UI session-card "Commands…" System set, verbatim (shared with iOS).
+    val effectiveSystemCmds = com.dmzs.datawatchclient.transport.QuickCommandSets.CARD_SYSTEM
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
             Text(stringResource(R.string.sessions_quick_commands_sheet), style = MaterialTheme.typography.titleMedium)

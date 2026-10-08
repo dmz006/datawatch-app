@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Quick commands match the web UI.**
+  - **Android session-card sheet:** now shows exactly the web UI's list: approve, reject, continue, skip, ESC, tmux prefix (Ctrl-b), quit, then your saved commands and Custom. It used to show a different server-provided list, and ESC / Ctrl-b now work from the card.
+  - **Session-detail "Commands…" menu (Android and iOS):** gains the web UI's **Guardrails** group (▶ sast-scan / secrets-scan / deps-scan run that check on the session), and hides server-built-in saved commands the way the web UI does.
+
 ### CI
 - **Wear OS releases go to Wear closed testing too** (track `wear:Wear closed testing`), promoted from Wear internal alongside the phone build.
 

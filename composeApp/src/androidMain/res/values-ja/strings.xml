@@ -1401,4 +1401,5 @@
     <string name="community_plugins_install">インストール</string>
     <string name="community_plugins_installing">インストール中…</string>
     <string name="community_plugins_installed">インストール済み</string>
+    <string name="session_detail_commands_guardrails">ガードレール</string>
 </resources>

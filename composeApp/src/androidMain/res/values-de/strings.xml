@@ -1401,4 +1401,5 @@
     <string name="community_plugins_install">Installieren</string>
     <string name="community_plugins_installing">Wird installiert…</string>
     <string name="community_plugins_installed">Installiert</string>
+    <string name="session_detail_commands_guardrails">Guardrails</string>
 </resources>

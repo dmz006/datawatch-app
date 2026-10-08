@@ -751,6 +751,16 @@ public class SessionsViewModel : ViewModel() {
     ) {
         val profile = profileForSession(sessionId) ?: return
         if (text.isEmpty()) return
+        // Web UI card ESC / tmux prefix: a tmux key over the always-open sessions socket.
+        com.dmzs.datawatchclient.transport.QuickCommandSets.sendKeyName(text)?.let { key ->
+            val sent =
+                com.dmzs.datawatchclient.transport.ws.WsOutbound.sendCommand(
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound.globalKey(profile.id),
+                    "sendkey ${fullIdFor(sessionId)}: $key",
+                )
+            if (!sent) _banner.value = "Couldn't send $key — live connection not open."
+            return
+        }
         viewModelScope.launch {
             ServiceLocator.transportFor(profile).replyToSession(fullIdFor(sessionId), text).fold(
                 onSuccess = { refresh() },

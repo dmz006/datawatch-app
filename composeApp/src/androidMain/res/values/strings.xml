@@ -1714,4 +1714,5 @@
     <string name="community_plugins_install">Install</string>
     <string name="community_plugins_installing">Installing…</string>
     <string name="community_plugins_installed">Installed</string>
+    <string name="session_detail_commands_guardrails">Guardrails</string>
 </resources>

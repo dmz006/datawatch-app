@@ -146,6 +146,7 @@ internal fun SavedCommandDto.toDomain(): SavedCommand =
     SavedCommand(
         name = name,
         command = command,
+        seeded = seeded,
     )
 
 private fun String?.toAlertSeverity(): AlertSeverity =
