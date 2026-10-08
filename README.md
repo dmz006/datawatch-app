@@ -78,7 +78,7 @@ We need **12 testers who stay opted in for 14 days** before Google lets the app 
 
 1. **Join the tester group:** [groups.google.com/g/datawatch-testers](https://groups.google.com/g/datawatch-testers). Use the Google account your phone uses for Play.
 2. **Opt in:** [play.google.com/apps/testing/com.dmzs.datawatchclient](https://play.google.com/apps/testing/com.dmzs.datawatchclient). Open it on the web or your phone and tap **Become a tester**.
-3. **Install** from the Play Store link on that page, and stay opted in.
+3. **Install:** [Google Play — datawatch](https://play.google.com/store/apps/details?id=com.dmzs.datawatchclient). The listing appears after you opt in. Then stay opted in.
 
 Android Auto support is part of the phone app. The Wear OS companion joins closed testing soon.
 

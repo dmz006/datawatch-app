@@ -14,6 +14,7 @@
 |---|---|
 | Tester group (required for Android) | https://groups.google.com/g/datawatch-testers |
 | Android opt-in | https://play.google.com/apps/testing/com.dmzs.datawatchclient |
+| Android install (after opt-in) | https://play.google.com/store/apps/details?id=com.dmzs.datawatchclient |
 | iOS TestFlight | public link after Beta App Review approval (TBD) |
 | Server | https://github.com/dmz006/datawatch |
 | App | https://github.com/dmz006/datawatch-app |
@@ -52,7 +53,7 @@ Ranked by how likely each place is to produce testers who already run, or will i
 > **Android (Google Play closed test):**
 > 1. Join https://groups.google.com/g/datawatch-testers
 > 2. Opt in: https://play.google.com/apps/testing/com.dmzs.datawatchclient
-> 3. Install from Play, and please stay opted in for 14 days. We need 12 testers to unlock the public Play release.
+> 3. Install: https://play.google.com/store/apps/details?id=com.dmzs.datawatchclient. Please stay opted in for 14 days. We need 12 testers to unlock the public Play release.
 >
 > **iPhone / iPad (TestFlight):** <public link>
 >
@@ -89,8 +90,8 @@ Ranked by how likely each place is to produce testers who already run, or will i
 ## Checklist before posting
 
 - [ ] datawatch 9.0.0 released; README and web UI About show the beta links
-- [ ] Google Group `datawatch-testers` exists and is attached to the Play closed track (`alpha`)
-- [ ] Closed track has the current build (the release pipeline promotes each tag)
+- [x] Google Group `datawatch-testers` exists (anyone on the web can join) and is attached to the Play closed track (`alpha`) (2026-10-07)
+- [x] Closed track has the current build: the release pipeline promotes each tag (v1.28.13 promoted 2026-10-07)
 - [ ] TestFlight public link live (after Beta App Review approval); added to both READMEs
 - [ ] Short screen recording or GIF of reply-from-phone and an alert
 - [ ] Pinned GitHub Discussion live; other posts link to it
