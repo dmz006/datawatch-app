@@ -8,11 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.15] — 2026-10-08
+
 ### Changed
 - **Wear: the watch app is no longer marked standalone.** It gets everything through the phone app and never holds a server token, so Play now expects the phone app to be installed. This matches Google's Wear quality rule, which says a standalone app must work without a phone.
 - **Wear: quick replies match the web UI's session-card set.** A waiting session offers approve, reject, continue, skip, ESC and quit, plus stop. The tmux prefix and Custom don't suit a watch and are left out. ESC is sent as a tmux key through the phone. It used to offer only Continue (which sent "y") and Stop.
-
-## [1.28.15] — 2026-10-08
 
 ### Fixed
 - **iPhone: switching tabs from More now works.** With Settings or Dashboard open (they sit behind More), a notification tap, deep link or restore that switched to another tab stayed on the More screen.
