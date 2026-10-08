@@ -1,17 +1,20 @@
 """Shared loader + validator for security/accepted-risks.yml.
 
-Security acceptance standard (operator, 2026-10-08; shared with datawatch) —
-see AGENT.md § "Security acceptance standard". Used by
+Security acceptance standard (operator, 2026-10-08; shared with datawatch,
+dmz006/datawatch#197) — see AGENT.md § "Security acceptance standard". Used by
 scripts/check_accepted_risks.py (CI lint) and scripts/sca_fix_watch.py (daily
 watch). Standard library only: the registry is read with a small YAML-subset
 parser (block maps, block lists, folded/literal scalars, quoted scalars,
-true/false, [] / {}), so CI needs no pip install.
+true/false, [] / {} and flow lists [a, b]), so CI needs no pip install.
 """
 import datetime
 import re
 
-REQUIRED = ("id", "kind", "package", "severity", "impact", "added", "expires", "validated_by", "reason")
-KINDS = ("dependency", "code-scanning", "bundled-js", "container")
+REQUIRED = ("id", "kind", "package", "severity", "impact", "first_added", "added", "expires", "validated_by", "reason")
+KINDS = ("container", "dependency", "code-scanning", "bundled-js")
+# `version` (the accepted version) is required for these kinds; code-scanning
+# entries carry `path` instead (version "<path>@<sha-short>" is optional there).
+VERSIONED_KINDS = ("dependency", "bundled-js", "container")
 SEVERITIES = ("low", "medium", "moderate", "high", "critical")
 REACHABLE = ("yes", "no", "unknown")
 MAX_DAYS_TRACED = 90
@@ -33,6 +36,8 @@ def _scalar(s):
         return s == "true"
     if s == "[]":
         return []
+    if s.startswith("[") and s.endswith("]"):
+        return [_scalar(x) for x in s[1:-1].split(",") if x.strip()]
     if s == "{}":
         return {}
     if s in ("null", "~", ""):
@@ -142,16 +147,44 @@ def norm_reachable(v):
     return str(v).strip().lower() if v is not None else None
 
 
+def max_days(entry):
+    """Expiry window for the entry: 90 days when traced, 30 when not."""
+    impact = entry.get("impact") if isinstance(entry.get("impact"), dict) else {}
+    return MAX_DAYS_TRACED if impact.get("traced") is True else MAX_DAYS_UNTRACED
+
+
 def needs_escalation(entry):
     """Operator escalation: reachable=yes on a HIGH/CRITICAL finding."""
     impact = entry.get("impact") if isinstance(entry.get("impact"), dict) else {}
     return str(entry.get("severity", "")).lower() in ("high", "critical") and norm_reachable(impact.get("reachable")) == "yes"
 
 
+def renewed_past_first_expiry(entry, today):
+    """Operator escalation: the entry was renewed (added > first_added) and is
+    now past its first expiry window (first_added + 90 d traced / 30 d not)."""
+    first, added = parse_date(entry.get("first_added")), parse_date(entry.get("added"))
+    if not first or not added or added <= first:
+        return False
+    return today > first + datetime.timedelta(days=max_days(entry))
+
+
+def escalations(entry, today):
+    """-> list of operator-escalation reasons (empty when none)."""
+    out = []
+    if needs_escalation(entry):
+        out.append("reachable=yes on a %s finding" % entry.get("severity"))
+    if renewed_past_first_expiry(entry, today):
+        first = parse_date(entry.get("first_added"))
+        out.append("renewed past its first expiry (first_added %s + %d d = %s)" % (
+            first, max_days(entry), first + datetime.timedelta(days=max_days(entry))))
+    return out
+
+
 # --------------------------------------------------------------------------- validation
 
 def validate(risks, today=None):
-    """Return (errors, warnings) — lists of strings."""
+    """Return (errors, escalations) — lists of strings. Escalations never fail
+    the lint; they are printed as ESCALATE lines for the operator."""
     today = today or datetime.date.today()
     errors, warnings, seen = [], [], set()
     for n, e in enumerate(risks):
@@ -172,6 +205,14 @@ def validate(risks, today=None):
         kind = e.get("kind")
         if kind and kind not in KINDS:
             err("kind must be one of %s" % "|".join(KINDS))
+        if kind in VERSIONED_KINDS and e.get("version") in (None, ""):
+            err("missing required field `version` (the accepted version; required for %s)" % kind)
+        if kind == "code-scanning" and e.get("path") in (None, ""):
+            err("missing required field `path` (the alert's file; required for code-scanning)")
+        if e.get("images") is not None and not (
+            isinstance(e["images"], list) and all(isinstance(x, str) and x for x in e["images"])
+        ):
+            err("images must be a list of image names")
         if kind == "dependency" and e.get("package") and not MAVEN_RE.match(str(e["package"])):
             err("dependency package must be Maven coordinates group:artifact")
         if e.get("severity") and str(e["severity"]).lower() not in SEVERITIES:
@@ -192,21 +233,24 @@ def validate(risks, today=None):
                 if norm_reachable(impact.get("reachable")) not in REACHABLE:
                     err("impact.reachable must be yes|no|unknown%s" % (
                         " (required when traced is false)" if traced is False else ""))
+                if traced is True and not str(impact.get("method") or "").strip():
+                    err("impact.method is required when traced is true (how the code path was traced)")
                 if not str(impact.get("analysis") or "").strip():
                     err("impact.analysis is required%s" % (" (required when traced is false)" if traced is False else ""))
 
-        added, expires = None, None
-        for f in ("added", "expires"):
+        dates = {}
+        for f in ("first_added", "added", "expires"):
             if e.get(f) not in (None, ""):
                 d = parse_date(e[f])
                 if d is None:
                     err("`%s` must be a valid YYYY-MM-DD date" % f)
-                elif f == "added":
-                    added = d
                 else:
-                    expires = d
+                    dates[f] = d
+        first, added, expires = dates.get("first_added"), dates.get("added"), dates.get("expires")
         if added and added > today:
             err("added %s is in the future" % added)
+        if first and added and first > added:
+            err("first_added %s is after added %s (first_added is the first acceptance and never changes)" % (first, added))
         if added and expires:
             if expires <= added:
                 err("expires must be after added")
@@ -216,6 +260,20 @@ def validate(risks, today=None):
                     expires, limit, added, "traced" if traced else "not traced"))
         if expires and expires < today:
             err("expired on %s — re-review (new impact analysis + new dates) or remove the entry" % expires)
-        if needs_escalation(e):
-            warnings.append("%s: reachable=yes on a %s finding — escalate to the operator" % (rid, e.get("severity")))
+        for why in escalations(e, today):
+            warnings.append("%s: %s — escalate to the operator" % (rid, why))
     return errors, warnings
+
+
+def first_added_changes(old_risks, new_risks):
+    """first_added is immutable: -> list of "id: old -> new" for entries present
+    in both versions of the registry whose first_added changed."""
+    old = {str(r.get("id")): r.get("first_added") for r in old_risks if isinstance(r, dict)}
+    out = []
+    for r in new_risks:
+        if not isinstance(r, dict) or str(r.get("id")) not in old:
+            continue
+        before = old[str(r.get("id"))]
+        if before not in (None, "") and str(before) != str(r.get("first_added")):
+            out.append("%s: first_added changed %s -> %s" % (r.get("id"), before, r.get("first_added")))
+    return out
