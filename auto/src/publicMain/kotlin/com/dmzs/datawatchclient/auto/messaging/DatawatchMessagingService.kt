@@ -6,6 +6,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.ScreenManager
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
+import com.dmzs.datawatchclient.auto.AutoDebugLaunchHooks
 import com.dmzs.datawatchclient.auto.AutoServiceLocator
 import com.dmzs.datawatchclient.auto.AutoSummaryScreen
 import com.dmzs.datawatchclient.auto.R
@@ -102,6 +103,16 @@ public class DatawatchMessagingService : CarAppService() {
                             navigateFromIntent(navIntent, sm, carContext)
                         } catch (e: Exception) {
                             android.util.Log.w(TAG, "onCreateScreen nav failed: ${e.message}")
+                        }
+                    }
+                } else if (intent.hasExtra("dwAutoScreen")) {
+                    // DEBUG builds only (no-op otherwise): AAOS screenshot passes.
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        try {
+                            val sm = carContext.getCarService(ScreenManager::class.java)
+                            AutoDebugLaunchHooks.apply(carContext, intent, sm)
+                        } catch (e: Exception) {
+                            android.util.Log.w(TAG, "debug launch hook failed: ${e.message}")
                         }
                     }
                 }

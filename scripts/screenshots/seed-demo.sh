@@ -6,7 +6,8 @@
 #   DW_TOKEN   bearer token           (default: documented test token)
 #
 # Writes $DEMO_ROOT/terminal-session-id (session for the terminal shot),
-# $DEMO_ROOT/keep-active-ids (sessions for keep-active.py) and
+# $DEMO_ROOT/keep-active-ids (sessions for keep-active.py),
+# $DEMO_ROOT/prompt-session-id (session waiting on a prompt; car app shot) and
 # $DEMO_ROOT/automaton-id (Automaton for the detail shot).
 set -euo pipefail
 
@@ -196,6 +197,7 @@ deploy_id=$(start_session "deploy check" "Pre-deploy checks for staging")
 
 echo "$tests_id" > "$DEMO_ROOT/terminal-session-id"
 echo "$docs_id $tests_id" > "$DEMO_ROOT/keep-active-ids"
+echo "$deploy_id" > "$DEMO_ROOT/prompt-session-id"
 echo "sessions: docs=$docs_id tests=$tests_id deploy=$deploy_id"
 
 # ── 3. Automaton: create, plan (stub LLM), then add a story + task ────────

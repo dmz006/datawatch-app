@@ -72,6 +72,10 @@ kotlin {
 }
 
 dependencies {
+    // DEBUG builds only: CarAppActivity for Android Automotive OS emulator
+    // screenshots (src/androidDebug/AndroidManifest.xml). Release APK/AAB never
+    // ship app-automotive.
+    add("debugImplementation", libs.androidx.car.app.automotive)
     constraints {
         // androidx.car.app pulls guava 31.1-android, which is affected by
         // GHSA-7g45-4rm6-3mm3 / GHSA-5mg8-w23w-74h3 (fixed in 32.0.0-android).
@@ -87,6 +91,9 @@ android {
     compileSdk = 36
 
     buildFeatures { buildConfig = true }
+
+    // DEBUG-only manifest additions (AAOS CarAppActivity for emulator screenshots).
+    sourceSets.getByName("debug").manifest.srcFile("src/androidDebug/AndroidManifest.xml")
 
     signingConfigs {
         // Only configure Android release signing when the keystore password is available.

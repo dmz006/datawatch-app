@@ -5,9 +5,15 @@ name: Android Screenshots
 # seeds non-sensitive demo content (scripts/screenshots/seed-demo.sh), builds the
 # publicTrack debug APK (DEBUG launch hooks: dwSeedURL/dwTab/dwOpenSession…, see
 # ui/debug/DebugLaunchHooks.kt) and captures phone, 7" and 10" tablet sets on
-# KVM emulators (scripts/screenshots/capture-android.sh).
+# KVM emulators (scripts/screenshots/capture-android.sh). Also captures the
+# demo server's own web UI (PWA) with headless Chromium
+# (scripts/screenshots/capture-pwa.py) and, best effort, the car app on an
+# Android Automotive OS emulator (scripts/screenshots/capture-aaos.sh).
 # Output: the `android-screenshots` artifact with phone/, tablet-7/, tablet-10/
-# (1-sessions.png … 8-settings.png). Upload a folder to Play with
+# (1-sessions.png … 8-settings.png), pwa/ (1280x800) + pwa-mobile/ (390x844)
+# (1-sessions.png … 6-settings.png) + pwa-slideshow.gif, and auto/
+# (1-home.png … 6-about.png) + auto-slideshow.gif when an AAOS image with the
+# Templates Host is available. Upload a folder to Play with
 # play-listing-images.yml (run_id = this run, dir = phone | tablet-7 | tablet-10).
 
 on:
@@ -115,9 +121,33 @@ jobs:
           bash scripts/screenshots/seed-demo.sh || echo "::warning::demo seed incomplete — see log above"
           echo "SESSION_ID=$(cat "$DEMO_ROOT/terminal-session-id")" >> "$GITHUB_ENV"
           echo "AUTOMATON_ID=$(cat "$DEMO_ROOT/automaton-id" 2>/dev/null || true)" >> "$GITHUB_ENV"
+          echo "AUTO_SESSION_ID=$(cat "$DEMO_ROOT/prompt-session-id" 2>/dev/null || true)" >> "$GITHUB_ENV"
           # Watch the long-running sessions so they read as running, not idle.
           nohup python3 scripts/screenshots/keep-active.py $(cat "$DEMO_ROOT/keep-active-ids") \
             > "$DEMO_ROOT/keep-active.log" 2>&1 &
+
+      # ── PWA: the demo server's own web UI in headless Chromium ──────────────
+      # Pinned Playwright + Pillow in a throwaway venv. The token goes into
+      # localStorage `cs_token` (where app.js reads it); self-signed TLS is
+      # accepted for this browser context only. Non-fatal: phone/tablet/AAOS
+      # still run if the web capture fails.
+      - name: Install Playwright (Chromium) + Pillow
+        id: pwa_setup
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/shots-venv"
+          "$RUNNER_TEMP/shots-venv/bin/pip" install -q playwright==1.63.0 pillow==11.3.0
+          "$RUNNER_TEMP/shots-venv/bin/python" -m playwright install --with-deps chromium
+          echo "SHOTS_PY=$RUNNER_TEMP/shots-venv/bin/python" >> "$GITHUB_ENV"
+
+      - name: Capture PWA (1280x800 desktop, 390x844 mobile)
+        if: steps.pwa_setup.outcome == 'success'
+        continue-on-error: true
+        run: |
+          "$SHOTS_PY" scripts/screenshots/capture-pwa.py --viewport both
+          "$SHOTS_PY" scripts/screenshots/make-slideshow.py "$OUT_DIR/pwa-slideshow.gif" "$OUT_DIR"/pwa/*.png \
+            --frame-ms 2500 --max-kb 400 --width 960
 
       # ── Build: debug APK (debug keystore; DEBUG launch hooks active) ────────
       - name: Set up JDK 21
@@ -176,6 +206,64 @@ jobs:
           emulator-options: ${{ env.EMULATOR_OPTS }} -skin 2560x1600
           disable-animations: true
           script: bash scripts/screenshots/capture-android.sh tablet-10
+
+      # ── Android Automotive OS: the car app (:auto CarAppService) ───────────
+      # The debug APK declares androidx.car.app.activity.CarAppActivity (debug
+      # manifest only), so an AAOS emulator image that ships the Templates Host
+      # renders the same Car App Library screens Android Auto shows. Only the
+      # "…with Google Play" AAOS images carry that host. Best effort: never
+      # fails the run, so PWA + phone/tablet artifacts still upload.
+      - name: Probe Android Automotive system image
+        id: aaos_probe
+        if: success() || failure()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          list=$("$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list 2>/dev/null | grep -o 'system-images;[^ |]*automotive[^ |]*' | sort -u)
+          echo "$list"
+          for want in \
+              'system-images;android-34-ext9;android-automotive-playstore;x86_64' \
+              'system-images;android-35-ext15;android-automotive-playstore;x86_64' \
+              'system-images;android-33;android-automotive-playstore;x86_64'; do
+            if grep -qx "$want" <<< "$list"; then
+              sys=$(cut -d';' -f2 <<< "$want"); sys=${sys#android-}
+              {
+                echo "found=true"
+                echo "api=${sys%%-*}"
+                echo "sysimg=$sys"
+                echo "target=$(cut -d';' -f3 <<< "$want")"
+              } >> "$GITHUB_OUTPUT"
+              echo "using $want"; exit 0
+            fi
+          done
+          echo "::warning::no AAOS Play Store x86_64 system image available to sdkmanager; skipping Android Automotive screenshots"
+          echo "found=false" >> "$GITHUB_OUTPUT"
+
+      - name: Capture Android Automotive (1024x768)
+        if: (success() || failure()) && steps.aaos_probe.outputs.found == 'true'
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d  # v2.38.0
+        with:
+          api-level: ${{ steps.aaos_probe.outputs.api }}
+          system-image-api-level: ${{ steps.aaos_probe.outputs.sysimg }}
+          target: ${{ steps.aaos_probe.outputs.target }}
+          arch: x86_64
+          profile: automotive_1024p_landscape
+          ram-size: 4096M
+          emulator-options: ${{ env.EMULATOR_OPTS }}
+          disable-animations: true
+          script: bash scripts/screenshots/capture-aaos.sh
+
+      - name: AAOS slideshow
+        if: always() && env.SHOTS_PY != ''
+        continue-on-error: true
+        run: |
+          if ls "$OUT_DIR"/auto/*.png >/dev/null 2>&1; then
+            "$SHOTS_PY" scripts/screenshots/make-slideshow.py "$OUT_DIR/auto-slideshow.gif" "$OUT_DIR"/auto/*.png \
+              --frame-ms 2500 --max-kb 400 --width 800
+          else
+            echo "no AAOS screenshots"
+          fi
 
       - name: Server log tail
         if: always()
