@@ -124,6 +124,22 @@ public class RestTransport(
     override val isReachable: StateFlow<Boolean> = _isReachable.asStateFlow()
 
     override suspend fun ping(): Result<Unit> =
+        if (com.dmzs.datawatchclient.transport.ProxiedServers.isProxied(profile.id)) {
+            // #236.3 — a proxied remote's /api/health is public and answers 200
+            // through the proxy even when no valid token is configured for it
+            // (PWA v8.73.3). Probe the authenticated sessions endpoint instead;
+            // 401/403 surfaces as TransportError.Unauthorized.
+            request {
+                client.get("${profile.baseUrl}/api/sessions") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body<kotlinx.serialization.json.JsonElement>()
+                Unit
+            }
+        } else {
+            pingHealth()
+        }
+
+    private suspend fun pingHealth(): Result<Unit> =
         request {
             val res: HttpResponse =
                 client.get("${profile.baseUrl}/api/health") {

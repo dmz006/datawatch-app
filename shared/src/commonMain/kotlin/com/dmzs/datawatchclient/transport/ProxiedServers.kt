@@ -213,6 +213,23 @@ public object ProxiedServers {
             profile.displayName
         }
 
+    /**
+     * Capped exponential backoff shared by remote discovery and the
+     * connection-status probe: [baseMs], 2×, 4× … up to [capMs].
+     * [attempt] is 1-based (the first retry).
+     */
+    public fun backoffMs(
+        attempt: Int,
+        baseMs: Long = 2_000L,
+        capMs: Long = 60_000L,
+    ): Long {
+        if (attempt <= 1) return minOf(baseMs, capMs)
+        val shift = (attempt - 1).coerceAtMost(MAX_BACKOFF_SHIFT)
+        return minOf(baseMs shl shift, capMs)
+    }
+
+    private const val MAX_BACKOFF_SHIFT: Int = 20
+
     private fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 
     private fun JsonObject.bool(key: String): Boolean? = (this[key] as? JsonPrimitive)?.booleanOrNull
@@ -220,9 +237,10 @@ public object ProxiedServers {
 
 /**
  * Per-parent cache of virtual (proxied) profiles (#234). Platform service
- * locators own one instance, call [refresh] when the real profile list
- * changes, when a picker opens and on a modest foreground interval. A failed
- * fetch keeps the parent's last good list.
+ * locators own one instance, call [refresh] at app start, when the real
+ * profile list changes, when a picker opens and on a modest foreground
+ * interval. A failed fetch keeps the parent's last good list; the caller
+ * retries after [retryDelayMs] (capped backoff, PWA v8.73.2 #236.1).
  */
 public class ProxiedServersRegistry(
     private val fetch: suspend (ServerProfile) -> Result<List<JsonObject>>,
@@ -231,6 +249,34 @@ public class ProxiedServersRegistry(
 
     /** parentId → that parent's virtual profiles, only for parents fetched at least once. */
     public val byParent: StateFlow<Map<String, List<ServerProfile>>> = _byParent.asStateFlow()
+
+    private val _inFlight = MutableStateFlow(false)
+
+    /** True while a [refresh] is running. */
+    public val inFlight: StateFlow<Boolean> = _inFlight.asStateFlow()
+
+    /** Consecutive [refresh] calls in which at least one parent failed; 0 after a clean refresh. */
+    public var failureStreak: Int = 0
+        private set
+
+    /**
+     * Delay before retrying after a failed refresh, or null when the last
+     * refresh was clean: 2 s, 4 s, 8 s … capped at 60 s.
+     */
+    public fun retryDelayMs(): Long? = if (failureStreak == 0) null else ProxiedServers.backoffMs(failureStreak)
+
+    /**
+     * The PWA `server_picker_loading` state: a refresh is running and at
+     * least one enabled real parent in [real] has never been listed yet, so
+     * the picker can't show its remotes.
+     */
+    public fun firstLoadPending(
+        real: List<ServerProfile>,
+        inFlight: Boolean = _inFlight.value,
+        byParent: Map<String, List<ServerProfile>> = _byParent.value,
+    ): Boolean =
+        inFlight &&
+            real.any { it.enabled && !ProxiedServers.isProxied(it.id) && !byParent.containsKey(it.id) }
 
     /** Flattened virtual profiles, current snapshot. */
     public fun virtualProfiles(): List<ServerProfile> = _byParent.value.values.flatten()
@@ -242,20 +288,30 @@ public class ProxiedServersRegistry(
     /**
      * Re-fetches `/api/servers` for every enabled real profile in [profiles]
      * (virtual ones are ignored), in parallel. Parents no longer present are
-     * dropped; a parent whose fetch fails keeps its previous list.
+     * dropped; a parent whose fetch fails keeps its previous list. A server
+     * without `/api/servers` (404, older build) counts as "no remotes".
+     *
+     * @return true when every parent answered; false when any failed (the
+     *   caller schedules a retry after [retryDelayMs]).
      */
-    public suspend fun refresh(profiles: List<ServerProfile>) {
+    public suspend fun refresh(profiles: List<ServerProfile>): Boolean {
         val parents = profiles.filter { it.enabled && !ProxiedServers.isProxied(it.id) }
+        _inFlight.value = true
         val results: List<Pair<String, List<ServerProfile>?>> =
-            coroutineScope {
-                parents.map { p ->
-                    async {
-                        p.id to
-                            runCatching { fetch(p).getOrThrow() }
-                                .map { ProxiedServers.parse(p, it) }
-                                .getOrNull()
-                    }
-                }.awaitAll()
+            try {
+                coroutineScope {
+                    parents.map { p ->
+                        async {
+                            p.id to
+                                runCatching { fetch(p).getOrThrow() }
+                                    .recoverCatching { e -> if (e is TransportError.NotFound) emptyList() else throw e }
+                                    .map { ProxiedServers.parse(p, it) }
+                                    .getOrNull()
+                        }
+                    }.awaitAll()
+                }
+            } finally {
+                _inFlight.value = false
             }
         val keep = parents.map { it.id }.toSet()
         _byParent.update { old ->
@@ -266,5 +322,8 @@ public class ProxiedServersRegistry(
                 }
             }.filterKeys { it in keep }
         }
+        val ok = results.none { it.second == null }
+        failureStreak = if (ok) 0 else failureStreak + 1
+        return ok
     }
 }

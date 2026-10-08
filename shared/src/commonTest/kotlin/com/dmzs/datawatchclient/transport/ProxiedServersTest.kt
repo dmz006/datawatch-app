@@ -190,4 +190,64 @@ class ProxiedServersTest {
             assertEquals(listOf("a::proxy::r-a"), reg.virtualProfiles().map { it.id })
             assertNull(reg.find("b::proxy::r-b"))
         }
+
+    @Test
+    fun `registry reports failures with a capped backoff and resets on success`() =
+        runTest {
+            val a = real("a")
+            var fail = true
+            val reg =
+                ProxiedServersRegistry {
+                    if (fail) Result.failure(IllegalStateException("down")) else Result.success(listOf(remote("r")))
+                }
+            assertNull(reg.retryDelayMs())
+            assertFalse(reg.refresh(listOf(a)))
+            assertEquals(2_000L, reg.retryDelayMs())
+            assertFalse(reg.refresh(listOf(a)))
+            assertEquals(4_000L, reg.retryDelayMs())
+            repeat(10) { reg.refresh(listOf(a)) }
+            assertEquals(60_000L, reg.retryDelayMs(), "capped at 60 s")
+            fail = false
+            assertTrue(reg.refresh(listOf(a)))
+            assertNull(reg.retryDelayMs())
+            assertEquals(listOf("a::proxy::r"), reg.virtualProfiles().map { it.id })
+        }
+
+    @Test
+    fun `a server without api servers counts as no remotes, not a failure`() =
+        runTest {
+            val reg = ProxiedServersRegistry { Result.failure(TransportError.NotFound("404")) }
+            assertTrue(reg.refresh(listOf(real("a"))))
+            assertEquals(emptyList(), reg.virtualProfiles())
+            assertEquals(setOf("a"), reg.byParent.value.keys)
+        }
+
+    @Test
+    fun `first load is pending only while a refresh runs for a never-listed parent`() =
+        runTest {
+            val a = real("a")
+            val b = real("b")
+            val reg = ProxiedServersRegistry { Result.success(emptyList()) }
+            assertFalse(reg.firstLoadPending(listOf(a), inFlight = false, byParent = emptyMap()))
+            assertTrue(reg.firstLoadPending(listOf(a), inFlight = true, byParent = emptyMap()))
+            assertFalse(reg.firstLoadPending(listOf(a), inFlight = true, byParent = mapOf("a" to emptyList())))
+            assertTrue(reg.firstLoadPending(listOf(a, b), inFlight = true, byParent = mapOf("a" to emptyList())))
+            assertFalse(
+                reg.firstLoadPending(listOf(a, real("c", enabled = false)), inFlight = true, byParent = mapOf("a" to emptyList())),
+            )
+            reg.refresh(listOf(a))
+            assertFalse(reg.inFlight.value)
+        }
+
+    @Test
+    fun `backoff doubles from the base and caps`() {
+        assertEquals(2_000L, ProxiedServers.backoffMs(0))
+        assertEquals(2_000L, ProxiedServers.backoffMs(1))
+        assertEquals(4_000L, ProxiedServers.backoffMs(2))
+        assertEquals(32_000L, ProxiedServers.backoffMs(5))
+        assertEquals(60_000L, ProxiedServers.backoffMs(6))
+        assertEquals(60_000L, ProxiedServers.backoffMs(500))
+        assertEquals(5_000L, ProxiedServers.backoffMs(1, baseMs = 5_000L))
+        assertEquals(40_000L, ProxiedServers.backoffMs(4, baseMs = 5_000L))
+    }
 }
