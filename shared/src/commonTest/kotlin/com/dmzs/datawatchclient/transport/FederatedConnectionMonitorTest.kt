@@ -42,7 +42,7 @@ class FederatedConnectionMonitorTest {
         }
 
     @Test
-    fun `connecting then loading sessions then cleared, driven by the probe`() =
+    fun `connecting then loading sessions then cleared - driven by the probe`() =
         runTest {
             val answer = CompletableDeferred<Result<List<Session>>>()
             val storeGate = CompletableDeferred<Unit>()
@@ -126,7 +126,7 @@ class FederatedConnectionMonitorTest {
         }
 
     @Test
-    fun `switching between two remotes of the same parent re-probes, same id does not`() =
+    fun `switching between two remotes of the same parent re-probes - same id does not`() =
         runTest {
             val probed = mutableListOf<String>()
             val m =
@@ -151,7 +151,7 @@ class FederatedConnectionMonitorTest {
         }
 
     @Test
-    fun `reason text - proxy 502 body, http status, auth`() {
+    fun `reason text - proxy 502 body - http status - auth`() {
         val bad =
             TransportError.ServerError(
                 502,

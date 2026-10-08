@@ -46,7 +46,7 @@ class ProxiedServersTest {
         )
 
     @Test
-    fun `make builds proxy base url, id, display name and reuses parent token ref and pin`() {
+    fun `make builds proxy base url - id - display name and reuses parent token ref and pin`() {
         val parent = real("ws1", name = "workstation", base = "https://ws1.example:8443/", pin = "AB:CD")
         val v = ProxiedServers.make(parent, "demo", null)
         assertEquals("ws1::proxy::demo", v.id)
@@ -83,7 +83,7 @@ class ProxiedServersTest {
     }
 
     @Test
-    fun `parse skips disabled, local, reserved, nameless, self and duplicate entries but keeps builtin`() {
+    fun `parse skips disabled - local - reserved - nameless - self and duplicate entries but keeps builtin`() {
         val parent = real("ws1", base = "https://ws1.example:8443")
         val list =
             listOf(
@@ -126,7 +126,7 @@ class ProxiedServersTest {
     }
 
     @Test
-    fun `resolveActive handles real, virtual, vanished remote and missing parent`() {
+    fun `resolveActive handles real - virtual - vanished remote and missing parent`() {
         val a = real("a")
         val b = real("b")
         val vx = ProxiedServers.make(b, "x", "X")
@@ -214,7 +214,7 @@ class ProxiedServersTest {
         }
 
     @Test
-    fun `a server without api servers counts as no remotes, not a failure`() =
+    fun `a server without api servers counts as no remotes - not a failure`() =
         runTest {
             val reg = ProxiedServersRegistry { Result.failure(TransportError.NotFound("404")) }
             assertTrue(reg.refresh(listOf(real("a"))))
