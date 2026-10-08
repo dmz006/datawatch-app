@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentActivity
 import com.dmzs.datawatchclient.security.BiometricGate
 import com.dmzs.datawatchclient.ui.AppRoot
 import com.dmzs.datawatchclient.ui.DeepLinks
+import com.dmzs.datawatchclient.ui.debug.DebugLaunchHooks
 
 /**
  * Launch Activity. Hands off to the Compose navigation root — see
@@ -27,6 +28,8 @@ public class MainActivity : FragmentActivity() {
         // end up double-counted (creates the keyboard-up black gap
         // observed on the S24 Ultra across builds 277-281).
         enableEdgeToEdge()
+        // Debug builds only (no-op in release): screenshot-pass launch extras.
+        DebugLaunchHooks.apply(this, intent)
         consumeDeepLink(intent)
         val gate = BiometricGate(applicationContext)
         if (gate.enabled() && gate.canAuthenticate(this)) {

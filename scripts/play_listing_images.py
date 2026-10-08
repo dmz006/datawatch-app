@@ -18,6 +18,8 @@ from pathlib import Path
 import google.auth.transport.requests as gtr
 from google.oauth2 import service_account
 
+# Play allows at most 8 screenshots per image type and language.
+MAX_IMAGES = 8
 TYPES = {"phoneScreenshots", "sevenInchScreenshots", "tenInchScreenshots", "wearScreenshots", "tvScreenshots"}
 
 
@@ -41,6 +43,9 @@ def main() -> int:
     files = sorted(Path(a.dir).glob("*.png"))
     if not files:
         print(f"::error::no PNGs in {a.dir}")
+        return 1
+    if len(files) > MAX_IMAGES:
+        print(f"::error::{len(files)} PNGs in {a.dir}; Play allows {MAX_IMAGES} per image type")
         return 1
     creds = service_account.Credentials.from_service_account_info(
         json.loads(os.environ["PLAY_KEY_JSON"]),
