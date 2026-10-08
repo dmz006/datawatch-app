@@ -40,6 +40,14 @@ jobs:
                       # No braces in the output: the masked key JSON has a lone "{" line.
                       g = te.json().get("googleGroups", []) if te.ok else [f"HTTP {te.status_code}"]
                       print("   tester groups: " + (", ".join(g) if g else "(none / email list)"))
+              # Store listing image counts per language (Wear screenshots matter for Wear review).
+              for l in s.get(f"{base}/{edit}/listings").json().get("listings", []):
+                  lang = l.get("language")
+                  counts = []
+                  for kind in ("phoneScreenshots", "sevenInchScreenshots", "tenInchScreenshots", "wearScreenshots", "tvScreenshots", "featureGraphic", "icon"):
+                      r = s.get(f"{base}/{edit}/listings/{lang}/{kind}")
+                      counts.append(f"{kind}=" + (str(len(r.json().get("images", []))) if r.ok else f"HTTP {r.status_code}"))
+                  print(f"listing {lang}: " + " ".join(counts))
           finally:
               s.delete(f"{base}/{edit}")
           EOF
