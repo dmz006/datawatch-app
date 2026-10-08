@@ -8,9 +8,17 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: 'Version code to promote (empty = newest on internal)'
+        description: 'Version code to promote (empty = newest on the source track)'
         type: string
         default: ''
+      from_track:
+        description: 'Source track (wear: wear:internal)'
+        type: string
+        default: 'internal'
+      to_track:
+        description: 'Target track (wear: the Wear closed track id)'
+        type: string
+        default: 'alpha'
 
 permissions:
   contents: read
@@ -20,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Promote internal → alpha
+      - name: Promote
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
           CODE: ${{ inputs.version_code }}
@@ -28,4 +36,4 @@ jobs:
           set -euo pipefail
           pip install --quiet google-auth requests
           python3 scripts/play_promote.py --package com.dmzs.datawatchclient \
-            --from-track internal --to-track alpha ${CODE:+--version-code "$CODE"}
+            --from-track "${{ inputs.from_track }}" --to-track "${{ inputs.to_track }}" ${CODE:+--version-code "$CODE"}
