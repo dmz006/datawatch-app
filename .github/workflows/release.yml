@@ -355,3 +355,70 @@ jobs:
       - name: Remove temporary keychain
         if: always()
         run: security delete-keychain build.keychain || true
+
+  # Release parity (AGENT.md § Release parity): once Apple has processed the
+  # build, add it to the external group and submit it for Beta App Review, then
+  # fail the release if any channel (Play phone/Wear internal + closed, TestFlight)
+  # is behind this version.
+  testflight-beta:
+    name: iOS — submit build for Beta App Review
+    runs-on: macos-26
+    needs: testflight
+    if: ${{ needs.testflight.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name || github.ref }}
+      - name: Export version env vars
+        run: |
+          set -euo pipefail
+          echo "DATAWATCH_APP_VERSION=$(sed -n 's/^DATAWATCH_APP_VERSION=//p' gradle.properties)" >> "$GITHUB_ENV"
+          echo "DATAWATCH_APP_VERSION_CODE=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)" >> "$GITHUB_ENV"
+      - name: Wait for App Store Connect processing
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          ASC_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --break-system-packages "pyjwt[crypto]" requests 2>/dev/null \
+            || python3 -m pip install --quiet "pyjwt[crypto]" requests
+          python3 scripts/release_parity.py wait-ios --code "$DATAWATCH_APP_VERSION_CODE" --timeout-min 90
+      - name: Install fastlane
+        run: gem install fastlane --no-document
+      - name: Submit for Beta App Review (fastlane testflight_setup)
+        working-directory: iosApp
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          BETA_FEEDBACK_EMAIL: ${{ secrets.BETA_FEEDBACK_EMAIL }}
+          BETA_REVIEW_CONTACT_FIRST_NAME: ${{ secrets.BETA_REVIEW_CONTACT_FIRST_NAME }}
+          BETA_REVIEW_CONTACT_LAST_NAME: ${{ secrets.BETA_REVIEW_CONTACT_LAST_NAME }}
+          BETA_REVIEW_CONTACT_PHONE: ${{ secrets.BETA_REVIEW_CONTACT_PHONE }}
+          BETA_REVIEW_CONTACT_EMAIL: ${{ secrets.BETA_REVIEW_CONTACT_EMAIL }}
+          BETA_REVIEW_DEMO_URL: ${{ secrets.BETA_REVIEW_DEMO_URL }}
+          BETA_REVIEW_DEMO_TOKEN: ${{ secrets.BETA_REVIEW_DEMO_TOKEN }}
+          SUBMIT_FOR_BETA_REVIEW: "true"
+          EXTERNAL_GROUP: Beta testers
+        run: fastlane testflight_setup
+
+  release-parity:
+    name: Verify release parity (Play phone + Wear, TestFlight)
+    runs-on: ubuntu-latest
+    needs: [publish-play, testflight-beta]
+    if: ${{ always() && needs.publish-play.result != 'skipped' && needs.testflight-beta.result != 'skipped' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name || github.ref }}
+      - name: Every channel carries this build
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          ASC_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          pip install --quiet "pyjwt[crypto]" requests google-auth
+          python3 scripts/release_parity.py verify --code "$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)"

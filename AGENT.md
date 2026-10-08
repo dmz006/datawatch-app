@@ -534,6 +534,20 @@ On a multi-release arc (e.g. v0.58.0 → v0.65.0), follow this sequence at the e
 
 At parity milestone (all planned phases done): do a full GitHub release with ~100% test coverage on newly shipped logic, refactored backlog docs (done items in a clearly labelled closed section at the bottom, remaining items on top with dates). Create the GH release via `gh release create` with tag matching `Version.kt`, title `vX.Y.Z — <milestone name>`, and a body linking the CHANGELOG section.
 
+### Release parity — every channel, every release (operator, 2026-10-07)
+
+Every version tag ships the **same version and build number** to every channel:
+
+- Play **internal** and **closed testing** (`alpha`) — phone (`versionCode` N);
+- Play **wear:internal** and **wear:Wear closed testing** — Wear (`100000 + N`);
+- **TestFlight** build N, added to the external group (`Beta testers`) and submitted for Beta App Review.
+
+`release.yml` does all of it (`publish-play` → promote; `testflight` → `testflight-beta`) and ends with the
+read-only **`release-parity`** job (`scripts/release_parity.py verify`). A release is not done until
+that job is green. A channel that is behind is a release failure: root-cause, fix, re-run — never skip a
+channel or leave one on an older build. Check any time with the `Release parity (read-only)` workflow.
+App Store / Play **production** submission stays a manual operator decision and is outside this rule.
+
 ### CI Runner Health (every release — patch, minor, major)
 
 After every push that constitutes a release, check GitHub Actions runner state and leave it clean:

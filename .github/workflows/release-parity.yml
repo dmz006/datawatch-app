@@ -1,0 +1,27 @@
+name: Release parity (read-only)
+
+# Checks that Play internal + closed (phone and Wear) and TestFlight (submitted
+# for Beta App Review) all carry the current gradle.properties build — the same
+# check release.yml runs last. AGENT.md § Release parity. Changes nothing.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every channel carries this build
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          ASC_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          pip install --quiet "pyjwt[crypto]" requests google-auth
+          python3 scripts/release_parity.py verify --code "$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)"
