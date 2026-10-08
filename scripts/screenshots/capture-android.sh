@@ -119,6 +119,7 @@ restart_systemui() {
     adb shell pidof com.android.systemui >/dev/null 2>&1 && break
   done
   sleep 12  # status bar re-inflation
+  dismiss_anr
 }
 systemui_fresh=0
 statusbar_demo() {
@@ -190,10 +191,34 @@ png_size() { # file -> "WxH" from the PNG IHDR
   python3 -c 'import struct,sys; d=open(sys.argv[1],"rb").read(24); assert d[:8]==b"\x89PNG\r\n\x1a\n", "not a PNG"; print("%dx%d" % struct.unpack(">II", d[16:24]))' "$1"
 }
 
+# A SystemUI restart can leave the launcher in an ANR ("Pixel Launcher isn't
+# responding"), whose dialog then covers every shot (seen on the 7-inch tablet).
+anr_showing() { adb shell dumpsys window windows 2>/dev/null | grep -qiE "Application Not Responding|isn't responding"; }
+dismiss_anr() {
+  local i
+  for i in 1 2 3 4 5; do
+    anr_showing || return 0
+    echo "dismissing ANR dialog (try $i)"
+    adbq am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS
+    adbq input keyevent KEYCODE_BACK
+    sleep 2
+  done
+  # Last resort: restart the launcher, then bring the app back to the front.
+  adb shell 'pm list packages | grep -i launcher | cut -d: -f2' | tr -d '\r' | while read -r pkg; do
+    adbq am force-stop "$pkg"
+  done
+  sleep 3
+  adbq am start -n "$PKG/$ACTIVITY"  # resume the existing task (no -S)
+  sleep 4
+  anr_showing && echo "::warning::ANR dialog still showing"
+  return 0
+}
+
 shot() { # file
   local try n
   for try in 1 2 3; do
     statusbar_demo
+    dismiss_anr
     sleep 2
     n=$(clock_pixels)
     adb exec-out screencap -p > "$1"
