@@ -317,6 +317,7 @@ and still need DHU / head-unit passes.
 | Android | Collapsible cards with docs links (remembered per card) | Yes | No | v1.25.0 | `PwaCardTest` | |
 | Shared | Compute node 📡 live detail; model-list envelope | Yes | No | v1.27.1 | `RestTransportParityExtrasTest`, `RestTransportAndroidParityTest` | |
 | Shared | Remote-server test / enable; federation peers | Yes | No | v1.25.0 | `RestTransportIosETest`, `RestTransportIosSettingsDepthTest` | |
+| Shared + Android + iOS | Remote servers reached through the connected server (`/api/proxy/<name>` REST + WS): chip bar + nested picker, parent fallback, widgets/Wear/Auto/push stay on the parent | Yes | No | Unreleased | `ProxiedServersTest`, `WebSocketUrlTest` | Needs a datawatch server with a Remote Server configured; pick "parent › remote" on each tab and in the switch-server picker |
 | Android + iOS | Config Viewer removed (Raw config stays); splash "Updated to vX" badge removed | No | No | v1.25.1 | Code removal; manual check | |
 
 ### Shell, alerts, observer, dashboard
