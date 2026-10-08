@@ -141,6 +141,9 @@ jobs:
   publish-play:
     name: Publish to Play Store internal track
     runs-on: ubuntu-latest
+    concurrency:
+      group: play-edits
+      cancel-in-progress: false
     needs: build-bundles
     # Gate on a repo variable (not a secret — secrets aren't available in job-level
     # if conditions). Set PLAY_PUBLISHER_KEY_CONFIGURED=true in repo Settings →
@@ -406,6 +409,9 @@ jobs:
   release-parity:
     name: Verify release parity (Play phone + Wear, TestFlight)
     runs-on: ubuntu-latest
+    concurrency:
+      group: play-edits
+      cancel-in-progress: false
     needs: [publish-play, testflight-beta]
     if: ${{ always() && needs.publish-play.result != 'skipped' && needs.testflight-beta.result != 'skipped' }}
     steps:

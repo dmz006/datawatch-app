@@ -20,6 +20,11 @@ on:
         type: string
         default: 'alpha'
 
+# Play allows one open edit per app; every workflow that opens one queues here.
+concurrency:
+  group: play-edits
+  cancel-in-progress: false
+
 permissions:
   contents: read
 

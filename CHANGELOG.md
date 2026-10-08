@@ -17,6 +17,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ### Changed
 - **New Wear screenshots** (README and Play listing, `docs/media/watch/store/`) with neutral demo data. The old ones showed real host names and v0.52-era screens. Debug builds take `-e dwDemo 1 [-e dwPage N]` to fill demo data for store screenshots. `play-listing-images.yml` uploads a screenshot set to the Play listing.
 
+### CI
+- **Play edits run one at a time.** Release publishing, the parity check and every manual Play workflow share one `play-edits` concurrency group. Play allows only one open edit per app: a screenshot upload during the v1.28.15 release deleted the release's edit ("This Edit has been deleted").
+
 ## [1.28.15] — 2026-10-08
 
 ### Changed
