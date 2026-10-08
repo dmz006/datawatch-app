@@ -68,7 +68,7 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
     private suspend fun loadProfiles() {
         try {
             profiles = AutoServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
-            activeId = AutoServiceLocator.activeServerStore.get()
+            activeId = AutoServiceLocator.activeServerStore.getReal()
             loadError = null
         } catch (e: Throwable) {
             loadError = e.message ?: e::class.simpleName ?: "unknown error"

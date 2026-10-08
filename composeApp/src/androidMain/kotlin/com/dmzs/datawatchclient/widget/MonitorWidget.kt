@@ -77,7 +77,7 @@ public class MonitorWidget : AppWidgetProvider() {
     private suspend fun refresh(context: Context) {
         // Honour the same active-profile selection the Monitor tab
         // uses so widget + in-app view always agree on "which server".
-        val activeId = ServiceLocator.activeServerStore.get()
+        val activeId = ServiceLocator.activeServerStore.getReal()
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val profile =
             profiles.firstOrNull { it.id == activeId && it.enabled }

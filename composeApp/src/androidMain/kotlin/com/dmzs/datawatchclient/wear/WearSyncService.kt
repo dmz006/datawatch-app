@@ -204,7 +204,7 @@ public class WearSyncService(
         // Sessions page and the tap-to-reply popup read the same
         // snapshot of running sessions.
         scope.launch {
-            ServiceLocator.activeServerStore.observe()
+            ServiceLocator.activeServerStore.observeReal()
                 .flatMapLatest { activeId ->
                     combine(
                         ServiceLocator.profileRepository.observeAll(),
@@ -319,7 +319,7 @@ public class WearSyncService(
         scope.launch {
             combine(
                 ServiceLocator.profileRepository.observeAll(),
-                ServiceLocator.activeServerStore.observe(),
+                ServiceLocator.activeServerStore.observeReal(),
             ) { profiles, activeId ->
                 ProfilesSnapshot(
                     activeId = activeId.orEmpty(),
@@ -342,7 +342,7 @@ public class WearSyncService(
      */
     public suspend fun fetchAndPublishDashboard() {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get()
+            val activeId = ServiceLocator.activeServerStore.getReal()
             if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
             val profile =
                 ServiceLocator.profileRepository.observeAll().first()
@@ -542,7 +542,7 @@ public class WearSyncService(
         reason: String,
     ) {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get()
+            val activeId = ServiceLocator.activeServerStore.getReal()
             if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
             val profile =
                 ServiceLocator.profileRepository.observeAll().first()
@@ -582,7 +582,7 @@ public class WearSyncService(
                     sessionRow?.serverProfileId
                         ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
                         ?: run {
-                            val activeId = ServiceLocator.activeServerStore.get()
+                            val activeId = ServiceLocator.activeServerStore.getReal()
                             profiles.firstOrNull { it.id == activeId && it.enabled }
                                 ?: profiles.firstOrNull { it.enabled }
                         }
@@ -638,7 +638,7 @@ public class WearSyncService(
     ) {
         Log.d(TAG, "refreshSession ENTER sid=$sessionId from=$sourceNodeId")
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get()
+            val activeId = ServiceLocator.activeServerStore.getReal()
             Log.d(TAG, "refreshSession activeId=$activeId")
             if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
                 Log.d(TAG, "refreshSession ABORT no active server")
@@ -703,7 +703,7 @@ public class WearSyncService(
      */
     private suspend fun forwardWatchStopSession(sessionId: String) {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get()
+            val activeId = ServiceLocator.activeServerStore.getReal()
             if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
             val profile =
                 ServiceLocator.profileRepository.observeAll().first()
@@ -723,7 +723,7 @@ public class WearSyncService(
      */
     private suspend fun forwardMemorySweep() {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get()
+            val activeId = ServiceLocator.activeServerStore.getReal()
             if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
             val profile =
                 ServiceLocator.profileRepository.observeAll().first()
@@ -880,7 +880,7 @@ public class WearSyncService(
         text: String,
     ) {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get()
+            val activeId = ServiceLocator.activeServerStore.getReal()
             if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
             val profile =
                 ServiceLocator.profileRepository.observeAll().first()

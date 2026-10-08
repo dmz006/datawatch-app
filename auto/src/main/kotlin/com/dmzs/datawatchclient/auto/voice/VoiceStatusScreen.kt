@@ -49,7 +49,7 @@ public class VoiceStatusScreen(
                     }
                     VoiceCommand.REFRESH -> {
                         runCatching {
-                            val activeId = AutoServiceLocator.activeServerStore.get()
+                            val activeId = AutoServiceLocator.activeServerStore.getReal()
                             val profiles = AutoServiceLocator.profileRepository.observeAll().first()
                             val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
                             if (profile != null) {
