@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.17] — 2026-10-08
+
 ### Changed
 - **New screenshots everywhere, with neutral demo data** (host name `demo`, never a real host, IP or server).
   - **Google Play:** phone (8), 7-inch tablet (8), 10-inch tablet (8) and Wear (4).
