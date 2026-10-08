@@ -57,6 +57,18 @@ jobs:
       - name: Automata terminology in translations
         run: python3 scripts/check-automata-terms.py
 
+  # AGENT.md § Security acceptance standard: every accepted finding has an impact
+  # analysis, a valid expiry (≤ 90 d traced / ≤ 30 d untraced) and is not expired.
+  accepted-risks-lint:
+    name: Accepted-risks registry lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests (registry lint + watch helpers, offline)
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: Lint security/accepted-risks.yml
+        run: python3 scripts/check_accepted_risks.py security/accepted-risks.yml
+
   build-and-test:
     name: Build + test
     runs-on: ubuntu-latest

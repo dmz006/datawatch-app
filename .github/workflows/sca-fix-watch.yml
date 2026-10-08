@@ -1,10 +1,19 @@
-# Daily check: has a STABLE (non-alpha/beta/RC) upstream release shipped that
-# fixes an accepted/dismissed security finding? (datawatch parity: its
-# image-refresh `recheck-ignored-cves` job does the same for .trivyignore.)
+# Daily security watch (AGENT.md § Security acceptance standard; operator
+# 2026-10-08, shared with datawatch — its image-refresh `recheck-ignored-cves`
+# job does the same for .trivyignore). Registry: security/accepted-risks.yml.
+# scripts/sca_fix_watch.py reports:
+#   - a STABLE (non-alpha/beta/RC) upstream release that fixes a `dependency` entry;
+#   - entries past `expires` or due within 14 days (re-review);
+#   - GitHub dismissed Dependabot / code-scanning alerts with no registry entry;
+#   - OSV vulnerabilities in the bundled xterm.js / Mermaid not accepted in the registry.
+# One tracking issue is updated every run (audit trail) and commented when
+# something is actionable.
 #
-# Registry: security/accepted-risks.yml. When a stable fix exists this opens
-# (or updates) a `security` issue naming the version to adopt; it also keeps a
-# single tracking issue updated every run as an audit trail.
+# Token: code-scanning alerts are read with GITHUB_TOKEN (`security-events: read`).
+# GITHUB_TOKEN cannot read Dependabot alerts (no workflow permission exists for
+# them), so set the optional repo secret SCA_WATCH_TOKEN — a fine-grained PAT for
+# this repo with "Dependabot alerts: Read-only" + "Code scanning alerts:
+# Read-only". Without it the Dependabot sync is skipped with a warning.
 name: SCA stable-fix watch
 
 on:
@@ -13,11 +22,18 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['security/accepted-risks.yml', 'scripts/sca_fix_watch.py', '.github/workflows/sca-fix-watch.yml']
+    paths:
+      - 'security/accepted-risks.yml'
+      - 'scripts/sca_fix_watch.py'
+      - 'scripts/accepted_risks.py'
+      - '.github/workflows/sca-fix-watch.yml'
+      - 'composeApp/src/androidMain/assets/xterm/xterm.VERSIONS'
+      - 'composeApp/src/androidMain/assets/mermaid/mermaid.VERSION'
 
 permissions:
   contents: read
   issues: write
+  security-events: read   # list dismissed code-scanning alerts
 
 jobs:
   watch:
@@ -25,23 +41,34 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
-      - name: Check accepted risks for stable fixes
+      - name: Check accepted risks (stable fixes, expiry, dismissal sync, bundled JS)
         id: check
+        env:
+          GH_TOKEN: ${{ secrets.SCA_WATCH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/sca_fix_watch.py security/accepted-risks.yml > report.md
           cat report.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Update tracking issue (audit trail) and alert on stable fixes
+      - name: Update tracking issue (audit trail) and comment when actionable
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FIXABLE: ${{ steps.check.outputs.fixable }}
+          REREVIEW: ${{ steps.check.outputs.rereview }}
+          UNREGISTERED: ${{ steps.check.outputs.unregistered }}
+          BUNDLED: ${{ steps.check.outputs.bundled_vulns }}
+          ACTIONABLE: ${{ steps.check.outputs.actionable }}
         run: |
           set -euo pipefail
           gh label create security --color B60205 --force >/dev/null 2>&1 || true
           title="security: accepted-risk stable-fix watch"
-          body=$(printf 'Daily run %s (%s).\n\n%s\n\nRegistry: `security/accepted-risks.yml`. When a row says **YES**, adopt that stable version, remove the entry, and release.\n' \
+          body=$(printf 'Daily run %s (%s).\n\n%s\n\nRegistry: `security/accepted-risks.yml` (AGENT.md § Security acceptance standard). When a stable fix exists, adopt it, remove the entry, and release.\n' \
             "$(date -u +%Y-%m-%d)" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" "$(cat report.md)")
           num=$(gh issue list --state open --label security --search "\"$title\" in:title" --json number -q '.[0].number')
           if [ -n "$num" ]; then gh issue edit "$num" --body "$body"; else num=$(gh issue create --title "$title" --label security --body "$body" | grep -o '[0-9]*$'); fi
-          if [ "${FIXABLE:-0}" -gt 0 ]; then
-            gh issue comment "$num" --body "⚠️ ${FIXABLE} accepted risk(s) now have a **stable** upstream fix — see the table above."
+          if [ "${ACTIONABLE:-0}" -gt 0 ]; then
+            msg="Action needed (see the issue body):"
+            [ "${FIXABLE:-0}" -gt 0 ] && msg="$msg"$'\n'"- ${FIXABLE} accepted risk(s) now have a **stable** upstream fix"
+            [ "${REREVIEW:-0}" -gt 0 ] && msg="$msg"$'\n'"- ${REREVIEW} entr(y/ies) expired or due for re-review within 14 days"
+            [ "${UNREGISTERED:-0}" -gt 0 ] && msg="$msg"$'\n'"- ${UNREGISTERED} dismissed alert(s) have no registry entry"
+            [ "${BUNDLED:-0}" -gt 0 ] && msg="$msg"$'\n'"- ${BUNDLED} unaccepted vulnerabilit(y/ies) in bundled JS (xterm.js / Mermaid)"
+            gh issue comment "$num" --body "$msg"
           fi

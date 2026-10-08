@@ -109,3 +109,7 @@ docs/media/pwa/
 
 # datawatch-managed (BL219)
 .gemini/
+
+# Python bytecode (scripts/)
+__pycache__/
+*.pyc

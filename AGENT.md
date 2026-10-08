@@ -209,13 +209,53 @@ voice/TTS strings, store listings, user-facing docs, release notes, error messag
 - Before shipping UI copy, grep user-visible strings (string resources, `Text("…")`,
   locale files) for `\bPRDs?\b` and fix any hit.
 
-## Security dependency fixes — stable-release watch (operator, 2026-10-05)
+## Security acceptance standard (operator, 2026-10-08; shared with datawatch)
 
-Same process as datawatch's `recheck-ignored-cves`:
-- `.github/dependabot.yml` opens weekly version-update PRs (stable releases only) for Gradle and GitHub Actions.
-- Any Dependabot / code-scanning alert that is dismissed while waiting for an upstream fix MUST be added to `security/accepted-risks.yml` (package, advisory's first patched version, catalog key, reason).
-- `.github/workflows/sca-fix-watch.yml` runs daily, checks Maven Central for a **stable** (non-alpha/beta/RC/milestone) release ≥ the patched version, updates the `security: accepted-risk stable-fix watch` tracking issue, and comments when a fix is adoptable. Adopt it, remove the registry entry, release.
-- Never adopt a pre-release just to clear an alert.
+datawatch tracks the same standard (issue to be linked). It replaces the
+2026-10-05 "stable-release watch" rule and keeps everything that rule did.
+
+- **One registry:** `security/accepted-risks.yml`. Every dismissed Dependabot or
+  code-scanning alert, and every accepted vulnerability in bundled JS (xterm.js,
+  Mermaid) or a container image, has an entry. The file header documents the
+  schema: `id`, `kind`, `package`, `severity`, optional `fixed_in`/`catalog`,
+  `impact {traced, reachable, analysis}`, `added`, `expires`, `validated_by`,
+  `reason`.
+- **No acceptance without an impact analysis.** `impact.analysis` and
+  `impact.reachable` (`yes`/`no`/`unknown`) are always required.
+- **Expiry:** at most `added` + 90 days when the code path was traced
+  (`impact.traced: true`), + 30 days when it was not. An expired entry fails CI.
+  Re-review means a fresh impact analysis with new `added`/`expires` dates, or
+  adopting the fix and removing the entry.
+- **Self-service acceptance (operator change, 2026-10-08).** No operator approval
+  or PR review is needed to accept (ignore) or fix a finding once the entry is
+  complete (impact analysis, reason, expiry within the limit) and the CI lint
+  passes. `validated_by` records who did the impact analysis: a GitHub login, or
+  `claude-session`. It is not an operator sign-off.
+- **Escalate to the operator** only when the analysis says `reachable: "yes"` for
+  a HIGH or CRITICAL finding (the lint warns), or when an entry is renewed past
+  its first expiry.
+- **Own commit.** Add, renew or remove registry entries in their own commit.
+  Never bundle them with unrelated work.
+- **Daily watch:** `.github/workflows/sca-fix-watch.yml` runs
+  `scripts/sca_fix_watch.py` and keeps one tracking issue updated
+  (`security: accepted-risk stable-fix watch`). It comments when something is
+  actionable:
+  - a **stable** (non-alpha/beta/RC/milestone) Maven Central release at or above
+    a `dependency` entry's `fixed_in`. Adopt it, remove the entry, release. Never
+    adopt a pre-release just to clear an alert;
+  - an entry past `expires` or due within 14 days;
+  - a GitHub dismissal with no registry entry (code-scanning via `GITHUB_TOKEN`;
+    Dependabot needs the optional `SCA_WATCH_TOKEN` secret, otherwise it is
+    skipped with a warning);
+  - an OSV vulnerability in the bundled xterm.js / add-ons / Mermaid versions
+    (`xterm.VERSIONS`, `mermaid.VERSION`) that no `bundled-js` entry accepts.
+- **CI lint:** the `accepted-risks-lint` job in `ci.yml` runs
+  `scripts/check_accepted_risks.py` and its unit tests (`scripts/tests/`). It
+  fails on missing fields, invalid dates, expiry beyond 90/30 days, a missing
+  `reachable`/`analysis`, or an expired entry. Run it locally before committing a
+  registry change.
+- `.github/dependabot.yml` still opens weekly version-update PRs (stable releases
+  only) for Gradle and GitHub Actions.
 
 ## Terminal Font — JetBrains Mono, kept current (operator, 2026-10-04)
 

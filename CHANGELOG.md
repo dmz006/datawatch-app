@@ -16,6 +16,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - **New `android-screenshots.yml`** captures phone and tablets on KVM emulators against a throwaway demo server, using debug-only launch hooks (`dwSeedURL`, `dwTab`, `dwOpenSession`, `dwOpenAutomaton`, …). `play-listing-images.yml` can upload straight from that run's artifact.
 - **Removed old README media that showed real host names, a private LAN IP address and server names:** the Android Auto and PWA slideshows and still images, and the v1.0-era phone and watch images. New Android Auto and PWA captures will follow.
 
+### CI / Security
+- **Security acceptance standard** (operator, 2026-10-08; datawatch adopts the same). See AGENT.md.
+  - `security/accepted-risks.yml` now records an impact analysis for each accepted finding (`traced`, `reachable`, `analysis`), plus an expiry, `validated_by` and the reason. The expiry is at most 90 days when the code path was traced, 30 days when not. The two dismissed CodeQL alerts (#14, #15 `java/android/insecure-local-authentication`, the BiometricGate fallback, #208) are registered and expire 2027-01-04.
+  - Accepting a finding needs no operator approval when the entry is complete and CI passes. Escalate only for a reachable HIGH/CRITICAL finding or a renewal past the first expiry.
+  - The daily `sca-fix-watch.yml` now also reports entries that are expired or due within 14 days, dismissed GitHub alerts with no registry entry, and OSV vulnerabilities in the bundled xterm.js and Mermaid. It still reports stable Maven fixes.
+  - A new CI job, `accepted-risks-lint`, fails on missing fields, bad or expired dates, or an expiry past the 90/30-day limit.
+
 ### Fixed
 - **iPhone "All servers" includes remote servers' sessions** (#234 parity with Android). It now uses each server's `/api/federation/sessions` fan-out, keeping the newest copy of each session. It falls back to `/api/sessions` on servers without federation.
 
