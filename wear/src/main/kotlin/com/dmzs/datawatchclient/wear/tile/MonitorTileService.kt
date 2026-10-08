@@ -14,6 +14,7 @@ import androidx.wear.protolayout.TypeBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import com.dmzs.datawatchclient.wear.R
 import com.dmzs.datawatchclient.wear.sync.WearSyncManager
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
@@ -99,12 +100,12 @@ public class MonitorTileService : TileService() {
                 // Server picker + Sessions pages. Tiles themselves are
                 // non-interactive beyond a single click target.
                 .setModifiers(openAppModifiers())
-                .addContent(titleText("Monitor"))
+                .addContent(titleText(getString(R.string.wear_page_monitor)))
                 .addContent(spacerV(2f))
                 .addContent(healthDot(snap))
                 .addContent(spacerV(4f))
         if (!snap.hasData) {
-            col.addContent(subText("open phone app"))
+            col.addContent(subText(getString(R.string.wear_tile_open_phone)))
             return col.build()
         }
         val cpuRatio =
@@ -125,19 +126,19 @@ public class MonitorTileService : TileService() {
         col.addContent(spacerV(3f))
         col.addContent(
             statRow(
-                "Sess",
-                "${snap.sessionsTotal} · ${snap.sessionsWaiting}w",
+                getString(R.string.wear_tile_sess),
+                getString(R.string.wear_tile_sess_value, snap.sessionsTotal, snap.sessionsWaiting),
                 if (snap.sessionsWaiting > 0) COLOR_WARNING else COLOR_FG,
             ),
         )
         if (snap.uptimeSeconds > 0) {
             col.addContent(spacerV(3f))
-            col.addContent(subText("up ${formatUptime(snap.uptimeSeconds)}"))
+            col.addContent(subText(getString(R.string.wear_tile_up, formatUptime(snap.uptimeSeconds))))
         }
         if (snap.syncTs > 0) {
             val minutesAgo = (System.currentTimeMillis() - snap.syncTs) / 60_000
             col.addContent(spacerV(2f))
-            col.addContent(subText("sync ${minutesAgo}m ago"))
+            col.addContent(subText(getString(R.string.wear_tile_sync_ago, minutesAgo.toInt())))
         }
         return col.build()
     }

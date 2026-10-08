@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -96,6 +97,7 @@ public class WearMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WearDemoLaunch.read(this)
         setContent {
             MaterialTheme(colors = datawatchWearColors()) { WearRoot() }
         }
@@ -109,6 +111,20 @@ public class WearMainActivity : ComponentActivity() {
         activityScope.launch {
             WearSyncManager.requestDashboard(this@WearMainActivity)
         }
+    }
+}
+
+/** Debug-build launch extras for store screenshots: `-e dwDemo 1 [-e dwPage 0..3]`. */
+internal object WearDemoLaunch {
+    var demo: Boolean = false
+    var page: Int = -1
+
+    fun read(activity: android.app.Activity) {
+        val debuggable =
+            activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+        if (!debuggable) return
+        demo = activity.intent?.getStringExtra("dwDemo") == "1"
+        page = activity.intent?.getStringExtra("dwPage")?.toIntOrNull() ?: -1
     }
 }
 
@@ -142,6 +158,13 @@ private fun WearRoot(
 ) {
     val state by vm.state.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 4 }
+    // Debug builds only: `-e dwDemo 1 [-e dwPage N]` fills demo data for store screenshots.
+    LaunchedEffect(Unit) {
+        if (WearDemoLaunch.demo) {
+            vm.loadDemo()
+            if (WearDemoLaunch.page in 0..3) pagerState.scrollToPage(WearDemoLaunch.page)
+        }
+    }
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
     val sessionScrollState = rememberScrollState()
@@ -211,7 +234,7 @@ private fun WearRoot(
                                 transcribing = false
                                 pendingTranscript =
                                     if (text.startsWith("error:")) {
-                                        "[transcribe failed: ${text.removePrefix("error:")}]"
+                                        context.getString(R.string.wear_transcribe_failed, text.removePrefix("error:"))
                                     } else {
                                         text
                                     }
@@ -613,15 +636,15 @@ private fun StatusPage(state: WearSessionCountsViewModel.UiState) {
                         trackColor = blockColor.copy(alpha = 0.08f),
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("NODE", style = MaterialTheme.typography.caption2,
+                        Text(stringResource(R.string.wear_monitor_node), style = MaterialTheme.typography.caption2,
                             fontWeight = FontWeight.Bold, color = blockColor,
                             fontFamily = FontFamily.Monospace)
-                        Text("OFFLINE", style = MaterialTheme.typography.caption3,
+                        Text(stringResource(R.string.wear_label_offline).uppercase(), style = MaterialTheme.typography.caption3,
                             color = blockColor.copy(alpha = 0.7f), fontFamily = FontFamily.Monospace)
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Open phone app to connect", style = MaterialTheme.typography.caption3,
+                Text(stringResource(R.string.wear_monitor_open_phone_connect), style = MaterialTheme.typography.caption3,
                     color = dimColor, textAlign = TextAlign.Center, fontFamily = FontFamily.Monospace)
             } else {
                 // Central arc ring: running / total session ratio
@@ -642,7 +665,7 @@ private fun StatusPage(state: WearSessionCountsViewModel.UiState) {
                             fontFamily = FontFamily.Monospace,
                         )
                         Text(
-                            "RUN",
+                            stringResource(R.string.wear_filter_run).uppercase(),
                             style = MaterialTheme.typography.caption3,
                             color = dimColor,
                             fontFamily = FontFamily.Monospace,
@@ -657,16 +680,16 @@ private fun StatusPage(state: WearSessionCountsViewModel.UiState) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
-                    MiniStat(state.waiting, "WAIT", waitColor, dimColor)
-                    MiniStat(runningAutomata, "AUTO", autoColor, dimColor)
-                    if (reviewCount > 0) MiniStat(reviewCount, "REV!", blockColor, dimColor)
+                    MiniStat(state.waiting, stringResource(R.string.wear_filter_wait).uppercase(), waitColor, dimColor)
+                    MiniStat(runningAutomata, stringResource(R.string.wear_stat_auto), autoColor, dimColor)
+                    if (reviewCount > 0) MiniStat(reviewCount, stringResource(R.string.wear_stat_review), blockColor, dimColor)
                 }
 
                 // Uptime — monospace dim line below stats
                 if (state.uptimeSeconds > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "UP ${state.uptimeText()}",
+                        stringResource(R.string.wear_uptime, state.uptimeText()),
                         style = MaterialTheme.typography.caption3,
                         color = dimColor,
                         fontFamily = FontFamily.Monospace,
@@ -751,24 +774,25 @@ private fun AutomataPage(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
         PageScaffold(title = "", scrollState = scrollState) {
-            // Header row
-            Row(
+            // Header: centred title with the counts under it, so neither is clipped
+            // by the round screen edge.
+            Column(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("AUTOMATA", style = MaterialTheme.typography.title3,
+                Text(stringResource(R.string.wear_automata_page_title).uppercase(),
+                    style = MaterialTheme.typography.title3,
                     color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (runningCount > 0) Text("${runningCount}R", style = MaterialTheme.typography.caption2,
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (runningCount > 0) Text(stringResource(R.string.wear_automata_count_running, runningCount), style = MaterialTheme.typography.caption2,
                         color = runColor, fontWeight = FontWeight.Bold)
-                    if (reviewCount > 0) Text("${reviewCount}✓", style = MaterialTheme.typography.caption2,
+                    if (reviewCount > 0) Text(stringResource(R.string.wear_automata_count_review, reviewCount), style = MaterialTheme.typography.caption2,
                         color = reviewColor, fontWeight = FontWeight.Bold)
                 }
             }
 
             if (sorted.isEmpty()) {
-                Text("No active automata", style = MaterialTheme.typography.body2,
+                Text(stringResource(R.string.wear_automata_empty), style = MaterialTheme.typography.body2,
                     color = dimColor, textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
             } else {
@@ -808,9 +832,10 @@ private fun AutomataPage(
                         }
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(prd.title, style = MaterialTheme.typography.caption1,
-                                color = MaterialTheme.colors.onSurface, maxLines = 1)
+                                color = MaterialTheme.colors.onSurface, maxLines = 2,
+                                overflow = TextOverflow.Ellipsis)
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(prd.status.replace("_", " ").uppercase(),
+                                Text(automatonStatusLabel(prd.status).uppercase(),
                                     style = MaterialTheme.typography.caption3,
                                     color = statusColor, fontFamily = FontFamily.Monospace)
                                 if (prd.blockedCount > 0)
@@ -905,7 +930,7 @@ private fun AutomataDetailOverlay(
                     textAlign = TextAlign.Center, maxLines = 2,
                     modifier = Modifier.padding(bottom = 2.dp))
 
-                Text(prd.status.replace("_", " ").uppercase(), style = MaterialTheme.typography.caption2,
+                Text(automatonStatusLabel(prd.status).uppercase(), style = MaterialTheme.typography.caption2,
                     color = statusColor, fontFamily = FontFamily.Monospace,
                     letterSpacing = 0.5.sp, modifier = Modifier.padding(bottom = 2.dp))
 
@@ -915,7 +940,7 @@ private fun AutomataDetailOverlay(
                 }
 
                 if (prd.blockedCount > 0) {
-                    Text("${prd.blockedCount} blocked", style = MaterialTheme.typography.caption2,
+                    Text(stringResource(R.string.wear_automata_blocked, prd.blockedCount), style = MaterialTheme.typography.caption2,
                         color = blockColor, fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 4.dp))
                 }
@@ -926,24 +951,24 @@ private fun AutomataDetailOverlay(
                 when (prd.status.lowercase()) {
                     "needs_review", "revisions_asked" -> {
                         // Approve
-                        ActionChip("✓ Approve", Color(0xFF22C55E)) { onAction("approve", "") }
+                        ActionChip(stringResource(R.string.wear_automata_action_approve), Color(0xFF22C55E)) { onAction("approve", "") }
                         Spacer(Modifier.height(4.dp))
                         // Reject
-                        ActionChip("✕ Reject", blockColor) { onAction("reject", "rejected on watch") }
+                        ActionChip(stringResource(R.string.wear_automata_action_reject), blockColor) { onAction("reject", "rejected on watch") }
                         Spacer(Modifier.height(4.dp))
                         // Request Revision
-                        ActionChip("↩ Revise", revisionColor) { onAction("request_revision", "revision requested on watch") }
+                        ActionChip(stringResource(R.string.wear_automata_action_revise), revisionColor) { onAction("request_revision", "revision requested on watch") }
                     }
                     "running" -> {
-                        ActionChip("✕ Cancel", blockColor) { onAction("cancel", "") }
+                        ActionChip(stringResource(R.string.wear_automata_action_cancel), blockColor) { onAction("cancel", "") }
                     }
                     "approved" -> {
-                        ActionChip("▶ Instantiate", Color(0xFF3B82F6)) { onAction("instantiate", "") }
+                        ActionChip(stringResource(R.string.wear_automata_action_instantiate), Color(0xFF3B82F6)) { onAction("instantiate", "") }
                         Spacer(Modifier.height(4.dp))
-                        ActionChip("✕ Cancel", blockColor) { onAction("cancel", "") }
+                        ActionChip(stringResource(R.string.wear_automata_action_cancel), blockColor) { onAction("cancel", "") }
                     }
                     "decomposing", "planning" -> {
-                        Text("Decomposing…", style = MaterialTheme.typography.caption3, color = dimColor)
+                        Text(stringResource(R.string.wear_automata_decomposing), style = MaterialTheme.typography.caption3, color = dimColor)
                     }
                 }
             }
@@ -1099,7 +1124,7 @@ private fun MonitorSingleServerSection(
     }
     if (state.uptimeSeconds > 0) {
         Text(
-            "UP ${state.uptimeText()}",
+            stringResource(R.string.wear_uptime, state.uptimeText()),
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.caption2,
             fontFamily = FontFamily.Monospace,
@@ -1144,7 +1169,7 @@ private fun ServerDetailOverlay(
                 MonitorGaugeGrid(activeState)
                 if (activeState.uptimeSeconds > 0) {
                     Text(
-                        "UP ${activeState.uptimeText()}",
+                        stringResource(R.string.wear_uptime, activeState.uptimeText()),
                         modifier = Modifier.padding(top = 4.dp),
                         style = MaterialTheme.typography.caption2,
                         fontFamily = FontFamily.Monospace,
@@ -1169,7 +1194,7 @@ private fun ServerDetailOverlay(
                 }
                 if (stat.sessionsTotal > 0) {
                     Text(
-                        "${stat.sessionsTotal} SESS",
+                        stringResource(R.string.wear_server_sessions, stat.sessionsTotal),
                         modifier = Modifier.padding(top = 4.dp),
                         style = MaterialTheme.typography.caption2,
                         fontFamily = FontFamily.Monospace,
@@ -1178,7 +1203,7 @@ private fun ServerDetailOverlay(
                 }
             }
             Text(
-                "✕ TAP TO CLOSE",
+                stringResource(R.string.wear_tap_to_close),
                 modifier = Modifier.padding(top = 8.dp),
                 style = MaterialTheme.typography.caption3,
                 fontFamily = FontFamily.Monospace,
@@ -1194,6 +1219,9 @@ private fun ServerDetailOverlay(
  */
 @Composable
 private fun MonitorGaugeGrid(state: WearSessionCountsViewModel.UiState) {
+    // A Column: callers wrap this in a clickable Box, which would otherwise stack
+    // the DISK/GPU row on top of CPU/MEM.
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -1223,6 +1251,7 @@ private fun MonitorGaugeGrid(state: WearSessionCountsViewModel.UiState) {
         } else {
             Box(modifier = Modifier.size(GAUGE_SIZE_DP.dp))
         }
+    }
     }
 }
 
@@ -1337,10 +1366,13 @@ private fun SessionsPage(
                         it.stateName.equals("waiting_input", ignoreCase = true)
                 }
                 val other = filtered - running.toSet() - waiting.toSet()
+                val runningHeader = stringResource(R.string.wear_group_running, running.size)
+                val waitingHeader = stringResource(R.string.wear_group_waiting, waiting.size)
+                val otherHeader = stringResource(R.string.wear_group_other, other.size)
                 buildList {
-                    if (running.isNotEmpty()) add("RUNNING (${running.size})" to running)
-                    if (waiting.isNotEmpty()) add("WAITING (${waiting.size})" to waiting)
-                    if (other.isNotEmpty()) add("OTHER (${other.size})" to other)
+                    if (running.isNotEmpty()) add(runningHeader to running)
+                    if (waiting.isNotEmpty()) add(waitingHeader to waiting)
+                    if (other.isNotEmpty()) add(otherHeader to other)
                 }
             } else {
                 listOf(null to filtered)
@@ -1386,7 +1418,7 @@ private fun SessionRow(
                             .background(Color(0xFF1A3A1A), androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.CenterEnd,
                     ) {
-                        Text("🎤 Reply", style = MaterialTheme.typography.caption1,
+                        Text(stringResource(R.string.wear_swipe_reply), style = MaterialTheme.typography.caption1,
                             color = Color(0xFF00E5A0),
                             modifier = Modifier.padding(end = 12.dp))
                     }
@@ -1526,17 +1558,47 @@ private fun sessionBadgeColor(stateName: String): Color =
         else -> Color(0xFF94A3B8)
     }
 
-/** Format lastActivity epoch ms as "Xm ago" / "Xh ago" / "Xd ago"; "" when zero. */
+/** Format lastActivity epoch ms as "Xm ago" / "Xh ago" / "Xd ago" (localised); "" when zero. */
+@Composable
 private fun wearSessionAgo(epochMs: Long): String {
     if (epochMs <= 0L) return ""
     val delta = System.currentTimeMillis() - epochMs
     return when {
-        delta < 60_000L -> "<1m ago"
-        delta < 3_600_000L -> "${delta / 60_000L}m ago"
-        delta < 86_400_000L -> "${delta / 3_600_000L}h ago"
-        else -> "${delta / 86_400_000L}d ago"
+        delta < 60_000L -> stringResource(R.string.wear_ago_lt1m)
+        delta < 3_600_000L -> stringResource(R.string.wear_ago_minutes, (delta / 60_000L).toInt())
+        delta < 86_400_000L -> stringResource(R.string.wear_ago_hours, (delta / 3_600_000L).toInt())
+        else -> stringResource(R.string.wear_ago_days, (delta / 86_400_000L).toInt())
     }
 }
+
+/** Localised label for an automaton status; unknown statuses fall back to the raw value. */
+@Composable
+private fun automatonStatusLabel(status: String): String =
+    when (status.lowercase()) {
+        "draft" -> stringResource(R.string.wear_automaton_status_draft)
+        "decomposing" -> stringResource(R.string.wear_automaton_status_decomposing)
+        "planning" -> stringResource(R.string.wear_automaton_status_planning)
+        "needs_review" -> stringResource(R.string.wear_automaton_status_needs_review)
+        "revisions_asked" -> stringResource(R.string.wear_automaton_status_revisions_asked)
+        "approved" -> stringResource(R.string.wear_automaton_status_approved)
+        "running" -> stringResource(R.string.wear_automaton_status_running)
+        "completed", "complete", "done" -> stringResource(R.string.wear_automaton_status_completed)
+        "rejected" -> stringResource(R.string.wear_automaton_status_rejected)
+        "cancelled", "canceled" -> stringResource(R.string.wear_automaton_status_cancelled)
+        "failed", "error" -> stringResource(R.string.wear_automaton_status_failed)
+        else -> status.replace("_", " ")
+    }
+
+/** Localised label for a session state; unknown states fall back to the raw value. */
+@Composable
+private fun sessionStateLabel(stateName: String): String =
+    when (stateName.lowercase()) {
+        "running" -> stringResource(R.string.wear_session_state_running)
+        "waiting", "waiting_input", "waiting-input" -> stringResource(R.string.wear_session_state_waiting)
+        "complete", "completed", "done" -> stringResource(R.string.wear_session_state_done)
+        "error", "failed" -> stringResource(R.string.wear_session_state_error)
+        else -> stateName.replace("_", " ")
+    }
 
 /** Elapsed time since session started; "" when zero. "1h23m", "47m", "<1m". */
 private fun wearRunningDuration(startedAtMs: Long): String {
@@ -1844,7 +1906,7 @@ private fun SessionPopupCentre(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(session.stateName.uppercase(), style = MaterialTheme.typography.caption2,
+            Text(sessionStateLabel(session.stateName).uppercase(), style = MaterialTheme.typography.caption2,
                 color = sessionBadgeColor(session.stateName), fontFamily = FontFamily.Monospace)
             Text(session.shortId, style = MaterialTheme.typography.caption3,
                 color = MaterialTheme.colors.onSurfaceVariant, fontFamily = FontFamily.Monospace)
@@ -1919,8 +1981,10 @@ private fun SessionWaitingButtons(onQuickReply: (String) -> Unit, onStop: () -> 
                 row.forEach { (label, color, onClick) ->
                     Text(
                         label,
-                        style = MaterialTheme.typography.button,
+                        style = MaterialTheme.typography.caption1,
                         color = color,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier =
                             Modifier
                                 .background(
@@ -1928,7 +1992,7 @@ private fun SessionWaitingButtons(onQuickReply: (String) -> Unit, onStop: () -> 
                                     androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                                 )
                                 .clickable(onClick = onClick)
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                .padding(horizontal = 7.dp, vertical = 5.dp),
                     )
                 }
             }
@@ -2154,6 +2218,43 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
     override fun onCleared() {
         super.onCleared()
         dataClient.removeListener(listener)
+    }
+
+    /** Store-screenshot demo data (debug builds, [WearDemoLaunch]); neutral names only. */
+    public fun loadDemo() {
+        val now = System.currentTimeMillis()
+        _state.value =
+            UiState(
+                loading = false,
+                pairedServer = "demo",
+                serverName = "workstation",
+                running = 2,
+                waiting = 1,
+                total = 3,
+                cpuLoad1 = 1.6,
+                cpuCores = 8,
+                memUsed = 9_800_000_000L,
+                memTotal = 32_000_000_000L,
+                diskUsed = 210_000_000_000L,
+                diskTotal = 512_000_000_000L,
+                uptimeSeconds = 3 * 86_400L + 4 * 3_600L,
+                sessions =
+                    listOf(
+                        SessionItem("demo-7de3", "7de3", "deploy check", "shell", "waiting",
+                            "Promote weather-api:1.4.2 to staging? [y/N]", now - 60_000L, now - 900_000L),
+                        SessionItem("demo-9c2f", "9c2f", "docs refresh", "claude", "running",
+                            "Updating API reference…", now - 30_000L, now - 1_800_000L),
+                        SessionItem("demo-7bac", "7bac", "api tests", "aider", "running",
+                            "5 passed in 0.08s", now - 45_000L, now - 1_200_000L),
+                    ),
+                prds =
+                    listOf(
+                        PrdItem("demo-a1", "Weather API: 7-day forecast", "needs_review"),
+                        PrdItem("demo-a2", "Weather API: response caching", "running",
+                            progress = 0.6f, sprintName = "Story 2 of 3", runningHours = 1.5f),
+                    ),
+                profiles = listOf("demo" to "workstation"),
+            )
     }
 
     public fun requestActiveServer(id: String) {

@@ -8,6 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Wear Monitor:** the DISK gauge no longer draws on top of the CPU gauge.
+- **Wear Automata:** the header is no longer clipped by the round screen, and automaton titles wrap to two lines.
+- **Wear quick replies** fit on one line each.
+- **Wear translations:** every watch string is now translated (de/es/fr/ja), including the screens, tiles, complications and notifications. Before, "OFFLINE", "Open phone app to connect", the Automata action buttons, tile labels and 31 other strings showed in English.
+
+### Changed
+- **New Wear screenshots** (README and Play listing, `docs/media/watch/store/`) with neutral demo data. The old ones showed real host names and v0.52-era screens. Debug builds take `-e dwDemo 1 [-e dwPage N]` to fill demo data for store screenshots. `play-listing-images.yml` uploads a screenshot set to the Play listing.
+
 ## [1.28.15] — 2026-10-08
 
 ### Changed

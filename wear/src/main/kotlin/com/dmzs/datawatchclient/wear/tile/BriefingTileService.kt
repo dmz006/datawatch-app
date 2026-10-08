@@ -14,6 +14,7 @@ import androidx.wear.protolayout.TypeBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import com.dmzs.datawatchclient.wear.R
 import com.dmzs.datawatchclient.wear.sync.WearSyncManager
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
@@ -96,14 +97,14 @@ public class BriefingTileService : TileService() {
             .addContent(spacerV(5f))
 
         if (!snap.hasData) {
-            col.addContent(subText("open phone app"))
+            col.addContent(subText(getString(R.string.wear_tile_open_phone)))
             return col.build()
         }
 
         // Running row
         col.addContent(
             statRow(
-                "Run",
+                getString(R.string.wear_tile_run),
                 snap.running.toString(),
                 if (snap.running > 0) COLOR_ACCENT else COLOR_MUTED,
             ),
@@ -118,7 +119,7 @@ public class BriefingTileService : TileService() {
         }
         col.addContent(
             statRow(
-                "Wait",
+                getString(R.string.wear_tile_wait),
                 "${snap.waiting + snap.needsInput}",
                 blockedColor,
             ),
@@ -127,14 +128,14 @@ public class BriefingTileService : TileService() {
 
         // Total row
         col.addContent(
-            statRow("All", snap.total.toString(), COLOR_FG),
+            statRow(getString(R.string.wear_tile_all), snap.total.toString(), COLOR_FG),
         )
 
         // Sync timestamp
         if (snap.syncTs > 0) {
             val minutesAgo = (System.currentTimeMillis() - snap.syncTs) / 60_000
             col.addContent(spacerV(4f))
-            col.addContent(subText("${minutesAgo}m ago"))
+            col.addContent(subText(getString(R.string.wear_ago_minutes, minutesAgo.toInt())))
         }
 
         return col.build()

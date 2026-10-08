@@ -14,6 +14,7 @@ import androidx.wear.protolayout.TypeBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import com.dmzs.datawatchclient.wear.R
 import com.dmzs.datawatchclient.wear.sync.WearSyncManager
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
@@ -84,29 +85,29 @@ public class AlertsTileService : TileService() {
             LayoutElementBuilders.Column.Builder()
                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
                 .setModifiers(openAppModifiers(packageName))
-                .addContent(titleText("Alerts"))
+                .addContent(titleText(getString(R.string.complication_alerts_label)))
                 .addContent(spacerV(2f))
                 .addContent(healthDot(snap))
                 .addContent(spacerV(4f))
         if (!snap.hasData) {
-            col.addContent(subText("open phone app"))
+            col.addContent(subText(getString(R.string.wear_tile_open_phone)))
             return col.build()
         }
         col.addContent(
-            statRow("Total", snap.total.toString(), if (snap.total > 0) COLOR_WARNING else COLOR_FG),
+            statRow(getString(R.string.wear_tile_total), snap.total.toString(), if (snap.total > 0) COLOR_WARNING else COLOR_FG),
         )
         col.addContent(spacerV(3f))
         col.addContent(
-            statRow("Input", snap.needsInput.toString(), if (snap.needsInput > 0) COLOR_WARNING else COLOR_MUTED),
+            statRow(getString(R.string.wear_tile_input), snap.needsInput.toString(), if (snap.needsInput > 0) COLOR_WARNING else COLOR_MUTED),
         )
         col.addContent(spacerV(3f))
         col.addContent(
-            statRow("Err", snap.errors.toString(), if (snap.errors > 0) COLOR_ERROR else COLOR_MUTED),
+            statRow(getString(R.string.wear_tile_err), snap.errors.toString(), if (snap.errors > 0) COLOR_ERROR else COLOR_MUTED),
         )
         if (snap.syncTs > 0) {
             val minutesAgo = (System.currentTimeMillis() - snap.syncTs) / 60_000
             col.addContent(spacerV(2f))
-            col.addContent(subText("sync ${minutesAgo}m ago"))
+            col.addContent(subText(getString(R.string.wear_tile_sync_ago, minutesAgo.toInt())))
         }
         return col.build()
     }

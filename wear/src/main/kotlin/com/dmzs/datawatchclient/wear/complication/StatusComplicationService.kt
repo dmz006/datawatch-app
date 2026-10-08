@@ -8,6 +8,7 @@ import androidx.wear.watchface.complications.data.RangedValueComplicationData
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
+import com.dmzs.datawatchclient.wear.R
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
@@ -55,14 +56,14 @@ public class StatusComplicationService : ComplicationDataSourceService() {
             val blocked = snap.waiting + snap.error
             if (blocked > 0) append(" ${blocked}B")
         }
-        val contentDesc = "${snap.running} running, ${snap.waiting} waiting"
+        val contentDesc = getString(R.string.wear_comp_sessions_desc, snap.running, snap.waiting)
         return when (type) {
             ComplicationType.SHORT_TEXT ->
                 ShortTextComplicationData.Builder(
                     PlainComplicationText.Builder(shortLabel).build(),
                     PlainComplicationText.Builder(contentDesc).build(),
                 )
-                    .setTitle(PlainComplicationText.Builder("sess").build())
+                    .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_sessions_short)).build())
                     .build()
 
             ComplicationType.RANGED_VALUE ->
@@ -73,7 +74,7 @@ public class StatusComplicationService : ComplicationDataSourceService() {
                     contentDescription = PlainComplicationText.Builder(contentDesc).build(),
                 )
                     .setText(PlainComplicationText.Builder(shortLabel).build())
-                    .setTitle(PlainComplicationText.Builder("prog").build())
+                    .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_progress_short)).build())
                     .build()
 
             else -> null

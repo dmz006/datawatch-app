@@ -222,7 +222,7 @@ public class WearAlertListenerService : WearableListenerService() {
         nm.createNotificationChannel(
             NotificationChannel(
                 PRD_REVIEW_CHANNEL_ID,
-                "Automaton Review",
+                getString(R.string.wear_notification_prd_review_channel),
                 NotificationManager.IMPORTANCE_HIGH,
             ),
         )
@@ -254,33 +254,33 @@ public class WearAlertListenerService : WearableListenerService() {
             .addAction(
                 NotificationCompat.Action.Builder(
                     android.R.drawable.ic_menu_send,
-                    "Approve",
+                    getString(R.string.wear_notification_prd_action_approve),
                     approveIntent,
                 ).build(),
             )
             .addAction(
                 NotificationCompat.Action.Builder(
                     android.R.drawable.ic_menu_close_clear_cancel,
-                    "Reject",
+                    getString(R.string.wear_notification_prd_action_reject),
                     rejectIntent,
                 ).build(),
             )
 
         val notif = NotificationCompat.Builder(this, PRD_REVIEW_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dw_eye)
-            .setContentTitle("Automaton Needs Review")
+            .setContentTitle(getString(R.string.wear_notification_prd_review_title))
             .setContentText(prdTitle.take(60))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openAppIntent())
             .setAutoCancel(true)
             .addAction(
                 android.R.drawable.ic_menu_send,
-                "Approve",
+                getString(R.string.wear_notification_prd_action_approve),
                 approveIntent,
             )
             .addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                "Reject",
+                getString(R.string.wear_notification_prd_action_reject),
                 rejectIntent,
             )
             .extend(wearExtender)

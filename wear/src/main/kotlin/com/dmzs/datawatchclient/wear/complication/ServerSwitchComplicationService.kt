@@ -8,6 +8,7 @@ import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
+import com.dmzs.datawatchclient.wear.R
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
@@ -37,9 +38,9 @@ public class ServerSwitchComplicationService : ComplicationDataSourceService() {
                     ComplicationType.SHORT_TEXT ->
                         ShortTextComplicationData.Builder(
                             PlainComplicationText.Builder(abbrev).build(),
-                            PlainComplicationText.Builder("Active: $name").build(),
+                            PlainComplicationText.Builder(getString(R.string.wear_comp_server_active, name)).build(),
                         )
-                            .setTitle(PlainComplicationText.Builder("srvr").build())
+                            .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_server_short)).build())
                             .setTapAction(buildTapAction())
                             .build()
                     else -> null
@@ -53,9 +54,9 @@ public class ServerSwitchComplicationService : ComplicationDataSourceService() {
             ComplicationType.SHORT_TEXT ->
                 ShortTextComplicationData.Builder(
                     PlainComplicationText.Builder("home").build(),
-                    PlainComplicationText.Builder("Active: home").build(),
+                    PlainComplicationText.Builder(getString(R.string.wear_comp_server_active, "home")).build(),
                 )
-                    .setTitle(PlainComplicationText.Builder("srvr").build())
+                    .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_server_short)).build())
                     .build()
             else -> null
         }

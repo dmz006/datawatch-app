@@ -6,6 +6,7 @@ import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
+import com.dmzs.datawatchclient.wear.R
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
@@ -31,9 +32,9 @@ public class AutomataComplicationService : ComplicationDataSourceService() {
                     ComplicationType.SHORT_TEXT ->
                         ShortTextComplicationData.Builder(
                             PlainComplicationText.Builder("$automata/$council").build(),
-                            PlainComplicationText.Builder("$automata automata, $council council").build(),
+                            PlainComplicationText.Builder(getString(R.string.wear_comp_automata_desc, automata, council)).build(),
                         )
-                            .setTitle(PlainComplicationText.Builder("aut").build())
+                            .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_automata_short)).build())
                             .build()
                     else -> null
                 },
@@ -46,9 +47,9 @@ public class AutomataComplicationService : ComplicationDataSourceService() {
             ComplicationType.SHORT_TEXT ->
                 ShortTextComplicationData.Builder(
                     PlainComplicationText.Builder("3/1").build(),
-                    PlainComplicationText.Builder("3 automata, 1 council").build(),
+                    PlainComplicationText.Builder(getString(R.string.wear_comp_automata_desc, 3, 1)).build(),
                 )
-                    .setTitle(PlainComplicationText.Builder("aut").build())
+                    .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_automata_short)).build())
                     .build()
             else -> null
         }

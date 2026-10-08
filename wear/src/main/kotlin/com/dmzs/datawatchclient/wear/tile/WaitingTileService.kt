@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.wear.tile
 
+import com.dmzs.datawatchclient.wear.R
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.DimensionBuilders.dp
@@ -77,11 +78,11 @@ public class WaitingTileService : TileService() {
             .setModifiers(openAppModifiers())
             .addContent(titleText("datawatch"))
             .addContent(spacerV())
-            .addContent(subText("waiting"))
+            .addContent(subText(getString(R.string.wear_tile_waiting)))
 
         if (sessions.isEmpty()) {
             col.addContent(spacerV())
-                .addContent(subText("none"))
+                .addContent(subText(getString(R.string.wear_tile_none)))
         } else {
             sessions.forEach { (_, title) ->
                 col.addContent(spacerV(3f))

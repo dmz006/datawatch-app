@@ -6,6 +6,7 @@ import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
+import com.dmzs.datawatchclient.wear.R
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
@@ -31,9 +32,9 @@ public class WaitingComplicationService : ComplicationDataSourceService() {
                     ComplicationType.SHORT_TEXT ->
                         ShortTextComplicationData.Builder(
                             PlainComplicationText.Builder(waiting.toString()).build(),
-                            PlainComplicationText.Builder("$waiting waiting").build(),
+                            PlainComplicationText.Builder(getString(R.string.wear_comp_waiting_text, waiting)).build(),
                         )
-                            .setTitle(PlainComplicationText.Builder("wait").build())
+                            .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_waiting_short)).build())
                             .build()
                     else -> null
                 },
@@ -46,9 +47,9 @@ public class WaitingComplicationService : ComplicationDataSourceService() {
             ComplicationType.SHORT_TEXT ->
                 ShortTextComplicationData.Builder(
                     PlainComplicationText.Builder("3").build(),
-                    PlainComplicationText.Builder("3 waiting").build(),
+                    PlainComplicationText.Builder(getString(R.string.wear_comp_waiting_text, 3)).build(),
                 )
-                    .setTitle(PlainComplicationText.Builder("wait").build())
+                    .setTitle(PlainComplicationText.Builder(getString(R.string.wear_comp_waiting_short)).build())
                     .build()
             else -> null
         }

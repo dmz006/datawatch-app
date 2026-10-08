@@ -7,6 +7,7 @@ import androidx.wear.watchface.complications.data.RangedValueComplicationData
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
+import com.dmzs.datawatchclient.wear.R
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
@@ -47,7 +48,7 @@ public class HealthRingComplicationService : ComplicationDataSourceService() {
         val worstPct = maxOf(snap.cpuPct, snap.memPct).coerceIn(0f, 100f)
         val cpuText = "${snap.cpuPct.toInt()}c"
         val memText = "${snap.memPct.toInt()}m"
-        val contentDesc = "datawatch Health: CPU ${snap.cpuPct.toInt()}% MEM ${snap.memPct.toInt()}%"
+        val contentDesc = getString(R.string.wear_comp_health_desc, snap.cpuPct.toInt(), snap.memPct.toInt())
         return when (type) {
             ComplicationType.RANGED_VALUE ->
                 RangedValueComplicationData.Builder(

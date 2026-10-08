@@ -14,6 +14,7 @@ import androidx.wear.protolayout.TypeBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import com.dmzs.datawatchclient.wear.R
 import com.dmzs.datawatchclient.wear.sync.WearSyncManager
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
@@ -93,11 +94,11 @@ public class SessionsTileService : TileService() {
     private fun buildLayout(snap: CountsSnapshot): LayoutElementBuilders.LayoutElement {
         val row =
             LayoutElementBuilders.Row.Builder()
-                .addContent(countColumn("run", snap.running, COLOR_ACCENT))
+                .addContent(countColumn(getString(R.string.wear_filter_run), snap.running, COLOR_ACCENT))
                 .addContent(spacer())
-                .addContent(countColumn("wait", snap.waiting, COLOR_WARNING))
+                .addContent(countColumn(getString(R.string.wear_filter_wait), snap.waiting, COLOR_WARNING))
                 .addContent(spacer())
-                .addContent(countColumn("total", snap.total, COLOR_FG))
+                .addContent(countColumn(getString(R.string.wear_filter_total), snap.total, COLOR_FG))
                 .build()
 
         val col =
@@ -115,7 +116,7 @@ public class SessionsTileService : TileService() {
             col.addContent(subText(snap.serverName))
         } else if (!snap.hasData) {
             col.addContent(spacerV())
-            col.addContent(subText("open phone app"))
+            col.addContent(subText(getString(R.string.wear_tile_open_phone)))
         }
         return col.build()
     }

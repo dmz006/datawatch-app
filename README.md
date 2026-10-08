@@ -154,14 +154,12 @@ arrow keys, PgUp/PgDn, and a saved-commands picker — no need to type `\033[A` 
 
 <table>
 <tr>
-<td align="center"><img src="docs/media/watch/00-splash.png" width="160"/><br/><sub>Splash</sub></td>
-<td align="center"><img src="docs/media/watch/01-monitor.png" width="160"/><br/><sub>Monitor</sub></td>
-<td align="center"><img src="docs/media/watch/02-sessions.png" width="160"/><br/><sub>Sessions</sub></td>
+<td align="center"><img src="docs/media/watch/store/1-glance.png" width="160"/><br/><sub>Glance</sub></td>
+<td align="center"><img src="docs/media/watch/store/2-monitor.png" width="160"/><br/><sub>Monitor</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/media/watch/03-prds.png" width="160"/><br/><sub>Automata</sub></td>
-<td align="center"><img src="docs/media/watch/04-servers.png" width="160"/><br/><sub>Servers</sub></td>
-<td align="center"><img src="docs/media/watch/05-about.png" width="160"/><br/><sub>About</sub></td>
+<td align="center"><img src="docs/media/watch/store/3-sessions.png" width="160"/><br/><sub>Sessions</sub></td>
+<td align="center"><img src="docs/media/watch/store/4-automata.png" width="160"/><br/><sub>Automata</sub></td>
 </tr>
 </table>
 
