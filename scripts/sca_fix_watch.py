@@ -285,12 +285,13 @@ def recent_section(risks, today, notes, commits_fn=registry_commits):
             imp = r.get("impact") if isinstance(r.get("impact"), dict) else {}
             new = "new" if str(r.get("first_added")) == str(r.get("added")) else "renewal"
             out.append("| %s (%s) | `%s` | %s | %s | %s | %s | %s | %s | %s |" % (
-                r.get("id"), new, r.get("package"), r.get("severity"), imp.get("traced"),
+                r.get("id"), new, r.get("package"), r.get("severity"), str(imp.get("traced")).lower(),
                 accepted_risks.norm_reachable(imp.get("reachable")), r.get("validated_by"),
                 r.get("first_added"), r.get("added"), r.get("expires")))
     if commits:
         out += ([""] if entries else []) + ["Registry commits in the last 24 h:", ""] +["- `%s`" % c.replace("`", "'") for c in commits]
-    out += ["", "Self-service acceptances get no PR review: check each `reachable` and `analysis` above."]
+    out += ["", "Self-service acceptances get no PR review: check the `reachable` and `analysis` of each "
+            "new or renewed entry."]
     return out, max(len(entries), len(commits))
 
 
