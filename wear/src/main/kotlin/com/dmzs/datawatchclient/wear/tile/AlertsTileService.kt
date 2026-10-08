@@ -98,7 +98,11 @@ public class AlertsTileService : TileService() {
         )
         col.addContent(spacerV(3f))
         col.addContent(
-            statRow(getString(R.string.wear_tile_input), snap.needsInput.toString(), if (snap.needsInput > 0) COLOR_WARNING else COLOR_MUTED),
+            statRow(
+                getString(R.string.wear_tile_input),
+                snap.needsInput.toString(),
+                if (snap.needsInput > 0) COLOR_WARNING else COLOR_MUTED,
+            ),
         )
         col.addContent(spacerV(3f))
         col.addContent(

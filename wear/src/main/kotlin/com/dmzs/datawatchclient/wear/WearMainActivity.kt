@@ -784,9 +784,13 @@ private fun AutomataPage(
                     style = MaterialTheme.typography.title3,
                     color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (runningCount > 0) Text(stringResource(R.string.wear_automata_count_running, runningCount), style = MaterialTheme.typography.caption2,
+                    if (runningCount > 0) Text(
+                        stringResource(R.string.wear_automata_count_running, runningCount),
+                        style = MaterialTheme.typography.caption2,
                         color = runColor, fontWeight = FontWeight.Bold)
-                    if (reviewCount > 0) Text(stringResource(R.string.wear_automata_count_review, reviewCount), style = MaterialTheme.typography.caption2,
+                    if (reviewCount > 0) Text(
+                        stringResource(R.string.wear_automata_count_review, reviewCount),
+                        style = MaterialTheme.typography.caption2,
                         color = reviewColor, fontWeight = FontWeight.Bold)
                 }
             }
@@ -954,21 +958,31 @@ private fun AutomataDetailOverlay(
                         ActionChip(stringResource(R.string.wear_automata_action_approve), Color(0xFF22C55E)) { onAction("approve", "") }
                         Spacer(Modifier.height(4.dp))
                         // Reject
-                        ActionChip(stringResource(R.string.wear_automata_action_reject), blockColor) { onAction("reject", "rejected on watch") }
+                        ActionChip(stringResource(R.string.wear_automata_action_reject), blockColor) {
+                            onAction("reject", "rejected on watch")
+                        }
                         Spacer(Modifier.height(4.dp))
                         // Request Revision
-                        ActionChip(stringResource(R.string.wear_automata_action_revise), revisionColor) { onAction("request_revision", "revision requested on watch") }
+                        ActionChip(stringResource(R.string.wear_automata_action_revise), revisionColor) {
+                            onAction("request_revision", "revision requested on watch")
+                        }
                     }
                     "running" -> {
                         ActionChip(stringResource(R.string.wear_automata_action_cancel), blockColor) { onAction("cancel", "") }
                     }
                     "approved" -> {
-                        ActionChip(stringResource(R.string.wear_automata_action_instantiate), Color(0xFF3B82F6)) { onAction("instantiate", "") }
+                        ActionChip(stringResource(R.string.wear_automata_action_instantiate), Color(0xFF3B82F6)) {
+                            onAction("instantiate", "")
+                        }
                         Spacer(Modifier.height(4.dp))
                         ActionChip(stringResource(R.string.wear_automata_action_cancel), blockColor) { onAction("cancel", "") }
                     }
                     "decomposing", "planning" -> {
-                        Text(stringResource(R.string.wear_automata_decomposing), style = MaterialTheme.typography.caption3, color = dimColor)
+                        Text(
+                            stringResource(R.string.wear_automata_decomposing),
+                            style = MaterialTheme.typography.caption3,
+                            color = dimColor,
+                        )
                     }
                 }
             }
