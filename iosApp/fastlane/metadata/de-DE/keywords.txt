@@ -1,0 +1,1 @@
+Coding-Agent,KI,LLM,Terminal,tmux,SSH,selbst gehostet,DevOps,Entwickler,Fernzugriff,Monitor,MCP

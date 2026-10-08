@@ -1,0 +1,1 @@
+agente,IA,LLM,terminal,tmux,ssh,autoalojado,devops,desarrollador,remoto,monitor,voz,mcp,agentes

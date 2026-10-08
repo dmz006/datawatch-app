@@ -24,6 +24,19 @@ check en-US/release_notes.txt     4000
 check en-US/support_url.txt       255
 check en-US/marketing_url.txt     255
 check en-US/privacy_url.txt       255
+# Localized App Store listings (no release_notes: en-US only).
+LOCALES=(de-DE es-ES fr-FR ja)
+for loc in "${LOCALES[@]}"; do
+  check "$loc/name.txt"              30
+  check "$loc/subtitle.txt"          30
+  check "$loc/description.txt"       4000
+  check "$loc/keywords.txt"          100
+  check "$loc/promotional_text.txt"  170
+  check "$loc/support_url.txt"       255
+  check "$loc/marketing_url.txt"     255
+  check "$loc/privacy_url.txt"       255
+done
+
 check copyright.txt               255
 check review_information/notes.txt 4000
 check beta/description.txt        4000
@@ -32,7 +45,11 @@ check beta/review_notes.txt       4000
 check beta/feedback_email.txt     255
 
 # Keywords: comma-separated, no empty entries.
-if grep -q ',,\|^,\|,$' en-US/keywords.txt; then echo "keywords.txt: empty keyword"; fail=1; fi
+for loc in en-US "${LOCALES[@]}"; do
+  [[ -f $loc/keywords.txt ]] || continue
+  if grep -q ',,\|^,\|,$' "$loc/keywords.txt"; then echo "$loc/keywords.txt: empty keyword"; fail=1; fi
+  if grep -q ', ' "$loc/keywords.txt"; then echo "$loc/keywords.txt: space after comma"; fail=1; fi
+done
 # Terminology rule: user-facing copy never says PRD.
 if grep -rnwE 'PRDs?' . ; then echo "PRD found in user-facing metadata"; fail=1; fi
 

@@ -1,0 +1,52 @@
+datawatch ist der mobile Client für datawatch, den Open-Source-Server, der KI-Coding-Sitzungen (Claude Code, Aider und andere Agenten) auf deinen eigenen Rechnern ausführt und überwacht. Behalte jede Sitzung im Blick, beantworte Rückfragen, sobald ein Agent dich braucht, und steuere lang laufende Arbeit von deinem iPhone oder iPad aus.
+
+Du brauchst deinen eigenen datawatch-Server. Die App hat keinen eigenen Cloud-Dienst: Sie kommuniziert nur mit den Servern, die du hinzufügst – über dein LAN, VPN oder Tailscale. Den Server gibt es unter https://github.com/dmz006/datawatch
+
+SITZUNGEN
+• Jede laufende Sitzung auf jedem hinzugefügten Server, mit Live-Status, Filtern, Suche und Baumansicht für untergeordnete Sitzungen.
+• Öffne eine Sitzung für ihr Live-Terminal, das Chat-Protokoll, Kanalnachrichten sowie CPU-, Speicher- und Netzwerkwerte pro Sitzung.
+• Antworte per Tastatur, per Sprache oder mit gespeicherten Schnellbefehlen. Pfeiltasten, Bild auf/ab und Escape sind nur einen Tipp entfernt.
+• Starte neue Sitzungen aus Vorlagen oder durch Auswahl eines Projektordners auf dem Server; benenne sie um, stoppe, starte neu oder lösche sie mit einem Tipp.
+• Hänge ein Foto aus der Kamera an eine Antwort an.
+
+SPRACHE
+• Tippe auf das Mikrofon, sprich, prüfe den Text, sende ab. Dein datawatch-Server transkribiert die Aufnahme mit seinem eigenen Whisper-Backend.
+
+WARNUNGEN
+• Ein Posteingang für alle Server: Eingabe erforderlich, abgeschlossen, Ratenlimit erreicht, Fehler und Guardrails-Urteile.
+• Antworte direkt, schalte das Warnungs-Dock stumm oder springe direkt zur Sitzung, die die Warnung ausgelöst hat.
+• Push-Mitteilungen erreichen dich auch bei geschlossener App; tippe darauf, um die Sitzung zu öffnen.
+
+SIRI, WIDGETS UND STEUERELEMENTE
+• „Hey Siri, sag datawatch …“ sendet nach deiner Bestätigung eine Antwort an eine Sitzung (Face ID, wenn die App-Sperre aktiv ist).
+• Widgets für Home-Bildschirm und Sperrbildschirm zeigen Sitzungszahlen und Serverlast.
+• Ein Steuerelement im Kontrollzentrum öffnet die App mit einem Tipp (ab iOS 18).
+
+AUTOMATA
+• Erstelle, prüfe und genehmige Automata: mehrstufige Pläne aus Stories, die der Server in Tasks zerlegt und mit deinen Agenten ausführt.
+• Verfolge den Fortschritt Story für Story, mit Abhängigkeitsgraph, Urteilen, Entscheidungen, Gedächtnis und den Worker-Sitzungen, die die Arbeit erledigen.
+• Nutze Vorlagen, den geführten Modus und Modell-Overrides pro Story oder pro Task.
+
+OBSERVER UND DASHBOARD
+• Host- und Prozessmetriken, GPU-Auslastung, föderierte Peers und Compute-Nodes auf einen Blick.
+• Sitzungsanalysen, Audit-Protokoll, Wissensgraph und Daemon-Protokoll.
+• Ein Dashboard mit Live-Karten, die du selbst auswählst und anordnest.
+
+EINSTELLUNGEN UND STEUERUNG
+• Verwalte den Server vom Telefon aus: LLM-Backends und Modelle, Agentenprofile, den Rat der Prüfer-Personas, Guardrails, Warnungsregeln, Routing, Plugins, Fähigkeiten und mehr.
+• Mehrere Server nebeneinander. Wechsle über die Serverauswahl oder mit einem Drei-Finger-Wisch nach oben.
+
+FÜR iPHONE UND iPAD GEMACHT
+• Native SwiftUI-App mit geteiltem Layout auf dem iPad und Querformat-Unterstützung.
+• Englisch, Deutsch, Spanisch, Französisch und Japanisch.
+• Deep Links öffnen direkt eine Sitzung, eine Warnung oder einen Tab.
+
+PRIVAT DURCH DESIGN
+• Keine Werbung, keine Analysen, kein Tracking und keine Absturzberichte an Dritte.
+• Bearer-Tokens werden nur auf diesem Gerät im iOS-Schlüsselbund gespeichert.
+• Zwischengespeicherte Sitzungsdaten sind durch die iOS-Datensicherheit geschützt und bei gesperrtem Gerät nicht lesbar.
+• Optionale Sperre mit Face ID oder Touch ID.
+• Nur HTTPS. Pinne ein selbstsigniertes Serverzertifikat über seinen Fingerabdruck, statt die Validierung abzuschalten.
+
+Quellcode: https://github.com/dmz006/datawatch-app
+Datenschutzerklärung: https://dmzs.com/datawatch-client/privacy

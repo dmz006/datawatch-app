@@ -1,0 +1,52 @@
+datawatch es el cliente móvil de datawatch, el servidor de código abierto que ejecuta y supervisa sesiones de programación con IA (Claude Code, Aider y otros agentes) en tus propias máquinas. Vigila cada sesión, responde en cuanto un agente te necesite y dirige el trabajo de larga duración desde tu iPhone o iPad.
+
+Necesitas tu propio servidor datawatch. La app no tiene ningún servicio en la nube propio: solo se comunica con los servidores que añadas, a través de tu LAN, VPN o Tailscale. Consigue el servidor en https://github.com/dmz006/datawatch
+
+SESIONES
+• Todas las sesiones en curso de cada servidor que añadas, con estado en vivo, filtros, búsqueda y vista de árbol para las sesiones hijas.
+• Abre una sesión para ver su terminal en vivo, la transcripción del chat, los mensajes del canal y las estadísticas de CPU, memoria y red de cada sesión.
+• Responde escribiendo, por voz o con comandos rápidos guardados. Las flechas, Re Pág/Av Pág y Escape están a un toque.
+• Inicia sesiones nuevas desde plantillas o eligiendo una carpeta de proyecto en el servidor; cámbiales el nombre, detenlas, reinícialas o elimínalas con un toque.
+• Adjunta una foto de la cámara a una respuesta.
+
+VOZ
+• Toca el micrófono, habla, revisa el texto y envía. Tu servidor datawatch transcribe el audio con su propio backend de Whisper.
+
+ALERTAS
+• Una sola bandeja para todos los servidores: entrada requerida, completada, límite de uso alcanzado, errores y veredictos de guardrails.
+• Responde ahí mismo, silencia el panel de alertas o salta directamente a la sesión que generó la alerta.
+• Las notificaciones push te llegan incluso con la app cerrada; tócalas para abrir la sesión.
+
+SIRI, WIDGETS Y CONTROLES
+• «Oye Siri, dile a datawatch…» envía una respuesta a una sesión después de que la confirmes (Face ID si el bloqueo de la app está activado).
+• Los widgets de la pantalla de inicio y de la pantalla bloqueada muestran el número de sesiones y la carga del servidor.
+• Un control del Centro de control abre la app con un toque (iOS 18 o posterior).
+
+AUTOMATA
+• Crea, revisa y aprueba Automata: planes de varias historias que el servidor divide en tareas y ejecuta con tus agentes.
+• Sigue el progreso historia a historia, con el grafo de dependencias, veredictos, decisiones, memoria y las sesiones de trabajo que realizan la tarea.
+• Usa plantillas, el modo guiado y modelos específicos por historia o por tarea.
+
+OBSERVER Y PANEL
+• Métricas de host y de procesos, uso de GPU, pares federados y nodos de cómputo de un vistazo.
+• Analítica de sesiones, registro de auditoría, grafo de conocimiento y registro del daemon.
+• Un panel de tarjetas en vivo que eliges y ordenas tú.
+
+AJUSTES Y CONTROL
+• Gestiona el servidor desde el teléfono: backends y modelos de LLM, perfiles de agente, el consejo de personas revisoras, guardrails, reglas de alerta, enrutamiento, plugins, habilidades y más.
+• Varios servidores a la vez. Cambia con el selector de servidor o deslizando tres dedos hacia arriba.
+
+HECHA PARA iPHONE Y iPAD
+• App nativa en SwiftUI con vista dividida en iPad y soporte para orientación horizontal.
+• Inglés, alemán, español, francés y japonés.
+• Los enlaces profundos abren directamente una sesión, una alerta o una pestaña.
+
+PRIVADA POR DISEÑO
+• Sin anuncios, sin analítica, sin rastreo y sin informes de fallos a terceros.
+• Los tokens bearer se guardan en el llavero de iOS solo en este dispositivo.
+• Los datos de sesión en caché están protegidos por la protección de datos de iOS y no se pueden leer con el dispositivo bloqueado.
+• Bloqueo opcional con Face ID o Touch ID.
+• Solo HTTPS. Fija un certificado de servidor autofirmado por su huella digital en lugar de desactivar la validación.
+
+Código fuente: https://github.com/dmz006/datawatch-app
+Política de privacidad: https://dmzs.com/datawatch-client/privacy
