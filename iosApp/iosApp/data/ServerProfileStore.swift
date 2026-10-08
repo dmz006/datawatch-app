@@ -27,12 +27,12 @@ final class ServerProfileStore: ObservableObject {
     /// #236.2 / #235: connection status of the active proxied remote (the
     /// shared probe: "Connecting to X…" → "Loading sessions from X…" → nil, or
     /// an error). Read it through `fedStatus(for:)`.
-    @Published private(set) var fedStatus: IosFedConnState? = nil
+    @Published private(set) var fedConnState: IosFedConnState? = nil
 
     /// The status to show for the screen's server, or nil (real server, "All
     /// servers", or real data already arrived).
     func fedStatus(for profileId: String?) -> IosFedConnState? {
-        guard !isAllServers, let st = fedStatus, let id = profileId, st.profileId == id else { return nil }
+        guard !isAllServers, let st = fedConnState, let id = profileId, st.profileId == id else { return nil }
         return st
     }
 
@@ -132,7 +132,7 @@ final class ServerProfileStore: ObservableObject {
         startCollecting()
         startProxiedRefresh()
         fedSubscription = IosFedConn.shared.watch { [weak self] st in
-            Task { @MainActor [weak self] in self?.fedStatus = st }
+            Task { @MainActor [weak self] in self?.fedConnState = st }
         }
     }
 
