@@ -576,7 +576,7 @@ Wear OS and Auto screens must match the datawatch PWA dark palette — dark surf
 ### Media Capture Rules
 
 - **Never capture the phone home screen** — launcher, widgets, notifications, wallpaper are all confidential. Only capture in-app screens. If a home-screen frame slips into a commit, purge with `git-filter-repo --path <file> --invert-paths --force` + force-push; a `git rm` commit is not sufficient.
-- Phone screenshots in `docs/media/phone/` — frame-validate before generating GIF (identical-md5 frames = taps missed, phone was on home screen).
+- Screenshots come from CI with neutral demo data (host name `demo`): `android-screenshots.yml` (phone, tablets → `docs/media/phone/store`, `docs/media/tablet`, Play via `play-listing-images.yml`), `ios-screenshots.yml` (App Store via `ios-testflight-setup.yml upload_listing`), Wear demo mode (`-e dwDemo 1`). Never publish screenshots showing real host names, IPs or servers.
 
 ### Dev Tool Install Location
 

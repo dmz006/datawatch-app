@@ -93,11 +93,11 @@ Either way, you need your own [datawatch](https://github.com/dmz006/datawatch) s
 
 ## At a glance
 
-| Phone | Watch | Auto (AAOS) | PWA reference |
-|:---:|:---:|:---:|:---:|
-| ![phone slideshow v1.0.0](docs/media/phone-slideshow-v1.0.0.gif) | ![watch slideshow v1.0.0](docs/media/watch-slideshow-v1.0.0.gif) | ![auto slideshow v1.0.0](docs/media/auto-slideshow-v1.0.0.gif) | ![pwa slideshow v1.0.0](docs/media/pwa-slideshow-v1.0.0.gif) |
+| Phone | Watch |
+|:---:|:---:|
+| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) |
 
-*Slideshows loop at ~2.5 s per frame showing all 6 core pages: Sessions, Automata, Alerts, Observer, Dashboard, Settings. Watch cards optimized for 1.4" round display. Android Auto full-width automotive layout. All tested and verified for v1.0.0 GA release.*
+*Slideshows loop at ~2.5 s per frame: v1.28.16 with neutral demo data, captured by `android-screenshots.yml` and the Wear demo mode. Android Auto and web-app (PWA) captures are being redone with the same demo data.*
 
 ## What it does
 
@@ -135,18 +135,25 @@ Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
 
 <table>
 <tr>
-<td align="center"><img src="docs/media/phone/01-splash.png" width="180"/><br/><sub>Splash</sub></td>
-<td align="center"><img src="docs/media/phone/02-sessions.png" width="180"/><br/><sub>Sessions list</sub></td>
-<td align="center"><img src="docs/media/phone/11-session-running.png" width="180"/><br/><sub>Live session</sub></td>
-<td align="center"><img src="docs/media/phone/04-alerts.png" width="180"/><br/><sub>Alerts</sub></td>
+<td align="center"><img src="docs/media/phone/store/1-sessions.png" width="180"/><br/><sub>Sessions</sub></td>
+<td align="center"><img src="docs/media/phone/store/2-terminal.png" width="180"/><br/><sub>Live session</sub></td>
+<td align="center"><img src="docs/media/phone/store/3-automata.png" width="180"/><br/><sub>Automata</sub></td>
+<td align="center"><img src="docs/media/phone/store/4-automaton-detail.png" width="180"/><br/><sub>Automaton detail</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/media/phone/03-prds.png" width="180"/><br/><sub>Automata</sub></td>
-<td align="center"><img src="docs/media/phone/10-new-session.png" width="180"/><br/><sub>New session</sub></td>
-<td align="center"><img src="docs/media/phone/05-settings-monitor.png" width="180"/><br/><sub>Settings — Monitor</sub></td>
-<td align="center"><img src="docs/media/phone/09-settings-about.png" width="180"/><sub>About</sub></td>
+<td align="center"><img src="docs/media/phone/store/5-alerts.png" width="180"/><br/><sub>Alerts</sub></td>
+<td align="center"><img src="docs/media/phone/store/6-observer.png" width="180"/><br/><sub>Observer</sub></td>
+<td align="center"><img src="docs/media/phone/store/7-dashboard.png" width="180"/><br/><sub>Dashboard</sub></td>
+<td align="center"><img src="docs/media/phone/store/8-settings.png" width="180"/><br/><sub>Settings</sub></td>
 </tr>
 </table>
+
+Tablets and foldables get a two-pane layout:
+
+<p align="center">
+<img src="docs/media/tablet/tablet-10-automata.png" width="560"/>
+<img src="docs/media/tablet/tablet-7-observer.png" width="220"/>
+</p>
 
 The session detail view streams chat and terminal output with a compact tab switcher
 (tmux / channel / stats). The **stats tab** shows live CPU, RSS, and network throughput
@@ -176,25 +183,7 @@ The app runs natively on **Android Automotive OS** (AAOS) — no phone required.
 Install the APK directly on any AAOS head unit and connect to your datawatch
 daemon over Tailscale or local Wi-Fi.
 
-| Night mode (official release) | Day mode (debug build) |
-|:---:|:---:|
-| ![auto dark](docs/media/auto-slideshow.gif) | ![auto debug](docs/media/auto-slideshow-debug.gif) |
-
-*Dark mode activates automatically when the vehicle sets night mode (ambient
-light sensor or time-of-day). Day/night is AAOS-controlled, not app-controlled.*
-
-<table>
-<tr>
-<td align="center"><img src="docs/media/auto/01-splash.png" width="270"/><br/><sub>Splash</sub></td>
-<td align="center"><img src="docs/media/auto/02-sessions.png" width="270"/><br/><sub>Sessions</sub></td>
-<td align="center"><img src="docs/media/auto/03-alerts.png" width="270"/><br/><sub>Alerts</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/media/auto/04-settings-monitor.png" width="270"/><br/><sub>Monitor stats</sub></td>
-<td align="center"><img src="docs/media/auto/05-settings-about.png" width="270"/><br/><sub>About</sub></td>
-<td></td>
-</tr>
-</table>
+*Fresh Android Auto screenshots with neutral demo data are being captured.*
 
 Surfaces available on AAOS: **Sessions**, **Alerts** (grouped by session, inline reply/schedule/open), and **Settings** (Monitor · General · Comms · LLM · About). The eye watermark and server-selector dropdown carry over from the phone layout.
 

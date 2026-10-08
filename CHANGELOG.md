@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed
+- **New screenshots everywhere, with neutral demo data** (host name `demo`, never a real host, IP or server).
+  - **Google Play:** phone (8), 7-inch tablet (8), 10-inch tablet (8) and Wear (4).
+  - **App Store:** iPhone 6.9-inch (7) and iPad 13-inch (7).
+  - **README:** Android, tablet two-pane, iOS and Wear images, plus the phone and watch slideshows.
+- **New `android-screenshots.yml`** captures phone and tablets on KVM emulators against a throwaway demo server, using debug-only launch hooks (`dwSeedURL`, `dwTab`, `dwOpenSession`, `dwOpenAutomaton`, …). `play-listing-images.yml` can upload straight from that run's artifact.
+- **Removed old README media that showed real host names, a private LAN IP address and server names:** the Android Auto and PWA slideshows and still images, and the v1.0-era phone and watch images. New Android Auto and PWA captures will follow.
+
 ### Fixed
 - **iPhone "All servers" includes remote servers' sessions** (#234 parity with Android). It now uses each server's `/api/federation/sessions` fan-out, keeping the newest copy of each session. It falls back to `/api/sessions` on servers without federation.
 
