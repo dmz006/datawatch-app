@@ -233,6 +233,37 @@ public object IosServiceLocator {
         }
     }
 
+    /**
+     * "All servers" (#234 parity with Android): [profile]'s own sessions plus
+     * those of every remote it reaches (`/api/federation/sessions`), newest copy
+     * per id. Falls back to plain `/api/sessions` on servers without federation.
+     */
+    public fun listFederationSessions(
+        profile: ServerProfile,
+        onSuccess: (List<com.dmzs.datawatchclient.domain.Session>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            val t = transportFor(profile)
+            t.federationSessions().fold(
+                onSuccess = { view ->
+                    val merged = LinkedHashMap<String, com.dmzs.datawatchclient.domain.Session>()
+                    (view.primary + view.proxied.values.flatten()).forEach { s ->
+                        val existing = merged[s.id]
+                        if (existing == null || s.lastActivityAt > existing.lastActivityAt) merged[s.id] = s
+                    }
+                    onSuccess(merged.values.toList())
+                },
+                onFailure = {
+                    t.listSessions().fold(
+                        onSuccess = { onSuccess(it) },
+                        onFailure = { e -> onError(e.message ?: "Failed to load sessions.") },
+                    )
+                },
+            )
+        }
+    }
+
     /** Kill a session on the server. */
     public fun killSession(
         profile: ServerProfile,

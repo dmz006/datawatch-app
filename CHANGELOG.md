@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **iPhone "All servers" includes remote servers' sessions** (#234 parity with Android). It now uses each server's `/api/federation/sessions` fan-out, keeping the newest copy of each session. It falls back to `/api/sessions` on servers without federation.
+
 ## [1.28.16] — 2026-10-08
 
 ### Fixed

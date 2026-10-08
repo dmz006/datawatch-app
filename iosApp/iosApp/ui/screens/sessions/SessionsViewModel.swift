@@ -146,7 +146,11 @@ final class SessionsViewModel: ObservableObject {
         var firstError: String? = nil
         for profile in targets {
             do {
-                let list = try await ServiceLocatorAsync.listSessions(profile: profile)
+                // "All servers" (several targets) also shows each server's remotes,
+                // like Android's /api/federation/sessions fan-out (#234).
+                let list = targets.count > 1
+                    ? try await ServiceLocatorAsync.listFederationSessions(profile: profile)
+                    : try await ServiceLocatorAsync.listSessions(profile: profile)
                 setSessions(list, for: profile.id)
             } catch {
                 if firstError == nil { firstError = error.localizedDescription }

@@ -20,6 +20,17 @@ enum ServiceLocatorAsync {
         }
     }
 
+    /// "All servers": the server's sessions plus its remotes' (federation fan-out).
+    static func listFederationSessions(profile: ServerProfile) async throws -> [DwSession] {
+        try await withCheckedThrowingContinuation { cont in
+            IosServiceLocator.shared.listFederationSessions(
+                profile: profile,
+                onSuccess: { cont.resume(returning: $0) },
+                onError: { cont.resume(throwing: TransportError(message: $0)) }
+            )
+        }
+    }
+
     static func listAlerts(profile: ServerProfile) async throws -> (alerts: [DatawatchShared.Alert], unreadCount: Int) {
         try await withCheckedThrowingContinuation { cont in
             IosServiceLocator.shared.listAlerts(
