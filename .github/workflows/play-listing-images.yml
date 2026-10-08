@@ -3,6 +3,11 @@ name: Play — replace listing images
 # Replaces one image set on the Play store listing (e.g. Wear screenshots) with
 # the PNGs in a repo folder (scripts/play_listing_images.py). No bundle upload;
 # the listing change goes through Google's review.
+#
+# Phone / tablet sets from android-screenshots.yml: set run_id to that run and
+# dir to a folder of its `android-screenshots` artifact —
+#   phoneScreenshots → phone, sevenInchScreenshots → tablet-7,
+#   tenInchScreenshots → tablet-10   (max 8 images per set).
 
 on:
   workflow_dispatch:
@@ -13,9 +18,13 @@ on:
         options: [wearScreenshots, phoneScreenshots, sevenInchScreenshots, tenInchScreenshots]
         default: wearScreenshots
       dir:
-        description: 'Repo folder with the PNGs (uploaded in name order)'
+        description: 'PNG folder, uploaded in name order: a repo path, or with run_id an android-screenshots artifact folder (phone, tablet-7, tablet-10)'
         type: string
         default: docs/media/watch/store
+      run_id:
+        description: 'Optional android-screenshots workflow run id; dir is then read from its artifact'
+        type: string
+        default: ''
       language:
         description: 'Listing language'
         type: string
@@ -28,12 +37,27 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read   # download the android-screenshots artifact (run_id)
 
 jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve image folder
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+          DIR: ${{ inputs.dir }}
+        run: |
+          set -euo pipefail
+          if [ -n "$RUN_ID" ]; then
+            gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n android-screenshots -D "$RUNNER_TEMP/shots"
+            DIR="$RUNNER_TEMP/shots/$DIR"
+          fi
+          [ -d "$DIR" ] || { echo "::error::no folder $DIR"; exit 1; }
+          ls -l "$DIR"
+          echo "IMAGE_DIR=$DIR" >> "$GITHUB_ENV"
       - name: Replace listing images
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_PUBLISHER_KEY_JSON }}
@@ -41,4 +65,4 @@ jobs:
           set -euo pipefail
           pip install --quiet google-auth requests
           python3 scripts/play_listing_images.py --package com.dmzs.datawatchclient \
-            --language "${{ inputs.language }}" --type "${{ inputs.image_type }}" --dir "${{ inputs.dir }}"
+            --language "${{ inputs.language }}" --type "${{ inputs.image_type }}" --dir "$IMAGE_DIR"
