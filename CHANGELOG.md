@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### CI / Security
+- **Accepted-risks registry uses the schema shared with datawatch** (dmz006/datawatch#197). See AGENT.md § Security acceptance standard.
+  - New fields: `version` (the accepted version), `path` (code-scanning file), optional `images`, `impact.method` (required when traced) and an immutable `first_added`; `added` is now the last (re)validation. Code-scanning #14/#15 were migrated by hand.
+  - AGENT.md defines the minimum bar for `traced: true` per kind (dependency, bundled JS, code-scanning, container).
+  - The lint requires the new fields, checks `first_added` ≤ `added` and that `first_added` never changes, and prints an `ESCALATE:` line (without failing) for a reachable HIGH/CRITICAL finding or a renewal past the first expiry window.
+  - The daily watch adds "Added or renewed in the last 24h" (first section) and "Re-trace needed (dependency/code changed)": an entry is flagged when its accepted version no longer matches `libs.versions.toml` / the bundled JS version files, or when its code-scanning file changed since `added`.
+
 ## [1.28.17] — 2026-10-08
 
 ### Changed

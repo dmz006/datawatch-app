@@ -216,30 +216,70 @@ datawatch tracks the same standard in [dmz006/datawatch#197](https://github.com/
 
 - **One registry:** `security/accepted-risks.yml`. Every dismissed Dependabot or
   code-scanning alert, and every accepted vulnerability in bundled JS (xterm.js,
-  Mermaid) or a container image, has an entry. The file header documents the
-  schema: `id`, `kind`, `package`, `severity`, optional `fixed_in`/`catalog`,
-  `impact {traced, reachable, analysis}`, `added`, `expires`, `validated_by`,
-  `reason`.
+  Mermaid) or a container image, has an entry. The schema is shared with
+  datawatch (same field names); the file header documents it: `id`, `kind`
+  (`container`|`dependency`|`code-scanning`|`bundled-js`), `package`, `version`
+  (the version accepted; code-scanning uses `path` instead, or
+  `version: <path>@<sha-short>`), `path` (code-scanning), `severity`, optional
+  `images`/`fixed_in`/`catalog`, `impact {traced, reachable, method, analysis}`,
+  `first_added`, `added`, `expires`, `validated_by`, `reason`.
 - **No acceptance without an impact analysis.** `impact.analysis` and
   `impact.reachable` (`yes`/`no`/`unknown`) are always required.
+  `impact.method` is required when `traced: true`.
+- **Minimum bar for `traced: true`.** `traced` means a concrete method was
+  carried out and recorded in `impact.method`, not "read the changelog":
+  - `dependency`: a call-site search of the affected API/class in our code
+    (`composeApp/`, `shared/`, `wear/`, `auto/`, iOS glue) **and** a transitive
+    usage check (which of our dependencies pull it in and whether they reach
+    the affected API, e.g. `./gradlew :<module>:dependencies` plus their docs).
+  - `bundled-js`: a search of our JS / WebView glue (the `assets/xterm/`,
+    `assets/mermaid/` HTML/JS and the Kotlin/Swift bridges that call into them)
+    for the affected API.
+  - `code-scanning`: a code-path review of the flagged code (entry points,
+    callers, what guards it).
+  - `container` (datawatch): a search of the installed packages for the
+    affected API/attribute inside a networkless container of each affected image.
+  Anything less is `traced: false` (30-day expiry).
 - **Expiry:** at most `added` + 90 days when the code path was traced
   (`impact.traced: true`), + 30 days when it was not. An expired entry fails CI.
   Re-review means a fresh impact analysis with new `added`/`expires` dates, or
   adopting the fix and removing the entry.
+- **`first_added` is immutable.** It records the first acceptance and never
+  changes; a renewal only moves `added` (the last (re)validation) and `expires`.
+  CI fails when an existing entry's `first_added` changes (`--base`), and when
+  `first_added` is after `added`.
+- **Change-invalidation.** An acceptance holds only for what was analysed. When
+  the accepted `version` changes (dependency: `gradle/libs.versions.toml`;
+  bundled JS: `xterm.VERSIONS` / `mermaid.VERSION`) or the code-scanning `path`
+  has commits after `added`, the daily watch lists the entry under "Re-trace
+  needed (dependency/code changed)". Re-trace it (new `impact`, `version`,
+  `added`, `expires`; keep `first_added`) or adopt the fix and remove it, even if
+  it has not expired.
+- **Migration by hand.** Entries are written and migrated one at a time by
+  someone who reads the existing analysis; never generate or bulk-convert them
+  from another file (e.g. scraping prose), which loses the nuance that makes an
+  acceptance defensible. Move the existing trace into `method`/`analysis`.
 - **Self-service acceptance (operator change, 2026-10-08).** No operator approval
   or PR review is needed to accept (ignore) or fix a finding once the entry is
   complete (impact analysis, reason, expiry within the limit) and the CI lint
   passes. `validated_by` records who did the impact analysis: a GitHub login, or
   `claude-session`. It is not an operator sign-off.
 - **Escalate to the operator** only when the analysis says `reachable: "yes"` for
-  a HIGH or CRITICAL finding (the lint warns), or when an entry is renewed past
-  its first expiry.
+  a HIGH or CRITICAL finding, or when an entry renewed after its first
+  acceptance (`added` > `first_added`) is past its first expiry window
+  (`first_added` + 90/30 days). The lint prints an `ESCALATE:` line for both and
+  still passes; relay the line to the operator.
 - **Own commit.** Add, renew or remove registry entries in their own commit.
   Never bundle them with unrelated work.
 - **Daily watch:** `.github/workflows/sca-fix-watch.yml` runs
   `scripts/sca_fix_watch.py` and keeps one tracking issue updated
   (`security: accepted-risk stable-fix watch`). It comments when something is
   actionable:
+  - **Added or renewed in the last 24h** (first section): entries whose `added`
+    is today or yesterday (UTC), plus registry commits in the last 24 hours.
+    Self-service acceptances get no PR review, so this is where a wrong
+    `reachable: "no"` gets caught. It always comments when non-empty;
+  - **Re-trace needed (dependency/code changed)**: see change-invalidation above;
   - a **stable** (non-alpha/beta/RC/milestone) Maven Central release at or above
     a `dependency` entry's `fixed_in`. Adopt it, remove the entry, release. Never
     adopt a pre-release just to clear an alert;
@@ -251,8 +291,10 @@ datawatch tracks the same standard in [dmz006/datawatch#197](https://github.com/
     (`xterm.VERSIONS`, `mermaid.VERSION`) that no `bundled-js` entry accepts.
 - **CI lint:** the `accepted-risks-lint` job in `ci.yml` runs
   `scripts/check_accepted_risks.py` and its unit tests (`scripts/tests/`). It
-  fails on missing fields, invalid dates, expiry beyond 90/30 days, a missing
-  `reachable`/`analysis`, or an expired entry. Run it locally before committing a
+  fails on missing fields (including `first_added`, `version`/`path` by kind and
+  `method` when traced), invalid dates, `first_added` after `added`, a changed
+  `first_added` (CI passes `--base`), expiry beyond 90/30 days after `added`, a
+  missing `reachable`/`analysis`, or an expired entry. Run it locally before committing a
   registry change.
 - `.github/dependabot.yml` still opens weekly version-update PRs (stable releases
   only) for Gradle and GitHub Actions.
