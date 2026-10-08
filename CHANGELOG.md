@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.15] — 2026-10-08
+
 ### Fixed
 - **iPhone: switching tabs from More now works.** With Settings or Dashboard open (they sit behind More), a notification tap, deep link or restore that switched to another tab stayed on the More screen.
 - **Wear: Galaxy Watch8 and other Wear OS 6 watches are no longer "not compatible" on Play.** The manifest required an old Wear library (`com.google.android.wearable`) that the app never uses; it is now optional.
