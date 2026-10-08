@@ -365,7 +365,10 @@ jobs:
   # is behind this version.
   testflight-beta:
     name: iOS — submit build for Beta App Review
-    runs-on: macos-26
+    # Ubuntu: this job only polls App Store Connect and calls its API (fastlane /
+    # Spaceship is plain Ruby), so it never waits behind the scarce macOS runners —
+    # v1.28.17's run was cancelled while queued for one.
+    runs-on: ubuntu-latest
     needs: testflight
     if: ${{ needs.testflight.result == 'success' }}
     steps:
@@ -377,6 +380,10 @@ jobs:
           set -euo pipefail
           echo "DATAWATCH_APP_VERSION=$(sed -n 's/^DATAWATCH_APP_VERSION=//p' gradle.properties)" >> "$GITHUB_ENV"
           echo "DATAWATCH_APP_VERSION_CODE=$(sed -n 's/^DATAWATCH_APP_VERSION_CODE=//p' gradle.properties)" >> "$GITHUB_ENV"
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
       - name: Wait for App Store Connect processing
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
@@ -384,8 +391,7 @@ jobs:
           ASC_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
         run: |
           set -euo pipefail
-          python3 -m pip install --quiet --break-system-packages "pyjwt[crypto]" requests 2>/dev/null \
-            || python3 -m pip install --quiet "pyjwt[crypto]" requests
+          python3 -m pip install --quiet "pyjwt[crypto]" requests
           python3 scripts/release_parity.py wait-ios --code "$DATAWATCH_APP_VERSION_CODE" --timeout-min 90
       - name: Install fastlane
         run: gem install fastlane --no-document

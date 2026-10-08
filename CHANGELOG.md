@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### CI
+- **The TestFlight beta-review job runs on Ubuntu**, not macOS. It only polls App Store Connect and calls its API. In v1.28.17 it was cancelled while queued behind busy macOS runners, which left TestFlight a build behind until it was submitted by hand.
+
 ### CI / Security
 - **Accepted-risks registry uses the schema shared with datawatch** (dmz006/datawatch#197). See AGENT.md § Security acceptance standard.
   - New fields: `version` (the accepted version), `path` (code-scanning file), optional `images`, `impact.method` (required when traced) and an immutable `first_added`; `added` is now the last (re)validation. Code-scanning #14/#15 were migrated by hand.
