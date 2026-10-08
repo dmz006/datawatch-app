@@ -36,6 +36,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 deleteSessionsForProfile:
 DELETE FROM session WHERE server_profile_id = ?;
 
+selectSessionProfileIds:
+SELECT DISTINCT server_profile_id FROM session;
+
 setSessionMuted:
 UPDATE session SET muted = ? WHERE id = ?;
 

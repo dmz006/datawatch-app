@@ -2,9 +2,11 @@ package com.dmzs.datawatchclient.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.dmzs.datawatchclient.transport.ProxiedServers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.map
 
 /**
  * Persists the id of the profile the user currently wants as "active" for the
@@ -24,6 +26,17 @@ public class ActiveServerStore(context: Context) {
             if (profileId == null) remove(KEY_ACTIVE_ID) else putString(KEY_ACTIVE_ID, profileId)
         }.apply()
     }
+
+    /**
+     * The stored selection mapped to a REAL profile id: a proxied remote
+     * (#234, `<parentId>::proxy::<name>`) resolves to its parent. For
+     * surfaces keyed to real profiles only — widgets, Wear, Android Auto,
+     * push — which show the parent server while a remote is selected.
+     */
+    public fun getReal(): String? = ProxiedServers.realIdOf(get())
+
+    /** [observe] mapped through [getReal]'s parent resolution. */
+    public fun observeReal(): Flow<String?> = observe().map { ProxiedServers.realIdOf(it) }
 
     public fun observe(): Flow<String?> =
         callbackFlow {

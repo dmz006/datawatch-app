@@ -148,6 +148,13 @@ public object ProxiedServers {
     }
 
     /**
+     * Base URL for server-local pages (docs viewer, diagrams): the parent
+     * server's own base for a proxied remote, else [profile]'s base URL.
+     */
+    public fun docsBaseUrl(profile: ServerProfile): String =
+        if (isProxied(profile.id)) profile.baseUrl.substringBefore("/api/proxy/") else profile.baseUrl
+
+    /**
      * The real profile a stored selection belongs to — the parent for a
      * virtual id. Used by surfaces keyed to real profiles (widgets, Wear,
      * push), which publish the parent when a proxied remote is selected.
@@ -206,8 +213,7 @@ public object ProxiedServers {
             profile.displayName
         }
 
-    private fun JsonObject.string(key: String): String? =
-        (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
+    private fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 
     private fun JsonObject.bool(key: String): Boolean? = (this[key] as? JsonPrimitive)?.booleanOrNull
 }
@@ -230,7 +236,8 @@ public class ProxiedServersRegistry(
     public fun virtualProfiles(): List<ServerProfile> = _byParent.value.values.flatten()
 
     /** Looks a virtual profile up by id in the current snapshot. */
-    public fun find(id: String): ServerProfile? = _byParent.value[ProxiedServers.parentIdOf(id)]?.firstOrNull { it.id == id }
+    public fun find(id: String): ServerProfile? =
+        _byParent.value[ProxiedServers.parentIdOf(id)]?.firstOrNull { it.id == id }
 
     /**
      * Re-fetches `/api/servers` for every enabled real profile in [profiles]

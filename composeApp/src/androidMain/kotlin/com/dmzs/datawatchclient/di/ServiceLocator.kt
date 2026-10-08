@@ -15,6 +15,8 @@ import com.dmzs.datawatchclient.storage.DatabaseFactory
 import com.dmzs.datawatchclient.storage.ServerProfileRepository
 import com.dmzs.datawatchclient.storage.SessionEventRepository
 import com.dmzs.datawatchclient.storage.SessionRepository
+import com.dmzs.datawatchclient.transport.ProxiedServers
+import com.dmzs.datawatchclient.transport.ProxiedServersRegistry
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.createHttpClient
 import com.dmzs.datawatchclient.transport.createHttpClientWithWebSockets
@@ -183,14 +185,38 @@ public object ServiceLocator {
     }
 
     /**
+     * #234 — remote servers configured on each real profile, reached through
+     * that profile's `/api/proxy/<name>`. Refreshed by [ProxiedServersCoordinator].
+     */
+    public val proxiedServers: ProxiedServersRegistry by lazy {
+        ProxiedServersRegistry { parent -> transportFor(parent).listRemoteServers() }
+    }
+
+    /**
+     * Real profiles followed by every enabled parent's proxied remotes
+     * (virtual profiles, never persisted). Use wherever the ACTIVE profile is
+     * resolved by id; keep [profileRepository] for surfaces that iterate real
+     * servers (push, widgets, Wear, Auto, all-servers fan-out).
+     */
+    public fun profilesWithProxied(): Flow<List<ServerProfile>> =
+        combine(
+            profileRepository.observeAll(),
+            proxiedServers.byParent,
+            activeServerStore.observe(),
+        ) { real, byParent, activeId ->
+            ProxiedServers.withProxied(real, byParent, activeId)
+        }
+
+    /**
      * Flow of the currently "active" server profile — the one Settings,
      * Stats, Schedules, Saved Commands, etc. should target. Resolved by
-     * combining [profileRepository] with [activeServerStore]:
+     * combining [profileRepository], the proxied remotes and [activeServerStore]:
      *
      *  - storedId == [ActiveServerStore.SENTINEL_ALL_SERVERS] → falls back to
      *    the first enabled profile (Settings cards don't do all-servers;
      *    they're per-server surfaces)
-     *  - storedId matches an enabled profile → that one
+     *  - storedId matches an enabled profile or a proxied remote → that one
+     *  - a proxied remote that vanished → its parent
      *  - else → first enabled profile
      *
      * Emits `null` only when no server is configured or enabled. Emission
@@ -200,17 +226,12 @@ public object ServiceLocator {
     public fun activeProfileFlow(): Flow<ServerProfile?> =
         combine(
             profileRepository.observeAll(),
+            proxiedServers.byParent,
             activeServerStore.observe(),
-        ) { profiles, storedId ->
-            val enabled = profiles.filter { it.enabled }
-            when {
-                enabled.isEmpty() -> null
-                storedId == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS ->
-                    enabled.first()
-                storedId != null -> enabled.firstOrNull { it.id == storedId } ?: enabled.first()
-                else -> enabled.first()
-            }
-        }.distinctUntilChanged { old, new -> old?.id == new?.id }
+        ) { profiles, byParent, storedId ->
+            val id = storedId.takeUnless { it == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS }
+            ProxiedServers.resolveActive(profiles, byParent, id)
+        }.distinctUntilChanged { old, new -> old?.id == new?.id && old?.displayName == new?.displayName }
 
     /**
      * Build a [WebSocketTransport] for a given server profile. Uses the trust-all

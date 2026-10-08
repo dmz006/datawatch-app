@@ -44,6 +44,19 @@ public class SessionRepository(
         }
     }
 
+    /**
+     * #234 — drops cached sessions written under proxied-remote (virtual)
+     * profile ids that are no longer in [keep]. Virtual ids have no
+     * server_profile row, so nothing else ever cleans them up.
+     */
+    public suspend fun pruneProxied(keep: Set<String>) {
+        db.transaction {
+            db.sessionQueries.selectSessionProfileIds().executeAsList()
+                .filter { com.dmzs.datawatchclient.transport.ProxiedServers.isProxied(it) && it !in keep }
+                .forEach { db.sessionQueries.deleteSessionsForProfile(it) }
+        }
+    }
+
     public suspend fun upsert(session: Session) {
         upsertInternal(session)
     }

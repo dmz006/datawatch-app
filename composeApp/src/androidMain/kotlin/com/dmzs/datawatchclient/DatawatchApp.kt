@@ -25,6 +25,8 @@ public class DatawatchApp : Application() {
         DatabaseFactory.loadNativeLib()
         ForegroundSessionTracker.isForeground("") // register lifecycle observer on main thread
         com.dmzs.datawatchclient.di.ServiceLocator.init(this)
+        // #234: discover remote servers reachable through each profile's /api/proxy.
+        com.dmzs.datawatchclient.di.ProxiedServersCoordinator.start()
         // Publish session counts to the paired Wear device. Watch's
         // WearSessionCountsViewModel subscribes to /datawatch/counts
         // DataItem and populates its UI from the phone's values —

@@ -55,6 +55,8 @@ class ProxiedServersTest {
         assertEquals("alias-ws1", v.bearerTokenRef)
         assertEquals("AB:CD", v.trustAnchorSha256)
         assertTrue(v.enabled)
+        assertEquals("https://ws1.example:8443", ProxiedServers.docsBaseUrl(v))
+        assertEquals("https://ws1.example:8443/", ProxiedServers.docsBaseUrl(parent))
     }
 
     @Test

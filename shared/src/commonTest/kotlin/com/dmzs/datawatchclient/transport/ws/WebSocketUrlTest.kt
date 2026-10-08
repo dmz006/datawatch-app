@@ -65,7 +65,10 @@ class WebSocketUrlTest {
             "ws://dw.example.com/api/proxy/demo/ws",
             transport("http://dw.example.com/api/proxy/demo/").buildWsUrl("http://dw.example.com/api/proxy/demo/"),
         )
-        assertEquals("wss://dw.example.com/ws", transport("https://dw.example.com/").buildWsUrl("https://dw.example.com/"))
+        assertEquals(
+            "wss://dw.example.com/ws",
+            transport("https://dw.example.com/").buildWsUrl("https://dw.example.com/"),
+        )
     }
 
     @Test
