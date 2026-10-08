@@ -5,6 +5,7 @@ import DatawatchShared
 /// active chip filled accent2. Hidden when there is only one choice.
 /// #234: each remote reached through a server's `/api/proxy/<name>` gets a chip
 /// right after its parent ("parent › remote", or just "remote" with one server).
+/// While remotes are first being fetched it reads "Loading servers…".
 struct ServerPickerBar: View {
     @EnvironmentObject private var store: ServerProfileStore
     /// Only screens that can aggregate (Sessions) offer "All".
@@ -28,16 +29,25 @@ struct ServerPickerBar: View {
     var body: some View {
         let servers = store.pickerProfiles
         let realCount = Int32(store.enabledProfiles.count)
-        if servers.count > 1 {
+        // PWA `server_picker_loading` (#236.1): while a server's remote list is
+        // first fetched the bar says so instead of staying hidden.
+        if servers.count > 1 || store.proxiedLoading {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     Text("Server:")
                         .font(.system(size: 11))
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    // "All" aggregates real servers, so it needs two of them
-                    // (ServerProfileStore.isAllServers), not one server + remotes.
-                    if showsAll && store.enabledProfiles.count > 1 { allChip }
-                    ForEach(servers, id: \.id) { p in chip(p, realCount: realCount) }
+                    if servers.count > 1 {
+                        // "All" aggregates real servers, so it needs two of them
+                        // (ServerProfileStore.isAllServers), not one server + remotes.
+                        if showsAll && store.enabledProfiles.count > 1 { allChip }
+                        ForEach(servers, id: \.id) { p in chip(p, realCount: realCount) }
+                    }
+                    if store.proxiedLoading {
+                        Text(L("Loading servers…"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)

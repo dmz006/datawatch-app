@@ -141,7 +141,18 @@ struct AutomataView: View {
         VStack(spacing: 0) {
             // D2a: shared PWA "Server:" chip bar (hidden with one server).
             ServerPickerBar(showsAll: true)
+            if let fed = store.fedStatus(for: selectedProfile?.id), fed.phase == "error" {
+                // #236.2: an unreachable proxied remote shows why, not a loader.
+                FedConnStatusView(status: fed)
+            } else {
+                automataSections
+            }
+        }
+    }
 
+    @ViewBuilder
+    private var automataSections: some View {
+        VStack(spacing: 0) {
             Picker("Section", selection: $section) {
                 ForEach(AutomataSection.allCases, id: \.self) { s in
                     Text(L(s.rawValue)).tag(s)
@@ -164,7 +175,8 @@ struct AutomataView: View {
                 }
             case .templates:
                 if let profile = selectedProfile {
-                    TemplatesView(profile: profile)
+                    // #236.7: a new identity per server so a switch reloads templates.
+                    TemplatesView(profile: profile).id(profile.id)
                 }
             }
         }

@@ -45,7 +45,9 @@ struct ServerPickerDialogModifier: ViewModifier {
             .onAppear { ServerSwitchGesture.shared.install() }
             .onReceive(NotificationCenter.default.publisher(for: .dwShowServerPicker)) { _ in
                 store.refreshProxied()
-                if store.pickerProfiles.count > 1 { show = true }
+                // #236 (PWA v8.73.2): the list is loaded eagerly at launch; open
+                // even while a server's remotes are still loading, and say so.
+                if store.pickerProfiles.count > 1 || store.proxiedLoading { show = true }
             }
             .confirmationDialog("Switch server", isPresented: $show, titleVisibility: .visible) {
                 // #234: each server followed by its remotes ("workstation › demo").
@@ -55,6 +57,10 @@ struct ServerPickerDialogModifier: ViewModifier {
                     }
                 }
                 Button("Cancel", role: .cancel) {}
+            } message: {
+                if store.proxiedLoading {
+                    Text(L("Loading servers…"))
+                }
             }
     }
 

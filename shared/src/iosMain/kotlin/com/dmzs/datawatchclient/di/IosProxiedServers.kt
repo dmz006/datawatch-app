@@ -14,20 +14,22 @@ import kotlinx.coroutines.sync.withLock
 /**
  * Result of [IosProxiedServers.refresh]: the current virtual profiles, and
  * whether the stored active selection must move ([repair]) to [newActiveId]
- * (null = clear it).
+ * (null = clear it). [retryDelayMs] > 0 means some server failed: refresh
+ * again after that many ms (capped backoff, #236.1); 0 = all answered.
  */
 public class IosProxiedRefresh(
     public val virtualProfiles: List<ServerProfile>,
     public val repair: Boolean,
     public val newActiveId: String?,
+    public val retryDelayMs: Long,
 )
 
 /**
  * #234 — Swift bridge for remote servers reached through a connected server's
  * `/api/proxy/<name>` (see [ProxiedServers]). `ServerProfileStore` calls
- * [refresh] when profiles change, every 60 s in the foreground and when a
- * picker opens, and resolves the active profile with [resolveActive]. Every
- * function takes all arguments explicitly (Swift doesn't see Kotlin defaults).
+ * [refresh] at launch and when profiles change, every 60 s in the foreground,
+ * when a picker opens and after [IosProxiedRefresh.retryDelayMs] on failure,
+ * and resolves the active profile with [resolveActive]. Every function takes all arguments explicitly (Swift doesn't see Kotlin defaults).
  */
 public object IosProxiedServers {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -44,6 +46,14 @@ public object IosProxiedServers {
 
     /** Server-local pages (docs) of a proxied remote open on its parent. */
     public fun docsBaseUrl(profile: ServerProfile): String = ProxiedServers.docsBaseUrl(profile)
+
+    /**
+     * PWA `server_picker_loading`: true when some enabled real server in
+     * [real] has never had its remote list fetched yet (Swift shows "Loading
+     * servers…" while a refresh for it runs).
+     */
+    public fun hasUnlistedParents(real: List<ServerProfile>): Boolean =
+        registry.firstLoadPending(real, true, registry.byParent.value)
 
     /** Snapshot of every discovered virtual profile. */
     public fun virtualProfiles(): List<ServerProfile> = registry.virtualProfiles()
@@ -92,6 +102,7 @@ public object IosProxiedServers {
             val result =
                 mutex.withLock {
                     runCatching { registry.refresh(real) }
+                    val retry = registry.retryDelayMs() ?: 0L
                     val repair = ProxiedServers.repairActiveId(real, registry.byParent.value, activeId)
                     val keepActive = if (repair != null) repair.newId else activeId
                     runCatching {
@@ -99,7 +110,7 @@ public object IosProxiedServers {
                             registry.virtualProfiles().map { it.id }.toSet() + listOfNotNull(keepActive),
                         )
                     }
-                    IosProxiedRefresh(registry.virtualProfiles(), repair != null, repair?.newId)
+                    IosProxiedRefresh(registry.virtualProfiles(), repair != null, repair?.newId, retry)
                 }
             onDone(result)
         }

@@ -332,8 +332,14 @@ struct ObserverView: View {
     private var profileContent: some View {
         VStack(spacing: 0) {
             ServerPickerBar()
-            if let profile = selectedProfile {
+            if let fed = store.fedStatus(for: selectedProfile?.id), fed.phase == "error" {
+                // #236.2: an unreachable proxied remote shows why, not a loader.
+                FedConnStatusView(status: fed)
+            } else if let profile = selectedProfile {
+                // #236.7 (PWA v8.73.7): a new identity per server so every card
+                // reloads on a switch instead of keeping the previous server's data.
                 observerContent(profile: profile)
+                    .id(profile.id)
             }
         }
         .task(id: selectedProfile?.id ?? "") {

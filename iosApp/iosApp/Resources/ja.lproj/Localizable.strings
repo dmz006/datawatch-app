@@ -1925,3 +1925,11 @@
 
 /* Server picker: remote reached through a connected server (#234) */
 "via %@" = "%@ 経由";
+
+/* Connection status for a remote reached through a connected server (#235/#236) */
+"Connecting to %@…" = "%@ に接続中…";
+"Loading sessions from %@…" = "%@ からセッションを読み込み中…";
+"Could not reach this server" = "このサーバーに接続できませんでした";
+"%1$@: %2$@" = "%1$@: %2$@";
+"Authentication failed — this server has no valid token configured" = "認証に失敗しました — このサーバーには有効なトークンが設定されていません";
+"Back to %@" = "%@ に戻る";

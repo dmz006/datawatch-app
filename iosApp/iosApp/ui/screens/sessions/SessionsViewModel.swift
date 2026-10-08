@@ -122,6 +122,8 @@ final class SessionsViewModel: ObservableObject {
     private func setSessions(_ list: [DwSession], for profileId: String) {
         byProfile[profileId] = list
         sessions = profiles.flatMap { byProfile[$0.id] ?? [] }
+        // Real data arrived — a proxied remote's connection status is stale (PWA).
+        IosFedConn.shared.reportData(profileId: profileId)
     }
 
     /// Apply a single-row `session_state` diff without refetching the list.
@@ -140,14 +142,22 @@ final class SessionsViewModel: ObservableObject {
         inFlight = true
         defer { inFlight = false }
         if sessions.isEmpty { isLoading = true }
+        let targets: [ServerProfile] = profiles
         var firstError: String? = nil
-        for profile in profiles {
+        for profile in targets {
             do {
                 let list = try await ServiceLocatorAsync.listSessions(profile: profile)
                 setSessions(list, for: profile.id)
             } catch {
                 if firstError == nil { firstError = error.localizedDescription }
             }
+        }
+        // #236.7: the server changed while this fetch ran (its refresh() was
+        // skipped by the in-flight guard) — fetch the new one right away
+        // instead of waiting for the next 30 s poll.
+        guard targets.map({ $0.id }) == profiles.map({ $0.id }) else {
+            Task { [weak self] in await self?.refreshAsync() }
+            return
         }
         self.error = firstError
         isLoading = false

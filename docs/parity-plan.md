@@ -128,6 +128,9 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | Add / edit / delete | ✅ | AddServer + EditServer screens |
 | Per-server health indicator | ✅ | Status dot in picker |
 | Federated server list (read-only) | ✅ | v0.20.0 — FederationPeersCard under Settings → Comms, via `/api/servers` |
+| Remote servers reached through the connected one (`/api/proxy/<name>` REST + WS) | ✅ | Unreleased (#234) — chip bar on the five tabs + nested picker entries |
+| Federated connection status (`fed_conn_*`, `server_picker_loading`) | ✅ | Unreleased (#235/#236) — PWA v8.73.2–v8.73.7: authenticated probe, error + back to the parent, eager list with backoff |
+| Capability-aware denial text (403 names the missing capability) | ⏳ | Waits for the server; 401/403 show the auth message meanwhile |
 
 ### 5b. LLM backend config
 
