@@ -34,7 +34,9 @@ struct ServerPickerBar: View {
                     Text("Server:")
                         .font(.system(size: 11))
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    if showsAll { allChip }
+                    // "All" aggregates real servers, so it needs two of them
+                    // (ServerProfileStore.isAllServers), not one server + remotes.
+                    if showsAll && store.enabledProfiles.count > 1 { allChip }
                     ForEach(servers, id: \.id) { p in chip(p, realCount: realCount) }
                 }
                 .padding(.horizontal, 12)
