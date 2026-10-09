@@ -45,6 +45,7 @@ Operator-side and out of the repo. The demo VM address is never committed.
 ## Progress
 
 - **2026-10-09:** datawatch v8.73.41 shipped #201 Phase 1.
+- **2026-10-09 (later):** Apple approved build 673 without signing in to the demo server (nothing in its access log). The demo VPS was shut down to save cost and the visitor monitor is off. Rebuild runbook: `docs/demo-server.md`. Re-enable the monitor when the server is rebuilt.
   - New: `access.log`, `GET /api/audit/access` and MCP `audit_access_query`. Events: http_access, auth_failure, ws_connect, ws_disconnect, each with remote IP, user agent and actor. Tokens are never logged.
   - **Done 2026-10-09:** demo server upgraded to v8.73.41 (built from 4a3da04b; no tester activity at the time). The visitor monitor now alerts on any authenticated request or WebSocket from an IP that isn't ours, which replaces the IP/2-minute heuristic. The ufw log and the samples stay as context.
   - Still open on the server: federation-hop attribution, state-change audit, create-alert API / first-seen paging (datawatch BL399 Phases 2-5).

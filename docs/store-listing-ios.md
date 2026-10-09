@@ -244,7 +244,7 @@ Fill **TestFlight › Test Information** once:
 | Marketing URL | `https://github.com/dmz006/datawatch-app` | set |
 | Privacy Policy URL | `https://dmzs.com/datawatch-client/privacy` | set |
 | Beta App Review contact | first name, last name, phone, email (private to Apple; `BETA_REVIEW_CONTACT_*` secrets) | set |
-| Sign-in required | Yes — demo server URL (user name) + token (password); `BETA_REVIEW_DEMO_*` secrets | set |
+| Sign-in required | Yes — demo server URL (user name) + token (password); `BETA_REVIEW_DEMO_*` secrets | set (demo server shut down 2026-10-09; rebuild before the next review, see [demo-server.md](demo-server.md)) |
 | Review notes | `beta/review_notes.txt` (1,737 / 4,000) | set |
 | License agreement | Apple standard | — |
 
