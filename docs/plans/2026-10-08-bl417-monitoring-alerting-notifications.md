@@ -28,10 +28,8 @@ Operator-side and out of the repo. The demo VM address is never committed.
     - **scanner:** everything else.
 - **On the operator box:** systemd --user timers.
   - **Every 15 min:** alerts on a first-seen apple or client IP.
-  - **Daily at 06:00 UTC:** refreshes the masked-IP issue "demo server: TestFlight reviewer / visitor report".
-- **Daily report:** `sca-fix-watch.yml` quotes that issue in the daily security report (#209) under "Demo server visitors (TestFlight review)".
+  - **Daily at 06:00 UTC:** emails a visitor report to the operator. It's private: visitor data is never posted to the public repo. A public issue used before 2026-10-09 was deleted.
 - **Limits:**
-  - It only sees IPs. It can't tell whether a client authenticated or which app it was.
   - The push alert reaches 0 devices. There's no create-alert API, and `/api/push/notify` skips the SSE path the Android app uses.
   - Email alerts work: the monitor sends from the operator's Gmail to itself through the local imap-mcp (SMTP) with the subject prefix `[datawatch DEMO VISITOR]`.
 
@@ -48,7 +46,7 @@ Operator-side and out of the repo. The demo VM address is never committed.
 
 - **2026-10-09:** datawatch v8.73.41 shipped #201 Phase 1.
   - New: `access.log`, `GET /api/audit/access` and MCP `audit_access_query`. Events: http_access, auth_failure, ws_connect, ws_disconnect, each with remote IP, user agent and actor. Tokens are never logged.
-  - **Next:** after the current TestFlight beta review, upgrade the demo server to it. Then switch the visitor monitor to "successful access from an IP that isn't ours", which replaces the IP/2-minute heuristic.
+  - **Done 2026-10-09:** demo server upgraded to v8.73.41 (built from 4a3da04b; no tester activity at the time). The visitor monitor now alerts on any authenticated request or WebSocket from an IP that isn't ours, which replaces the IP/2-minute heuristic. The ufw log and the samples stay as context.
   - Still open on the server: federation-hop attribution, state-change audit, create-alert API / first-seen paging (datawatch BL399 Phases 2-5).
 
 ## Questions for the full plan (operator decides)

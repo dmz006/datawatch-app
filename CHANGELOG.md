@@ -15,7 +15,6 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - **The TestFlight beta-review job runs on Ubuntu**, not macOS. It only polls App Store Connect and calls its API. In v1.28.17 it was cancelled while queued behind busy macOS runners, which left TestFlight a build behind until it was submitted by hand.
 
 ### CI / Security
-- **The daily security report includes a "Demo server visitors (TestFlight review)" section.** An operator-side monitor watches the demo datawatch's port 8443 for clients that are not ours, from any country (Apple 17.0.0.0/8, or any client that holds a connection). It refreshes a masked-IP issue every day, and the daily watch quotes it. datawatch access/audit logging is requested in dmz006/datawatch#201.
 - **Accepted-risks registry uses the schema shared with datawatch** (dmz006/datawatch#197). See AGENT.md § Security acceptance standard.
   - New fields: `version` (the accepted version), `path` (code-scanning file), optional `images`, `impact.method` (required when traced) and an immutable `first_added`; `added` is now the last (re)validation. Code-scanning #14/#15 were migrated by hand.
   - AGENT.md defines the minimum bar for `traced: true` per kind (dependency, bundled JS, code-scanning, container).
