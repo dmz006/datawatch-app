@@ -26,8 +26,9 @@
 | #232 | Gradle Play Publisher 3.10.0 → 4.1.1 | Needs **AGP ≥ 9.0** (tested locally). The release pipeline's Play upload/promote uses it, so verify with a dry-run release. |
 | #228 | ktor 2.3.13 → 3.6.0 | Pulls **okhttp 5.5.0**, which needs **compileSdk ≥ 37** (and an AGP tested with 37). API break: `AndroidWsHttpClient.kt:50` `pingInterval` unresolved. Check the darwin and CIO engines for ktor 3 changes as well. |
 | #237 | Grouped minor/patch (27 updates) | **Wear tiles 1.6.2 / protolayout-material3 1.4.2 need AGP ≥ 8.6.** **kotlinx-datetime 0.8.0** moved `Clock.System` to `kotlin.time.Clock` (`ServerProfileRepository.kt:19`, `RestTransport.kt:508`). The group also carries Compose Multiplatform 1.6.11 → 1.12.1, SQLDelight 2.0.2 → 2.4.0, coroutines 1.11, serialization 1.11, material 1.14, sqlcipher 4.19.1, guava 33.7.2, mockk 1.14, turbine 1.2.1 and detekt 1.23.8. Each needs checking against the target AGP and compileSdk. |
+| #242 | Grouped minor/patch (30 updates; replaces #237) | **AGP 8.13.2 can't run on Gradle ≥ 9.6:** it uses `InternalProblems`, a Gradle internal API that 9.6 removed, so with Gradle 9.8 the **only** AGP upgrade is AGP 9. These need a newer AGP and wait for AGP 9: Compose Multiplatform 1.12.1, Navigation 2.10.2 and lifecycle 2.11 (AGP ≥ 9.1); androidx.core 1.16+ (via material 1.14.0) and biometric 1.4.0-alpha07 (AGP ≥ 8.6 / 8.9.1); Wear tiles 1.6.2, protolayout 1.4.2 and WorkManager 2.12.0 (AGP ≥ 8.6). kotlinx-datetime 0.8.0 has the `Clock.System` break. SQLDelight 2.4.1 and SQLCipher 4.19.1 wait for the storage step (encrypted DB must stay readable). **Merged separately (2026-10-09, tested on AGP 8.5.2):** coroutines 1.11.0 (+ test), serialization 1.11.0, guava 33.7.2, zxing 3.5.4, Wear watchface 1.3.0, detekt 1.23.8, Gradle Play Publisher 3.13.0, turbine 1.2.1, mockk 1.14.11. |
 
-Merged in the same review: #219 Gradle 9.8.0, #231 ktlint plugin 14.2.0, #230 play-services-wearable 20.0.1, #229 mockwebserver 5.5.0, #220 JUnit 6.1.3, #170 js-yaml 4.3.2. #151 (ws) was rebasing. #238 (GitHub Actions) was applied on main except gradle/actions.
+Also merged 2026-10-09: #240 upload-artifact v7, #243 security-crypto 1.1.0 (bytecode-compared with alpha06: same key names, schemes and read/write logic). Merged in the first review: #219 Gradle 9.8.0, #231 ktlint plugin 14.2.0, #230 play-services-wearable 20.0.1, #229 mockwebserver 5.5.0, #220 JUnit 6.1.3, #170 js-yaml 4.3.2. #151 (ws) was rebasing. #238 (GitHub Actions) was applied on main except gradle/actions.
 
 ## gradle/actions v6 (decided 2026-10-09: stay on v5; update tracked as BL419)
 
@@ -39,7 +40,7 @@ gradle/actions v6 moved its caching into `gradle-actions-caching`, a proprietary
 
 ## Suggested order (to refine when scheduled)
 
-1. **AGP 9.x + lint version.** Migrate `shared` to the KMP Android library plugin if AGP 9 requires it. Fix DSL removals. Keep the Gradle 10 deprecation warnings in view.
+1. **AGP 9.x + lint version.** (Newer AGP 8.x is not an option: AGP 8.6+ fails on Gradle ≥ 9.6, see #242.) Migrate `shared` to the KMP Android library plugin if AGP 9 requires it. Fix DSL removals. Keep the Gradle 10 deprecation warnings in view.
 2. **compileSdk 37** on all modules (targetSdk stays a separate, deliberate change, because it brings behaviour changes).
 3. **Gradle Play Publisher 4.x.** Verify upload/promote with a dry-run release before a real tag.
 4. **kotlinx-datetime 0.8:** `Clock.System` → `kotlin.time.Clock`.
