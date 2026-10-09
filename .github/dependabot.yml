@@ -41,7 +41,7 @@ updates:
     rebase-strategy: disabled
     # gradle/actions v6 moved its caching into a proprietary component under Gradle's
     # separate terms of use (not MIT). Stay on v5 (MIT, Node 24) until the operator
-    # decides. See docs/plans/README.md BL418.
+    # decides. See docs/plans/README.md BL419.
     ignore:
       - dependency-name: "gradle/actions*"
         update-types: ["version-update:semver-major"]

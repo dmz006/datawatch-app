@@ -29,7 +29,7 @@
 
 Merged in the same review: #219 Gradle 9.8.0, #231 ktlint plugin 14.2.0, #230 play-services-wearable 20.0.1, #229 mockwebserver 5.5.0, #220 JUnit 6.1.3, #170 js-yaml 4.3.2. #151 (ws) was rebasing. #238 (GitHub Actions) was applied on main except gradle/actions.
 
-## gradle/actions v6 (operator decision)
+## gradle/actions v6 (decided 2026-10-09: stay on v5; update tracked as BL419)
 
 gradle/actions v6 moved its caching into `gradle-actions-caching`, a proprietary component under Gradle's separate terms of use, not MIT. CI stays on **v5.0.2** (MIT, Node 24). `.github/dependabot.yml` ignores gradle/actions majors until the operator decides one of:
 
