@@ -76,6 +76,7 @@ Open: a real Android phone pass, if the operator wants one; Community Plugins (A
 |----|-------|--------|
 | BL31 | Android Auto: expanded voice commands (send message, run / decompose / reject plan, restart task, read story, cost report, kill / pause session) | Open — unscheduled. Full spec in the moved "Unscheduled backlog" table under Closed. |
 | BL385–BL387 | Memory arc (scope model, lifecycle, cross-automaton seeding) | Open — unscheduled; parts shipped in v1.23.85 (session-delete memory strategy). Re-audit against the plan before scheduling. Plan: [`2026-09-15-memory-arc-bl385-bl387.md`](2026-09-15-memory-arc-bl385-bl387.md). |
+| BL417 | Monitoring, alerting and the notification system: full revisit across server, PWA, Android (phone, Wear, Auto) and iOS | Placeholder, unscheduled (2026-10-08). The interim demo-server visitor monitor is running. Waiting on datawatch#201 (access/audit logging) and a create-alert API. Plan (placeholder): [`2026-10-08-bl417-monitoring-alerting-notifications.md`](2026-10-08-bl417-monitoring-alerting-notifications.md). |
 | BL-graph | Automata per-story execution graph | Deferred. |
 | #163 | Story count truncation | Deferred to server — app shows what the server sends. |
 | BL19 | Local-LLM orchestration in the app | ❄️ Frozen 2026-05-04 (and conflicts with the pure-client invariant). |

@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Docs
+- **BL417 placeholder plan: monitoring, alerting and the notification system.** It records the interim demo-server visitor monitor and the server dependencies (datawatch#201 access/audit logging, a create-alert API). It also lists the open questions for a future full plan across all clients.
+
 ### CI
 - **The TestFlight beta-review job runs on Ubuntu**, not macOS. It only polls App Store Connect and calls its API. In v1.28.17 it was cancelled while queued behind busy macOS runners, which left TestFlight a build behind until it was submitted by hand.
 
