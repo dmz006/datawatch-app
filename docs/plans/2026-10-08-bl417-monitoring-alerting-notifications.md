@@ -33,7 +33,7 @@ Operator-side and out of the repo. The demo VM address is never committed.
 - **Limits:**
   - It only sees IPs. It can't tell whether a client authenticated or which app it was.
   - The push alert reaches 0 devices. There's no create-alert API, and `/api/push/notify` skips the SSE path the Android app uses.
-  - Email alerts wait on SMTP support in the operator's imap MCP.
+  - Email alerts work: the monitor sends through the operator's local imap-mcp (SMTP) with the subject prefix `[datawatch DEMO VISITOR]`.
 
 ## Server dependencies (datawatch)
 
