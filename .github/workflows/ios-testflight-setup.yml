@@ -46,7 +46,7 @@ jobs:
     name: fastlane testflight_setup
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install fastlane
         run: gem install fastlane --no-document
