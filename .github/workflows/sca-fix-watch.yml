@@ -54,6 +54,11 @@ jobs:
           GH_TOKEN: ${{ secrets.SCA_WATCH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/sca_fix_watch.py security/accepted-risks.yml > report.md
+          # Demo server (TestFlight review) visitors: written daily at 06:00 UTC by the
+          # operator-box monitor (the VM is not reachable from Actions). Masked IPs only.
+          visitors=$(gh issue list --state open --search '"demo server: TestFlight reviewer / visitor report" in:title' \
+            --json body -q '.[0].body' 2>/dev/null || true)
+          printf '\n## Demo server visitors (TestFlight review)\n\n%s\n' "${visitors:-No visitor report found: is the operator-box monitor running?}" >> report.md
           cat report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Update tracking issue (audit trail) and comment when actionable
         env:
