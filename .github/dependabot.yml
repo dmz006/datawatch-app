@@ -18,6 +18,16 @@ updates:
     # all minor/patch updates in one grouped PR; majors stay separate PRs
     # because they need individual review.
     rebase-strategy: disabled
+    # Majors blocked by the toolchain migration (BL418,
+    # docs/plans/2026-10-09-bl418-android-toolchain-migration.md). Remove an entry
+    # when that step of BL418 is scheduled.
+    ignore:
+      - dependency-name: "com.android.*"          # AGP 9 (#222)
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "com.github.triplet.play*" # Gradle Play Publisher 4 needs AGP 9 (#232)
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "io.ktor*"               # ktor 3 + okhttp 5 need compileSdk 37 (#228)
+        update-types: ["version-update:semver-major"]
     groups:
       gradle-minor-patch:
         patterns: ["*"]

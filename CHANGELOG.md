@@ -11,6 +11,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ### Dependencies
 - **Gradle 9.8.0** (from 8.9), **ktlint Gradle plugin 14.2.0** (from 12.3.0) and **Wear play-services-wearable 20.0.1** (from 18.2.0): Dependabot #219, #231 and #230. Validated together locally (full CI gate plus the phone, Wear and Auto release bundles) before merging.
 - **docs/testing tooling:** js-yaml 4.3.2 (#170).
+- **Test-only:** mockwebserver 5.5.0 (#229) and JUnit 6.1.3 (#220). 2,040 tests pass locally on Gradle 9.8.
+- **The toolchain migration is backlogged as BL418:** AGP 9, compileSdk 37, Play Publisher 4, ktor 3 + okhttp 5, kotlinx-datetime 0.8 and the library catch-up. Dependabot #222, #228, #232 and #237 were closed into it with their validated blockers. Dependabot now ignores those majors until BL418 is scheduled.
 
 ### CI
 - **GitHub Actions moved to the Node 24 releases:** checkout v7, setup-java v6, cache v6, upload-artifact v6, dependency-review v5, action-gh-release v3, gitleaks v3. Node 20 was removed from hosted runners on 2026-09-16. This is Dependabot #238, except **gradle/actions, which stays on v5.0.2**: v6 moved its caching into a proprietary component under separate Gradle terms. Dependabot now ignores gradle/actions majors until the operator decides (BL418).
