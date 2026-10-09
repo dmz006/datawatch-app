@@ -44,6 +44,13 @@ Operator-side and out of the repo. The demo VM address is never committed.
   - It goes through normal push delivery (SSE / ntfy / APNs) and passes the category through to clients.
   - Ideally the daemon also raises "first-seen IP authenticated" itself.
 
+## Progress
+
+- **2026-10-09:** datawatch v8.73.41 shipped #201 Phase 1.
+  - New: `access.log`, `GET /api/audit/access` and MCP `audit_access_query`. Events: http_access, auth_failure, ws_connect, ws_disconnect, each with remote IP, user agent and actor. Tokens are never logged.
+  - **Next:** after the current TestFlight beta review, upgrade the demo server to it. Then switch the visitor monitor to "successful access from an IP that isn't ours", which replaces the IP/2-minute heuristic.
+  - Still open on the server: federation-hop attribution, state-change audit, create-alert API / first-seen paging (datawatch BL399 Phases 2-5).
+
 ## Questions for the full plan (operator decides)
 
 - **Alert categories and priorities:** for example session, Automata, system, security/operator. Which ones page and which only list?
