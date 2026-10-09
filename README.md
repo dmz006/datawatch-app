@@ -84,8 +84,10 @@ Android Auto support is part of the phone app. The Wear OS companion is in the s
 
 ### iPhone and iPad (TestFlight, then the App Store)
 
-The public TestFlight link is coming as soon as Apple finishes beta review. The App Store
-listing (free, every country) is prepared and follows once the beta wraps up.
+1. **Install TestFlight** from the App Store on your iPhone or iPad.
+2. **Join the beta:** open [testflight.apple.com/join/qta87V4Q](https://testflight.apple.com/join/qta87V4Q) on the device and tap **Accept**, then **Install**.
+
+The App Store listing (free, every country) is prepared and follows once the beta wraps up.
 
 Either way, you need your own [datawatch](https://github.com/dmz006/datawatch) server (LAN, VPN or Tailscale) and its bearer token. Send feedback through [datawatch-app issues](https://github.com/dmz006/datawatch-app/issues) or the email shown in the Play / TestFlight listing.
 
@@ -206,7 +208,7 @@ A native SwiftUI app with the same six tabs as Android and the web app — **Ses
 a split layout on iPad. It is in beta on **TestFlight**; every release tag uploads a new
 build.
 
-**Install:** accept the TestFlight invite (email, or the public link) on your device →
+**Install:** accept the TestFlight invite (email, or the [public link](https://testflight.apple.com/join/qta87V4Q)) on your device →
 install **TestFlight** from the App Store → **Accept** → **Install**. Then add your server
 under Settings › Comms › Servers. Full guide: [docs/ios.md](docs/ios.md).
 

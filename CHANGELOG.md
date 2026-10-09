@@ -19,6 +19,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - **The iOS build also runs when the Gradle wrapper changes.**
 
 ### Docs
+- **iOS public TestFlight link:** build 673 (v1.28.17) passed Beta App Review on 2026-10-09 and the external group's public link is on. README and docs/ios.md now link to [testflight.apple.com/join/qta87V4Q](https://testflight.apple.com/join/qta87V4Q).
 - **BL417 placeholder plan: monitoring, alerting and the notification system.** It records the interim demo-server visitor monitor and the server dependencies (datawatch#201 access/audit logging, a create-alert API). It also lists the open questions for a future full plan across all clients.
 
 ### CI

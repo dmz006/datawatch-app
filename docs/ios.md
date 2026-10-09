@@ -65,7 +65,7 @@ The app never needs the server to be on the public internet.
    - a **public TestFlight link** (`https://testflight.apple.com/join/…`) shared by the project.
 2. On your iPhone or iPad, install **TestFlight** from the App Store.
 3. **Email invite:** open the email on the device and tap **View in TestFlight**, then
-   **Accept**. **Public link:** open the link on the device and tap **Accept**.
+   **Accept**. **Public link:** open [testflight.apple.com/join/qta87V4Q](https://testflight.apple.com/join/qta87V4Q) on the device and tap **Accept**.
 4. In TestFlight, tap **Install**. The app appears on your Home Screen as **datawatch**.
 5. New builds arrive in TestFlight automatically (turn on **Automatic Updates** in the app's
    TestFlight page). Each build stays installable for 90 days.
