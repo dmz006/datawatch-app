@@ -9,6 +9,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ## [Unreleased]
 
 ### Dependencies
+- **Library catch-up that works on AGP 8.5.2** (part of Dependabot #242; the rest waits for BL418): kotlinx-coroutines 1.11.0, kotlinx-serialization 1.11.0, guava 33.7.2, zxing 3.5.4, Wear watchface 1.3.0, detekt 1.23.8, Gradle Play Publisher 3.13.0, turbine 1.2.1, mockk 1.14.11. Validated locally with the full CI gate and the phone/Wear/Auto release builds.
+- **androidx security-crypto 1.1.0** (from 1.1.0-alpha06, #243): the stable release deprecates the API but is bytecode-equivalent for our use, so stored tokens and the database key stay readable. **upload-artifact v7** (#240).
 - **Gradle 9.8.0** (from 8.9), **ktlint Gradle plugin 14.2.0** (from 12.3.0) and **Wear play-services-wearable 20.0.1** (from 18.2.0): Dependabot #219, #231 and #230. Validated together locally (full CI gate plus the phone, Wear and Auto release bundles) before merging.
 - **docs/testing tooling:** js-yaml 4.3.2 (#170).
 - **Test-only:** mockwebserver 5.5.0 (#229) and JUnit 6.1.3 (#220). 2,040 tests pass locally on Gradle 9.8.
