@@ -1948,3 +1948,10 @@
 "Support" = "Support";
 "What happened?" = "Was ist passiert?";
 "Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it." = "Ihre Notiz und das aktuelle App-Protokoll werden in den Bericht übernommen. Serveradressen, IP-Adressen und Tokens werden entfernt. Sie wählen, wohin er gesendet wird.";
+"Verification LLM" = "Verifizierungs-LLM";
+"Which LLM judges this task's work — empty inherits story, then Automaton, then the global verification setting." = "Welches LLM die Arbeit dieser Aufgabe bewertet — leer erbt von Story, dann Automaten, dann der globalen Verifizierungseinstellung.";
+"Which LLM judges this story's tasks — empty inherits the Automaton, then the global verification setting. Tasks with their own verification LLM keep it." = "Welches LLM die Aufgaben dieser Story bewertet — leer erbt vom Automaten, dann der globalen Verifizierungseinstellung. Aufgaben mit eigenem Verifizierungs-LLM behalten es.";
+"Which LLM judges this Automaton's tasks — empty inherits the global verification setting. Story and task verification LLMs take precedence." = "Welches LLM die Aufgaben dieses Automaten bewertet — leer erbt die globale Verifizierungseinstellung. Story- und Aufgaben-Verifizierungs-LLMs haben Vorrang.";
+"Judged by" = "Bewertet von";
+"automaton" = "Automat";
+"Foreign file drift" = "Fremde Dateiänderungen";

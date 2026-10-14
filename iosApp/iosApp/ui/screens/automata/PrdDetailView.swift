@@ -859,6 +859,10 @@ struct PrdTaskRow: View {
                 PrdTaskVerificationRow(verification: v)
                     .padding(.leading, 24)
             }
+            if !task.foreignFileDrift.isEmpty {
+                PrdTaskFileDriftRow(files: task.foreignFileDrift)
+                    .padding(.leading, 24)
+            }
             if let wait = task.waitReason, !wait.isEmpty {
                 Text(wait)
                     .font(DatawatchFonts.labelSmall)
@@ -911,9 +915,15 @@ struct PrdTaskRow: View {
     private var badges: some View {
         let llm: String? = PrdLlmBadge.shared.taskLabel(task: task)
         let child: String? = (task.childPrdId?.isEmpty == false) ? task.childPrdId : nil
-        if llm != nil || task.spawnPrd || child != nil {
+        let drift: Int = task.foreignFileDrift.count
+        if llm != nil || task.spawnPrd || child != nil || drift > 0 {
             FlowLayout(spacing: 4) {
                 if let llm { PrdMiniPill(text: llm) }
+                // PWA renderTask header: ⚠ N warn chip when foreign_file_drift is non-empty.
+                if drift > 0 {
+                    PrdMiniPill(text: "⚠ \(drift)", color: DatawatchColors.warning)
+                        .accessibilityLabel(L("Foreign file drift"))
+                }
                 if task.spawnPrd {
                     PrdMiniPill(text: "↳ spawn", color: DatawatchColors.secondary)
                         .accessibilityLabel("Spawns a child automaton")

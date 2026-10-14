@@ -464,8 +464,21 @@ struct SetPrdLlmView: View {
     @State private var effort = ""
     @State private var planningBackend = ""
     @State private var planningModel = ""
+    /// Verification (judge) LLM override — prefilled with the Automaton's current value.
+    @State private var verifBackend = ""
+    @State private var verifEffort = ""
+    @State private var verifModel = ""
     @State private var saving = false
     @State private var errorMessage: String? = nil
+
+    private var execChanged: Bool {
+        ![backend, model, effort, planningBackend, planningModel].allSatisfy { $0.isEmpty }
+    }
+
+    /// PWA `_prdVerifLLMChanged` against the Automaton's current verification_* values.
+    private var verifChanged: Bool {
+        verifBackend != (prd.verificationBackend ?? "") || verifEffort != (prd.verificationEffort ?? "") || verifModel != (prd.verificationModel ?? "")
+    }
 
     private func models(for b: String) -> [String] {
         guard let o = options else { return [] }
@@ -506,6 +519,13 @@ struct SetPrdLlmView: View {
                             }
                         }
                     }
+                    PrdVerificationLlmSection(
+                        hint: "Which LLM judges this Automaton's tasks — empty inherits the global verification setting. Story and task verification LLMs take precedence.",
+                        options: o,
+                        backend: $verifBackend,
+                        effort: $verifEffort,
+                        model: $verifModel
+                    )
                     Section {
                         Text("Current: \(prd.backend ?? "daemon default")\(prd.model.map { "/\($0)" } ?? "")\(prd.effort.map { " · " + L("effort") + " \($0)" } ?? "")")
                             .font(DatawatchFonts.labelSmall)
@@ -527,12 +547,15 @@ struct SetPrdLlmView: View {
                     if saving { ProgressView() } else {
                         Button("Save") { save() }
                             .fontWeight(.semibold)
-                            .disabled([backend, model, effort, planningBackend, planningModel].allSatisfy { $0.isEmpty })
+                            .disabled(!execChanged && !verifChanged)
                     }
                 }
             }
             .onAppear {
                 guard options == nil else { return }
+                verifBackend = prd.verificationBackend ?? ""
+                verifEffort = prd.verificationEffort ?? ""
+                verifModel = prd.verificationModel ?? ""
                 IosAutomata.shared.loadWizardOptions(profile: profile) { o in DispatchQueue.main.async { options = o } }
             }
             .onChange(of: backend) { _ in model = "" }
@@ -550,9 +573,22 @@ struct SetPrdLlmView: View {
         if !planningModel.isEmpty { body["decomposition_model"] = planningModel }
         saving = true
         errorMessage = nil
+        let sendExec: Bool = execChanged
+        let sendVerif: Bool = verifChanged
+        let verifBody: [String: String] = [
+            "verification_backend": verifBackend,
+            "verification_model": verifModel,
+            "verification_effort": verifEffort,
+            "actor": "operator",
+        ]
         Task {
             do {
-                try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prd.id, action: "set_llm", body: body)
+                if sendExec {
+                    try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prd.id, action: "set_llm", body: body)
+                }
+                if sendVerif {
+                    try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prd.id, action: "set_verification_llm", body: verifBody)
+                }
                 await MainActor.run { saving = false; onSaved(); dismiss() }
             } catch {
                 await MainActor.run { saving = false; errorMessage = error.localizedDescription }

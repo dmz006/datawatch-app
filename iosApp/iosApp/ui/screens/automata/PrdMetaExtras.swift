@@ -214,6 +214,12 @@ struct PrdTaskVerificationRow: View {
                     .foregroundStyle(color.opacity(0.85))
                     .padding(.leading, 8)
             }
+            // PWA "Judged by: backend / model (source)" — which verifier actually ran.
+            if let judged = PrdLlmBadge.shared.verifierLabel(verification: verification, automatonWord: L("automaton")) {
+                Text(verbatim: L("Judged by") + ": " + judged)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            }
         }
     }
 
@@ -223,5 +229,31 @@ struct PrdTaskVerificationRow: View {
         s += ":"
         if let sum = verification.summary, !sum.isEmpty { s += " " + sum }
         return s
+    }
+}
+
+/// PWA `renderTaskFileDrift`: files this task's own commit swept in that were
+/// already uncommitted before it started and aren't in its planned files.
+/// Warn-only unless block_on_file_drift is on. Hidden when the list is empty.
+struct PrdTaskFileDriftRow: View {
+    let files: [String]
+
+    var body: some View {
+        if !files.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: "⚠ " + L("Foreign file drift") + " (\(files.count))")
+                    .font(DatawatchFonts.labelSmall.weight(.semibold))
+                    .foregroundStyle(DatawatchColors.warning)
+                ForEach(files, id: \.self) { f in
+                    Text(verbatim: "• " + f)
+                        .font(DatawatchFonts.terminalSmall)
+                        .foregroundStyle(DatawatchColors.onSurface)
+                        .padding(.leading, 8)
+                }
+            }
+            .padding(6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(DatawatchColors.warning.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+        }
     }
 }
