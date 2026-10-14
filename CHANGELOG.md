@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- **On-device crash and bug reports (Android and iOS).** No crash-reporting SDK and nothing sent automatically; the store privacy answers stay "no data collected". See [docs/crash-reports.md](docs/crash-reports.md).
+  - After a crash, the next launch asks "datawatch closed unexpectedly. Send a report?" with **Send**, **View** and **Dismiss**. Send opens your mail app addressed to support (or the share sheet) with the report in the body and attached as a .txt; Send and Dismiss delete the report.
+  - Android captures uncaught exceptions, and on Android 11+ also ANRs (with the system's ANR trace) and native crashes. iOS captures uncaught Kotlin and Objective-C exceptions, fatal signals, and MetricKit crash and hang diagnostics.
+  - **Settings › About › Support › Send bug report** sends a report without a crash: your note plus the recent app log.
+  - Reports include the app version, platform, OS version, device model, time, the stack trace and up to 300 recent app log lines. Tokens, `Authorization` headers, server addresses, host names and IP addresses are removed before you can view or send them.
+
 ### Dependencies
 - **Library catch-up that works on AGP 8.5.2** (part of Dependabot #242; the rest waits for BL418): kotlinx-coroutines 1.11.0, kotlinx-serialization 1.11.0, guava 33.7.2, zxing 3.5.4, Wear watchface 1.3.0, detekt 1.23.8, Gradle Play Publisher 3.13.0, turbine 1.2.1, mockk 1.14.11. Validated locally with the full CI gate and the phone/Wear/Auto release builds.
 - **androidx security-crypto 1.1.0** (from 1.1.0-alpha06, #243): the stable release deprecates the API but is bytecode-equivalent for our use, so stored tokens and the database key stay readable. **upload-artifact v7** (#240).

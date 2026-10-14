@@ -281,6 +281,7 @@ First launch (Android):
 - 🧪 [Testing tracker](docs/testing-tracker.md) · [Bug test log](docs/testing.md)
 - 🎬 [Usage guide](docs/usage.md) — how every screen behaves
 - 🛡 [Security model](docs/security-model.md) · [Threat model](docs/threat-model.md)
+- 🐞 [Crash and bug reports](docs/crash-reports.md) — what a report contains, redaction, nothing sent without Send
 - 🧩 [Architecture decisions (ADRs)](docs/decisions/README.md)
 - 🔄 [Parity status vs. the PWA](docs/parity-status.md) · [three-way parity matrix](docs/parity/README.md)
 - 📋 [Plans, bugs and backlog](docs/plans/README.md)
