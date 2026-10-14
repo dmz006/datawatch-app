@@ -1422,4 +1422,12 @@
     <string name="bug_report_dialog_body">Votre note et le journal récent de l\'app sont inclus dans le rapport. Les adresses de serveur, les adresses IP et les jetons sont supprimés. Vous choisissez où l\'envoyer.</string>
     <string name="bug_report_what_happened">Que s\'est-il passé ?</string>
     <string name="bug_report_cancel">Annuler</string>
+    <!-- Verification LLM override + foreign-file drift (server v9.0.73 / v9.0.75) -->
+    <string name="prd_verif_llm_title">LLM de vérification</string>
+    <string name="prd_verif_llm_hint">Quel LLM juge le travail de cette tâche — vide hérite de la story, puis de l\'automate, puis du réglage global de vérification.</string>
+    <string name="prd_verif_llm_story_hint">Quel LLM juge les tâches de cette story — vide hérite de l\'automate, puis du réglage global de vérification. Les tâches ayant leur propre LLM de vérification le conservent.</string>
+    <string name="prd_verif_llm_automaton_hint">Quel LLM juge les tâches de cet automate — vide hérite du réglage global de vérification. Les LLM de vérification de story et de tâche sont prioritaires.</string>
+    <string name="prd_verif_verifier_label">Jugé par</string>
+    <string name="prd_verif_source_automaton">automate</string>
+    <string name="automata_task_foreign_file_drift">Dérive de fichiers étrangers</string>
 </resources>

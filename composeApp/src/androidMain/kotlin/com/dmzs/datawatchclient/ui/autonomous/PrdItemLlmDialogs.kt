@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -17,6 +19,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
@@ -103,10 +107,72 @@ private fun PickerField(
 }
 
 /**
+ * PWA `_prdVerifLLMSectionHTML`: the "Verification LLM" sub-section shared by the
+ * task, story and Automaton LLM dialogs — same Backend / Effort / Model pickers as
+ * the execution-LLM rows. [value] is (backend, effort, model); empty values inherit
+ * task → story → Automaton → global verification setting.
+ */
+@Composable
+internal fun VerificationLlmSection(
+    hint: String,
+    value: Triple<String, String, String>,
+    backends: List<String>,
+    modelsFor: (String) -> List<String>,
+    onChange: (Triple<String, String, String>) -> Unit,
+) {
+    val (backend, effort, model) = value
+    val inherit = stringResource(R.string.new_prd_inherit)
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        HorizontalDivider()
+        Text(
+            stringResource(R.string.prd_verif_llm_title),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(hint, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        PickerField(
+            label = stringResource(R.string.prd_new_backend_label),
+            value = backend,
+            options = (backends + listOf(backend)).distinct(),
+            inheritLabel = inherit,
+            onPick = { onChange(Triple(it, effort, if (it != backend) "" else model)) },
+        )
+        PickerField(
+            label = stringResource(R.string.prd_new_effort_label),
+            value = effort,
+            options = (EFFORT_OPTIONS + listOf(effort)).distinct(),
+            inheritLabel = inherit,
+            onPick = { onChange(Triple(backend, it, model)) },
+        )
+        val models = modelsFor(backend)
+        if (backend.isNotEmpty() && models.isNotEmpty()) {
+            PickerField(
+                label = stringResource(R.string.prd_new_model_label),
+                value = model,
+                options = (models + listOf(model)).distinct(),
+                inheritLabel = inherit,
+                onPick = { onChange(Triple(backend, effort, it)) },
+            )
+        } else if (backend.isNotEmpty()) {
+            OutlinedTextField(
+                value = model,
+                onValueChange = { onChange(Triple(backend, effort, it.trim())) },
+                label = { Text(stringResource(R.string.prd_new_model_label)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
  * PWA openPRDSetStoryLLMModal (🤖) and openPRDEditTaskModal (✎ spec + LLM).
  * [spec] non-null → the task variant with the spec editor on top.
  * [onSave] gets the new spec (null = unchanged / story) and the LLM triple
- * (null = unchanged).
+ * (null = unchanged). When [onSaveVerif] is set the dialog also shows the
+ * Verification LLM section ([verifHint], [currentVerif] = backend, effort, model)
+ * and calls it only when that triple changed (PWA `_prdVerifLLMChanged`).
  */
 @Composable
 internal fun PrdItemLlmDialog(
@@ -120,17 +186,24 @@ internal fun PrdItemLlmDialog(
     modelsFor: (String) -> List<String>,
     onDismiss: () -> Unit,
     onSave: (newSpec: String?, llm: Triple<String, String, String>?) -> Unit,
+    verifHint: String = "",
+    currentVerif: Triple<String, String, String> = Triple("", "", ""),
+    onSaveVerif: ((Triple<String, String, String>) -> Unit)? = null,
 ) {
     var specText by remember { mutableStateOf(spec.orEmpty()) }
     var backend by remember { mutableStateOf(currentBackend) }
     var effort by remember { mutableStateOf(currentEffort) }
     var model by remember { mutableStateOf(currentModel) }
+    var verif by remember { mutableStateOf(currentVerif) }
     val inherit = stringResource(R.string.new_prd_inherit)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 if (spec != null) {
                     OutlinedTextField(
                         value = specText,
@@ -177,6 +250,15 @@ internal fun PrdItemLlmDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+                if (onSaveVerif != null) {
+                    VerificationLlmSection(
+                        hint = verifHint,
+                        value = verif,
+                        backends = backends,
+                        modelsFor = modelsFor,
+                        onChange = { verif = it },
+                    )
+                }
             }
         },
         confirmButton = {
@@ -184,6 +266,7 @@ internal fun PrdItemLlmDialog(
                 val newSpec = if (spec != null && specText.isNotBlank() && specText != spec) specText else null
                 val llmChanged = backend != currentBackend || effort != currentEffort || model != currentModel
                 if (newSpec != null || llmChanged) onSave(newSpec, if (llmChanged) Triple(backend, effort, model) else null)
+                if (onSaveVerif != null && verif != currentVerif) onSaveVerif(verif)
                 onDismiss()
             }) { Text(stringResource(R.string.action_save)) }
         },

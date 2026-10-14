@@ -1422,4 +1422,12 @@
     <string name="bug_report_dialog_body">Tu nota y el registro reciente de la app se incluyen en el informe. Se eliminan las direcciones de servidor, las direcciones IP y los tokens. Tú eliges adónde enviarlo.</string>
     <string name="bug_report_what_happened">¿Qué ha pasado?</string>
     <string name="bug_report_cancel">Cancelar</string>
+    <!-- Verification LLM override + foreign-file drift (server v9.0.73 / v9.0.75) -->
+    <string name="prd_verif_llm_title">LLM de verificación</string>
+    <string name="prd_verif_llm_hint">Qué LLM evalúa el trabajo de esta tarea — vacío hereda de la historia, luego del autómata y luego de la configuración global de verificación.</string>
+    <string name="prd_verif_llm_story_hint">Qué LLM evalúa las tareas de esta historia — vacío hereda del autómata y luego de la configuración global de verificación. Las tareas con su propio LLM de verificación lo conservan.</string>
+    <string name="prd_verif_llm_automaton_hint">Qué LLM evalúa las tareas de este autómata — vacío hereda la configuración global de verificación. Los LLM de verificación de historia y tarea tienen prioridad.</string>
+    <string name="prd_verif_verifier_label">Evaluado por</string>
+    <string name="prd_verif_source_automaton">autómata</string>
+    <string name="automata_task_foreign_file_drift">Deriva de archivos ajenos</string>
 </resources>

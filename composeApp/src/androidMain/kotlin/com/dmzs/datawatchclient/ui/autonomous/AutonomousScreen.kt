@@ -588,6 +588,9 @@ public fun AutonomousScreen(
                 onSetStoryLlm = { storyId, b, e, m -> vm.setStoryLlm(id, storyId, b, e, m) },
                 onSetStoryProfile = { storyId, profile -> vm.setStoryProfile(id, storyId, profile) },
                 onEditTaskSpecLlm = { taskId, spec, llm -> vm.editTaskSpecAndLlm(id, taskId, spec, llm) },
+                onSetVerificationLlm = { v -> vm.setPrdVerificationLlm(id, v) },
+                onSetStoryVerificationLlm = { storyId, v -> vm.setStoryVerificationLlm(id, storyId, v) },
+                onSetTaskVerificationLlm = { taskId, v -> vm.setTaskVerificationLlm(id, taskId, v) },
                 decomposeLive = decomposeLive?.takeIf { it.first == id }?.second,
                 onInstantiateTemplate = { vars -> vm.instantiatePrdTemplate(id, vars) },
             )

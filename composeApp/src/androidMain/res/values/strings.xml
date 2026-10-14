@@ -1735,4 +1735,12 @@
     <string name="bug_report_dialog_body">Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it.</string>
     <string name="bug_report_what_happened">What happened?</string>
     <string name="bug_report_cancel">Cancel</string>
+    <!-- Verification LLM override + foreign-file drift (server v9.0.73 / v9.0.75) -->
+    <string name="prd_verif_llm_title">Verification LLM</string>
+    <string name="prd_verif_llm_hint">Which LLM judges this task\'s work — empty inherits story, then Automaton, then the global verification setting.</string>
+    <string name="prd_verif_llm_story_hint">Which LLM judges this story\'s tasks — empty inherits the Automaton, then the global verification setting. Tasks with their own verification LLM keep it.</string>
+    <string name="prd_verif_llm_automaton_hint">Which LLM judges this Automaton\'s tasks — empty inherits the global verification setting. Story and task verification LLMs take precedence.</string>
+    <string name="prd_verif_verifier_label">Judged by</string>
+    <string name="prd_verif_source_automaton">automaton</string>
+    <string name="automata_task_foreign_file_drift">Foreign file drift</string>
 </resources>
