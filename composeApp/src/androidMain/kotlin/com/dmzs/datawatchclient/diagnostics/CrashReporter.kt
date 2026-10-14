@@ -6,6 +6,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Process
 import androidx.annotation.RequiresApi
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,15 +83,16 @@ public object CrashReporter {
         val lastSeen = prefs.getLong(KEY_LAST_EXIT_TS, -1L)
         val infos = am.getHistoricalProcessExitReasons(context.packageName, 0, 0)
         val newest = infos.maxOfOrNull { it.timestamp } ?: 0L
+        val offered = setOf(ApplicationExitInfo.REASON_ANR, ApplicationExitInfo.REASON_CRASH_NATIVE)
         // First run with the reporter: record a baseline instead of offering
         // exits that happened before this feature existed.
         if (lastSeen >= 0) {
             infos
                 .filter { it.timestamp > lastSeen }
-                .filter { it.reason == ApplicationExitInfo.REASON_ANR || it.reason == ApplicationExitInfo.REASON_CRASH_NATIVE }
+                .filter { it.reason in offered }
                 .forEach { writeExitReport(it) }
         }
-        prefs.edit().putLong(KEY_LAST_EXIT_TS, maxOf(newest, lastSeen, 0L)).apply()
+        prefs.edit { putLong(KEY_LAST_EXIT_TS, maxOf(newest, lastSeen, 0L)) }
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -132,7 +134,11 @@ public object CrashReporter {
     /** Re-list `filesDir/crash/`, keeping only the [MAX_PENDING] newest reports. */
     public fun refresh() {
         val target = dir ?: return
-        val files = target.listFiles { f -> f.isFile && f.name.endsWith(".txt") }.orEmpty().sortedByDescending { it.name }
+        val files =
+            target
+                .listFiles { f -> f.isFile && f.name.endsWith(".txt") }
+                .orEmpty()
+                .sortedByDescending { it.name }
         files.drop(MAX_PENDING).forEach { it.delete() }
         pendingState.value = files.take(MAX_PENDING)
     }

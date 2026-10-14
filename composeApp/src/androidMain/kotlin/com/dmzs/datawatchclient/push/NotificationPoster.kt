@@ -9,6 +9,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
 import com.dmzs.datawatchclient.MainActivity
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -124,7 +125,7 @@ public class NotificationPoster(private val context: Context) {
             nm.notify(notifId, builder.build())
         } catch (e: SecurityException) {
             // POST_NOTIFICATIONS not granted on Android 13+; surface to logcat only.
-            com.dmzs.datawatchclient.diagnostics.dwLog("NotificationPoster", "post denied: ${e.message}")
+            dwLog("NotificationPoster", "post denied: ${e.message}")
         }
     }
 

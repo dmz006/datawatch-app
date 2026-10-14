@@ -32,14 +32,16 @@ public object Redactor {
     private val jwt = Regex("""\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*""")
     private val secretParam =
         Regex(
-            """(?i)(?<![A-Za-z0-9])((?:access_|refresh_|api_|auth_|id_)?(?:token|key|secret|password|passwd|pwd|apikey|auth))""" +
+            """(?i)(?<![A-Za-z0-9])((?:access_|refresh_|api_|auth_|id_)?""" +
+                """(?:token|key|secret|password|passwd|pwd|apikey|auth))""" +
                 """(["']?\s*[:=]\s*["']?)[^\s"'&,;}]+""",
         )
     private val url =
         Regex("""(?i)\b[a-z][a-z0-9+.-]*://(?:[^\s/?#@]*@)?(?:\[[0-9a-f:.]+\]|[^\s/?#:\[\]"'<>]+)(?::\d+)?""")
     private val namedHost =
         Regex(
-            """(?i)\b((?:host(?:name)?|connect(?:ed|ing)?\s+to)\s*[:=]?\s*["']?/?)([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?""",
+            """(?i)\b((?:host(?:name)?|connect(?:ed|ing)?\s+to)\s*[:=]?\s*["']?/?)""" +
+                """([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?""",
         )
     private val privateTldHost =
         Regex("""(?i)\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:ts\.net|local|lan|internal|home\.arpa)\b(?!\.\w)(?::\d+)?""")
@@ -54,7 +56,8 @@ public object Redactor {
         Regex(
             """(?<![A-Za-z0-9+_-])""" +
                 // Canonical UUIDs are identifiers (MetricKit binary UUIDs), not secrets.
-                """(?![0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![A-Za-z0-9+_-]))""" +
+                """(?![0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}""" +
+                """(?![A-Za-z0-9+_-]))""" +
                 """(?=[A-Za-z0-9+_-]*\d)(?=[A-Za-z0-9+_-]*[A-Za-z])[A-Za-z0-9+_-]{32,}={0,2}""",
         )
 

@@ -115,5 +115,8 @@ public object IosCrashReports {
     private fun writeText(
         path: String,
         text: String,
-    ): Boolean = NSString.create(string = text).writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
+    ): Boolean {
+        val ns = NSString.create(string = text)
+        return ns.writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
+    }
 }

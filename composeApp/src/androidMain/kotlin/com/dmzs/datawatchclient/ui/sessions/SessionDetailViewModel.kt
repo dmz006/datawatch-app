@@ -3,6 +3,8 @@ package com.dmzs.datawatchclient.ui.sessions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.diagnostics.LogLevel
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionEvent
@@ -367,10 +369,10 @@ public class SessionDetailViewModel(
                     // BL249 basis — session auto-refresh on reconnect (PWA v6.5.1).
                     if (!isError && wsWasDisconnected) {
                         wsWasDisconnected = false
-                        com.dmzs.datawatchclient.diagnostics.dwLog(
+                        dwLog(
                             "SessionWs",
                             "live stream reconnected",
-                            com.dmzs.datawatchclient.diagnostics.LogLevel.INFO,
+                            LogLevel.INFO,
                         )
                         // 1. Clear pane-capture dedup for this session.
                         com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
@@ -391,7 +393,7 @@ public class SessionDetailViewModel(
                         // No additional action needed here; the full re-render path handles #66.
                     }
                     if (isError && !wsWasDisconnected) {
-                        com.dmzs.datawatchclient.diagnostics.dwLog("SessionWs", "live stream error; reconnecting")
+                        dwLog("SessionWs", "live stream error; reconnecting")
                     }
                     if (isError) wsWasDisconnected = true
                     // Clear the image-processing info banner on any live server event —

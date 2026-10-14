@@ -11,6 +11,7 @@ import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsChannel
@@ -74,7 +75,7 @@ public class NtfyFallbackService : Service() {
         try {
             startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
         } catch (e: Throwable) {
-            com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "startForeground failed: ${e.message} — service will stop")
+            dwLog("NtfyFallback", "startForeground failed: ${e.message} — service will stop")
             startForegroundFailed = true
             stopSelf()
         }
@@ -138,7 +139,7 @@ public class NtfyFallbackService : Service() {
                 jobs.getOrPut(profile.id) { scope.launch { subscribe(server, topic) } }
             }
         } catch (e: Throwable) {
-            com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "reconcile failed: ${e.message}")
+            dwLog("NtfyFallback", "reconcile failed: ${e.message}")
         }
     }
 
@@ -160,7 +161,7 @@ public class NtfyFallbackService : Service() {
                 backoff = 2_000L
             } catch (e: Throwable) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "subscription error: ${e.message}; retrying in ${backoff}ms")
+                dwLog("NtfyFallback", "subscription error: ${e.message}; retrying in ${backoff}ms")
                 delay(backoff)
                 backoff = (backoff * 2).coerceAtMost(60_000L)
             }
@@ -227,7 +228,7 @@ public class NtfyFallbackService : Service() {
             try {
                 context.startForegroundService(intent)
             } catch (e: Throwable) {
-                com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "startForegroundService denied: ${e.message}")
+                dwLog("NtfyFallback", "startForegroundService denied: ${e.message}")
             }
         }
     }

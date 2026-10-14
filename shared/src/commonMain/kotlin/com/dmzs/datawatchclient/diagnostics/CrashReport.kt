@@ -1,7 +1,9 @@
 package com.dmzs.datawatchclient.diagnostics
 
 /** What kind of event a report describes. [label] is what the report text shows. */
-public enum class ReportKind(public val label: String) {
+public enum class ReportKind(
+    public val label: String,
+) {
     /** User-initiated from Settings: no crash, recent log plus a note. */
     BUG_REPORT("bug report"),
 

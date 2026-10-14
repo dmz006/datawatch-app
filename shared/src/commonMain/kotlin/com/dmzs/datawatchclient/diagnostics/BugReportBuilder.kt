@@ -45,20 +45,22 @@ public object BugReportBuilder {
     ): String {
         val sb = StringBuilder()
         sb.append(header(report.kind, report.timeMs, device, appVersion, versionCode))
-        report.threadName?.takeIf { it.isNotBlank() }?.let { sb.append("Thread: ").append(it).append('\n') }
-        report.details?.takeIf { it.isNotBlank() }?.let { sb.append("Details: ").append(it.trim()).append('\n') }
-        report.userNote?.takeIf { it.isNotBlank() }?.let {
-            sb.append("\nWhat happened:\n").append(truncate(it.trim(), MAX_NOTE_CHARS)).append('\n')
-        }
-        report.stackTrace?.takeIf { it.isNotBlank() }?.let {
+        val thread = report.threadName.orEmpty().trim()
+        val details = report.details.orEmpty().trim()
+        val note = report.userNote.orEmpty().trim()
+        val trace = report.stackTrace.orEmpty().trimEnd()
+        if (thread.isNotEmpty()) sb.append("Thread: $thread\n")
+        if (details.isNotEmpty()) sb.append("Details: $details\n")
+        if (note.isNotEmpty()) sb.append("\nWhat happened:\n${truncate(note, MAX_NOTE_CHARS)}\n")
+        if (trace.isNotBlank()) {
             val title = if (report.kind == ReportKind.ANR) "ANR trace" else "Stack trace"
-            sb.append('\n').append(title).append(":\n").append(truncate(it.trimEnd(), MAX_TRACE_CHARS)).append('\n')
+            sb.append("\n$title:\n${truncate(trace, MAX_TRACE_CHARS)}\n")
         }
         sb.append('\n')
         if (logLines.isEmpty()) {
             sb.append("Recent log: (empty)\n")
         } else {
-            sb.append("Recent log (").append(logLines.size).append(" lines):\n")
+            sb.append("Recent log (${logLines.size} lines):\n")
             logLines.forEach { sb.append(it.format()).append('\n') }
         }
         return Redactor.redact(sb.toString())
@@ -101,13 +103,13 @@ public object BugReportBuilder {
         val title = if (kind == ReportKind.BUG_REPORT) "datawatch app bug report" else "datawatch app crash report"
         return Redactor.redact(
             buildString {
-                append(title).append('\n')
-                append("Kind: ").append(kind.label).append('\n')
-                append("App version: ").append(appVersion).append(" (").append(versionCode).append(")\n")
-                append("Platform: ").append(device.platform).append('\n')
-                append("OS version: ").append(device.osVersion).append('\n')
-                append("Device: ").append(device.model).append('\n')
-                append("Time: ").append(Instant.fromEpochMilliseconds(timeMs)).append('\n')
+                append("$title\n")
+                append("Kind: ${kind.label}\n")
+                append("App version: $appVersion ($versionCode)\n")
+                append("Platform: ${device.platform}\n")
+                append("OS version: ${device.osVersion}\n")
+                append("Device: ${device.model}\n")
+                append("Time: ${Instant.fromEpochMilliseconds(timeMs)}\n")
             },
         )
     }

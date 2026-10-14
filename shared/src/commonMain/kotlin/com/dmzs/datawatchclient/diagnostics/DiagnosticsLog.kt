@@ -4,7 +4,9 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /** Severity of a [DiagnosticsLog] line, rendered as the logcat-style letter. */
-public enum class LogLevel(public val letter: Char) {
+public enum class LogLevel(
+    public val letter: Char,
+) {
     DEBUG('D'),
     INFO('I'),
     WARN('W'),

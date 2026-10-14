@@ -8,6 +8,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import com.dmzs.datawatchclient.transport.dto.PushEventDto
 import com.dmzs.datawatchclient.transport.dto.PushRegistrationDto
 import kotlinx.coroutines.CoroutineScope
@@ -47,7 +48,7 @@ public class UnifiedPushSseService : Service() {
         try {
             startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
         } catch (e: Throwable) {
-            com.dmzs.datawatchclient.diagnostics.dwLog("UnifiedPushSse", "startForeground failed: ${e.message} — service will stop")
+            dwLog("UnifiedPushSse", "startForeground failed: ${e.message} — service will stop")
             startForegroundFailed = true
             stopSelf()
         }
@@ -151,7 +152,7 @@ public class UnifiedPushSseService : Service() {
             try {
                 context.startForegroundService(intent)
             } catch (e: Throwable) {
-                com.dmzs.datawatchclient.diagnostics.dwLog("UnifiedPushSse", "startForegroundService denied: ${e.message}")
+                dwLog("UnifiedPushSse", "startForegroundService denied: ${e.message}")
             }
         }
     }

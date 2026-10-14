@@ -199,7 +199,8 @@ public fun AppRoot() {
             }
             // Pending crash / ANR report from a previous run: Send / View / Dismiss.
             // Held back until the splash has handed over to the app.
-            val route = navController.currentBackStackEntryAsState().value?.destination?.route
+            val backStackEntry by navController.currentBackStackEntryAsState()
+            val route = backStackEntry?.destination?.route
             com.dmzs.datawatchclient.ui.about.CrashReportPrompt(
                 enabled = route != null && route != Destinations.Splash,
             )

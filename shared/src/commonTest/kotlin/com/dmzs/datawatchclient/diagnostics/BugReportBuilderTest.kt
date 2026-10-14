@@ -68,7 +68,12 @@ class BugReportBuilderTest {
     fun anrTraceUsesAnrTitleAndDetails() {
         val text =
             BugReportBuilder.build(
-                CrashReport(kind = ReportKind.ANR, timeMs = t0, stackTrace = "\"main\" prio=5", details = "Input dispatching timed out"),
+                CrashReport(
+                    kind = ReportKind.ANR,
+                    timeMs = t0,
+                    stackTrace = "\"main\" prio=5",
+                    details = "Input dispatching timed out",
+                ),
                 logLines = emptyList(),
                 device = device,
             )

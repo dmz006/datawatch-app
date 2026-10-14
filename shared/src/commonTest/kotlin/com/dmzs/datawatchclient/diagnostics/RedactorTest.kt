@@ -42,7 +42,10 @@ class RedactorTest {
 
     @Test
     fun urlsBecomeServer() {
-        assertEquals("GET <server>/api/sessions failed", r("GET https://datawatch.example.com:8443/api/sessions failed"))
+        assertEquals(
+            "GET <server>/api/sessions failed",
+            r("GET https://datawatch.example.com:8443/api/sessions failed"),
+        )
         assertEquals("ws <server>/ws", r("ws wss://10.1.2.3:8443/ws"))
         assertEquals("<server>/x", r("http://user:pw@host.example.com/x"))
         assertEquals("<server>/", r("http://[fd7a:115c::1]:8443/"))
@@ -84,7 +87,7 @@ class RedactorTest {
                 "binaryUUID 8A3B1C2D-1111-2222-3333-444455556666",
                 "/var/mobile/Containers/Data/Application/report.txt",
                 "io.ktor.client.engine.internal.Foo.local.Bar",
-                "kotlinx.coroutines.internal.DispatchedContinuationKt.resumeCancellableWith(DispatchedContinuation.kt:367)",
+                "kotlinx.coroutines.internal.DispatchedContinuationKt.resumeWith(DispatchedContinuation.kt:367)",
             )
         keep.forEach { assertEquals(it, r(it)) }
     }
