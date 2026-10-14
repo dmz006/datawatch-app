@@ -8,6 +8,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Android and shared performance
+On 2026-10-14 the app was measured against a busy production server (484 sessions, 500 alerts), going through a read-only proxy. While idle on Sessions it used **33 MB/min**, rising to **52 MB/min** after visiting each tab once. `/api/alerts` was requested 84 times a minute. After these fixes, the same runs measure **9.5 MB/min** and **16 MB/min**. Alerts are requested 12 times a minute, and there is **no traffic in the background**. Most of what remains is the server's 3 MB session-list push, tracked as dmz006/datawatch#242.
+- **One alerts poller.** Every tab built its own `AlertsViewModel`, each with a 5 s loop (7 at once). Alerts and Sessions view-models are now shared by the whole app (`activityViewModel()`). Session detail no longer creates a second `SessionsViewModel`, which also meant a second socket and a second poll, just for the watch toggle.
+- **Nothing polls while the app is in the background**, and tab-bound loops (Dashboard, Automata progress) run only while their screen is shown. The global WebSocket closes on stop and reopens on return.
+- **Less work on the main thread.**
+  - REST responses and WS frames are decoded on a background dispatcher.
+  - The session cache writes off the main thread, skips unchanged lists and rewrites only the rows that changed (it used to delete and re-insert every row of the encrypted database on each push).
+- **WebSocket frames:**
+  - A session's own socket no longer re-decodes the 3 MB session list when the global socket already routes it.
+  - The global socket skips terminal output frames (about 1,000 a minute) before decoding.
+  - The per-frame debug logging is gone.
+- **Dashboard** refreshes the full session list every 30 s, not every 10 s, and loads session boards in parallel. **Automata progress** refreshes the session list every 30 s, not every 5 s.
+- **Home-screen widgets** refresh at most once a minute. **Wear** syncs only when what the watch shows changed.
+- **Release-build logging:** the terminal no longer logs every redraw. JS warnings and errors are still logged.
+- **Loading indicator (Android):**
+  - First load shows the splash eye with "Loading sessions…", "Loading alerts…", "Loading dashboard…" or "Loading Automata…".
+  - When saved data is on screen and a refresh is running, a thin progress bar reads "Showing saved data · refreshing…".
+  - Localised in EN, DE, ES, FR and JA.
+
+### Release
+- **`release.yml` can ship iOS alone** (`workflow_dispatch` with `ios_only: true`). It builds and uploads to TestFlight and submits the build for Beta App Review from the selected branch, with no Play upload, no GitHub release and no parity check. Use it only when the operator approves an iOS release while Android is held, for example during a Play review. The version code must be bumped first.
+
 ### iOS performance
 A tester reported the iPhone app was very slow against a busy server: 484 sessions, a 3 MB `/api/sessions` and a 3 MB WS `sessions` frame about 7 times a minute. Fixes:
 - **One shared WebSocket per server.** The alert feed, Sessions, Observer, Automata and Dashboard each opened their own global `/ws`, so every 3 MB frame was decoded once per socket. They now share one socket per server, which closes 5 s after the last screen leaves.
