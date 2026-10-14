@@ -1933,3 +1933,8 @@
 "%1$@: %2$@" = "%1$@: %2$@";
 "Authentication failed — this server has no valid token configured" = "認証に失敗しました — このサーバーには有効なトークンが設定されていません";
 "Back to %@" = "%@ に戻る";
+
+/* iOS performance: shared first-load / refreshing indicator (ScreenLoadState) */
+"Refreshing…" = "更新中…";
+"Loading statistics…" = "統計を読み込み中…";
+"Loading dashboard…" = "ダッシュボードを読み込み中…";

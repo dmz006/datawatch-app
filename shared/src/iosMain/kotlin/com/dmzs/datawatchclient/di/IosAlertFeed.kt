@@ -12,13 +12,13 @@ import kotlinx.coroutines.launch
 
 /**
  * Live WS `alert` frames for the iOS alert dock (parity D51a; Android
- * `AppRoot.LiveAlertFeed`). Keeps one global `/ws` open for [profile] so the
+ * `AppRoot.LiveAlertFeed`). Keeps the shared global `/ws` open for [profile] so the
  * server's broadcast `alert` frames reach [AlertsHub], and forwards the ones
  * for this profile. Callbacks run on a background thread; Swift keeps the
  * handle and cancels it when the app backgrounds or the profile goes away.
  *
- * Other open global sockets for the same profile also route `alert` frames
- * into the hub, so Swift de-duplicates by [AlertPush.id].
+ * The socket is shared per profile ([IosGlobalStreams]); Swift still
+ * de-duplicates by [AlertPush.id] (a reconnect can replay a frame).
  */
 public object IosAlertFeed {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -29,7 +29,7 @@ public object IosAlertFeed {
     ): IosSubscription {
         val job =
             scope.launch {
-                launch { IosServiceLocator.wsTransportFor(profile).globalStream().collect { } }
+                launch { IosGlobalStreams.stream(profile).collect { } }
                 launch {
                     AlertsHub.flow
                         .filter { push: AlertPush -> push.serverProfileId == profile.id }

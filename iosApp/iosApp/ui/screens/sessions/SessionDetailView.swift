@@ -9,9 +9,11 @@ import DatawatchShared
 /// banner, inline process stats, output tabs (with the Aa▾ font menu), the
 /// terminal / chat / channel / status panes, saved-commands row and composer.
 ///
-/// `session` is the snapshot the caller navigated with; `cur` is refreshed
-/// every 10 s (and after Stop / Restart) so state-dependent controls follow
-/// the live session. The terminal keeps the original snapshot (stable socket).
+/// `session` is the snapshot the caller navigated with; `cur` follows the live
+/// session from the shared WS data (IosSessionsLive — no multi-MB list fetch),
+/// with a REST fallback at most every 60 s while the WS isn't live (and after
+/// Stop / Restart), so state-dependent controls follow the live session. The
+/// terminal keeps the original snapshot (stable socket).
 struct SessionDetailView: View {
     let session: DwSession
     let profile: ServerProfile
@@ -70,6 +72,8 @@ struct SessionDetailView: View {
     /// PWA state.channelReady[full_id]: WS `channel_ready` frame / output-marker scan.
     @State private var hubChannelReady = false
     @State private var channelReadySub: IosSubscription? = nil
+    /// This session from the shared WS session data (drives `live`).
+    @State private var liveSessionSub: IosSubscription? = nil
     /// PWA tabStatusBadge: hook-health dot + board state, fetched on mount.
     @State private var boardHook: String = ""
     @State private var boardState: String = ""
@@ -152,6 +156,8 @@ struct SessionDetailView: View {
             }
             channelReadySub?.cancel()
             channelReadySub = nil
+            liveSessionSub?.cancel()
+            liveSessionSub = nil
             LocalAlertWatcher.shared.foregroundSessionId = nil
             ShellRestore.setOpenSession(profileId: nil, sessionId: nil)
         }
@@ -199,7 +205,24 @@ struct SessionDetailView: View {
         ShellRestore.setOpenSession(profileId: profile.id, sessionId: session.id)
         loadStatusBadge()
         watchChannelReady()
+        watchLiveSession()
         replayPendingNeedsInput()
+    }
+
+    /// Live copy of this session from the shared WS list (cached copy first,
+    /// then each change) — replaces re-fetching all of /api/sessions.
+    private func watchLiveSession() {
+        guard liveSessionSub == nil else { return }
+        liveSessionSub = IosSessionsLive.shared.subscribeSession(
+            profile: profile,
+            sessionId: session.id,
+            fullId: session.fullId
+        ) { updated in
+            DispatchQueue.main.async {
+                live = updated
+                stateOverrideLabel = nil
+            }
+        }
     }
 
     /// PWA maybeReplayPendingNeedsInputPopup (Android SessionStateWatcher): a
@@ -237,11 +260,17 @@ struct SessionDetailView: View {
         }
     }
 
-    /// Keeps `cur` fresh while the screen is up (cancelled on disappear).
+    /// Status badge every 10 s while the screen is up (cancelled on disappear).
+    /// `cur` follows the WS (watchLiveSession); the full /api/sessions list is
+    /// only re-fetched every 60 s while the shared WS isn't live.
     private func refreshLoop() async {
+        var tick = 0
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 10_000_000_000)
-            await refreshSession()
+            tick += 1
+            if tick % 6 == 0 && !IosSessionsLive.shared.isLive(profileId: profile.id) {
+                await refreshSession()
+            }
             loadStatusBadge()
         }
     }

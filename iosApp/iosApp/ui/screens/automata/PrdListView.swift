@@ -125,6 +125,9 @@ extension PrdDto {
 final class PrdListViewModel: ObservableObject {
     @Published private(set) var prds: [PrdDto] = []
     @Published private(set) var isLoading = false
+    /// Automata are on screen and a user-visible refresh (tab re-opened, scope
+    /// change, pull-to-refresh) is in flight — drives the "Refreshing…" pill.
+    @Published private(set) var isRefreshing = false
     @Published private(set) var error: String? = nil
     @Published var filterOpen = false
     @Published var historyOn = false
@@ -298,12 +301,26 @@ final class PrdListViewModel: ObservableObject {
             prdSubscriptions.append(sub)
         }
         pollTask = Task { [weak self] in
+            var first = true
             while !Task.isCancelled {
                 guard let self else { return }
-                await self.refreshAsync()
+                if first {
+                    await self.userRefreshAsync()
+                    first = false
+                } else {
+                    await self.refreshAsync()
+                }
                 try? await Task.sleep(for: Self.interval)
             }
         }
+    }
+
+    /// Opening / pull-to-refresh: the first-load loader when empty, else the
+    /// "Refreshing…" pill over the cached list (background polls show neither).
+    func userRefreshAsync() async {
+        if !prds.isEmpty { isRefreshing = true }
+        await refreshAsync()
+        isRefreshing = false
     }
 
     func stop() {
@@ -333,8 +350,9 @@ final class PrdListViewModel: ObservableObject {
         defer { inFlight = false }
         if prds.isEmpty { isLoading = true }
         do {
-            prds = try await ServiceLocatorAsync.listPrds(profile: profile)
-            error = nil
+            let list: [PrdDto] = try await ServiceLocatorAsync.listPrds(profile: profile)
+            if list != prds { prds = list }
+            if error != nil { error = nil }
         } catch {
             self.error = error.localizedDescription
         }
@@ -529,15 +547,18 @@ struct PrdListView: View {
     private var listContent: some View {
         Group {
             if vm.isLoading && vm.prds.isEmpty {
-                LoadingIndicator(message: L("Loading automata…"))
+                // First load: splash eye + spinner (shared ScreenLoadState).
+                ScreenFirstLoadView(message: L("Loading automata…"))
             } else if let err = vm.error, vm.prds.isEmpty {
                 ErrorCard(message: err) { vm.start(profile: profile, all: allProfiles) }
             } else if vm.prds.isEmpty {
                 emptyView
             } else {
-                VStack(spacing: 0) {
-                    listToolbar
-                    list
+                ScreenLoadState(isFirstLoad: false, isRefreshing: vm.isRefreshing) {
+                    VStack(spacing: 0) {
+                        listToolbar
+                        list
+                    }
                 }
             }
         }
@@ -754,7 +775,7 @@ struct PrdListView: View {
                 DatawatchWatermark()
             }
         }
-        .refreshable { await vm.refreshAsync() }
+        .refreshable { await vm.userRefreshAsync() }
     }
 
     private var emptyView: some View {

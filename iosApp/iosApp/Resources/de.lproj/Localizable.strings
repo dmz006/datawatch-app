@@ -1933,3 +1933,8 @@
 "%1$@: %2$@" = "%1$@: %2$@";
 "Authentication failed — this server has no valid token configured" = "Authentifizierung fehlgeschlagen — für diesen Server ist kein gültiges Token konfiguriert";
 "Back to %@" = "Zurück zu %@";
+
+/* iOS performance: shared first-load / refreshing indicator (ScreenLoadState) */
+"Refreshing…" = "Wird aktualisiert…";
+"Loading statistics…" = "Statistiken werden geladen…";
+"Loading dashboard…" = "Dashboard wird geladen…";

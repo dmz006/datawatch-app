@@ -14,6 +14,8 @@ final class ObserverViewModel: ObservableObject {
     @Published private(set) var stats: StatsDto? = nil
     @Published private(set) var panel: IosStatsPanel? = nil
     @Published private(set) var isLoading: Bool = false
+    /// Stats are on screen and a re-fetch (tab re-opened) is in flight.
+    @Published private(set) var isRefreshing: Bool = false
     @Published private(set) var error: String? = nil
     @Published private(set) var systems: IosSystemsSnapshot? = nil
     @Published private(set) var serverInfo: IosObsCard? = nil
@@ -58,12 +60,12 @@ final class ObserverViewModel: ObservableObject {
         guard let profile else { return }
         stopPolling()
 
-        wsSubscription = IosServiceLocator.shared.subscribeGlobalStream(
+        // Stats only — the shared socket's session list isn't bridged to Swift here.
+        wsSubscription = IosServiceLocator.shared.subscribeStats(
             profile: profile,
             onStats: { [weak self] dto in
                 Task { @MainActor [weak self] in self?.apply(stats: dto) }
-            },
-            onSessions: { _ in }
+            }
         )
 
         let pid = profile.id
@@ -121,7 +123,8 @@ final class ObserverViewModel: ObservableObject {
 
     private func fetchStatsOnce() async {
         guard let profile else { return }
-        if stats == nil { isLoading = true }
+        if stats == nil { isLoading = true } else { isRefreshing = true }
+        defer { isRefreshing = false }
         do {
             apply(stats: try await ServiceLocatorAsync.getStats(profile: profile))
         } catch {
@@ -338,8 +341,16 @@ struct ObserverView: View {
             } else if let profile = selectedProfile {
                 // #236.7 (PWA v8.73.7): a new identity per server so every card
                 // reloads on a switch instead of keeping the previous server's data.
-                observerContent(profile: profile)
-                    .id(profile.id)
+                // First load: splash eye until /api/stats answers; a re-fetch
+                // over shown stats gets the "Refreshing…" pill.
+                ScreenLoadState(
+                    isFirstLoad: vm.isLoading && vm.stats == nil,
+                    isRefreshing: vm.isRefreshing,
+                    message: L("Loading statistics…")
+                ) {
+                    observerContent(profile: profile)
+                }
+                .id(profile.id)
             }
         }
         .task(id: selectedProfile?.id ?? "") {

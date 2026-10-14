@@ -9,7 +9,8 @@ import DatawatchShared
 /// Live inputs follow the PWA: one global `/ws` (sessions list, session_state
 /// diffs, `hook_update` boards → EKG / live events / guardrails / node
 /// health). REST cadences mirror `_dashLoop`: automata 5 s, smoke 2.5 s while a
-/// run is active else 30 s, cost 30 s, heatmap 60 s, sessions 30 s fallback.
+/// run is active else 30 s, cost 30 s, heatmap 60 s, sessions 30 s fallback
+/// (only while the shared WS isn't delivering the list — IosSessionsLive.isLive).
 /// All shaping lives in the shared `IosDashEngine`; `revision` bumps make the
 /// cards re-read it.
 @MainActor
@@ -17,6 +18,8 @@ final class DashboardViewModel: ObservableObject {
     @Published private(set) var revision: Int = 0
     @Published private(set) var layout: [IosDashCard] = []
     @Published private(set) var layoutLoaded: Bool = false
+    /// Cached cards are on screen and a refresh (layout / sessions) is in flight.
+    @Published private(set) var isRefreshing: Bool = false
     @Published private(set) var editing: Bool = false
     @Published var saveError: String? = nil
 
@@ -64,13 +67,12 @@ final class DashboardViewModel: ObservableObject {
         guard let p = profile else { return }
         stop()
         loadLayout()
+        // Sessions: the shared WS list (cached copy first, `session_state` diffs
+        // already merged, unchanged lists skipped) — see IosSessionsLive.
         live = IosDashboard.shared.subscribeLive(
             profile: p,
             onSessions: { [weak self] list in
                 Task { @MainActor [weak self] in self?.applySessions(list, for: p) }
-            },
-            onSession: { [weak self] one in
-                Task { @MainActor [weak self] in self?.applySessionDiff(one, for: p) }
             },
             onBoard: { [weak self] board in
                 Task { @MainActor [weak self] in
@@ -96,7 +98,10 @@ final class DashboardViewModel: ObservableObject {
     private func poll(tick: Int) {
         guard let p = profile else { return }
         let api = IosDashboard.shared
-        if tick % 12 == 0 { refreshSessions() }
+        // 30 s REST session fallback only while the WS push isn't delivering
+        // (socket down or no list since it connected) — the multi-MB
+        // /api/sessions is otherwise redundant with the live list.
+        if tick % 12 == 0 && !IosSessionsLive.shared.isLive(profileId: p.id) { refreshSessions() }
         if tick % 2 == 0 {
             api.loadPrds(profile: p) { [weak self] list in
                 self?.onMain(p) { $0.engine.setPrds(all: list) }
@@ -134,10 +139,26 @@ final class DashboardViewModel: ObservableObject {
 
     func refreshSessions() {
         guard let p = profile else { return }
+        beginRefresh()
         Task { [weak self] in
-            guard let list = try? await ServiceLocatorAsync.listSessions(profile: p) else { return }
-            self?.applySessions(list, for: p)
+            let list: [DwSession]? = try? await ServiceLocatorAsync.listSessions(profile: p)
+            guard let self else { return }
+            self.endRefresh()
+            if let list { self.applySessions(list, for: p) }
         }
+    }
+
+    /// In-flight refreshes over already-shown data (drives the "Refreshing…" pill).
+    private var refreshCount: Int = 0
+
+    private func beginRefresh() {
+        refreshCount += 1
+        if layoutLoaded && !isRefreshing { isRefreshing = true }
+    }
+
+    private func endRefresh() {
+        refreshCount = max(0, refreshCount - 1)
+        if refreshCount == 0 && isRefreshing { isRefreshing = false }
     }
 
     private func applySessions(_ list: [DwSession], for p: ServerProfile) {
@@ -145,17 +166,6 @@ final class DashboardViewModel: ObservableObject {
         engine.setSessions(list: list)
         seedBoards(profile: p)
         bump()
-    }
-
-    private func applySessionDiff(_ one: DwSession, for p: ServerProfile) {
-        guard profile?.id == p.id else { return }
-        var list = engine.allSessions()
-        if let i = list.firstIndex(where: { $0.id == one.id }) {
-            list[i] = one
-        } else {
-            list.append(one)
-        }
-        applySessions(list, for: p)
     }
 
     /// Seed hook boards for active sessions once (the PWA keeps them from earlier
@@ -220,9 +230,12 @@ final class DashboardViewModel: ObservableObject {
 
     private func loadLayout() {
         guard let p = profile else { return }
+        beginRefresh()
         IosDashboard.shared.loadLayout(profile: p) { [weak self] cards in
             Task { @MainActor [weak self] in
-                guard let self, self.profile?.id == p.id else { return }
+                guard let self else { return }
+                self.endRefresh()
+                guard self.profile?.id == p.id else { return }
                 if !self.editing { self.layout = cards }
                 self.layoutLoaded = true
             }
@@ -354,29 +367,33 @@ struct DashboardView: View {
     }
 
     private var grid: some View {
-        GeometryReader { geo in
-            let width = Double(geo.size.width)
-            ScrollView {
-                VStack(spacing: 0) {
-                    DashStatBar(vm: vm, revision: vm.revision, onAdd: { showAddPanel = true })
-                    if vm.layoutLoaded, let profile = selectedProfile {
-                        DashCardGrid(
-                            vm: vm,
-                            collapse: collapse,
-                            profile: profile,
-                            viewportWidth: width,
-                            onTarget: { handle($0) }
-                        )
-                    } else {
-                        CardSkeleton()
-                            .tint(DatawatchColors.primary)
-                            .padding(.top, 40)
+        // First load: splash eye + spinner until the card layout arrives; later
+        // refreshes keep the cards and show the "Refreshing…" pill.
+        ScreenLoadState(
+            isFirstLoad: !vm.layoutLoaded,
+            isRefreshing: vm.isRefreshing,
+            message: L("Loading dashboard…")
+        ) {
+            GeometryReader { geo in
+                let width = Double(geo.size.width)
+                ScrollView {
+                    VStack(spacing: 0) {
+                        DashStatBar(vm: vm, revision: vm.revision, onAdd: { showAddPanel = true })
+                        if let profile = selectedProfile {
+                            DashCardGrid(
+                                vm: vm,
+                                collapse: collapse,
+                                profile: profile,
+                                viewportWidth: width,
+                                onTarget: { handle($0) }
+                            )
+                        }
                     }
                 }
-            }
-            .refreshable {
-                vm.refreshSessions()
-                vm.loadSmoke()
+                .refreshable {
+                    vm.refreshSessions()
+                    vm.loadSmoke()
+                }
             }
         }
     }
