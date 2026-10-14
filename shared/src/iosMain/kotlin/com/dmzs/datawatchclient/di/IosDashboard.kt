@@ -14,7 +14,6 @@ import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.AnalyticsBucketDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.ws.HookHub
-import com.dmzs.datawatchclient.transport.ws.SessionsHub
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -161,30 +160,21 @@ public object IosDashboard {
     }
 
     /**
-     * One global `/ws` for [profile] (no session subscription) delivering the
-     * broadcast `sessions` list, single-session `session_state` diffs and
-     * `hook_update` boards — the PWA dashboard's live inputs ("live · ws").
+     * The shared global `/ws` for [profile] (no session subscription) delivering
+     * the broadcast `sessions` list with single-session `session_state` diffs
+     * merged in ([IosSessionsLive]: cached list first, then only changed lists)
+     * and `hook_update` boards — the PWA dashboard's live inputs ("live · ws").
      * Cancel the handle when the Dashboard disappears.
      */
     public fun subscribeLive(
         profile: ServerProfile,
         onSessions: (List<Session>) -> Unit,
-        onSession: (Session) -> Unit,
         onBoard: (IosDashBoard) -> Unit,
     ): IosSubscription {
         val job =
             scope.launch {
-                launch { IosServiceLocator.wsTransportFor(profile).globalStream().collect { } }
-                launch {
-                    SessionsHub.fullListFlow
-                        .filter { it.serverProfileId == profile.id }
-                        .collect { onSessions(it.sessions) }
-                }
-                launch {
-                    SessionsHub.singleSessionFlow
-                        .filter { it.serverProfileId == profile.id }
-                        .collect { onSession(it.session) }
-                }
+                launch { IosGlobalStreams.stream(profile).collect { } }
+                launch { IosSessionsLive.listFlow(profile.id).collect { onSessions(it) } }
                 launch {
                     HookHub.flow
                         .filter { it.serverProfileId == profile.id }

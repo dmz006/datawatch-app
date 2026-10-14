@@ -477,11 +477,14 @@ public object IosServiceLocator {
     }
 
     /**
-     * Keep one global `/ws` connection open for [profile] (no session subscription)
-     * so the server's broadcast `stats` and `sessions` frames reach their hubs, and
-     * forward them to Swift. This is the WS-first path Android's Stats/Sessions
-     * ViewModels use; REST becomes a slow fallback. Callbacks run on a background
-     * thread. Cancel the handle when the screen disappears.
+     * Keep the shared global `/ws` connection for [profile] open (no session
+     * subscription) so the server's broadcast `stats` and `sessions` frames reach
+     * their hubs, and forward them to Swift. This is the WS-first path Android's
+     * Stats/Sessions ViewModels use; REST becomes a slow fallback. The socket is
+     * shared with every other iOS caller ([IosGlobalStreams]). [onSessions] gets
+     * the cached list at once, then each changed list (full frames and
+     * `session_state` diffs merged — [IosSessionsLive]). Callbacks run on a
+     * background thread. Cancel the handle when the screen disappears.
      */
     public fun subscribeGlobalStream(
         profile: ServerProfile,
@@ -490,13 +493,26 @@ public object IosServiceLocator {
     ): IosSubscription {
         val job =
             ioScope.launch {
-                launch { wsTransportFor(profile).globalStream().collect { } }
+                launch { IosGlobalStreams.stream(profile).collect { } }
                 launch { com.dmzs.datawatchclient.transport.ws.StatsHub.flow.collect { onStats(it) } }
-                launch {
-                    com.dmzs.datawatchclient.transport.ws.SessionsHub.fullListFlow
-                        .filter { it.serverProfileId == profile.id }
-                        .collect { onSessions(it.sessions) }
-                }
+                launch { IosSessionsLive.listFlow(profile.id).collect { onSessions(it) } }
+            }
+        return IosSubscription(job)
+    }
+
+    /**
+     * Live `stats` frames only (Observer): keeps the shared global `/ws` for
+     * [profile] open and forwards [com.dmzs.datawatchclient.transport.ws.StatsHub]
+     * frames, without handing the session list to Swift.
+     */
+    public fun subscribeStats(
+        profile: ServerProfile,
+        onStats: (com.dmzs.datawatchclient.transport.dto.StatsDto) -> Unit,
+    ): IosSubscription {
+        val job =
+            ioScope.launch {
+                launch { IosGlobalStreams.stream(profile).collect { } }
+                launch { com.dmzs.datawatchclient.transport.ws.StatsHub.flow.collect { onStats(it) } }
             }
         return IosSubscription(job)
     }
@@ -520,7 +536,7 @@ public object IosServiceLocator {
     }
 
     /**
-     * Live `prd_update` frames (parity B19). Keeps a global `/ws` open for [profile]
+     * Live `prd_update` frames (parity B19). Keeps the shared global `/ws` open for [profile]
      * (no session subscription) and forwards every PRD the server pushes. Callbacks
      * run on a background thread; cancel the handle when the screen disappears.
      */
@@ -530,7 +546,7 @@ public object IosServiceLocator {
     ): IosSubscription {
         val job =
             ioScope.launch {
-                launch { wsTransportFor(profile).globalStream().collect { } }
+                launch { IosGlobalStreams.stream(profile).collect { } }
                 launch { com.dmzs.datawatchclient.transport.ws.PrdHub.flow.collect { onPrd(it) } }
             }
         return IosSubscription(job)
