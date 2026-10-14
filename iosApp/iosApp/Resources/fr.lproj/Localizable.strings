@@ -1938,3 +1938,13 @@
 "Refreshing…" = "Actualisation…";
 "Loading statistics…" = "Chargement des statistiques…";
 "Loading dashboard…" = "Chargement du tableau de bord…";
+/* On-device crash / bug reports (docs/crash-reports.md). */
+"datawatch closed unexpectedly. Send a report?" = "datawatch s'est fermé de manière inattendue. Envoyer un rapport ?";
+"The report has the error, the app version, your device model and the recent app log. Server addresses, IP addresses and tokens are removed. Nothing is sent unless you tap Send." = "Le rapport contient l'erreur, la version de l'app, le modèle de l'appareil et le journal récent de l'app. Les adresses de serveur, les adresses IP et les jetons sont supprimés. Rien n'est envoyé tant que vous n'appuyez pas sur Envoyer.";
+"View" = "Afficher";
+"Report" = "Rapport";
+"Send bug report" = "Envoyer un rapport de bug";
+"Share the recent app log and a note about what happened" = "Partager le journal récent de l'app et une note sur ce qui s'est passé";
+"Support" = "Assistance";
+"What happened?" = "Que s'est-il passé ?";
+"Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it." = "Votre note et le journal récent de l'app sont inclus dans le rapport. Les adresses de serveur, les adresses IP et les jetons sont supprimés. Vous choisissez où l'envoyer.";

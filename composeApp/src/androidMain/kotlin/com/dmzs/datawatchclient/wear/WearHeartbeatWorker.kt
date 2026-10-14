@@ -8,6 +8,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import java.util.concurrent.TimeUnit
 
 /**
@@ -29,7 +30,7 @@ public class WearHeartbeatWorker(
         runCatching {
             WearSyncService(applicationContext).fetchAndPublishDashboard()
         }.onFailure { err ->
-            android.util.Log.w(TAG, "heartbeat fetchAndPublishDashboard FAILED: ${err.message}")
+            dwLog(TAG, "heartbeat fetchAndPublishDashboard FAILED: ${err.message}")
         }
         return Result.success()
     }

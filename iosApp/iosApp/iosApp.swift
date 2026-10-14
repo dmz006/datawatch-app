@@ -35,6 +35,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) {
         // Apple: "set a flag and try to register again at a later time" —
         // retried on the next foreground (see willEnterForeground below).
+        IosCrashReports.shared.logWarn(tag: "APNs", message: "registration failed: \(error.localizedDescription)")
         Task { @MainActor in NotificationService.shared.registrationFailed = true }
     }
 
@@ -65,6 +66,9 @@ struct DatawatchClientApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        // First, so a crash anywhere later in launch is still captured and
+        // offered on the next launch (docs/crash-reports.md).
+        CrashReporter.shared.install()
         IosServiceLocator.shared.doInit()
     }
 
@@ -82,11 +86,16 @@ struct DatawatchClientApp: App {
                 }
             }
             .biometricLocked(isLocked: $isLocked)
+            // Pending crash report from a previous run: after the splash, never over the lock.
+            .crashReportPrompt(enabled: !showSplash && !isLocked)
         }
         .onChange(of: scenePhase) { phase in
             // Lock on background only — `.inactive` also fires for Control
             // Center / the Face ID sheet itself, which must not re-lock.
             if phase == .background && BiometricGate.lockRequired { isLocked = true }
+            if phase == .background || phase == .active {
+                IosCrashReports.shared.logInfo(tag: "App", message: "scene phase \(phase == .active ? "active" : "background")")
+            }
             // BL403: redraw the home-screen widgets with fresh data as the user leaves.
             if phase == .background { WidgetSync.reloadWidgets() }
         }

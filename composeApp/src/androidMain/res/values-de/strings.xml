@@ -1407,4 +1407,19 @@
     <string name="loading_dashboard">Dashboard wird geladen…</string>
     <string name="loading_automata">Automata werden geladen…</string>
     <string name="refreshing_cached_data">Gespeicherte Daten · wird aktualisiert…</string>
+    <!-- On-device crash / bug reports (docs/crash-reports.md) -->
+    <string name="crash_report_title">datawatch wurde unerwartet beendet. Bericht senden?</string>
+    <string name="crash_report_body">Der Bericht enthält den Fehler, die App-Version, das Gerätemodell und das aktuelle App-Protokoll. Serveradressen, IP-Adressen und Tokens werden entfernt. Es wird nur etwas gesendet, wenn Sie auf Senden tippen.</string>
+    <string name="crash_report_send">Senden</string>
+    <string name="crash_report_view">Anzeigen</string>
+    <string name="crash_report_dismiss">Verwerfen</string>
+    <string name="crash_report_view_title">Bericht</string>
+    <string name="crash_report_close">Schließen</string>
+    <string name="crash_report_share_title">Bericht senden</string>
+    <string name="bug_report_card_title">Support</string>
+    <string name="bug_report_row_title">Fehlerbericht senden</string>
+    <string name="bug_report_row_summary">Aktuelles App-Protokoll und eine Notiz zum Vorfall teilen</string>
+    <string name="bug_report_dialog_body">Ihre Notiz und das aktuelle App-Protokoll werden in den Bericht übernommen. Serveradressen, IP-Adressen und Tokens werden entfernt. Sie wählen, wohin er gesendet wird.</string>
+    <string name="bug_report_what_happened">Was ist passiert?</string>
+    <string name="bug_report_cancel">Abbrechen</string>
 </resources>

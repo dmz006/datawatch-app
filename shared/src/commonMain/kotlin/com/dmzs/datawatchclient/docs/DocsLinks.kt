@@ -134,6 +134,8 @@ public object DocsLinks {
             "about" to D + "settings-about",
             "language" to D + "app-only-settings-android-ios",
             "theme" to D + "app-only-settings-android-ios",
+            // Send bug report: app-only (the server docs have no crash-report page).
+            "support" to D + "app-only-settings-android-ios",
             "api" to D + "api",
             "mcp_channel" to D + "mcp-channel-bridge-diagnostics-v8-10-16",
             "mcp_tools" to D + "mcp-tools",

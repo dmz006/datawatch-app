@@ -35,9 +35,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.push.NotificationChannels
 import com.dmzs.datawatchclient.push.NtfyFallbackService
@@ -103,12 +105,12 @@ public fun AppRoot() {
             try {
                 NtfyFallbackService.start(context)
             } catch (e: Throwable) {
-                android.util.Log.w("AppRoot", "NtfyFallbackService start failed: ${e.message}")
+                dwLog("AppRoot", "NtfyFallbackService start failed: ${e.message}")
             }
             try {
                 UnifiedPushSseService.start(context)
             } catch (e: Throwable) {
-                android.util.Log.w("AppRoot", "UnifiedPushSseService start failed: ${e.message}")
+                dwLog("AppRoot", "UnifiedPushSseService start failed: ${e.message}")
             }
         }
 
@@ -195,6 +197,13 @@ public fun AppRoot() {
                     modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding(),
                 )
             }
+            // Pending crash / ANR report from a previous run: Send / View / Dismiss.
+            // Held back until the splash has handed over to the app.
+            val backStackEntry by navController.currentBackStackEntryAsState()
+            val route = backStackEntry?.destination?.route
+            com.dmzs.datawatchclient.ui.about.CrashReportPrompt(
+                enabled = route != null && route != Destinations.Splash,
+            )
             if (pickerOpen) {
                 ServerPickerSheet(
                     onDismiss = { pickerOpen = false },
