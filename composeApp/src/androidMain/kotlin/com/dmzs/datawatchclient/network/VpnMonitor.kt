@@ -87,6 +87,6 @@ public class VpnMonitor(private val context: Context) {
     }
 
     private fun showVpnDropNotification() {
-        android.util.Log.w("VpnMonitor", "VPN dropped — user should re-enable Tailscale")
+        com.dmzs.datawatchclient.diagnostics.dwLog("VpnMonitor", "VPN dropped — user should re-enable Tailscale")
     }
 }

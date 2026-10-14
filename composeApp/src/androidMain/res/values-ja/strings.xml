@@ -1402,4 +1402,19 @@
     <string name="community_plugins_installing">インストール中…</string>
     <string name="community_plugins_installed">インストール済み</string>
     <string name="session_detail_commands_guardrails">ガードレール</string>
+    <!-- On-device crash / bug reports (docs/crash-reports.md) -->
+    <string name="crash_report_title">datawatch が予期せず終了しました。レポートを送信しますか？</string>
+    <string name="crash_report_body">レポートにはエラー、アプリのバージョン、デバイスのモデル、最近のアプリログが含まれます。サーバーアドレス、IP アドレス、トークンは削除されます。「送信」をタップしない限り、何も送信されません。</string>
+    <string name="crash_report_send">送信</string>
+    <string name="crash_report_view">表示</string>
+    <string name="crash_report_dismiss">破棄</string>
+    <string name="crash_report_view_title">レポート</string>
+    <string name="crash_report_close">閉じる</string>
+    <string name="crash_report_share_title">レポートを送信</string>
+    <string name="bug_report_card_title">サポート</string>
+    <string name="bug_report_row_title">バグを報告</string>
+    <string name="bug_report_row_summary">最近のアプリログと状況のメモを共有します</string>
+    <string name="bug_report_dialog_body">メモと最近のアプリログがレポートに含まれます。サーバーアドレス、IP アドレス、トークンは削除されます。送信先はご自身で選べます。</string>
+    <string name="bug_report_what_happened">何が起きましたか？</string>
+    <string name="bug_report_cancel">キャンセル</string>
 </resources>

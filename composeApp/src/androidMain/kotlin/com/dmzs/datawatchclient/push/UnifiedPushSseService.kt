@@ -47,7 +47,7 @@ public class UnifiedPushSseService : Service() {
         try {
             startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
         } catch (e: Throwable) {
-            android.util.Log.w("UnifiedPushSse", "startForeground failed: ${e.message} — service will stop")
+            com.dmzs.datawatchclient.diagnostics.dwLog("UnifiedPushSse", "startForeground failed: ${e.message} — service will stop")
             startForegroundFailed = true
             stopSelf()
         }
@@ -151,7 +151,7 @@ public class UnifiedPushSseService : Service() {
             try {
                 context.startForegroundService(intent)
             } catch (e: Throwable) {
-                android.util.Log.w("UnifiedPushSse", "startForegroundService denied: ${e.message}")
+                com.dmzs.datawatchclient.diagnostics.dwLog("UnifiedPushSse", "startForegroundService denied: ${e.message}")
             }
         }
     }

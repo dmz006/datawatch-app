@@ -1402,4 +1402,19 @@
     <string name="community_plugins_installing">Instalando…</string>
     <string name="community_plugins_installed">Instalado</string>
     <string name="session_detail_commands_guardrails">Guardrails</string>
+    <!-- On-device crash / bug reports (docs/crash-reports.md) -->
+    <string name="crash_report_title">datawatch se cerró inesperadamente. ¿Enviar un informe?</string>
+    <string name="crash_report_body">El informe incluye el error, la versión de la app, el modelo del dispositivo y el registro reciente de la app. Se eliminan las direcciones de servidor, las direcciones IP y los tokens. No se envía nada a menos que toques Enviar.</string>
+    <string name="crash_report_send">Enviar</string>
+    <string name="crash_report_view">Ver</string>
+    <string name="crash_report_dismiss">Descartar</string>
+    <string name="crash_report_view_title">Informe</string>
+    <string name="crash_report_close">Cerrar</string>
+    <string name="crash_report_share_title">Enviar informe</string>
+    <string name="bug_report_card_title">Soporte</string>
+    <string name="bug_report_row_title">Enviar informe de error</string>
+    <string name="bug_report_row_summary">Comparte el registro reciente de la app y una nota sobre lo ocurrido</string>
+    <string name="bug_report_dialog_body">Tu nota y el registro reciente de la app se incluyen en el informe. Se eliminan las direcciones de servidor, las direcciones IP y los tokens. Tú eliges adónde enviarlo.</string>
+    <string name="bug_report_what_happened">¿Qué ha pasado?</string>
+    <string name="bug_report_cancel">Cancelar</string>
 </resources>

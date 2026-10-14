@@ -124,7 +124,7 @@ public class NotificationPoster(private val context: Context) {
             nm.notify(notifId, builder.build())
         } catch (e: SecurityException) {
             // POST_NOTIFICATIONS not granted on Android 13+; surface to logcat only.
-            android.util.Log.w("NotificationPoster", "post denied: ${e.message}")
+            com.dmzs.datawatchclient.diagnostics.dwLog("NotificationPoster", "post denied: ${e.message}")
         }
     }
 

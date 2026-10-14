@@ -69,7 +69,7 @@ public class PushRegistrationCoordinator(private val context: Context) {
         ).fold(
             onSuccess = { deviceId -> store.setDeviceIdFor(profile.id, deviceId) },
             onFailure = { err ->
-                android.util.Log.w(
+                com.dmzs.datawatchclient.diagnostics.dwLog(
                     "PushRegistration",
                     "registerDevice failed for ${profile.id}: ${err.message}",
                 )

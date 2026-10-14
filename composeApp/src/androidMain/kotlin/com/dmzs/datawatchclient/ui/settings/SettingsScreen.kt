@@ -468,6 +468,7 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                                 com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
                                 EncryptionStatusCard()
+                                com.dmzs.datawatchclient.ui.about.BugReportCard()
                             }
                         }
                     }

@@ -29,7 +29,7 @@ public class WearHeartbeatWorker(
         runCatching {
             WearSyncService(applicationContext).fetchAndPublishDashboard()
         }.onFailure { err ->
-            android.util.Log.w(TAG, "heartbeat fetchAndPublishDashboard FAILED: ${err.message}")
+            com.dmzs.datawatchclient.diagnostics.dwLog(TAG, "heartbeat fetchAndPublishDashboard FAILED: ${err.message}")
         }
         return Result.success()
     }

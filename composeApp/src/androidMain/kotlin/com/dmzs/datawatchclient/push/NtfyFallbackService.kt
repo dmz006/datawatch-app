@@ -74,7 +74,7 @@ public class NtfyFallbackService : Service() {
         try {
             startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
         } catch (e: Throwable) {
-            android.util.Log.w("NtfyFallback", "startForeground failed: ${e.message} — service will stop")
+            com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "startForeground failed: ${e.message} — service will stop")
             startForegroundFailed = true
             stopSelf()
         }
@@ -138,7 +138,7 @@ public class NtfyFallbackService : Service() {
                 jobs.getOrPut(profile.id) { scope.launch { subscribe(server, topic) } }
             }
         } catch (e: Throwable) {
-            android.util.Log.w("NtfyFallback", "reconcile failed: ${e.message}")
+            com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "reconcile failed: ${e.message}")
         }
     }
 
@@ -160,7 +160,7 @@ public class NtfyFallbackService : Service() {
                 backoff = 2_000L
             } catch (e: Throwable) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("NtfyFallback", "subscription error: ${e.message}; retrying in ${backoff}ms")
+                com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "subscription error: ${e.message}; retrying in ${backoff}ms")
                 delay(backoff)
                 backoff = (backoff * 2).coerceAtMost(60_000L)
             }
@@ -227,7 +227,7 @@ public class NtfyFallbackService : Service() {
             try {
                 context.startForegroundService(intent)
             } catch (e: Throwable) {
-                android.util.Log.w("NtfyFallback", "startForegroundService denied: ${e.message}")
+                com.dmzs.datawatchclient.diagnostics.dwLog("NtfyFallback", "startForegroundService denied: ${e.message}")
             }
         }
     }

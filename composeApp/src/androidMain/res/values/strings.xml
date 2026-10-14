@@ -1715,4 +1715,19 @@
     <string name="community_plugins_installing">Installing…</string>
     <string name="community_plugins_installed">Installed</string>
     <string name="session_detail_commands_guardrails">Guardrails</string>
+    <!-- On-device crash / bug reports (docs/crash-reports.md) -->
+    <string name="crash_report_title">datawatch closed unexpectedly. Send a report?</string>
+    <string name="crash_report_body">The report has the error, the app version, your device model and the recent app log. Server addresses, IP addresses and tokens are removed. Nothing is sent unless you tap Send.</string>
+    <string name="crash_report_send">Send</string>
+    <string name="crash_report_view">View</string>
+    <string name="crash_report_dismiss">Dismiss</string>
+    <string name="crash_report_view_title">Report</string>
+    <string name="crash_report_close">Close</string>
+    <string name="crash_report_share_title">Send report</string>
+    <string name="bug_report_card_title">Support</string>
+    <string name="bug_report_row_title">Send bug report</string>
+    <string name="bug_report_row_summary">Share the recent app log and a note about what happened</string>
+    <string name="bug_report_dialog_body">Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it.</string>
+    <string name="bug_report_what_happened">What happened?</string>
+    <string name="bug_report_cancel">Cancel</string>
 </resources>
