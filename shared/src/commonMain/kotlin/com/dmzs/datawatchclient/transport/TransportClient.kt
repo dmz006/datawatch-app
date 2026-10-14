@@ -2014,6 +2014,41 @@ public interface TransportClient {
         prdId: String,
         maxConcurrentTasks: Int,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("setPrdConcurrency"))
+
+    // ---- Verification (judge) LLM overrides (server v9.0.73+) ----
+    // Each body carries `verification_backend` / `verification_model` /
+    // `verification_effort`. Presence-aware on the server: a null argument is
+    // omitted (field left unchanged), "" clears it (inherit). Precedence
+    // task > story > Automaton > global `autonomous.verification_*`.
+
+    /** POST /api/autonomous/prds/{id}/set_task_verification_llm `{task_id, verification_*, actor}`. */
+    public suspend fun setTaskVerificationLlm(
+        prdId: String,
+        taskId: String,
+        backend: String?,
+        model: String?,
+        effort: String?,
+        actor: String? = "operator",
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("setTaskVerificationLlm"))
+
+    /** POST /api/autonomous/prds/{id}/set_story_verification_llm `{story_id, verification_*, actor}`. */
+    public suspend fun setStoryVerificationLlm(
+        prdId: String,
+        storyId: String,
+        backend: String?,
+        model: String?,
+        effort: String?,
+        actor: String? = "operator",
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("setStoryVerificationLlm"))
+
+    /** POST /api/autonomous/prds/{id}/set_verification_llm `{verification_*, actor}` — Automaton level. */
+    public suspend fun setPrdVerificationLlm(
+        prdId: String,
+        backend: String?,
+        model: String?,
+        effort: String?,
+        actor: String? = "operator",
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("setPrdVerificationLlm"))
 }
 
 /** One docs-index trust source (`skill:<name>` / `plugin:<name>`) plus its detail line. */

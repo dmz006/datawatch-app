@@ -21,6 +21,74 @@ struct PrdMiniPill: View {
     }
 }
 
+/// PWA `_prdVerifLLMSectionHTML`: the "Verification LLM" sub-section (Backend /
+/// Effort / Model) shared by the task, story and Automaton LLM sheets. Same pickers
+/// as the execution-LLM section; empty values inherit task → story → Automaton →
+/// global verification setting. Changing the backend clears the model.
+struct PrdVerificationLlmSection: View {
+    let hint: String
+    let options: IosPrdWizardOptions?
+    @Binding var backend: String
+    @Binding var effort: String
+    @Binding var model: String
+
+    var body: some View {
+        Section {
+            Picker("Backend", selection: Binding(
+                get: { backend },
+                set: { newValue in
+                    if newValue != backend { model = "" }
+                    backend = newValue
+                }
+            )) {
+                Text("(inherit)").tag("")
+                ForEach(backendChoices(), id: \.self) { Text($0).tag($0) }
+            }
+            Picker("Effort", selection: $effort) {
+                Text("(inherit)").tag("")
+                ForEach(effortChoices(), id: \.self) { Text($0).tag($0) }
+            }
+            if !backend.isEmpty {
+                if modelChoices().isEmpty {
+                    TextField("Model (optional)", text: $model)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                } else {
+                    Picker("Model (optional)", selection: $model) {
+                        Text("(inherit)").tag("")
+                        ForEach(modelChoices(), id: \.self) { Text($0).tag($0) }
+                    }
+                }
+            }
+        } header: {
+            Text("Verification LLM")
+        } footer: {
+            Text(L(hint))
+        }
+        .listRowBackground(DatawatchColors.surface)
+    }
+
+    private func backendChoices() -> [String] {
+        var list: [String] = options?.backends ?? []
+        if !backend.isEmpty && !list.contains(backend) { list.append(backend) }
+        return list
+    }
+
+    private func effortChoices() -> [String] {
+        var list: [String] = options?.efforts ?? []
+        if list.isEmpty { list = ["low", "medium", "high", "max"] }
+        if !effort.isEmpty && !list.contains(effort) { list.append(effort) }
+        return list
+    }
+
+    private func modelChoices() -> [String] {
+        guard let o = options else { return [] }
+        var list: [String] = IosAutomata.shared.modelsFor(options: o, backend: backend)
+        if !model.isEmpty && !list.contains(model) { list.append(model) }
+        return list
+    }
+}
+
 /// What the override sheet edits.
 enum PrdOverrideEdit: Identifiable {
     case storyLlm(PrdStoryDto)
@@ -54,6 +122,10 @@ struct PrdOverrideSheet: View {
     @State private var vars = ""
     /// Backend the model field belongs to — a change clears the model (not the prefill).
     @State private var modelBackend = ""
+    /// Verification (judge) LLM override — PWA `_prdVerifLLMSectionHTML`.
+    @State private var verifBackend = ""
+    @State private var verifEffort = ""
+    @State private var verifModel = ""
     @State private var saving = false
     @State private var errorMessage: String? = nil
 
@@ -104,6 +176,13 @@ struct PrdOverrideSheet: View {
         switch edit {
         case .storyLlm:
             llmSection(hint: "Per-story LLM override — empty inherits from the Automaton then the global config. All tasks in this story inherit this unless they have their own override.")
+            PrdVerificationLlmSection(
+                hint: "Which LLM judges this story's tasks — empty inherits the Automaton, then the global verification setting. Tasks with their own verification LLM keep it.",
+                options: options,
+                backend: $verifBackend,
+                effort: $verifEffort,
+                model: $verifModel
+            )
         case .taskSpecLlm:
             Section("Spec") {
                 TextEditor(text: $spec)
@@ -112,6 +191,13 @@ struct PrdOverrideSheet: View {
             }
             .listRowBackground(DatawatchColors.surface)
             llmSection(hint: "Per-task LLM override — empty inherits automaton then global.")
+            PrdVerificationLlmSection(
+                hint: "Which LLM judges this task's work — empty inherits story, then Automaton, then the global verification setting.",
+                options: options,
+                backend: $verifBackend,
+                effort: $verifEffort,
+                model: $verifModel
+            )
         case .storyProfile(let s):
             Section {
                 Picker("Profile", selection: $profileName) {
@@ -197,10 +283,12 @@ struct PrdOverrideSheet: View {
         case .storyLlm(let s):
             backend = s.backend ?? ""; effort = s.effort ?? ""; model = s.model ?? ""
             modelBackend = backend
+            verifBackend = s.verificationBackend ?? ""; verifEffort = s.verificationEffort ?? ""; verifModel = s.verificationModel ?? ""
         case .taskSpecLlm(let t):
             spec = t.spec.isEmpty ? t.task : t.spec
             backend = t.backend ?? ""; effort = t.effort ?? ""; model = t.model ?? ""
             modelBackend = backend
+            verifBackend = t.verificationBackend ?? ""; verifEffort = t.verificationEffort ?? ""; verifModel = t.verificationModel ?? ""
         case .storyProfile(let s):
             profileName = s.executionProfile ?? ""
         case .instantiate:
@@ -229,8 +317,16 @@ struct PrdOverrideSheet: View {
     private func performSave() async throws {
         switch edit {
         case .storyLlm(let s):
-            let body: [String: String] = ["story_id": s.id, "backend": backend, "effort": effort, "model": model, "actor": "operator"]
-            try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prdId, action: "set_story_llm", body: body)
+            let llmChanged: Bool = backend != (s.backend ?? "") || effort != (s.effort ?? "") || model != (s.model ?? "")
+            if llmChanged {
+                let body: [String: String] = ["story_id": s.id, "backend": backend, "effort": effort, "model": model, "actor": "operator"]
+                try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prdId, action: "set_story_llm", body: body)
+            }
+            if verifChanged(s.verificationBackend, s.verificationEffort, s.verificationModel) {
+                var body: [String: String] = verifBody()
+                body["story_id"] = s.id
+                try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prdId, action: "set_story_verification_llm", body: body)
+            }
         case .storyProfile(let s):
             let body: [String: String] = ["story_id": s.id, "profile": profileName, "actor": "operator"]
             try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prdId, action: "set_story_profile", body: body)
@@ -245,9 +341,29 @@ struct PrdOverrideSheet: View {
                 let body: [String: String] = ["task_id": t.id, "backend": backend, "effort": effort, "model": model, "actor": "operator"]
                 try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prdId, action: "set_task_llm", body: body)
             }
+            if verifChanged(t.verificationBackend, t.verificationEffort, t.verificationModel) {
+                var body: [String: String] = verifBody()
+                body["task_id"] = t.id
+                try await ServiceLocatorAsync.prdAction(profile: profile, prdId: prdId, action: "set_task_verification_llm", body: body)
+            }
         case .instantiate:
             try await instantiate()
         }
+    }
+
+    /// PWA `_prdVerifLLMChanged`: only call the verification setter when a value changed.
+    private func verifChanged(_ curBackend: String?, _ curEffort: String?, _ curModel: String?) -> Bool {
+        verifBackend != (curBackend ?? "") || verifEffort != (curEffort ?? "") || verifModel != (curModel ?? "")
+    }
+
+    /// PWA `_prdReadVerifLLM` body: all three fields ("" clears = inherit) + actor.
+    private func verifBody() -> [String: String] {
+        [
+            "verification_backend": verifBackend,
+            "verification_model": verifModel,
+            "verification_effort": verifEffort,
+            "actor": "operator",
+        ]
     }
 
     private func editTaskSpec(taskId: String, spec: String) async throws {

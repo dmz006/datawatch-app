@@ -70,6 +70,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
     LaunchedEffect(Unit) {
         vm.refresh()
         while (true) {
+            com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
             delay(8_000)
             vm.refresh()
         }

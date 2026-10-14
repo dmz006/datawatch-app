@@ -36,6 +36,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 deleteSessionsForProfile:
 DELETE FROM session WHERE server_profile_id = ?;
 
+deleteSessionForProfile:
+DELETE FROM session WHERE id = ? AND server_profile_id = ?;
+
 selectSessionProfileIds:
 SELECT DISTINCT server_profile_id FROM session;
 

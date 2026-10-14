@@ -1402,4 +1402,32 @@
     <string name="community_plugins_installing">Installation…</string>
     <string name="community_plugins_installed">Installé</string>
     <string name="session_detail_commands_guardrails">Garde-fous</string>
+    <string name="loading_sessions">Chargement des sessions…</string>
+    <string name="loading_alerts">Chargement des alertes…</string>
+    <string name="loading_dashboard">Chargement du tableau de bord…</string>
+    <string name="loading_automata">Chargement des automates…</string>
+    <string name="refreshing_cached_data">Données enregistrées · actualisation…</string>
+    <!-- On-device crash / bug reports (docs/crash-reports.md) -->
+    <string name="crash_report_title">datawatch s\'est fermé de manière inattendue. Envoyer un rapport ?</string>
+    <string name="crash_report_body">Le rapport contient l\'erreur, la version de l\'app, le modèle de l\'appareil et le journal récent de l\'app. Les adresses de serveur, les adresses IP et les jetons sont supprimés. Rien n\'est envoyé tant que vous n\'appuyez pas sur Envoyer.</string>
+    <string name="crash_report_send">Envoyer</string>
+    <string name="crash_report_view">Afficher</string>
+    <string name="crash_report_dismiss">Ignorer</string>
+    <string name="crash_report_view_title">Rapport</string>
+    <string name="crash_report_close">Fermer</string>
+    <string name="crash_report_share_title">Envoyer le rapport</string>
+    <string name="bug_report_card_title">Assistance</string>
+    <string name="bug_report_row_title">Envoyer un rapport de bug</string>
+    <string name="bug_report_row_summary">Partager le journal récent de l\'app et une note sur ce qui s\'est passé</string>
+    <string name="bug_report_dialog_body">Votre note et le journal récent de l\'app sont inclus dans le rapport. Les adresses de serveur, les adresses IP et les jetons sont supprimés. Vous choisissez où l\'envoyer.</string>
+    <string name="bug_report_what_happened">Que s\'est-il passé ?</string>
+    <string name="bug_report_cancel">Annuler</string>
+    <!-- Verification LLM override + foreign-file drift (server v9.0.73 / v9.0.75) -->
+    <string name="prd_verif_llm_title">LLM de vérification</string>
+    <string name="prd_verif_llm_hint">Quel LLM juge le travail de cette tâche — vide hérite de la story, puis de l\'automate, puis du réglage global de vérification.</string>
+    <string name="prd_verif_llm_story_hint">Quel LLM juge les tâches de cette story — vide hérite de l\'automate, puis du réglage global de vérification. Les tâches ayant leur propre LLM de vérification le conservent.</string>
+    <string name="prd_verif_llm_automaton_hint">Quel LLM juge les tâches de cet automate — vide hérite du réglage global de vérification. Les LLM de vérification de story et de tâche sont prioritaires.</string>
+    <string name="prd_verif_verifier_label">Jugé par</string>
+    <string name="prd_verif_source_automaton">automate</string>
+    <string name="automata_task_foreign_file_drift">Dérive de fichiers étrangers</string>
 </resources>

@@ -43,6 +43,29 @@ public object PrdLlmBadge {
         return if (editable || p.isEmpty()) null else "prof: $p"
     }
 
+    /**
+     * PWA "Judged by" line value under a task's verification result (renderTask,
+     * server v9.0.73+): `<backend>[ / <model>][ / <effort>][ (<source>)]`, or null when
+     * the server didn't record a verifier backend (PWA shows nothing then). Source
+     * `prd` is shown as [automatonWord] (PWA `prd_verif_source_automaton`); other
+     * sources (`task`, `story`, `global`, `pool`) are shown as sent.
+     */
+    public fun verifierLabel(
+        verification: PrdTaskVerificationDto?,
+        automatonWord: String,
+    ): String? {
+        val b = verification?.verifierBackend?.trim().orEmpty()
+        if (b.isEmpty()) return null
+        val m = verification?.verifierModel?.trim().orEmpty()
+        val e = verification?.verifierEffort?.trim().orEmpty()
+        val src = verification?.verifierSource?.trim().orEmpty()
+        val sb = StringBuilder(b)
+        if (m.isNotEmpty()) sb.append(" / ").append(m)
+        if (e.isNotEmpty()) sb.append(" / ").append(e)
+        if (src.isNotEmpty()) sb.append(" (").append(if (src == "prd") automatonWord else src).append(')')
+        return sb.toString()
+    }
+
     /** PWA `editable` gate for story/task structural + LLM edits (renderStory). */
     public fun isEditable(prdStatus: String): Boolean =
         prdStatus.lowercase() in setOf("needs_review", "revisions_asked", "cancelled")

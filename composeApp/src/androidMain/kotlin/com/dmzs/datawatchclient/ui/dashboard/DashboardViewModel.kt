@@ -13,6 +13,8 @@ import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.SmokeProgressDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,10 @@ import kotlinx.coroutines.launch
 public data class DashboardState(
     val cards: List<DashboardCardDto> = emptyList(),
     val cardsLoaded: Boolean = false,
+    /** A poll is in flight (drives the cached-data strip). */
+    val refreshing: Boolean = false,
+    /** Last successful stats load, epoch ms (0 = not yet). */
+    val lastLoadedMs: Long = 0L,
     val sessions: List<Session> = emptyList(),
     val stats: StatsDto? = null,
     val smokeProgress: SmokeProgressDto? = null,
@@ -48,6 +54,8 @@ public data class DashboardState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 public class DashboardViewModel : ViewModel() {
+    public val pollGate: com.dmzs.datawatchclient.di.PollGate = com.dmzs.datawatchclient.di.PollGate()
+
     private val _state = MutableStateFlow(DashboardState())
 
     private val _allProfiles =
@@ -138,12 +146,22 @@ public class DashboardViewModel : ViewModel() {
 
         var slowPollTick = 0
         while (currentCoroutineContext().isActive) {
+            // Only while the Dashboard is on screen and the app is visible: this
+            // loop used to keep running on every other tab (2026-10-14 profile).
+            pollGate.await()
             val t = transport
             if (t != null) {
-                t.listSessions()
-                    .onSuccess { sessions -> _state.value = _state.value.copy(sessions = sessions, error = null) }
-                    .onFailure { e -> _state.value = _state.value.copy(error = e.message ?: "Error") }
-                t.stats().onSuccess { stats -> _state.value = _state.value.copy(stats = stats) }
+                _state.value = _state.value.copy(refreshing = true)
+                // The full session list is large on a busy server (3 MB measured),
+                // so it refreshes on the slow tick; stats stay on the fast one.
+                if (slowPollTick % 3 == 0) {
+                    t.listSessions()
+                        .onSuccess { sessions -> _state.value = _state.value.copy(sessions = sessions, error = null) }
+                        .onFailure { e -> _state.value = _state.value.copy(error = e.message ?: "Error") }
+                }
+                t.stats().onSuccess { stats ->
+                    _state.value = _state.value.copy(stats = stats, lastLoadedMs = System.currentTimeMillis())
+                }
                 t.getSmokeProgress().onSuccess { sp -> _state.value = _state.value.copy(smokeProgress = sp) }
                 if (slowPollTick % 3 == 0) {
                     t.listPrds().onSuccess { list ->
@@ -157,10 +175,16 @@ public class DashboardViewModel : ViewModel() {
                             it.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
                                 it.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
                         }.take(MAX_BOARDS)
-                    val boards = active.mapNotNull { s -> t.fetchSessionStatusJson(s.fullId ?: s.id).getOrNull() }
+                    val boards =
+                        kotlinx.coroutines.coroutineScope {
+                            active.map { s -> async { t.fetchSessionStatusJson(s.fullId ?: s.id).getOrNull() } }
+                                .awaitAll()
+                                .filterNotNull()
+                        }
                     _state.value = _state.value.copy(boards = boards)
                 }
             }
+            _state.value = _state.value.copy(refreshing = false)
             slowPollTick++
             delay(POLL_MS)
         }

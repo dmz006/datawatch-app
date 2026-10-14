@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import DatawatchShared
 
 /// Inline "What's it doing?" state for one card (PWA state.currentStatus[fullId]).
@@ -349,7 +350,9 @@ struct SessionCardView: View {
     /// PWA `↳ child of [host]` lineage badge (BL347), muted at 0.7 opacity.
     private func parentBadge(_ parentId: String) -> some View {
         let host: String = parentId.split(separator: "-").first.map(String.init) ?? parentId
-        return Text("↳ " + L("child of") + " [" + host + "]")
+        // Interpolation, not a `+` chain: the chain took >500 ms to type-check.
+        let label: String = "↳ \(L("child of")) [\(host)]"
+        return Text(label)
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(DatawatchColors.onSurfaceMuted)
             .padding(.horizontal, 7)
@@ -608,18 +611,35 @@ struct SessionRowBackground: View {
     }
 }
 
+/// One app-wide 1 s tick shared by every `ElapsedClock` (instead of a
+/// `TimelineView` timer per session card).
+enum SharedSecondClock {
+    static let ticks = Timer.publish(every: 1, on: .main, in: .common).autoconnect().share()
+}
+
 /// Live elapsed time since session start (PWA .session-elapsed, accent2 tabular).
+///
+/// Driven by the shared 1 s tick; the label state only changes when the
+/// formatted text does, so a card past one hour ("1h 02m") re-renders once a
+/// minute rather than every second.
 struct ElapsedClock: View {
     let since: Int64
+    @State private var text: String = ""
+
     var body: some View {
-        TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-            Text(ElapsedClock.format(Int64(ctx.date.timeIntervalSince1970 * 1000) - since))
-                .font(.system(size: 10))
-                .monospacedDigit()
-                .foregroundStyle(DatawatchColors.secondary.opacity(0.85))
-        }
-        .accessibilityLabel("Elapsed time")
+        Text(text.isEmpty ? ElapsedClock.format(ElapsedClock.nowMs() - since) : text)
+            .font(.system(size: 10))
+            .monospacedDigit()
+            .foregroundStyle(DatawatchColors.secondary.opacity(0.85))
+            .onReceive(SharedSecondClock.ticks) { date in
+                let next: String = ElapsedClock.format(Int64(date.timeIntervalSince1970 * 1000) - since)
+                if next != text { text = next }
+            }
+            .onChange(of: since) { _ in text = "" }
+            .accessibilityLabel("Elapsed time")
     }
+
+    static func nowMs() -> Int64 { Int64(Date().timeIntervalSince1970 * 1000) }
 
     static func format(_ ms: Int64) -> String {
         let s: Int64 = max(0, ms / 1000)

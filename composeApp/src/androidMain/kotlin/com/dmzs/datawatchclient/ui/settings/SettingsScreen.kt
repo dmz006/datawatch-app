@@ -68,7 +68,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.di.ServiceLocator
@@ -135,7 +134,7 @@ public fun SettingsScreen(
     onAddServer: () -> Unit = {},
     onEditServer: (String) -> Unit = {},
     onNavigateToObserver: () -> Unit = {},
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val profiles by ServiceLocator.profileRepository.observeAll()
         .collectAsState(initial = emptyList())
@@ -468,6 +467,7 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                                 com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
                                 EncryptionStatusCard()
+                                com.dmzs.datawatchclient.ui.about.BugReportCard()
                             }
                         }
                     }

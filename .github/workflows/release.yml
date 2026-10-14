@@ -10,6 +10,16 @@ on:
         description: 'Tag to build and publish (e.g. v1.12.0). Leave blank to use current ref.'
         required: false
         type: string
+      ios_only:
+        description: >-
+          iOS only: build and upload to TestFlight (and submit for Beta App Review)
+          from the selected branch, without Play or a GitHub release. For an
+          operator-approved iOS-ahead release while Android is held (for example
+          during a Play review). Bump the version code first; TestFlight rejects
+          a reused build number.
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -73,6 +83,8 @@ jobs:
     name: Build AABs + create GitHub release
     runs-on: ubuntu-latest
     needs: test
+    # Skipped for an iOS-only dispatch; publish-play and release-parity then skip too.
+    if: ${{ !inputs.ios_only }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -350,6 +362,7 @@ jobs:
           fastlane beta
 
       - name: Attach IPA to GitHub release
+        if: ${{ !inputs.ios_only }}
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag_name || github.ref_name }}

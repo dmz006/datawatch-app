@@ -601,9 +601,14 @@ public fun TerminalView(
                 webChromeClient =
                     object : WebChromeClient() {
                         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                            // println instead of Log.d so JS console messages survive
-                            // ProGuard's release-build log stripping — load-bearing
-                            // for diagnosing xterm scroll/dispatch issues.
+                            // Release builds keep only JS warnings and errors: the
+                            // terminal logs every redraw at LOG level (several per
+                            // second), which flooded logcat (2026-10-14 profile).
+                            val level = consoleMessage.messageLevel()
+                            val important =
+                                level == ConsoleMessage.MessageLevel.ERROR ||
+                                    level == ConsoleMessage.MessageLevel.WARNING
+                            if (!important && !com.dmzs.datawatchclient.BuildConfig.DEBUG) return true
                             println(
                                 "DwTerm-js: ${consoleMessage.messageLevel()} " +
                                     "${consoleMessage.message()} " +
@@ -692,11 +697,9 @@ public fun TerminalView(
         val arrayLiteral =
             pc.lines.joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
         val linesJson = JSONObject.quote(arrayLiteral)
-        // println survives ProGuard's default rules where Log.d is stripped —
-        // gives us visibility into dispatch cadence in release builds when
-        // diagnosing live-tail lag.
-        @Suppress("ForbiddenComment")
-        println("DwTerm-dispatch: pc rows=${pc.lines.size} first=${pc.isFirst} ts=${pc.ts}")
+        if (com.dmzs.datawatchclient.BuildConfig.DEBUG) {
+            println("DwTerm-dispatch: pc rows=${pc.lines.size} first=${pc.isFirst} ts=${pc.ts}")
+        }
         webView.evaluateJavascript(
             "window.dwPaneCapture($linesJson, ${pc.isFirst});",
             null,

@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -87,6 +88,6 @@ public class VpnMonitor(private val context: Context) {
     }
 
     private fun showVpnDropNotification() {
-        android.util.Log.w("VpnMonitor", "VPN dropped — user should re-enable Tailscale")
+        dwLog("VpnMonitor", "VPN dropped — user should re-enable Tailscale")
     }
 }

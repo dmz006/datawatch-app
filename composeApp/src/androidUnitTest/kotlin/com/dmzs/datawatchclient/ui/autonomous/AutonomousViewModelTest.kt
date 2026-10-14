@@ -175,6 +175,39 @@ class AutonomousViewModelTest {
         }
 
     @Test
+    fun `verification LLM setters map backend effort model to the transport`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.setPrdVerificationLlm(any(), any(), any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.setStoryVerificationLlm(any(), any(), any(), any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.setTaskVerificationLlm(any(), any(), any(), any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
+
+            val vm = AutonomousViewModel(r)
+            // Triple is (backend, effort, model); transport takes (backend, model, effort).
+            vm.setPrdVerificationLlm("prd-1", Triple("ollama", "low", "qwen3:8b"))
+            vm.setStoryVerificationLlm("prd-1", "s1", Triple("", "", ""))
+            vm.setTaskVerificationLlm("prd-1", "t1", Triple("claude-code", "high", "opus"))
+
+            coVerify { t.setPrdVerificationLlm("prd-1", "ollama", "qwen3:8b", "low", any()) }
+            coVerify { t.setStoryVerificationLlm("prd-1", "s1", "", "", "", any()) }
+            coVerify { t.setTaskVerificationLlm("prd-1", "t1", "claude-code", "opus", "high", any()) }
+        }
+
+    @Test
+    fun `verification LLM failure surfaces a banner`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.setTaskVerificationLlm(any(), any(), any(), any(), any(), any()) } returns
+                Result.failure(RuntimeException("unknown LLM"))
+            val vm = AutonomousViewModel(r)
+            vm.setTaskVerificationLlm("prd-1", "t1", Triple("nope", "", ""))
+            assertTrue(vm.state.value.banner!!.contains("unknown LLM"))
+        }
+
+    @Test
     fun `runPrd calls prdAction run`() =
         runTest(testDispatcher) {
             val (t, r) = fakeResolver()

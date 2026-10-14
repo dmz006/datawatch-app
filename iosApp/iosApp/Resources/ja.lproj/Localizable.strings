@@ -1933,3 +1933,25 @@
 "%1$@: %2$@" = "%1$@: %2$@";
 "Authentication failed — this server has no valid token configured" = "認証に失敗しました — このサーバーには有効なトークンが設定されていません";
 "Back to %@" = "%@ に戻る";
+
+/* iOS performance: shared first-load / refreshing indicator (ScreenLoadState) */
+"Refreshing…" = "更新中…";
+"Loading statistics…" = "統計を読み込み中…";
+"Loading dashboard…" = "ダッシュボードを読み込み中…";
+/* On-device crash / bug reports (docs/crash-reports.md). */
+"datawatch closed unexpectedly. Send a report?" = "datawatch が予期せず終了しました。レポートを送信しますか？";
+"The report has the error, the app version, your device model and the recent app log. Server addresses, IP addresses and tokens are removed. Nothing is sent unless you tap Send." = "レポートにはエラー、アプリのバージョン、デバイスのモデル、最近のアプリログが含まれます。サーバーアドレス、IP アドレス、トークンは削除されます。「送信」をタップしない限り、何も送信されません。";
+"View" = "表示";
+"Report" = "レポート";
+"Send bug report" = "バグを報告";
+"Share the recent app log and a note about what happened" = "最近のアプリログと状況のメモを共有します";
+"Support" = "サポート";
+"What happened?" = "何が起きましたか？";
+"Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it." = "メモと最近のアプリログがレポートに含まれます。サーバーアドレス、IP アドレス、トークンは削除されます。送信先はご自身で選べます。";
+"Verification LLM" = "検証LLM";
+"Which LLM judges this task's work — empty inherits story, then Automaton, then the global verification setting." = "このタスクの作業を評価するLLM — 空の場合はストーリー、オートマトン、グローバル検証設定の順に継承。";
+"Which LLM judges this story's tasks — empty inherits the Automaton, then the global verification setting. Tasks with their own verification LLM keep it." = "このストーリーのタスクを評価するLLM — 空の場合はオートマトン、グローバル検証設定の順に継承。独自の検証LLMを持つタスクはそれを維持。";
+"Which LLM judges this Automaton's tasks — empty inherits the global verification setting. Story and task verification LLMs take precedence." = "このオートマトンのタスクを評価するLLM — 空の場合はグローバル検証設定を継承。ストーリーとタスクの検証LLMが優先。";
+"Judged by" = "評価者";
+"automaton" = "オートマトン";
+"Foreign file drift" = "無関係なファイルの混入";

@@ -8,6 +8,59 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Automata parity
+Parity with datawatch v9.0.73 (per-unit verification LLM) and v9.0.75 (foreign-file drift), on Android and iOS. Closes the Android parity item the server tracks as datawatch-app#257.
+- **Choose which LLM verifies a task, a story or a whole Automaton.** The task edit dialog, the story LLM dialog and the Automaton's Set LLM dialog each have a **Verification LLM** section with the same Backend / Effort / Model pickers as the execution LLM. Leave a field empty to inherit, in the order task, story, Automaton, then the global verification setting. Saving calls the server's `set_task_verification_llm`, `set_story_verification_llm` or `set_verification_llm` only when a value changed.
+- **See which verifier judged a task.** Under a task's verification result, a "Judged by" line shows the backend, model and effort the verifier actually used, and where that choice came from (task, story, automaton, global or pool).
+- **Foreign-file drift warning.** When a task's commit swept in files that someone else had left uncommitted, the task shows a ⚠ chip with the file count, and its expanded view lists the files under **Foreign file drift**.
+- Older servers still work: every new field is optional.
+- New strings in EN, DE, ES, FR and JA, copied from the PWA's locale bundles.
+
+### Android and shared performance
+On 2026-10-14 the app was measured against a busy production server (484 sessions, 500 alerts), going through a read-only proxy. While idle on Sessions it used **33 MB/min**, rising to **52 MB/min** after visiting each tab once. `/api/alerts` was requested 84 times a minute. After these fixes, the same runs measure **9.5 MB/min** and **16 MB/min**. Alerts are requested 12 times a minute, and there is **no traffic in the background**. Most of what remains is the server's 3 MB session-list push, tracked as dmz006/datawatch#242.
+- **One alerts poller.** Every tab built its own `AlertsViewModel`, each with a 5 s loop (7 at once). Alerts and Sessions view-models are now shared by the whole app (`activityViewModel()`). Session detail no longer creates a second `SessionsViewModel`, which also meant a second socket and a second poll, just for the watch toggle.
+- **Nothing polls while the app is in the background**, and tab-bound loops (Dashboard, Automata progress) run only while their screen is shown. The global WebSocket closes on stop and reopens on return.
+- **Less work on the main thread.**
+  - REST responses and WS frames are decoded on a background dispatcher.
+  - The session cache writes off the main thread, skips unchanged lists and rewrites only the rows that changed (it used to delete and re-insert every row of the encrypted database on each push).
+- **WebSocket frames:**
+  - A session's own socket no longer re-decodes the 3 MB session list when the global socket already routes it.
+  - The global socket skips terminal output frames (about 1,000 a minute) before decoding.
+  - The per-frame debug logging is gone.
+- **Dashboard** refreshes the full session list every 30 s, not every 10 s, and loads session boards in parallel. **Automata progress** refreshes the session list every 30 s, not every 5 s.
+- **Home-screen widgets** refresh at most once a minute. **Wear** syncs only when what the watch shows changed.
+- **Release-build logging:** the terminal no longer logs every redraw. JS warnings and errors are still logged.
+- **Loading indicator (Android):**
+  - First load shows the splash eye with "Loading sessions…", "Loading alerts…", "Loading dashboard…" or "Loading Automata…".
+  - When saved data is on screen and a refresh is running, a thin progress bar reads "Showing saved data · refreshing…".
+  - Localised in EN, DE, ES, FR and JA.
+
+### Automata workflow
+- **App changes can run as datawatch Automata.** `scripts/automata/verify-app.sh` runs the CI gate plus the locale gate as each task's verification. The Automaton type `mobile-app` is registered on the daemon. [docs/automata-workflow.md](docs/automata-workflow.md) covers per-task execution and verification models (verification LLM, datawatch v9.0.67+), the file-drift guardrail, and the CI-only iOS check.
+
+### Release
+- **`release.yml` can ship iOS alone** (`workflow_dispatch` with `ios_only: true`). It builds and uploads to TestFlight and submits the build for Beta App Review from the selected branch, with no Play upload, no GitHub release and no parity check. Use it only when the operator approves an iOS release while Android is held, for example during a Play review. The version code must be bumped first.
+
+### iOS performance
+A tester reported the iPhone app was very slow against a busy server: 484 sessions, a 3 MB `/api/sessions` and a 3 MB WS `sessions` frame about 7 times a minute. Fixes:
+- **One shared WebSocket per server.** The alert feed, Sessions, Observer, Automata and Dashboard each opened their own global `/ws`, so every 3 MB frame was decoded once per socket. They now share one socket per server, which closes 5 s after the last screen leaves.
+- **Sessions come from the live WS data, not repeated 3 MB downloads.** The app keeps the latest list per server from the WS (single-session updates merged in) and screens get only lists that changed.
+  - **Alerts** polled `/api/alerts` and `/api/sessions` every 5 s (per server in All mode). Now `/api/alerts` every 15 s; sessions come from the WS, with a REST fallback at most every 60 s while the WS isn't live.
+  - **"Needs input" notifications** fetched `/api/sessions` every 15 s per server. They now follow the WS list; REST is a fallback at most every 120 s.
+  - **Session detail** re-fetched the whole list every 10 s to refresh one session. It now follows that session on the WS (REST fallback every 60 s while the WS is down).
+  - **Sessions and Dashboard** skip their 30 s REST refresh while the WS is live.
+- **Sessions list:** filtering, ordering and the chip counts run once per change on a background thread, not several times per redraw. Cards whose session didn't change aren't redrawn. Running cards share one 1 s clock instead of one timer each.
+- **Alerts list:** filtering, grouping and counts are computed once per change, and alert-to-session lookups use an index.
+- **Dashboard animations are capped:** the EKG at ~10 fps (it redrew at the display rate), the constellation at ~5 fps and the sparklines at ~2 fps. Motion speed is unchanged.
+- **The Settings stale-peer badge stops polling while the app is in the background.**
+- **New loading indicator** on Sessions, Alerts, Automata, Observer and Dashboard: the datawatch eye with a spinner on first load, and a thin bar with a "Refreshing…" pill while cached data refreshes. Localised in all app languages.
+### Added
+- **On-device crash and bug reports (Android and iOS).** No crash-reporting SDK and nothing sent automatically; the store privacy answers stay "no data collected". See [docs/crash-reports.md](docs/crash-reports.md).
+  - After a crash, the next launch asks "datawatch closed unexpectedly. Send a report?" with **Send**, **View** and **Dismiss**. Send opens your mail app addressed to support (or the share sheet) with the report in the body and attached as a .txt; Send and Dismiss delete the report.
+  - Android captures uncaught exceptions, and on Android 11+ also ANRs (with the system's ANR trace) and native crashes. iOS captures uncaught Kotlin and Objective-C exceptions, fatal signals, and MetricKit crash and hang diagnostics.
+  - **Settings › About › Support › Send bug report** sends a report without a crash: your note plus the recent app log.
+  - Reports include the app version, platform, OS version, device model, time, the stack trace and up to 300 recent app log lines. Tokens, `Authorization` headers, server addresses, host names and IP addresses are removed before you can view or send them.
+
 ### Dependencies
 - **Library catch-up that works on AGP 8.5.2** (part of Dependabot #242; the rest waits for BL418): kotlinx-coroutines 1.11.0, kotlinx-serialization 1.11.0, guava 33.7.2, zxing 3.5.4, Wear watchface 1.3.0, detekt 1.23.8, Gradle Play Publisher 3.13.0, turbine 1.2.1, mockk 1.14.11. Validated locally with the full CI gate and the phone/Wear/Auto release builds.
 - **androidx security-crypto 1.1.0** (from 1.1.0-alpha06, #243): the stable release deprecates the API but is bytecode-equivalent for our use, so stored tokens and the database key stay readable. **upload-artifact v7** (#240).

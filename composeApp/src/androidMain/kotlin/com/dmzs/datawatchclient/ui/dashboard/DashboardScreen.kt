@@ -88,8 +88,9 @@ public fun DashboardScreen(
     onOpenSession: (String) -> Unit = {},
     onExpandSession: (String) -> Unit = {},
     vm: DashboardViewModel = viewModel(),
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
+    com.dmzs.datawatchclient.di.BindPollGate(vm.pollGate)
     val state by vm.state.collectAsState()
     val reachable by vm.reachable.collectAsState()
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
@@ -152,8 +153,8 @@ public fun DashboardScreen(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
-                com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent(
-                    label = stringResource(R.string.common_loading),
+                com.dmzs.datawatchclient.ui.common.PageLoading(
+                    label = stringResource(R.string.loading_dashboard),
                 )
             }
             return@Scaffold
@@ -187,6 +188,10 @@ public fun DashboardScreen(
                 activeId = state.activeProfile?.id,
                 allMode = false,
                 onSelect = vm::selectProfile,
+            )
+            com.dmzs.datawatchclient.ui.common.CachedDataRefreshStrip(
+                refreshing = state.refreshing,
+                lastLoadedMs = state.lastLoadedMs,
             )
             // #236.2 — a proxied remote that can't be reached shows the real error
             // (and a way back) instead of an endless loader (PWA v8.73.5+).

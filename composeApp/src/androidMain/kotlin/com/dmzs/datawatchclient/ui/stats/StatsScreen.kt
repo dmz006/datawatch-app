@@ -428,6 +428,7 @@ private fun CertificatesCard() {
     LaunchedEffect(activeId) {
         lines = emptyList()
         while (true) {
+            com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
             val tr = com.dmzs.datawatchclient.ui.compute.resolveActiveTransport()
             lines =
                 tr?.acmeStatus()?.getOrNull()

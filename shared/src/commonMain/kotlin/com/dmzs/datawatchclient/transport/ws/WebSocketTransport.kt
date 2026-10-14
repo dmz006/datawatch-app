@@ -16,12 +16,14 @@ import io.ktor.http.Url
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
@@ -124,14 +126,20 @@ public class WebSocketTransport(
                             when (frame) {
                                 is Frame.Text -> {
                                     val text = frame.readText()
+                                    // Global frames (the full session list is ~3 MB on a
+                                    // busy server) are already routed by the global
+                                    // socket when one is open; decoding them again
+                                    // here doubled the work (2026-10-14 profile).
+                                    if (sniffFrameType(text) in GLOBAL_ROUTED_TYPES &&
+                                        WsConnectionHub.isConnected(profile.id)
+                                    ) {
+                                        continue
+                                    }
                                     val dto =
                                         runCatching {
                                             json.decodeFromString(WsFrameDto.serializer(), text)
                                         }.getOrNull()
-                                    if (dto == null) {
-                                        println("WsTransport: unparseable frame: ${text.take(120)}")
-                                        continue
-                                    }
+                                    if (dto == null) continue
                                     // B10: stats frames are global (not
                                     // session-scoped) — route to StatsHub
                                     // so StatsViewModel gets live updates
@@ -182,10 +190,6 @@ public class WebSocketTransport(
                                     // session's output / pane / chat text for the
                                     // channel- or ACP-ready markers.
                                     ChannelReadyHub.scanEvents(subscriptionId, events)
-                                    println(
-                                        "WsTransport: rx type=${dto.type} " +
-                                            "mapped=${events.size} bytes=${text.length}",
-                                    )
                                     if (events.isNotEmpty()) {
                                         for (ev in events) producer.trySend(ev)
                                     }
@@ -232,6 +236,8 @@ public class WebSocketTransport(
             }
             awaitClose()
         }
+            // Decode frames off the collector's thread (usually Main).
+            .flowOn(Dispatchers.Default)
 
     /**
      * Opens a persistent WS connection that routes only global frames to their
@@ -245,7 +251,7 @@ public class WebSocketTransport(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     public fun globalStream(): Flow<Unit> =
-        callbackFlow {
+        callbackFlow<Unit> {
             val wsUrl = buildWsUrl(profile.baseUrl)
             var backoff = INITIAL_BACKOFF_MS
             println("WsTransport[global]: stream start → $wsUrl")
@@ -273,6 +279,10 @@ public class WebSocketTransport(
                                 when (frame) {
                                     is Frame.Text -> {
                                         val text = frame.readText()
+                                        // Terminal output for every running session is
+                                        // broadcast to all clients (~1000 frames/min under
+                                        // load); the global socket never uses it.
+                                        if (sniffFrameType(text) in TERMINAL_TYPES) continue
                                         val dto = runCatching {
                                             json.decodeFromString(WsFrameDto.serializer(), text)
                                         }.getOrNull() ?: continue
@@ -309,6 +319,7 @@ public class WebSocketTransport(
             }
             awaitClose()
         }
+            .flowOn(Dispatchers.Default)
 
     /**
      * Converts `https://host:port` → `wss://host:port/ws` (and http→ws).
@@ -317,6 +328,30 @@ public class WebSocketTransport(
      * — the PWA's WS `connect()` proxy path (#234).
      */
     internal fun buildWsUrl(baseUrl: String): String = wsUrlFor(baseUrl)
+}
+
+/** Frame types the global socket routes to app-wide hubs. */
+internal val GLOBAL_ROUTED_TYPES: Set<String> = setOf("sessions", "session_state", "stats", "prd_update")
+
+/** Per-session terminal frames; only a session's own stream needs them. */
+internal val TERMINAL_TYPES: Set<String> = setOf("output", "raw_output", "pane_capture")
+
+/**
+ * Reads the `"type"` value from the start of a WS frame without parsing the
+ * whole frame. The server writes `type` first; returns null if it isn't found
+ * in the first 256 chars, and the caller then falls back to a full decode.
+ */
+internal fun sniffFrameType(text: String): String? {
+    val head = if (text.length > 256) text.substring(0, 256) else text
+    val key = head.indexOf("\"type\"")
+    if (key < 0) return null
+    val colon = head.indexOf(':', key + 6)
+    if (colon < 0) return null
+    val open = head.indexOf('"', colon + 1)
+    if (open < 0) return null
+    val close = head.indexOf('"', open + 1)
+    if (close < 0) return null
+    return head.substring(open + 1, close)
 }
 
 /**

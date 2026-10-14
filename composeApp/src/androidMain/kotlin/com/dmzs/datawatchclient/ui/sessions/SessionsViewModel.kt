@@ -498,10 +498,14 @@ public class SessionsViewModel : ViewModel() {
         // connect and again on every session change; SessionsHub routes it here.
         // Parity D38a: a status-dot long-press bumps ReconnectBus.tick, which
         // re-keys this flatMapLatest so the socket is closed and reopened.
+        // The socket is closed while the app is in the background and reopened on
+        // return; the server's on-connect "sessions" frame brings the list current
+        // (2026-10-14 profile: sockets and polls never paused).
         kotlinx.coroutines.flow.combine(
             activeProfile,
             com.dmzs.datawatchclient.events.ReconnectBus.tick,
-        ) { profile, _ -> profile }
+            com.dmzs.datawatchclient.di.AppForeground.visible,
+        ) { profile, _, visible -> profile.takeIf { visible } }
             .flatMapLatest { profile ->
                 if (profile == null) emptyFlow()
                 else ServiceLocator.wsTransportFor(profile).globalStream()
@@ -544,6 +548,7 @@ public class SessionsViewModel : ViewModel() {
         viewModelScope.launch {
             while (currentCoroutineContext().isActive) {
                 kotlinx.coroutines.delay(AUTO_REFRESH_MS)
+                com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
                 if (!_refreshing.value) refresh()
             }
         }

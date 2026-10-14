@@ -50,6 +50,7 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
     LaunchedEffect(Unit) {
         vm.refresh()
         while (true) {
+            com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
             delay(8_000)
             vm.refresh()
         }

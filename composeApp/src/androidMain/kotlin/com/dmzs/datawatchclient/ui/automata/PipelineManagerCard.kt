@@ -66,6 +66,7 @@ internal fun PipelineManagerCard(
         runCatching { load() }
         if (liveRefreshMs != null) {
             while (true) {
+                com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
                 kotlinx.coroutines.delay(liveRefreshMs)
                 runCatching { load() }
             }

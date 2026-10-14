@@ -8,7 +8,7 @@
 
 # datawatch — Privacy Policy
 
-*Last updated: 2026-10-06*
+*Last updated: 2026-10-14*
 
 ## Who we are
 
@@ -46,6 +46,16 @@ Source code: `https://github.com/dmz006/datawatch-app` (public).
 - **Voice recordings pending upload.** Audio blobs you record but have not yet sent to
   your datawatch server are held on device until you send or discard them.
 - **Preferences.** Theme, notification settings, reachability profiles.
+- **Crash and bug reports.** If the app crashes, it saves a short report on the device: the
+  error and stack trace, the app version, the OS version, the device model and the last few
+  hundred lines of the app's own log. On iPhone and iPad, Apple's MetricKit can also deliver
+  crash and hang diagnostics to the app on the next launch, and those are saved the same way.
+  Server addresses, IP addresses and tokens are removed from the report before it is saved.
+  **Nothing is sent automatically.** On the next launch the app asks whether to send it; you
+  can view it, dismiss it (which deletes it) or tap **Send**, which opens your email or share
+  sheet with the report filled in so you can review it and choose where it goes. Settings →
+  **Send bug report** builds the same kind of report, without a crash, when you want to
+  report a problem.
 
 On Android, everything in this section is encrypted at rest using AES-256 and a key held
 by your device's Android Keystore. No one at dmz or any third party has access to it.
@@ -132,6 +142,7 @@ data to our servers (we don't have any).
 
 - No behavioral analytics.
 - No crash reporting to third parties (no Crashlytics, Sentry SaaS, Firebase Analytics).
+  Crash and bug reports stay on your device and are only shared if you tap Send (see above).
 - No advertising IDs.
 - No location data.
 - No contacts.

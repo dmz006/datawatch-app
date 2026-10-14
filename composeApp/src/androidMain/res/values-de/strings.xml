@@ -1402,4 +1402,32 @@
     <string name="community_plugins_installing">Wird installiert…</string>
     <string name="community_plugins_installed">Installiert</string>
     <string name="session_detail_commands_guardrails">Guardrails</string>
+    <string name="loading_sessions">Sitzungen werden geladen…</string>
+    <string name="loading_alerts">Warnungen werden geladen…</string>
+    <string name="loading_dashboard">Dashboard wird geladen…</string>
+    <string name="loading_automata">Automaten werden geladen…</string>
+    <string name="refreshing_cached_data">Gespeicherte Daten · wird aktualisiert…</string>
+    <!-- On-device crash / bug reports (docs/crash-reports.md) -->
+    <string name="crash_report_title">datawatch wurde unerwartet beendet. Bericht senden?</string>
+    <string name="crash_report_body">Der Bericht enthält den Fehler, die App-Version, das Gerätemodell und das aktuelle App-Protokoll. Serveradressen, IP-Adressen und Tokens werden entfernt. Es wird nur etwas gesendet, wenn Sie auf Senden tippen.</string>
+    <string name="crash_report_send">Senden</string>
+    <string name="crash_report_view">Anzeigen</string>
+    <string name="crash_report_dismiss">Verwerfen</string>
+    <string name="crash_report_view_title">Bericht</string>
+    <string name="crash_report_close">Schließen</string>
+    <string name="crash_report_share_title">Bericht senden</string>
+    <string name="bug_report_card_title">Support</string>
+    <string name="bug_report_row_title">Fehlerbericht senden</string>
+    <string name="bug_report_row_summary">Aktuelles App-Protokoll und eine Notiz zum Vorfall teilen</string>
+    <string name="bug_report_dialog_body">Ihre Notiz und das aktuelle App-Protokoll werden in den Bericht übernommen. Serveradressen, IP-Adressen und Tokens werden entfernt. Sie wählen, wohin er gesendet wird.</string>
+    <string name="bug_report_what_happened">Was ist passiert?</string>
+    <string name="bug_report_cancel">Abbrechen</string>
+    <!-- Verification LLM override + foreign-file drift (server v9.0.73 / v9.0.75) -->
+    <string name="prd_verif_llm_title">Verifizierungs-LLM</string>
+    <string name="prd_verif_llm_hint">Welches LLM die Arbeit dieser Aufgabe bewertet — leer erbt von Story, dann Automaten, dann der globalen Verifizierungseinstellung.</string>
+    <string name="prd_verif_llm_story_hint">Welches LLM die Aufgaben dieser Story bewertet — leer erbt vom Automaten, dann der globalen Verifizierungseinstellung. Aufgaben mit eigenem Verifizierungs-LLM behalten es.</string>
+    <string name="prd_verif_llm_automaton_hint">Welches LLM die Aufgaben dieses Automaten bewertet — leer erbt die globale Verifizierungseinstellung. Story- und Aufgaben-Verifizierungs-LLMs haben Vorrang.</string>
+    <string name="prd_verif_verifier_label">Bewertet von</string>
+    <string name="prd_verif_source_automaton">Automat</string>
+    <string name="automata_task_foreign_file_drift">Fremde Dateiänderungen</string>
 </resources>

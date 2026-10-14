@@ -47,8 +47,6 @@ struct SessionsView: View {
     @State private var watchFilter = false
     /// PWA `cs_session_tree_view` (BL348): parent/child lineage grouping.
     @AppStorage("dw.sessions.tree_view") private var treeView: Bool = false
-    /// PWA `recent_session_minutes` default.
-    private static let recentWindowMs: Int64 = 5 * 60 * 1000
 
     /// PWA realStateChips (key, label, colour).
     private static let stateChips: [(String, String, Color)] = [
@@ -121,7 +119,10 @@ struct SessionsView: View {
             applyPendingFilter()
             // A persisted historical chip would otherwise show nothing on launch.
             if Self.historicalChips.contains(stateChip) { showHistory = true }
+            viewModel.setFilter(listFilter)
         }
+        // Rows are filtered / ordered in the view model, once per input change.
+        .onChange(of: listFilter) { f in viewModel.setFilter(f) }
         .onChange(of: nav.pendingFilter) { _ in applyPendingFilter() }
         .onDisappear { viewModel.stopPolling() }
         .alert("Stop session?", isPresented: Binding(
@@ -170,12 +171,6 @@ struct SessionsView: View {
         }
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 4) {
-                if viewModel.isLoading && !viewModel.sessions.isEmpty {
-                    ProgressView()
-                        .tint(DatawatchColors.onSurfaceMuted)
-                        .controlSize(.mini)
-                        .accessibilityLabel("Refreshing")
-                }
                 DocsLinkButton(profile: viewModel.activeProfile, key: "view_sessions")
                 Button {
                     withAnimation { showFilter.toggle() }
@@ -306,14 +301,16 @@ struct SessionsView: View {
                 ServerPickerBar(showsAll: true)
                 FedConnStatusView(status: fed)
             } else if viewModel.isLoading && viewModel.sessions.isEmpty {
-                // D60a: Android SessionSkeletonList (5 shimmer rows, 900 ms).
-                SkeletonListView(rows: 5)
+                // First load: splash eye + spinner (shared ScreenLoadState).
+                ScreenFirstLoadView(message: L("Loading sessions…"))
             } else if let errorMsg = viewModel.error, viewModel.sessions.isEmpty {
                 ErrorCard(message: errorMsg) { viewModel.refresh() }
             } else if viewModel.activeProfile == nil {
                 emptyNoProfile
             } else {
-                sessionList
+                ScreenLoadState(isFirstLoad: false, isRefreshing: viewModel.isRefreshing) {
+                    sessionList
+                }
             }
         }
     }
@@ -354,14 +351,14 @@ struct SessionsView: View {
                     DatawatchWatermark()
                 }
             }
-            .refreshable { viewModel.refresh() }
+            .refreshable { await viewModel.userRefreshAsync() }
             .safeAreaInset(edge: .bottom) { Color.clear.frame(height: selectMode ? 56 : 0) }
         }
     }
 
     @ViewBuilder
     private var listRows: some View {
-        let visible = filteredSessions
+        let visible: [SessionRow] = viewModel.rows
         if visible.isEmpty && !viewModel.sessions.isEmpty && filterText.isEmpty && stateChip == "all" && !showHistory {
             Button {
                 showHistory = true
@@ -382,12 +379,12 @@ struct SessionsView: View {
             emptySessionsRow
         } else {
             if treeView {
-                ForEach(SessionTree.flatten(visible), id: \.session.fullId) { row in
+                ForEach(viewModel.treeRows) { row in
                     treeRow(row)
                 }
             } else {
-                ForEach(visible, id: \.id) { session in
-                    sessionRow(session)
+                ForEach(visible) { row in
+                    sessionRow(row.session)
                 }
                 .onMove { from, to in move(visible, from: from, to: to) }
             }
@@ -449,7 +446,7 @@ struct SessionsView: View {
                 // PWA backendShort badges (label + count, no state dot); D64: council-virtual
                 // renders as the 🎭 Council chip (Android council_session_filter).
                 chipRow(backendTypes.map { bt in
-                    (bt, bt == "council-virtual" ? "🎭 Council" : Self.backendShort(bt), DatawatchColors.secondary, viewModel.sessions.filter { $0.backend == bt }.count, filterText.lowercased() == bt.lowercased())
+                    (bt, bt == "council-virtual" ? "🎭 Council" : Self.backendShort(bt), DatawatchColors.secondary, viewModel.summary.backendCounts[bt] ?? 0, filterText.lowercased() == bt.lowercased())
                 }, dotted: false) { key in filterText = filterText.lowercased() == key.lowercased() ? "" : key }
             }
             if stateFilterOpen {
@@ -514,9 +511,7 @@ struct SessionsView: View {
         }
     }
 
-    private var backendTypes: [String] {
-        Array(Set(viewModel.sessions.compactMap { $0.backend }.filter { !$0.isEmpty })).sorted()
-    }
+    private var backendTypes: [String] { viewModel.summary.backendTypes }
 
     private var llmActive: String? {
         backendTypes.first { $0.lowercased() == filterText.lowercased() }
@@ -527,9 +522,7 @@ struct SessionsView: View {
         return "LLM (\(backendTypes.count))"
     }
 
-    private func stateCount(_ key: String) -> Int {
-        key == "all" ? viewModel.sessions.count : viewModel.sessions.filter { SessionStateStyle.key($0.state) == key }.count
-    }
+    private func stateCount(_ key: String) -> Int { viewModel.summary.stateCounts[key] ?? 0 }
 
     /// PWA: hide 0-count chips except All and the active one.
     private var visibleStateChips: [(String, String, Color)] {
@@ -543,45 +536,35 @@ struct SessionsView: View {
 
     // ── History + ordering (PWA pool + sortSessionsByOrder) ──────────────
 
-    private var historyCount: Int { viewModel.sessions.filter { SessionStateStyle.isDone($0.state) }.count }
+    private var historyCount: Int { viewModel.summary.historyCount }
 
-    private var visiblePool: [DwSession] {
-        let cutoff = Int64(Date().timeIntervalSince1970 * 1000) - Self.recentWindowMs
-        return viewModel.sessions.filter { s in
-            !SessionStateStyle.isDone(s.state) || s.lastActivityAt.toEpochMilliseconds() >= cutoff
-        }
-    }
-
-    private var manualOrder: [String] {
-        (try? JSONDecoder().decode([String].self, from: Data(orderJSON.utf8))) ?? []
+    /// The view-side inputs of the visible list (filtered in the view model).
+    private var listFilter: SessionListFilter {
+        SessionListFilter(
+            showHistory: showHistory,
+            stateChip: stateChip,
+            watchFilter: watchFilter,
+            filterText: filterText,
+            orderJSON: orderJSON,
+            treeView: treeView
+        )
     }
 
     private func saveOrder(_ ids: [String]) {
         if let data = try? JSONEncoder().encode(ids), let s = String(data: data, encoding: .utf8) { orderJSON = s }
     }
 
-    private func sortByOrder(_ sessions: [DwSession]) -> [DwSession] {
-        let order = manualOrder
-        var inOrder: [DwSession] = []
-        var seen = Set<String>()
-        for id in order {
-            if let s = sessions.first(where: { $0.fullId == id }) { inOrder.append(s); seen.insert(id) }
-        }
-        let rest = sessions.filter { !seen.contains($0.fullId) }
-            .sorted { $0.lastActivityAt.toEpochMilliseconds() > $1.lastActivityAt.toEpochMilliseconds() }
-        return inOrder + rest
-    }
-
     /// Drag-to-reorder / Move up-down (PWA sessionDrop / moveSession): persists the full order.
-    private func move(_ visible: [DwSession], from: IndexSet, to: Int) {
+    private func move(_ visible: [SessionRow], from: IndexSet, to: Int) {
         var ids = visible.map { $0.fullId }
         ids.move(fromOffsets: from, toOffset: to)
-        let others = sortByOrder(viewModel.sessions).map { $0.fullId }.filter { !ids.contains($0) }
+        let moved = Set(ids)
+        let others = viewModel.sortedByOrder(viewModel.sessions).map { $0.fullId }.filter { !moved.contains($0) }
         saveOrder(ids + others)
     }
 
     private func moveOne(_ session: DwSession, by delta: Int) {
-        var ids = sortByOrder(viewModel.sessions).map { $0.fullId }
+        var ids = viewModel.sortedByOrder(viewModel.sessions).map { $0.fullId }
         guard let i = ids.firstIndex(of: session.fullId) else { return }
         let j = i + delta
         guard j >= 0, j < ids.count else { return }
@@ -597,34 +580,11 @@ struct SessionsView: View {
         withAnimation { showFilter = true }
     }
 
-    private var watchedCount: Int {
-        viewModel.sessions.filter { isLocal(.watchedSessions, $0) }.count
-    }
-
-    private var filteredSessions: [DwSession] {
-        var result = showHistory ? viewModel.sessions : visiblePool
-        switch stateChip {
-        case "all": break
-        default: result = result.filter { SessionStateStyle.key($0.state) == stateChip }
-        }
-        if watchFilter { result = result.filter { isLocal(.watchedSessions, $0) } }
-        if !filterText.isEmpty {
-            let q = filterText.lowercased()
-            result = result.filter { s in
-                s.id.lowercased().contains(q) ||
-                (s.name?.lowercased().contains(q) ?? false) ||
-                (s.taskSummary?.lowercased().contains(q) ?? false) ||
-                (s.backend?.lowercased().contains(q) ?? false) ||
-                (s.llmRef?.lowercased().contains(q) ?? false) ||
-                (s.computeNodeRef?.lowercased().contains(q) ?? false)
-            }
-        }
-        return sortByOrder(result)
-    }
+    private var watchedCount: Int { viewModel.summary.watchedCount }
 
     // ── Select bar (PWA select-bar-fixed) ─────────────────────────────────
 
-    private var visibleDone: [DwSession] { filteredSessions.filter { SessionStateStyle.isDone($0.state) } }
+    private var visibleDone: [DwSession] { viewModel.rows.map { $0.session }.filter { SessionStateStyle.isDone($0.state) } }
 
     private var selectBar: some View {
         let done = visibleDone
@@ -821,10 +781,12 @@ struct SessionsView: View {
         .tint(isMuted ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
     }
 
+    /// Per-row watch / mute check against the view model's cached id sets (one
+    /// UserDefaults read per prefs revision, not one per row per render).
     private func isLocal(_ kind: LocalSessionPrefs.Kind, _ session: DwSession) -> Bool {
         _ = localPrefs.revision
         guard let pid = profileFor(session)?.id else { return false }
-        return localPrefs.contains(kind, profileId: pid, id: session.id)
+        return viewModel.localSet(kind, profileId: pid).contains(session.id)
     }
 
     private func toggleLocal(_ kind: LocalSessionPrefs.Kind, _ session: DwSession) {
@@ -840,8 +802,8 @@ struct SessionsView: View {
 
     private var sessionsSubtitle: String? {
         guard !viewModel.sessions.isEmpty else { return nil }
-        let running = viewModel.sessions.filter { $0.state == .running || $0.state == .rateLimited }.count
-        let waiting = viewModel.sessions.filter { $0.state == .waiting }.count
+        let running: Int = viewModel.summary.running
+        let waiting: Int = viewModel.summary.waiting
         if running > 0 && waiting > 0 {
             return String(format: L("%lld running · %lld waiting"), Int64(running), Int64(waiting))
         } else if running > 0 {
@@ -863,7 +825,9 @@ struct SessionsView: View {
 /// matches another visible session's full id nests under it (pre-order, siblings
 /// keep list order); others are roots, flagged orphaned when the parent is missing.
 enum SessionTree {
-    struct Row {
+    struct Row: Identifiable {
+        /// The session's full id, stored once (ForEach identity).
+        let id: String
         let session: DwSession
         let depth: Int
         let orphaned: Bool
@@ -887,13 +851,13 @@ enum SessionTree {
             guard !seen.contains(s.fullId) else { return }
             seen.insert(s.fullId)
             let orphaned: Bool = s.parentId != nil && !(s.parentId ?? "").isEmpty && !byFullId.contains(s.parentId ?? "")
-            out.append(Row(session: s, depth: depth, orphaned: orphaned))
+            out.append(Row(id: s.fullId, session: s, depth: depth, orphaned: orphaned))
             for c in children[s.fullId] ?? [] { visit(c, depth + 1) }
         }
         for r in roots { visit(r, 0) }
         // Pure cycles have no root — append them flat so nothing disappears.
         for s in sessions where !seen.contains(s.fullId) {
-            out.append(Row(session: s, depth: 0, orphaned: false))
+            out.append(Row(id: s.fullId, session: s, depth: 0, orphaned: false))
         }
         return out
     }

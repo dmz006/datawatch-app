@@ -1715,4 +1715,32 @@
     <string name="community_plugins_installing">Installing…</string>
     <string name="community_plugins_installed">Installed</string>
     <string name="session_detail_commands_guardrails">Guardrails</string>
+    <string name="loading_sessions">Loading sessions…</string>
+    <string name="loading_alerts">Loading alerts…</string>
+    <string name="loading_dashboard">Loading dashboard…</string>
+    <string name="loading_automata">Loading Automata…</string>
+    <string name="refreshing_cached_data">Showing saved data · refreshing…</string>
+    <!-- On-device crash / bug reports (docs/crash-reports.md) -->
+    <string name="crash_report_title">datawatch closed unexpectedly. Send a report?</string>
+    <string name="crash_report_body">The report has the error, the app version, your device model and the recent app log. Server addresses, IP addresses and tokens are removed. Nothing is sent unless you tap Send.</string>
+    <string name="crash_report_send">Send</string>
+    <string name="crash_report_view">View</string>
+    <string name="crash_report_dismiss">Dismiss</string>
+    <string name="crash_report_view_title">Report</string>
+    <string name="crash_report_close">Close</string>
+    <string name="crash_report_share_title">Send report</string>
+    <string name="bug_report_card_title">Support</string>
+    <string name="bug_report_row_title">Send bug report</string>
+    <string name="bug_report_row_summary">Share the recent app log and a note about what happened</string>
+    <string name="bug_report_dialog_body">Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it.</string>
+    <string name="bug_report_what_happened">What happened?</string>
+    <string name="bug_report_cancel">Cancel</string>
+    <!-- Verification LLM override + foreign-file drift (server v9.0.73 / v9.0.75) -->
+    <string name="prd_verif_llm_title">Verification LLM</string>
+    <string name="prd_verif_llm_hint">Which LLM judges this task\'s work — empty inherits story, then Automaton, then the global verification setting.</string>
+    <string name="prd_verif_llm_story_hint">Which LLM judges this story\'s tasks — empty inherits the Automaton, then the global verification setting. Tasks with their own verification LLM keep it.</string>
+    <string name="prd_verif_llm_automaton_hint">Which LLM judges this Automaton\'s tasks — empty inherits the global verification setting. Story and task verification LLMs take precedence.</string>
+    <string name="prd_verif_verifier_label">Judged by</string>
+    <string name="prd_verif_source_automaton">automaton</string>
+    <string name="automata_task_foreign_file_drift">Foreign file drift</string>
 </resources>

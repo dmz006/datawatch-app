@@ -1087,13 +1087,20 @@ public class AutonomousViewModel(
     // ---- #178: PRD detail live updates via WebSocket ----
 
     private var prdDetailJob: Job? = null
+    /** Bound by AutonomousScreen; pauses the PRD progress poll off-screen. */
+    public val pollGate: com.dmzs.datawatchclient.di.PollGate = com.dmzs.datawatchclient.di.PollGate()
+
     private var prdProgressJob: Job? = null
 
     /** Poll /api/observer/envelopes + compute node detail every 5s while PRD is running/decomposing. */
     public fun startPrdProgressPolling(prdId: String) {
         prdProgressJob?.cancel()
         prdProgressJob = viewModelScope.launch {
+            var cachedSessions: List<com.dmzs.datawatchclient.domain.Session> = emptyList()
+            var sessionsFetchedAt = 0L
             while (true) {
+                // Only while the Automata screen is shown and the app is visible.
+                pollGate.await()
                 val (_, transport) = resolver.resolve() ?: break
                 val prd = _state.value.prds.firstOrNull { it.id == prdId }
                 if (prd == null || prd.status !in setOf("running", "decomposing", "planning", "blocked")) {
@@ -1111,7 +1118,19 @@ public class AutonomousViewModel(
                 val sessionsResult: List<com.dmzs.datawatchclient.domain.Session>
                 coroutineScope {
                     val envs = async { transport.getAllEnvelopes().getOrElse { emptyList() } }
-                    val sessions = async { transport.listSessions().getOrElse { emptyList() } }
+                    // The full session list is ~3 MB on a busy server; it is only
+                    // needed to map task sessions, so refresh it every 30 s, not 5 s.
+                    val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                    val sessions =
+                        async {
+                            if (now - sessionsFetchedAt >= PRD_SESSIONS_REFRESH_MS || cachedSessions.isEmpty()) {
+                                transport.listSessions().getOrNull()?.let {
+                                    cachedSessions = it
+                                    sessionsFetchedAt = now
+                                }
+                            }
+                            cachedSessions
+                        }
                     envelopesResult = envs.await()
                     sessionsResult = sessions.await()
                 }
@@ -1321,6 +1340,24 @@ public class AutonomousViewModel(
         prdOp("Story LLM") { it.prdAction(prdId, "set_story_llm", body) }
     }
 
+    /**
+     * PWA Verification LLM rows (server v9.0.73+): POST …/set_verification_llm,
+     * …/set_story_verification_llm `{story_id}` and …/set_task_verification_llm `{task_id}`,
+     * each with all three `verification_*` fields (PWA `_prdReadVerifLLM`); "" inherits.
+     * [verif] is (backend, effort, model).
+     */
+    public fun setPrdVerificationLlm(prdId: String, verif: Triple<String, String, String>) {
+        prdOp("Verification LLM") { it.setPrdVerificationLlm(prdId, verif.first, verif.third, verif.second) }
+    }
+
+    public fun setStoryVerificationLlm(prdId: String, storyId: String, verif: Triple<String, String, String>) {
+        prdOp("Story verification LLM") { it.setStoryVerificationLlm(prdId, storyId, verif.first, verif.third, verif.second) }
+    }
+
+    public fun setTaskVerificationLlm(prdId: String, taskId: String, verif: Triple<String, String, String>) {
+        prdOp("Task verification LLM") { it.setTaskVerificationLlm(prdId, taskId, verif.first, verif.third, verif.second) }
+    }
+
     /** POST …/set_story_profile `{story_id, profile, actor}` — empty profile inherits. */
     public fun setStoryProfile(prdId: String, storyId: String, profile: String) {
         val body =
@@ -1419,3 +1456,6 @@ public class AutonomousViewModel(
         _decomposeLive.value = null
     }
 }
+
+/** How often the PRD progress poll refreshes the (large) full session list. */
+private const val PRD_SESSIONS_REFRESH_MS: Long = 30_000L

@@ -119,7 +119,9 @@ phone, watch, or car display:
   through it, with no extra login. Picking one shows whether it's connecting, or
   why it can't be reached, with a button back to your server.
 - **Automata** — create, plan, approve and run automata; watch planning live; edit
-  stories and tasks; templates, dependency graph, verdicts and per-story resources.
+  stories and tasks; templates, dependency graph, verdicts and per-story resources;
+  pick the verification LLM per task, story or automaton, see which verifier judged a
+  task, and get warned when a task's commit swept in someone else's uncommitted files.
 - **Council** — run a multi-persona council debate and watch it live.
 - **Server settings** — every web-UI settings card, including the project / cluster
   profile editor with a YAML view, LLM registry, compute nodes and plugins.
@@ -281,6 +283,7 @@ First launch (Android):
 - 🧪 [Testing tracker](docs/testing-tracker.md) · [Bug test log](docs/testing.md)
 - 🎬 [Usage guide](docs/usage.md) — how every screen behaves
 - 🛡 [Security model](docs/security-model.md) · [Threat model](docs/threat-model.md)
+- 🐞 [Crash and bug reports](docs/crash-reports.md) — what a report contains, redaction, nothing sent without Send
 - 🧩 [Architecture decisions (ADRs)](docs/decisions/README.md)
 - 🔄 [Parity status vs. the PWA](docs/parity-status.md) · [three-way parity matrix](docs/parity/README.md)
 - 📋 [Plans, bugs and backlog](docs/plans/README.md)

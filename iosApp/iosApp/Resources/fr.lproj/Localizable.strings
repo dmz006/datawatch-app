@@ -1933,3 +1933,25 @@
 "%1$@: %2$@" = "%1$@ : %2$@";
 "Authentication failed — this server has no valid token configured" = "Échec de l'authentification — aucun jeton valide n'est configuré pour ce serveur";
 "Back to %@" = "Retour à %@";
+
+/* iOS performance: shared first-load / refreshing indicator (ScreenLoadState) */
+"Refreshing…" = "Actualisation…";
+"Loading statistics…" = "Chargement des statistiques…";
+"Loading dashboard…" = "Chargement du tableau de bord…";
+/* On-device crash / bug reports (docs/crash-reports.md). */
+"datawatch closed unexpectedly. Send a report?" = "datawatch s'est fermé de manière inattendue. Envoyer un rapport ?";
+"The report has the error, the app version, your device model and the recent app log. Server addresses, IP addresses and tokens are removed. Nothing is sent unless you tap Send." = "Le rapport contient l'erreur, la version de l'app, le modèle de l'appareil et le journal récent de l'app. Les adresses de serveur, les adresses IP et les jetons sont supprimés. Rien n'est envoyé tant que vous n'appuyez pas sur Envoyer.";
+"View" = "Afficher";
+"Report" = "Rapport";
+"Send bug report" = "Envoyer un rapport de bug";
+"Share the recent app log and a note about what happened" = "Partager le journal récent de l'app et une note sur ce qui s'est passé";
+"Support" = "Assistance";
+"What happened?" = "Que s'est-il passé ?";
+"Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it." = "Votre note et le journal récent de l'app sont inclus dans le rapport. Les adresses de serveur, les adresses IP et les jetons sont supprimés. Vous choisissez où l'envoyer.";
+"Verification LLM" = "LLM de vérification";
+"Which LLM judges this task's work — empty inherits story, then Automaton, then the global verification setting." = "Quel LLM juge le travail de cette tâche — vide hérite de la story, puis de l'automate, puis du réglage global de vérification.";
+"Which LLM judges this story's tasks — empty inherits the Automaton, then the global verification setting. Tasks with their own verification LLM keep it." = "Quel LLM juge les tâches de cette story — vide hérite de l'automate, puis du réglage global de vérification. Les tâches ayant leur propre LLM de vérification le conservent.";
+"Which LLM judges this Automaton's tasks — empty inherits the global verification setting. Story and task verification LLMs take precedence." = "Quel LLM juge les tâches de cet automate — vide hérite du réglage global de vérification. Les LLM de vérification de story et de tâche sont prioritaires.";
+"Judged by" = "Jugé par";
+"automaton" = "automate";
+"Foreign file drift" = "Dérive de fichiers étrangers";

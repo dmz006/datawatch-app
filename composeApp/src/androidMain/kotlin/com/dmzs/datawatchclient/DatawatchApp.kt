@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient
 
 import android.app.Application
+import com.dmzs.datawatchclient.diagnostics.CrashReporter
 import com.dmzs.datawatchclient.network.VpnMonitor
 import com.dmzs.datawatchclient.push.ForegroundSessionTracker
 import com.dmzs.datawatchclient.storage.DatabaseFactory
@@ -12,6 +13,8 @@ import com.dmzs.datawatchclient.storage.DatabaseFactory
  * 1. `DatabaseFactory.loadNativeLib()` must run before any DB open attempt so the
  *    SQLCipher `libsqlcipher.so` is resident before `AndroidSqliteDriver` asks the
  *    `SupportOpenHelperFactory` for a connection.
+ * 0. `CrashReporter.install` runs first so a crash anywhere later in startup is
+ *    still written to `filesDir/crash/` and offered on the next launch.
  * 2. DI graph construction happens lazily on first access (see `di.Container`) so
  *    cold start stays fast and nothing touches Keystore before the UI needs it.
  */
@@ -22,8 +25,10 @@ public class DatawatchApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CrashReporter.install(this)
         DatabaseFactory.loadNativeLib()
         ForegroundSessionTracker.isForeground("") // register lifecycle observer on main thread
+        com.dmzs.datawatchclient.di.AppForeground.install()
         com.dmzs.datawatchclient.di.ServiceLocator.init(this)
         // #234: discover remote servers reachable through each profile's /api/proxy.
         com.dmzs.datawatchclient.di.ProxiedServersCoordinator.start()

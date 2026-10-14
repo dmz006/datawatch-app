@@ -7,7 +7,10 @@ import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
 /**
@@ -25,24 +28,59 @@ public class SessionRepository(
             .asFlow()
             .mapToList(ioDispatcher)
             .map { rows -> rows.map { it.toDomain() } }
+            .distinctUntilChanged()
+
+    /**
+     * Last list written per profile, so an unchanged push or poll costs no
+     * database work and a one-session change rewrites one row. Under load the
+     * full list (hundreds of sessions) arrives several times a minute, and each
+     * delete-and-reinsert on SQLCipher re-triggered every session query
+     * (2026-10-14 profile). Guarded by [writeLock].
+     */
+    private val lastWritten = mutableMapOf<String, Map<String, Session>>()
+    private val writeLock = kotlinx.coroutines.sync.Mutex()
 
     public suspend fun replaceAll(
         profileId: String,
         sessions: List<Session>,
-    ) {
-        db.transaction {
-            // Capture locally-stored mute preferences before the delete wipes them.
-            val mutedIds = db.sessionQueries.selectSessionsForProfile(profileId)
-                .executeAsList()
-                .filter { it.muted != 0L }
-                .map { it.id }
-                .toSet()
-            db.sessionQueries.deleteSessionsForProfile(profileId)
-            sessions.forEach { session ->
-                upsertInternal(session, overrideMuted = mutedIds.contains(session.id))
+    ): Unit =
+        withContext(ioDispatcher) {
+            writeLock.withLock {
+                val incoming = sessions.associateBy { it.id }
+                val previous = lastWritten[profileId]
+                if (previous == incoming) return@withLock
+                db.transaction {
+                    if (previous == null) {
+                        // First write this process: rebuild from scratch, keeping
+                        // the locally-stored mute preferences the delete would wipe.
+                        val mutedIds = db.sessionQueries.selectSessionsForProfile(profileId)
+                            .executeAsList()
+                            .filter { it.muted != 0L }
+                            .map { it.id }
+                            .toSet()
+                        db.sessionQueries.deleteSessionsForProfile(profileId)
+                        sessions.forEach { session ->
+                            upsertInternal(session, overrideMuted = mutedIds.contains(session.id))
+                        }
+                    } else {
+                        previous.keys.filter { it !in incoming }.forEach { gone ->
+                            db.sessionQueries.deleteSessionForProfile(gone, profileId)
+                        }
+                        val mutedIds = db.sessionQueries.selectSessionsForProfile(profileId)
+                            .executeAsList()
+                            .filter { it.muted != 0L }
+                            .map { it.id }
+                            .toSet()
+                        sessions.forEach { session ->
+                            if (previous[session.id] != session) {
+                                upsertInternal(session, overrideMuted = mutedIds.contains(session.id))
+                            }
+                        }
+                    }
+                }
+                lastWritten[profileId] = incoming
             }
         }
-    }
 
     /**
      * #234 — drops cached sessions written under proxied-remote (virtual)
@@ -50,6 +88,7 @@ public class SessionRepository(
      * server_profile row, so nothing else ever cleans them up.
      */
     public suspend fun pruneProxied(keep: Set<String>) {
+        writeLock.withLock { lastWritten.keys.retainAll { it in keep || !com.dmzs.datawatchclient.transport.ProxiedServers.isProxied(it) } }
         db.transaction {
             db.sessionQueries.selectSessionProfileIds().executeAsList()
                 .filter { com.dmzs.datawatchclient.transport.ProxiedServers.isProxied(it) && it !in keep }
@@ -57,9 +96,15 @@ public class SessionRepository(
         }
     }
 
-    public suspend fun upsert(session: Session) {
-        upsertInternal(session)
-    }
+    public suspend fun upsert(session: Session): Unit =
+        withContext(ioDispatcher) {
+            writeLock.withLock {
+                val cached = lastWritten[session.serverProfileId]
+                if (cached?.get(session.id) == session) return@withLock
+                upsertInternal(session)
+                if (cached != null) lastWritten[session.serverProfileId] = cached + (session.id to session)
+            }
+        }
 
     public suspend fun setMuted(
         sessionId: String,

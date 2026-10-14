@@ -38,6 +38,7 @@ public class SessionStatusViewModel(
         pollJob =
             viewModelScope.launch {
                 while (isActive) {
+                    com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
                     fetchStatus()
                     delay(POLL_INTERVAL_MS)
                 }

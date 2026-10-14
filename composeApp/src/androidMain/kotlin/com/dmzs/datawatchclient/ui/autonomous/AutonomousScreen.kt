@@ -78,7 +78,6 @@ import com.dmzs.datawatchclient.transport.dto.IdentityDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
-import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.settings.IdentityWizardSheet
@@ -91,8 +90,9 @@ import kotlinx.coroutines.launch
 public fun AutonomousScreen(
     vm: AutonomousViewModel = viewModel(),
     tmplVm: TemplatesViewModel = viewModel(),
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
+    com.dmzs.datawatchclient.di.BindPollGate(vm.pollGate)
     val state by vm.state.collectAsState()
     val pinnedIds by vm.pinnedAutomataIds.collectAsState()
     val watchedAutomataIds by vm.watchedAutomataIds.collectAsState()
@@ -588,6 +588,9 @@ public fun AutonomousScreen(
                 onSetStoryLlm = { storyId, b, e, m -> vm.setStoryLlm(id, storyId, b, e, m) },
                 onSetStoryProfile = { storyId, profile -> vm.setStoryProfile(id, storyId, profile) },
                 onEditTaskSpecLlm = { taskId, spec, llm -> vm.editTaskSpecAndLlm(id, taskId, spec, llm) },
+                onSetVerificationLlm = { v -> vm.setPrdVerificationLlm(id, v) },
+                onSetStoryVerificationLlm = { storyId, v -> vm.setStoryVerificationLlm(id, storyId, v) },
+                onSetTaskVerificationLlm = { taskId, v -> vm.setTaskVerificationLlm(id, taskId, v) },
                 decomposeLive = decomposeLive?.takeIf { it.first == id }?.second,
                 onInstantiateTemplate = { vars -> vm.instantiatePrdTemplate(id, vars) },
             )
@@ -830,7 +833,7 @@ private fun PrdsBody(
             modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.045f), // PWA `.sessions-watermark` .045
         )
         if (visible.isEmpty() && state.loading) {
-            DatawatchLoadingContent(modifier = Modifier.align(Alignment.Center), label = androidx.compose.ui.res.stringResource(com.dmzs.datawatchclient.R.string.common_loading))
+            com.dmzs.datawatchclient.ui.common.PageLoading(label = stringResource(R.string.loading_automata))
         } else if (visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(

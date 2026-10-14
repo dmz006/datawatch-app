@@ -3,6 +3,8 @@ package com.dmzs.datawatchclient.ui.sessions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.diagnostics.LogLevel
+import com.dmzs.datawatchclient.diagnostics.dwLog
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionEvent
@@ -19,7 +21,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
@@ -115,6 +119,34 @@ public class SessionDetailViewModel(
 
     private var streamJob: Job? = null
     private var profileCache: ServerProfile? = null
+        set(value) {
+            field = value
+            _profileId.value = value?.id
+        }
+    private val _profileId = MutableStateFlow<String?>(null)
+
+    /**
+     * Watch state for this session. Previously the detail screen created a whole
+     * SessionsViewModel just for this, which opened a second global WebSocket and
+     * a second 30 s session-list poll (2026-10-14 profile).
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    public val watched: StateFlow<Boolean> =
+        _profileId
+            .flatMapLatest { id ->
+                if (id == null) {
+                    kotlinx.coroutines.flow.flowOf(emptySet())
+                } else {
+                    ServiceLocator.watchedSessionsStore.watchedFlow(id)
+                }
+            }.map { sessionId in it }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    public fun toggleWatch() {
+        val id = _profileId.value ?: return
+        val store = ServiceLocator.watchedSessionsStore
+        store.setWatched(id, sessionId, !store.isWatched(id, sessionId))
+    }
     // Debounce job that delays _reachable → false to absorb transient blips (<3.5s).
     private var offlineDebounceJob: Job? = null
     // True when a pane_capture arrived before state.session was populated — triggers
@@ -367,6 +399,11 @@ public class SessionDetailViewModel(
                     // BL249 basis — session auto-refresh on reconnect (PWA v6.5.1).
                     if (!isError && wsWasDisconnected) {
                         wsWasDisconnected = false
+                        dwLog(
+                            "SessionWs",
+                            "live stream reconnected",
+                            LogLevel.INFO,
+                        )
                         // 1. Clear pane-capture dedup for this session.
                         com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
                         // 2. Fresh REST GET before WS events are acted on.
@@ -384,6 +421,9 @@ public class SessionDetailViewModel(
                         // screen composable via LaunchedEffect(state.session?.state) — the REST
                         // refresh above will update session.state so the composable re-evaluates.
                         // No additional action needed here; the full re-render path handles #66.
+                    }
+                    if (isError && !wsWasDisconnected) {
+                        dwLog("SessionWs", "live stream error; reconnecting")
                     }
                     if (isError) wsWasDisconnected = true
                     // Clear the image-processing info banner on any live server event —

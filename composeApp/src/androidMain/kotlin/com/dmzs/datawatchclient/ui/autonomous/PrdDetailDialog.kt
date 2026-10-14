@@ -22,6 +22,8 @@ import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -191,6 +193,12 @@ internal fun PrdDetailDialog(
     onSetStoryProfile: ((storyId: String, profile: String) -> Unit)? = null,
     /** PWA task ✎ "Edit spec + LLM" — edit_task and/or set_task_llm. */
     onEditTaskSpecLlm: ((taskId: String, newSpec: String?, llm: Triple<String, String, String>?) -> Unit)? = null,
+    /** PWA "Set LLM" → Verification LLM — POST set_verification_llm (backend, effort, model). */
+    onSetVerificationLlm: ((verif: Triple<String, String, String>) -> Unit)? = null,
+    /** PWA story 🤖 → Verification LLM — POST set_story_verification_llm. */
+    onSetStoryVerificationLlm: ((storyId: String, verif: Triple<String, String, String>) -> Unit)? = null,
+    /** PWA task ✎ → Verification LLM — POST set_task_verification_llm. */
+    onSetTaskVerificationLlm: ((taskId: String, verif: Triple<String, String, String>) -> Unit)? = null,
     /** Live planning stream state for this automaton (PWA _startDecomposeStream). */
     decomposeLive: com.dmzs.datawatchclient.transport.sse.DecomposeLiveState? = null,
     /** PWA lifecycle strip "Instantiate" for template automata. */
@@ -743,6 +751,8 @@ internal fun PrdDetailDialog(
                                             onSetStoryLlm = onSetStoryLlm?.let { cb -> { b, e, m -> cb(story.id, b, e, m) } },
                                             onSetStoryProfile = onSetStoryProfile?.let { cb -> { p -> cb(story.id, p) } },
                                             onEditTaskSpecLlm = onEditTaskSpecLlm,
+                                            onSetStoryVerificationLlm = onSetStoryVerificationLlm?.let { cb -> { v -> cb(story.id, v) } },
+                                            onSetTaskVerificationLlm = onSetTaskVerificationLlm,
                                         )
                                     }
                                 }
@@ -1077,6 +1087,9 @@ internal fun PrdDetailDialog(
                 onSetLlm(b, e, m, dp, dm)
                 llmOpen = false
             },
+            currentVerif = Triple(prd.verificationBackend.orEmpty(), prd.verificationEffort.orEmpty(), prd.verificationModel.orEmpty()),
+            modelsFor = modelsFor,
+            onSaveVerif = onSetVerificationLlm,
         )
     }
 
@@ -1251,8 +1264,12 @@ private fun LlmOverrideDialog(
     extraBackendModels: Map<String, List<String>> = emptyMap(),
     onDismiss: () -> Unit,
     onSave: (backend: String, effort: String, model: String, decompositionProfile: String, decompositionModel: String) -> Unit,
+    currentVerif: Triple<String, String, String> = Triple("", "", ""),
+    modelsFor: (String) -> List<String> = { emptyList() },
+    onSaveVerif: ((Triple<String, String, String>) -> Unit)? = null,
 ) {
     var backend by remember { mutableStateOf(currentBackend) }
+    var verif by remember { mutableStateOf(currentVerif) }
     var effort by remember { mutableStateOf(currentEffort) }
     var model by remember { mutableStateOf(currentModel) }
     var decompositionProfile by remember { mutableStateOf(currentDecompositionProfile) }
@@ -1288,7 +1305,7 @@ private fun LlmOverrideDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.prd_detail_set_llm_title)) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 ExposedDropdownMenuBox(
                     expanded = backendMenuOpen,
                     onExpandedChange = { backendMenuOpen = it },
@@ -1458,10 +1475,23 @@ private fun LlmOverrideDialog(
                         }
                     }
                 }
+                if (onSaveVerif != null) {
+                    VerificationLlmSection(
+                        hint = stringResource(R.string.prd_verif_llm_automaton_hint),
+                        value = verif,
+                        backends = backends,
+                        modelsFor = modelsFor,
+                        onChange = { verif = it },
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(backend, effort, model, decompositionProfile, decompositionModel) }) {
+            TextButton(onClick = {
+                // PWA: set_llm always; set_verification_llm only when a verification value changed.
+                if (onSaveVerif != null && verif != currentVerif) onSaveVerif(verif)
+                onSave(backend, effort, model, decompositionProfile, decompositionModel)
+            }) {
                 Text(stringResource(R.string.action_save))
             }
         },
@@ -1659,6 +1689,8 @@ private fun StoryRow(
     onSetStoryLlm: ((backend: String, effort: String, model: String) -> Unit)? = null,
     onSetStoryProfile: ((profile: String) -> Unit)? = null,
     onEditTaskSpecLlm: ((taskId: String, newSpec: String?, llm: Triple<String, String, String>?) -> Unit)? = null,
+    onSetStoryVerificationLlm: ((verif: Triple<String, String, String>) -> Unit)? = null,
+    onSetTaskVerificationLlm: ((taskId: String, verif: Triple<String, String, String>) -> Unit)? = null,
 ) {
     // PWA renderStory `editable` gate (needs_review / revisions_asked / cancelled).
     val pwaEditable = com.dmzs.datawatchclient.transport.dto.PrdLlmBadge.isEditable(prdStatus)
@@ -1868,6 +1900,7 @@ private fun StoryRow(
                             backends = backends,
                             modelsFor = modelsFor,
                             onEditTaskSpecLlm = onEditTaskSpecLlm?.let { cb -> { spec, llm -> cb(task.id, spec, llm) } },
+                            onSetTaskVerificationLlm = onSetTaskVerificationLlm?.let { cb -> { v -> cb(task.id, v) } },
                         )
                     }
                 }
@@ -1895,6 +1928,9 @@ private fun StoryRow(
             modelsFor = modelsFor,
             onDismiss = { storyLlmOpen = false },
             onSave = { _, llm -> llm?.let { (b, e, m) -> onSetStoryLlm(b, e, m) } },
+            verifHint = stringResource(R.string.prd_verif_llm_story_hint),
+            currentVerif = Triple(story.verificationBackend.orEmpty(), story.verificationEffort.orEmpty(), story.verificationModel.orEmpty()),
+            onSaveVerif = onSetStoryVerificationLlm,
         )
     }
     if (storyProfileOpen && onSetStoryProfile != null) {
@@ -2014,6 +2050,7 @@ private fun TaskRow(
     backends: List<String> = emptyList(),
     modelsFor: (String) -> List<String> = { emptyList() },
     onEditTaskSpecLlm: ((newSpec: String?, llm: Triple<String, String, String>?) -> Unit)? = null,
+    onSetTaskVerificationLlm: ((verif: Triple<String, String, String>) -> Unit)? = null,
 ) {
     // Server now accepts reset_task for PRDBlocked (same as PRDFailed) — widen gate to match.
     val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus in setOf("running", "blocked", "cancelled")
@@ -2046,7 +2083,7 @@ private fun TaskRow(
 
     val hasBody = task.spec.isNotBlank() || task.filesTouched.isNotEmpty() || task.files.isNotEmpty() ||
         !task.sessionId.isNullOrBlank() || !task.error.isNullOrBlank() || !task.waitReason.isNullOrBlank() ||
-        task.verification != null || canRetry || canRequeue || canCancel || canEdit
+        task.verification != null || task.foreignFileDrift.isNotEmpty() || canRetry || canRequeue || canCancel || canEdit
 
     Column(
         modifier = Modifier
@@ -2106,12 +2143,15 @@ private fun TaskRow(
         // PWA inline badges (visible collapsed or expanded): LLM override, ↳ spawn, → child.
         val taskLlm = com.dmzs.datawatchclient.transport.dto.PrdLlmBadge.taskLabel(task)
         val childId = task.childPrdId?.takeIf { it.isNotBlank() }
-        if (taskLlm != null || task.spawnPrd || childId != null) {
+        val driftCount = task.foreignFileDrift.size
+        if (taskLlm != null || task.spawnPrd || childId != null || driftCount > 0) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 2.dp),
                 verticalArrangement = Arrangement.Center,
             ) {
                 taskLlm?.let { PrdMiniPill(it) }
+                // PWA renderTask header: ⚠ N warn chip when foreign_file_drift is non-empty.
+                if (driftCount > 0) PrdMiniPill("⚠ $driftCount", color = Color(0xFFF59E0B))
                 if (task.spawnPrd) {
                     PrdMiniPill(stringResource(R.string.prd_task_spawn_badge), color = Color(0xFF8B5CF6))
                 }
@@ -2230,6 +2270,42 @@ private fun TaskRow(
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
+            // PWA "Judged by: backend / model (source)" — which verifier actually ran.
+            val automatonWord = stringResource(R.string.prd_verif_source_automaton)
+            com.dmzs.datawatchclient.transport.dto.PrdLlmBadge.verifierLabel(v, automatonWord)?.let { judged ->
+                Text(
+                    stringResource(R.string.prd_verif_verifier_label) + ": " + judged,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+        // PWA renderTaskFileDrift: files this task's commit swept in that were already
+        // uncommitted before it started and aren't in its planned files (warn-only).
+        if (task.foreignFileDrift.isNotEmpty()) {
+            Surface(
+                color = Color(0xFFF59E0B).copy(alpha = 0.12f),
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            ) {
+                Column(modifier = Modifier.padding(6.dp)) {
+                    Text(
+                        "⚠ " + stringResource(R.string.automata_task_foreign_file_drift) + " (${task.foreignFileDrift.size})",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFF59E0B),
+                    )
+                    task.foreignFileDrift.forEach { f ->
+                        Text(
+                            "• $f",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                }
+            }
         }
         // Action buttons row
         val hasActions = (canRetry && onResetTask != null) || (canRequeue && onRequeueTask != null) ||
@@ -2318,6 +2394,9 @@ private fun TaskRow(
             modelsFor = modelsFor,
             onDismiss = { editTaskOpen = false },
             onSave = { spec, llm -> onEditTaskSpecLlm(spec, llm) },
+            verifHint = stringResource(R.string.prd_verif_llm_hint),
+            currentVerif = Triple(task.verificationBackend.orEmpty(), task.verificationEffort.orEmpty(), task.verificationModel.orEmpty()),
+            onSaveVerif = onSetTaskVerificationLlm,
         )
     } else if (editTaskOpen && onEditTask != null) {
         AlertDialog(

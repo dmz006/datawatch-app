@@ -21,6 +21,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
@@ -270,6 +271,9 @@ public class WearSyncService(
                         count to list
                     }
                 }
+                // Publish only when what the watch shows changed; each publish is
+                // an urgent DataItem sync (2026-10-14 profile).
+                .distinctUntilChanged()
                 .collectLatest { (snap, list) ->
                     publishCounts(snap)
                     publishSessions(list)

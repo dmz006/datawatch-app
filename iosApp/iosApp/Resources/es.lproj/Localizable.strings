@@ -1933,3 +1933,25 @@
 "%1$@: %2$@" = "%1$@: %2$@";
 "Authentication failed — this server has no valid token configured" = "Error de autenticación — este servidor no tiene configurado un token válido";
 "Back to %@" = "Volver a %@";
+
+/* iOS performance: shared first-load / refreshing indicator (ScreenLoadState) */
+"Refreshing…" = "Actualizando…";
+"Loading statistics…" = "Cargando estadísticas…";
+"Loading dashboard…" = "Cargando panel…";
+/* On-device crash / bug reports (docs/crash-reports.md). */
+"datawatch closed unexpectedly. Send a report?" = "datawatch se cerró inesperadamente. ¿Enviar un informe?";
+"The report has the error, the app version, your device model and the recent app log. Server addresses, IP addresses and tokens are removed. Nothing is sent unless you tap Send." = "El informe incluye el error, la versión de la app, el modelo del dispositivo y el registro reciente de la app. Se eliminan las direcciones de servidor, las direcciones IP y los tokens. No se envía nada a menos que toques Enviar.";
+"View" = "Ver";
+"Report" = "Informe";
+"Send bug report" = "Enviar informe de error";
+"Share the recent app log and a note about what happened" = "Comparte el registro reciente de la app y una nota sobre lo ocurrido";
+"Support" = "Soporte";
+"What happened?" = "¿Qué ha pasado?";
+"Your note and the recent app log go into the report. Server addresses, IP addresses and tokens are removed. You choose where to send it." = "Tu nota y el registro reciente de la app se incluyen en el informe. Se eliminan las direcciones de servidor, las direcciones IP y los tokens. Tú eliges adónde enviarlo.";
+"Verification LLM" = "LLM de verificación";
+"Which LLM judges this task's work — empty inherits story, then Automaton, then the global verification setting." = "Qué LLM evalúa el trabajo de esta tarea — vacío hereda de la historia, luego del autómata y luego de la configuración global de verificación.";
+"Which LLM judges this story's tasks — empty inherits the Automaton, then the global verification setting. Tasks with their own verification LLM keep it." = "Qué LLM evalúa las tareas de esta historia — vacío hereda del autómata y luego de la configuración global de verificación. Las tareas con su propio LLM de verificación lo conservan.";
+"Which LLM judges this Automaton's tasks — empty inherits the global verification setting. Story and task verification LLMs take precedence." = "Qué LLM evalúa las tareas de este autómata — vacío hereda la configuración global de verificación. Los LLM de verificación de historia y tarea tienen prioridad.";
+"Judged by" = "Evaluado por";
+"automaton" = "autómata";
+"Foreign file drift" = "Deriva de archivos ajenos";

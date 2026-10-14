@@ -55,12 +55,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
 import com.dmzs.datawatchclient.domain.SessionState
-import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
@@ -80,7 +78,7 @@ import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 @Composable
 public fun AlertsScreen(
     onOpenSession: (String) -> Unit,
-    vm: AlertsViewModel = viewModel(),
+    vm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val state by vm.state.collectAsState()
     val reachable by vm.reachable.collectAsState()
@@ -325,6 +323,13 @@ public fun AlertsScreen(
             }
 
             val groups = state.visibleGroups
+            val lastLoadedMs by vm.lastLoadedMs.collectAsState()
+            if (groups.isNotEmpty()) {
+                com.dmzs.datawatchclient.ui.common.CachedDataRefreshStrip(
+                    refreshing = state.refreshing,
+                    lastLoadedMs = lastLoadedMs,
+                )
+            }
 
             // Alert deep link (datawatch://alert/<id>): scroll to the focused alert.
             val chronoListState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -349,7 +354,9 @@ public fun AlertsScreen(
             if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
                 // Flat chronological view scoped to the current tab's groups.
                 val flatChrono = groups.flatMap { it.alerts }.sortedByDescending { it.createdAt }
-                if (flatChrono.isEmpty()) {
+                if (flatChrono.isEmpty() && state.refreshing && lastLoadedMs == 0L) {
+                    com.dmzs.datawatchclient.ui.common.PageLoading(label = stringResource(R.string.loading_alerts))
+                } else if (flatChrono.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(
                             stringResource(R.string.alerts_empty),
@@ -381,8 +388,8 @@ public fun AlertsScreen(
                 if (groups.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (state.refreshing) {
-                            // Loading state: animated datawatch eye + "Loading…" (common_loading).
-                            DatawatchLoadingContent(label = stringResource(R.string.common_loading))
+                            // First load: the splash eye + "Loading alerts…".
+                            com.dmzs.datawatchclient.ui.common.PageLoading(label = stringResource(R.string.loading_alerts))
                         } else {
                             Text(
                                 // Parity D35a — PWA single "No alerts." on every tab.

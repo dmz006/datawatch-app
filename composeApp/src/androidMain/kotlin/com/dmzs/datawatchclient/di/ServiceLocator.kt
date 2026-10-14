@@ -75,10 +75,23 @@ public object ServiceLocator {
      * on AppWidgetManager's own 30-minute cadence, which the user
      * (2026-04-22) reported as "not updating".
      */
-    public fun refreshHomeWidgets() {
+    @Volatile private var lastWidgetRefreshMs: Long = 0L
+
+    /**
+     * Throttled to once per [WIDGET_REFRESH_MIN_MS]. Each call makes the widgets
+     * re-fetch sessions and stats over REST, and callers fire on every WS
+     * `sessions`/`stats` frame (several a minute under load, 2026-10-14 profile).
+     * Pass [force] after a user action whose result the widget should show now.
+     */
+    public fun refreshHomeWidgets(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastWidgetRefreshMs < WIDGET_REFRESH_MIN_MS) return
+        lastWidgetRefreshMs = now
         com.dmzs.datawatchclient.widget.SessionsWidget.requestUpdate(appContext)
         com.dmzs.datawatchclient.widget.MonitorWidget.requestUpdate(appContext)
     }
+
+    private const val WIDGET_REFRESH_MIN_MS: Long = 60_000L
 
     public val profileRepository: ServerProfileRepository by lazy {
         ServerProfileRepository(database, Dispatchers.IO)

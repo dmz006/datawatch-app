@@ -52,6 +52,7 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
     LaunchedEffect(Unit) {
         vm.refresh()
         while (true) {
+            com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
             // Parity D54b — PWA per-system grid refreshes every 8 s.
             delay(8_000)
             vm.refresh()

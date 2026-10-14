@@ -1,10 +1,12 @@
 import SwiftUI
 import DatawatchShared
 
-// Animated cards. PWA `_dashLoop` cadences, reproduced with TimelineView:
-//   • Multi-EKG — every animation frame (60 fps sweep)
-//   • Network (constellation) — physics at 60 Hz, redraw ~10 fps
-//   • Sessions sparklines — ~5 fps
+// Animated cards, driven by TimelineView. Redraw rates are capped for
+// battery / main-thread cost (every frame calls into the shared Kotlin
+// engine); the motion is time-based, so a lower rate doesn't slow it down:
+//   • Multi-EKG — ~10 fps sweep (the PWA redraws every animation frame)
+//   • Network (constellation) — physics at 60 Hz (catch-up steps), redraw ~5 fps
+//   • Sessions sparklines — ~2 fps (2 s hook-event buckets)
 // Reduce Motion pauses the timelines (static frame, redrawn on data changes)
 // and settles the constellation physics in one go.
 
@@ -24,7 +26,7 @@ struct DashNetworkCard: View {
                 // Issue #98 narrow fallback: compact text list.
                 DashCompactSessionList(rows: vm.engine.compactRows(nowMs: dashNow(Date())), onTarget: onTarget)
             } else {
-                TimelineView(.animation(minimumInterval: 0.1, paused: reduceMotion)) { ctx in
+                TimelineView(.animation(minimumInterval: 0.2, paused: reduceMotion)) { ctx in
                     DashConstellationFrame(
                         sim: vm.constellation,
                         nowMs: dashNow(ctx.date),
@@ -221,7 +223,7 @@ struct DashEkgCard: View {
                 DashBurnRatePanel(stats: engine.statBar(), narrow: true)
             } else {
                 HStack(spacing: 0) {
-                    TimelineView(.animation(minimumInterval: nil, paused: reduceMotion)) { ctx in
+                    TimelineView(.animation(minimumInterval: 0.1, paused: reduceMotion)) { ctx in
                         DashEkgCanvas(ekg: engine.ekg(nowMs: dashNow(ctx.date), windowSec: DashEkgCanvas.windowSec))
                     }
                     DashBurnRatePanel(stats: engine.statBar(), narrow: false)
@@ -368,7 +370,7 @@ private struct DashEkgCanvas: View {
     }
 }
 
-// ── Sessions sparklines (~5 fps) ──────────────────────────────────────────────
+// ── Sessions sparklines (~2 fps) ──────────────────────────────────────────────
 
 struct DashSparklinesCard: View {
     let engine: IosDashEngine
@@ -376,7 +378,7 @@ struct DashSparklinesCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.2, paused: reduceMotion)) { ctx in
+        TimelineView(.animation(minimumInterval: 0.5, paused: reduceMotion)) { ctx in
             DashSparkCanvas(rows: engine.sparkRows(nowMs: dashNow(ctx.date)))
         }
     }

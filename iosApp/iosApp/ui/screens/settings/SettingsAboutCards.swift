@@ -33,6 +33,7 @@ struct SettingsAboutCard: View {
     @State private var confirmKill = false
     @State private var confirmUpdate = false
     @State private var replaySplash = false
+    @State private var bugReport = false
 
     var body: some View {
         List {
@@ -66,6 +67,22 @@ struct SettingsAboutCard: View {
 
             Section { linkRows }
                 .listRowBackground(DatawatchColors.surface)
+
+            // Support: on-device bug report (Android Settings › About › Support).
+            Section {
+                Button { bugReport = true } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label("Send bug report", systemImage: "ladybug")
+                            .foregroundStyle(DatawatchColors.onSurface)
+                        Text("Share the recent app log and a note about what happened")
+                            .font(DatawatchFonts.labelSmall)
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
+                }
+            } header: {
+                Text("Support")
+            }
+            .listRowBackground(DatawatchColors.surface)
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -74,6 +91,7 @@ struct SettingsAboutCard: View {
         .fullScreenCover(isPresented: $replaySplash) {
             LaunchSplashView(replay: true) { replaySplash = false }
         }
+        .sheet(isPresented: $bugReport) { BugReportSheet() }
         .confirmationDialog("Restart the datawatch daemon?", isPresented: $confirmRestart, titleVisibility: .visible) {
             Button("Restart", role: .destructive) { restart() }
             Button("Cancel", role: .cancel) {}
