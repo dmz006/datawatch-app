@@ -414,15 +414,13 @@ public fun SessionDetailScreen(
                     )
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
                     val alertsVm: com.dmzs.datawatchclient.ui.alerts.AlertsViewModel =
-                        viewModel()
+                        com.dmzs.datawatchclient.ui.activityViewModel()
                     val alertsState by alertsVm.state.collectAsState()
                     com.dmzs.datawatchclient.ui.common.AlertsBellAction(
                         alertsBadge = alertsState.watchedAlertCount,
                     )
-                    val sessionsVm: SessionsViewModel = viewModel()
-                    val watchedIds by sessionsVm.watchedIds.collectAsState()
-                    val isWatched = sessionId in watchedIds
-                    IconButton(onClick = { sessionsVm.toggleWatch(sessionId) }) {
+                    val isWatched by vm.watched.collectAsState()
+                    IconButton(onClick = { vm.toggleWatch() }) {
                         Icon(
                             if (isWatched) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
                             contentDescription = stringResource(if (isWatched) R.string.session_watch_on else R.string.session_watch_off),

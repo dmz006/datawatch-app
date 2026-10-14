@@ -4583,7 +4583,13 @@ public class RestTransport(
         serializer: kotlinx.serialization.KSerializer<T>,
     ): List<T> = listElements(el, key).map { DefaultJson.decodeFromJsonElement(serializer, it) }
 
-    private inline fun <T> request(block: () -> T): Result<T> =
+    // Runs on Dispatchers.Default so response decoding (a 3 MB session list on
+    // a busy server) never happens on the caller's thread, which is Main for
+    // view-model and LaunchedEffect callers (2026-10-14 profile).
+    private suspend inline fun <T> request(crossinline block: suspend () -> T): Result<T> =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { requestOnCurrentThread { block() } }
+
+    private suspend inline fun <T> requestOnCurrentThread(crossinline block: suspend () -> T): Result<T> =
         try {
             val v = block()
             _isReachable.value = true

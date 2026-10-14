@@ -24,6 +24,7 @@ public class DatawatchApp : Application() {
         super.onCreate()
         DatabaseFactory.loadNativeLib()
         ForegroundSessionTracker.isForeground("") // register lifecycle observer on main thread
+        com.dmzs.datawatchclient.di.AppForeground.install()
         com.dmzs.datawatchclient.di.ServiceLocator.init(this)
         // #234: discover remote servers reachable through each profile's /api/proxy.
         com.dmzs.datawatchclient.di.ProxiedServersCoordinator.start()

@@ -80,7 +80,7 @@ import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 @Composable
 public fun AlertsScreen(
     onOpenSession: (String) -> Unit,
-    vm: AlertsViewModel = viewModel(),
+    vm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val state by vm.state.collectAsState()
     val reachable by vm.reachable.collectAsState()

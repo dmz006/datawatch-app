@@ -13,7 +13,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -185,6 +184,10 @@ public class AlertsViewModel : ViewModel() {
             }
         }
 
+    // Declared before init: the poll loop launched there reads it.
+    private val refreshRequests =
+        kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
+
     init {
         // Restore persisted tab + per-tab filter state on startup.
         loadPersistedTabState()
@@ -204,6 +207,8 @@ public class AlertsViewModel : ViewModel() {
                 _alerts.value = emptyList()
                 _groupProfileNames.value = emptyMap()
                 while (true) {
+                    // Idle while the app is in the background (2026-10-14 profile).
+                    com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
                     _refreshing.value = true
                     if (allMode) {
                         val profiles = _allProfiles.value.filter { it.enabled }
@@ -256,7 +261,8 @@ public class AlertsViewModel : ViewModel() {
                         )
                     }
                     _refreshing.value = false
-                    delay(POLL_INTERVAL_MS)
+                    // Wait for the next tick, or wake early on refresh().
+                    kotlinx.coroutines.withTimeoutOrNull(POLL_INTERVAL_MS) { refreshRequests.receive() }
                 }
             }
         }
@@ -740,8 +746,9 @@ public class AlertsViewModel : ViewModel() {
 
     /** Trigger an immediate poll (e.g. after tapping the reachability-dot retry button). */
     public fun refresh() {
-        viewModelScope.launch { _refreshing.value = true }
+        refreshRequests.trySend(Unit)
     }
+
 
     private companion object {
         const val POLL_INTERVAL_MS = 5_000L

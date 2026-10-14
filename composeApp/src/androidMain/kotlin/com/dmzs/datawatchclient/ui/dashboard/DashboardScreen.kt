@@ -88,7 +88,7 @@ public fun DashboardScreen(
     onOpenSession: (String) -> Unit = {},
     onExpandSession: (String) -> Unit = {},
     vm: DashboardViewModel = viewModel(),
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val state by vm.state.collectAsState()
     val reachable by vm.reachable.collectAsState()

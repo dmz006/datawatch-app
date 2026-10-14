@@ -91,7 +91,7 @@ import kotlinx.coroutines.launch
 public fun AutonomousScreen(
     vm: AutonomousViewModel = viewModel(),
     tmplVm: TemplatesViewModel = viewModel(),
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val state by vm.state.collectAsState()
     val pinnedIds by vm.pinnedAutomataIds.collectAsState()

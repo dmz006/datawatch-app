@@ -165,7 +165,7 @@ public fun AppRoot() {
 
         // Activity-scoped so the Home shell, the root alert dock and the live
         // WS alert feed share one poller.
-        val alertsVm: AlertsViewModel = viewModel()
+        val alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel()
         val alertsState by alertsVm.state.collectAsState()
         LiveAlertFeed()
 

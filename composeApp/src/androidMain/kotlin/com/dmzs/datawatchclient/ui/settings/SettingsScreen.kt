@@ -135,7 +135,7 @@ public fun SettingsScreen(
     onAddServer: () -> Unit = {},
     onEditServer: (String) -> Unit = {},
     onNavigateToObserver: () -> Unit = {},
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val profiles by ServiceLocator.profileRepository.observeAll()
         .collectAsState(initial = emptyList())

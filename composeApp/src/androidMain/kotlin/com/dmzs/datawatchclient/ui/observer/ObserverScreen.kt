@@ -29,7 +29,7 @@ import com.dmzs.datawatchclient.ui.common.ServerPickerBar
 @Composable
 public fun ObserverScreen(
     vm: ObserverViewModel = viewModel(),
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val state by vm.state.collectAsState()
     val reachable by vm.reachable.collectAsState()

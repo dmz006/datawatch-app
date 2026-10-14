@@ -145,7 +145,7 @@ public fun SessionsScreen(
     /** BL303 — row maximize opens the session in Dashboard expand (status) mode. */
     onExpandSession: (String) -> Unit = {},
     vm: SessionsViewModel = viewModel(),
-    alertsVm: AlertsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val state by vm.state.collectAsState()
     val watchedIds by vm.watchedIds.collectAsState()
