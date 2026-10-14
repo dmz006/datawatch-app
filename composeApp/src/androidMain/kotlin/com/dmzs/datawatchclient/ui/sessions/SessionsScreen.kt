@@ -105,7 +105,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
@@ -144,7 +143,7 @@ public fun SessionsScreen(
     onNewSession: () -> Unit = {},
     /** BL303 — row maximize opens the session in Dashboard expand (status) mode. */
     onExpandSession: (String) -> Unit = {},
-    vm: SessionsViewModel = viewModel(),
+    vm: SessionsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
     alertsVm: AlertsViewModel = com.dmzs.datawatchclient.ui.activityViewModel(),
 ) {
     val state by vm.state.collectAsState()
