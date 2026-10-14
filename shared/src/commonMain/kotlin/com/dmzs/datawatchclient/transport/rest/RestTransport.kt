@@ -4564,6 +4564,60 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    // ---- Verification (judge) LLM overrides (server v9.0.73+) ----
+
+    override suspend fun setTaskVerificationLlm(
+        prdId: String,
+        taskId: String,
+        backend: String?,
+        model: String?,
+        effort: String?,
+        actor: String?,
+    ): Result<Unit> = postVerificationLlm(prdId, "set_task_verification_llm", "task_id" to taskId, backend, model, effort, actor)
+
+    override suspend fun setStoryVerificationLlm(
+        prdId: String,
+        storyId: String,
+        backend: String?,
+        model: String?,
+        effort: String?,
+        actor: String?,
+    ): Result<Unit> = postVerificationLlm(prdId, "set_story_verification_llm", "story_id" to storyId, backend, model, effort, actor)
+
+    override suspend fun setPrdVerificationLlm(
+        prdId: String,
+        backend: String?,
+        model: String?,
+        effort: String?,
+        actor: String?,
+    ): Result<Unit> = postVerificationLlm(prdId, "set_verification_llm", null, backend, model, effort, actor)
+
+    /** Shared body for the three verification setters: null = omit (unchanged), "" = clear. */
+    private suspend fun postVerificationLlm(
+        prdId: String,
+        action: String,
+        target: Pair<String, String>?,
+        backend: String?,
+        model: String?,
+        effort: String?,
+        actor: String?,
+    ): Result<Unit> =
+        request {
+            val body =
+                kotlinx.serialization.json.buildJsonObject {
+                    target?.let { (k, v) -> put(k, kotlinx.serialization.json.JsonPrimitive(v)) }
+                    backend?.let { put("verification_backend", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    model?.let { put("verification_model", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    effort?.let { put("verification_effort", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    actor?.let { put("actor", kotlinx.serialization.json.JsonPrimitive(it)) }
+                }
+            client.post("${profile.baseUrl}/api/autonomous/prds/${prdId.encodeURLPathPart()}/$action") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     /** A list response that is either a bare array or an object holding it under [key] (null → empty). */

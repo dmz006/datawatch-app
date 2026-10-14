@@ -711,6 +711,19 @@ public data class PrdDto(
     /** #191 scope warnings: true when the plan references paths outside allowed directories. */
     /** Server `[]string` (plan entries referencing paths outside the allowed dirs); was mis-typed as Boolean. */
     @SerialName("scope_warnings") val scopeWarnings: List<String> = emptyList(),
+    /**
+     * Automaton-level verification (judge) LLM override (server v9.0.73+, PWA "Set LLM"
+     * → Verification LLM; POST set_verification_llm). Precedence task → story →
+     * Automaton → global `autonomous.verification_*`. Empty / absent = inherit.
+     */
+    @SerialName("verification_backend") val verificationBackend: String? = null,
+    @SerialName("verification_model") val verificationModel: String? = null,
+    @SerialName("verification_effort") val verificationEffort: String? = null,
+    /**
+     * Per-Automaton strict foreign-file-drift enforcement (server v9.0.75+). null =
+     * inherit the guardrail profile, then the global `autonomous.block_on_file_drift`.
+     */
+    @SerialName("block_on_file_drift") val blockOnFileDrift: Boolean? = null,
 )
 
 @Serializable
@@ -768,6 +781,14 @@ public data class PrdTaskVerificationDto(
     val severity: String? = null,
     // Server v8.25.3+ sends issues as plain strings; PrdVerificationIssueDto kept for compat.
     val issues: List<String> = emptyList(),
+    /**
+     * What the verifier actually ran with (server v9.0.73+; PWA "Judged by" line).
+     * [verifierSource] is `task` | `story` | `prd` (the Automaton level) | `global` | `pool`.
+     */
+    @SerialName("verifier_backend") val verifierBackend: String? = null,
+    @SerialName("verifier_model") val verifierModel: String? = null,
+    @SerialName("verifier_effort") val verifierEffort: String? = null,
+    @SerialName("verifier_source") val verifierSource: String? = null,
 )
 
 @Serializable
@@ -795,6 +816,16 @@ public data class PrdTaskDto(
     @SerialName("spawn_prd") val spawnPrd: Boolean = false,
     /** Child automaton spawned by this task (PWA → child link). */
     @SerialName("child_prd_id") val childPrdId: String? = null,
+    /** Per-task verification LLM override (server set_task_verification_llm). Empty = inherit. */
+    @SerialName("verification_backend") val verificationBackend: String? = null,
+    @SerialName("verification_model") val verificationModel: String? = null,
+    @SerialName("verification_effort") val verificationEffort: String? = null,
+    /**
+     * Foreign-file drift (server v9.0.75+): files this task's own commit swept in that were
+     * already dirty or untracked before it started and are not in its planned [files].
+     * Warn-only unless `block_on_file_drift` is on; empty = none.
+     */
+    @SerialName("foreign_file_drift") val foreignFileDrift: List<String> = emptyList(),
 )
 
 @Serializable
@@ -814,6 +845,10 @@ public data class PrdStoryDto(
     val model: String? = null,
     /** BL191 Q6 story-level guardrail verdicts (PWA `prd-story-verdicts` badges). */
     val verdicts: List<GuardrailVerdictDto> = emptyList(),
+    /** Per-story verification LLM override (server set_story_verification_llm). Empty = inherit. */
+    @SerialName("verification_backend") val verificationBackend: String? = null,
+    @SerialName("verification_model") val verificationModel: String? = null,
+    @SerialName("verification_effort") val verificationEffort: String? = null,
 )
 
 /**
@@ -1933,6 +1968,8 @@ public data class GuardrailProfileDto(
     val guardrails: List<String> = emptyList(),
     @SerialName("block_on") val blockOn: List<String> = emptyList(),
     @SerialName("warn_on") val warnOn: List<String> = emptyList(),
+    /** Strict foreign-file-drift for Automata using this profile (server v9.0.75+); null = inherit global. */
+    @SerialName("block_on_file_drift") val blockOnFileDrift: Boolean? = null,
 )
 
 @Serializable
@@ -2225,6 +2262,8 @@ public data class CapacityResponseDto(
 @Serializable
 public data class AutonomousConfigDto(
     @SerialName("verification_backends") val verificationBackends: List<String>? = null,
+    /** Global strict foreign-file-drift enforcement (server v9.0.75+, default false). */
+    @SerialName("block_on_file_drift") val blockOnFileDrift: Boolean? = null,
 )
 
 /** GET /api/web_search/stats — web-search engine live counters (v8.22.0 legacy alias). */
