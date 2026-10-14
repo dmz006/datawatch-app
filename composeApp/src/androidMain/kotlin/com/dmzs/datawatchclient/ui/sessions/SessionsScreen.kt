@@ -367,11 +367,21 @@ public fun SessionsScreen(
 
             val visible =
                 if (watchFilter) state.visibleSessions.filter { it.id in watchedIds } else state.visibleSessions
+            // Cached rows are on screen while a refresh runs: say so.
+            if (visible.isNotEmpty()) {
+                com.dmzs.datawatchclient.ui.common.CachedDataRefreshStrip(
+                    refreshing = state.refreshing,
+                    lastLoadedMs = state.lastProbeEpochMs ?: 0L,
+                    staleAfterMs = 45_000L,
+                )
+            }
             if (visible.isEmpty()) {
                 if (fedStatus != null) {
                     com.dmzs.datawatchclient.ui.common.FedConnStatusPane(fedStatus)
                 } else if (state.refreshing) {
-                    SessionSkeletonList()
+                    com.dmzs.datawatchclient.ui.common.PageLoading(
+                        label = stringResource(R.string.loading_sessions),
+                    )
                 } else {
                     EmptyState(
                         showHint = state.activeProfile != null,
@@ -993,43 +1003,6 @@ private fun stateChipColor(key: String): Color {
         "waiting_input" -> dw.warning
         "rate_limited", "failed" -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-}
-
-@Composable
-private fun SessionSkeletonList() {
-    val alpha by com.dmzs.datawatchclient.ui.theme.rememberDwPulse(
-        initial = 0.3f,
-        target = 0.7f,
-        durationMs = 900,
-        staticValue = 0.5f,
-        label = "skeleton",
-    )
-    val shimmer = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
-        repeat(5) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                    .padding(12.dp),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(if (it % 2 == 0) 0.65f else 0.80f)
-                        .height(14.dp)
-                        .background(shimmer, RoundedCornerShape(4.dp)),
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.45f)
-                        .height(10.dp)
-                        .background(shimmer, RoundedCornerShape(4.dp)),
-                )
-            }
-        }
     }
 }
 

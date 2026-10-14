@@ -48,6 +48,7 @@ internal fun ComputeNodeLiveDetailDialog(
     LaunchedEffect(name) {
         val t = resolveTransport() ?: return@LaunchedEffect
         while (true) {
+            com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
             val d = ComputeNodeLiveDetailLoader.load(t, name)
             detail = d
             if (d.error != null) break

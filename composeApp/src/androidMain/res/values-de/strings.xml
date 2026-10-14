@@ -1402,4 +1402,9 @@
     <string name="community_plugins_installing">Wird installiert…</string>
     <string name="community_plugins_installed">Installiert</string>
     <string name="session_detail_commands_guardrails">Guardrails</string>
+    <string name="loading_sessions">Sitzungen werden geladen…</string>
+    <string name="loading_alerts">Warnungen werden geladen…</string>
+    <string name="loading_dashboard">Dashboard wird geladen…</string>
+    <string name="loading_automata">Automata werden geladen…</string>
+    <string name="refreshing_cached_data">Gespeicherte Daten · wird aktualisiert…</string>
 </resources>

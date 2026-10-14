@@ -1715,4 +1715,9 @@
     <string name="community_plugins_installing">Installing…</string>
     <string name="community_plugins_installed">Installed</string>
     <string name="session_detail_commands_guardrails">Guardrails</string>
+    <string name="loading_sessions">Loading sessions…</string>
+    <string name="loading_alerts">Loading alerts…</string>
+    <string name="loading_dashboard">Loading dashboard…</string>
+    <string name="loading_automata">Loading Automata…</string>
+    <string name="refreshing_cached_data">Showing saved data · refreshing…</string>
 </resources>

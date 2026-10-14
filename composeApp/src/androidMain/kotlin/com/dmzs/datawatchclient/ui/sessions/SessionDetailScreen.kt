@@ -3137,6 +3137,7 @@ private fun ProcessStatsBar(fetch: suspend () -> com.dmzs.datawatchclient.transp
     var env by remember { mutableStateOf<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto?>(null) }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         while (true) {
+            com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
             env = fetch()
             kotlinx.coroutines.delay(5_000L)
         }

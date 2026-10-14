@@ -428,6 +428,7 @@ private fun HomeShell(
     // PWA updatePeerStaleBadge: polled every 30 s independently of the Observer tab.
     LaunchedEffect(federatedPeersVm) {
         while (true) {
+            com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
             federatedPeersVm.refresh()
             kotlinx.coroutines.delay(30_000)
         }

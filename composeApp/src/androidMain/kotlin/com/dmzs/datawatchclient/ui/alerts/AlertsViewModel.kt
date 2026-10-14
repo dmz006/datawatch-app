@@ -16,6 +16,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -184,6 +185,11 @@ public class AlertsViewModel : ViewModel() {
             }
         }
 
+    private val _lastLoadedMs = MutableStateFlow(0L)
+
+    /** When the alert list last loaded successfully (0 = not yet). Drives the cached-data strip. */
+    public val lastLoadedMs: StateFlow<Long> = _lastLoadedMs.asStateFlow()
+
     // Declared before init: the poll loop launched there reads it.
     private val refreshRequests =
         kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
@@ -206,6 +212,7 @@ public class AlertsViewModel : ViewModel() {
                 .collectLatest { (profile, allMode) ->
                 _alerts.value = emptyList()
                 _groupProfileNames.value = emptyMap()
+                _lastLoadedMs.value = 0L
                 while (true) {
                     // Idle while the app is in the background (2026-10-14 profile).
                     com.dmzs.datawatchclient.di.AppForeground.awaitForeground()
@@ -238,6 +245,7 @@ public class AlertsViewModel : ViewModel() {
                             }.awaitAll()
                         }
                         _alerts.value = mergedAlerts.sortedByDescending { it.createdAt }
+                        _lastLoadedMs.value = System.currentTimeMillis()
                         _groupProfileNames.value = nameMap.toMap()
                         _banner.value = if (errors.isEmpty()) null else "Some unreachable: " + errors.take(2).joinToString("; ")
                     } else {
@@ -248,6 +256,7 @@ public class AlertsViewModel : ViewModel() {
                         ServiceLocator.transportFor(profile).listAlerts().fold(
                             onSuccess = {
                                 _alerts.value = it.alerts
+                                _lastLoadedMs.value = System.currentTimeMillis()
                                 _groupProfileNames.value = emptyMap()
                                 _banner.value = null
                             },

@@ -1402,4 +1402,9 @@
     <string name="community_plugins_installing">Installation…</string>
     <string name="community_plugins_installed">Installé</string>
     <string name="session_detail_commands_guardrails">Garde-fous</string>
+    <string name="loading_sessions">Chargement des sessions…</string>
+    <string name="loading_alerts">Chargement des alertes…</string>
+    <string name="loading_dashboard">Chargement du tableau de bord…</string>
+    <string name="loading_automata">Chargement des Automata…</string>
+    <string name="refreshing_cached_data">Données enregistrées · actualisation…</string>
 </resources>

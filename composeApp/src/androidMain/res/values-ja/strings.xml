@@ -1402,4 +1402,9 @@
     <string name="community_plugins_installing">インストール中…</string>
     <string name="community_plugins_installed">インストール済み</string>
     <string name="session_detail_commands_guardrails">ガードレール</string>
+    <string name="loading_sessions">セッションを読み込み中…</string>
+    <string name="loading_alerts">アラートを読み込み中…</string>
+    <string name="loading_dashboard">ダッシュボードを読み込み中…</string>
+    <string name="loading_automata">Automata を読み込み中…</string>
+    <string name="refreshing_cached_data">保存済みのデータを表示中 · 更新しています…</string>
 </resources>

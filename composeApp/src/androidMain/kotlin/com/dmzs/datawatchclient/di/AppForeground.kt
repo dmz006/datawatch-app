@@ -49,3 +49,34 @@ public object AppForeground {
         visible.first { it }
     }
 }
+
+/**
+ * Pauses a view-model's polling loop while its screen is not shown.
+ *
+ * Bottom-tab view-models outlive their screens (navigation keeps them via
+ * saveState), so a loop in viewModelScope kept polling on every other tab.
+ * The screen calls [BindPollGate] and the loop calls [await] before each
+ * request.
+ */
+public class PollGate {
+    private val shown = MutableStateFlow(false)
+
+    public fun setShown(value: Boolean) {
+        shown.value = value
+    }
+
+    /** Suspends until the app is in the foreground and the screen is shown. */
+    public suspend fun await() {
+        AppForeground.awaitForeground()
+        shown.first { it }
+    }
+}
+
+/** Marks [gate] shown while this composable is in the composition. */
+@androidx.compose.runtime.Composable
+public fun BindPollGate(gate: PollGate) {
+    androidx.compose.runtime.DisposableEffect(gate) {
+        gate.setShown(true)
+        onDispose { gate.setShown(false) }
+    }
+}
