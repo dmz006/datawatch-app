@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.28.18] — 2026-10-14
+
+**iOS only (TestFlight).** Android stays on 1.28.17 while Google Play reviews it, so this version was not sent to Play or the GitHub release. The same changes reach Android in the next Android release.
+
 ### Automata parity
 Parity with datawatch v9.0.73 (per-unit verification LLM) and v9.0.75 (foreign-file drift), on Android and iOS. Closes the Android parity item the server tracks as datawatch-app#257.
 - **Choose which LLM verifies a task, a story or a whole Automaton.** The task edit dialog, the story LLM dialog and the Automaton's Set LLM dialog each have a **Verification LLM** section with the same Backend / Effort / Model pickers as the execution LLM. Leave a field empty to inherit, in the order task, story, Automaton, then the global verification setting. Saving calls the server's `set_task_verification_llm`, `set_story_verification_llm` or `set_verification_llm` only when a value changed.
