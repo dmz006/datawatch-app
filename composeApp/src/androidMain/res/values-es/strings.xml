@@ -1405,7 +1405,7 @@
     <string name="loading_sessions">Cargando sesiones…</string>
     <string name="loading_alerts">Cargando alertas…</string>
     <string name="loading_dashboard">Cargando panel…</string>
-    <string name="loading_automata">Cargando Automata…</string>
+    <string name="loading_automata">Cargando autómatas…</string>
     <string name="refreshing_cached_data">Mostrando datos guardados · actualizando…</string>
     <!-- On-device crash / bug reports (docs/crash-reports.md) -->
     <string name="crash_report_title">datawatch se cerró inesperadamente. ¿Enviar un informe?</string>

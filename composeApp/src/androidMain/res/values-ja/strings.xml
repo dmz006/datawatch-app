@@ -1405,7 +1405,7 @@
     <string name="loading_sessions">セッションを読み込み中…</string>
     <string name="loading_alerts">アラートを読み込み中…</string>
     <string name="loading_dashboard">ダッシュボードを読み込み中…</string>
-    <string name="loading_automata">Automata を読み込み中…</string>
+    <string name="loading_automata">オートマタを読み込み中…</string>
     <string name="refreshing_cached_data">保存済みのデータを表示中 · 更新しています…</string>
     <!-- On-device crash / bug reports (docs/crash-reports.md) -->
     <string name="crash_report_title">datawatch が予期せず終了しました。レポートを送信しますか？</string>

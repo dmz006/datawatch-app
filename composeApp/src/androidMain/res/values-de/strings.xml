@@ -1405,7 +1405,7 @@
     <string name="loading_sessions">Sitzungen werden geladen…</string>
     <string name="loading_alerts">Warnungen werden geladen…</string>
     <string name="loading_dashboard">Dashboard wird geladen…</string>
-    <string name="loading_automata">Automata werden geladen…</string>
+    <string name="loading_automata">Automaten werden geladen…</string>
     <string name="refreshing_cached_data">Gespeicherte Daten · wird aktualisiert…</string>
     <!-- On-device crash / bug reports (docs/crash-reports.md) -->
     <string name="crash_report_title">datawatch wurde unerwartet beendet. Bericht senden?</string>
