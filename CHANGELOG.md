@@ -27,6 +27,9 @@ On 2026-10-14 the app was measured against a busy production server (484 session
   - When saved data is on screen and a refresh is running, a thin progress bar reads "Showing saved data · refreshing…".
   - Localised in EN, DE, ES, FR and JA.
 
+### Automata workflow
+- **App changes can run as datawatch Automata.** `scripts/automata/verify-app.sh` runs the CI gate plus the locale gate as each task's verification. The Automaton type `mobile-app` is registered on the daemon. [docs/automata-workflow.md](docs/automata-workflow.md) covers per-task execution and verification models (verification LLM, datawatch v9.0.67+), the file-drift guardrail, and the CI-only iOS check.
+
 ### Release
 - **`release.yml` can ship iOS alone** (`workflow_dispatch` with `ios_only: true`). It builds and uploads to TestFlight and submits the build for Beta App Review from the selected branch, with no Play upload, no GitHub release and no parity check. Use it only when the operator approves an iOS release while Android is held, for example during a Play review. The version code must be bumped first.
 

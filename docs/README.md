@@ -32,6 +32,7 @@ Entry point for everything docs-related. Reading order:
 | [security-model.md](security-model.md) | Trust boundaries, keys, FCM payload contract |
 | [threat-model.md](threat-model.md) | STRIDE analysis + residual risks |
 | [crash-reports.md](crash-reports.md) | On-device crash and bug reports: contents, redaction, privacy |
+| [automata-workflow.md](automata-workflow.md) | Running app changes as datawatch Automata: the `mobile-app` type, the verification script, per-task models |
 
 ## Testing package
 
