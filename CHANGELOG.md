@@ -8,6 +8,20 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### iOS performance
+A tester reported the iPhone app was very slow against a busy server: 484 sessions, a 3 MB `/api/sessions` and a 3 MB WS `sessions` frame about 7 times a minute. Fixes:
+- **One shared WebSocket per server.** The alert feed, Sessions, Observer, Automata and Dashboard each opened their own global `/ws`, so every 3 MB frame was decoded once per socket. They now share one socket per server, which closes 5 s after the last screen leaves.
+- **Sessions come from the live WS data, not repeated 3 MB downloads.** The app keeps the latest list per server from the WS (single-session updates merged in) and screens get only lists that changed.
+  - **Alerts** polled `/api/alerts` and `/api/sessions` every 5 s (per server in All mode). Now `/api/alerts` every 15 s; sessions come from the WS, with a REST fallback at most every 60 s while the WS isn't live.
+  - **"Needs input" notifications** fetched `/api/sessions` every 15 s per server. They now follow the WS list; REST is a fallback at most every 120 s.
+  - **Session detail** re-fetched the whole list every 10 s to refresh one session. It now follows that session on the WS (REST fallback every 60 s while the WS is down).
+  - **Sessions and Dashboard** skip their 30 s REST refresh while the WS is live.
+- **Sessions list:** filtering, ordering and the chip counts run once per change on a background thread, not several times per redraw. Cards whose session didn't change aren't redrawn. Running cards share one 1 s clock instead of one timer each.
+- **Alerts list:** filtering, grouping and counts are computed once per change, and alert-to-session lookups use an index.
+- **Dashboard animations are capped:** the EKG at ~10 fps (it redrew at the display rate), the constellation at ~5 fps and the sparklines at ~2 fps. Motion speed is unchanged.
+- **The Settings stale-peer badge stops polling while the app is in the background.**
+- **New loading indicator** on Sessions, Alerts, Automata, Observer and Dashboard: the datawatch eye with a spinner on first load, and a thin bar with a "Refreshing…" pill while cached data refreshes. Localised in all app languages.
+
 ### Dependencies
 - **Library catch-up that works on AGP 8.5.2** (part of Dependabot #242; the rest waits for BL418): kotlinx-coroutines 1.11.0, kotlinx-serialization 1.11.0, guava 33.7.2, zxing 3.5.4, Wear watchface 1.3.0, detekt 1.23.8, Gradle Play Publisher 3.13.0, turbine 1.2.1, mockk 1.14.11. Validated locally with the full CI gate and the phone/Wear/Auto release builds.
 - **androidx security-crypto 1.1.0** (from 1.1.0-alpha06, #243): the stable release deprecates the API but is bytecode-equivalent for our use, so stored tokens and the database key stay readable. **upload-artifact v7** (#240).
