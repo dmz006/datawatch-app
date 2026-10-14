@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Automata parity
+Parity with datawatch v9.0.73 (per-unit verification LLM) and v9.0.75 (foreign-file drift), on Android and iOS. Closes the Android parity item the server tracks as datawatch-app#257.
+- **Choose which LLM verifies a task, a story or a whole Automaton.** The task edit dialog, the story LLM dialog and the Automaton's Set LLM dialog each have a **Verification LLM** section with the same Backend / Effort / Model pickers as the execution LLM. Leave a field empty to inherit, in the order task, story, Automaton, then the global verification setting. Saving calls the server's `set_task_verification_llm`, `set_story_verification_llm` or `set_verification_llm` only when a value changed.
+- **See which verifier judged a task.** Under a task's verification result, a "Judged by" line shows the backend, model and effort the verifier actually used, and where that choice came from (task, story, automaton, global or pool).
+- **Foreign-file drift warning.** When a task's commit swept in files that someone else had left uncommitted, the task shows a ⚠ chip with the file count, and its expanded view lists the files under **Foreign file drift**.
+- Older servers still work: every new field is optional.
+- New strings in EN, DE, ES, FR and JA, copied from the PWA's locale bundles.
+
 ### Android and shared performance
 On 2026-10-14 the app was measured against a busy production server (484 sessions, 500 alerts), going through a read-only proxy. While idle on Sessions it used **33 MB/min**, rising to **52 MB/min** after visiting each tab once. `/api/alerts` was requested 84 times a minute. After these fixes, the same runs measure **9.5 MB/min** and **16 MB/min**. Alerts are requested 12 times a minute, and there is **no traffic in the background**. Most of what remains is the server's 3 MB session-list push, tracked as dmz006/datawatch#242.
 - **One alerts poller.** Every tab built its own `AlertsViewModel`, each with a 5 s loop (7 at once). Alerts and Sessions view-models are now shared by the whole app (`activityViewModel()`). Session detail no longer creates a second `SessionsViewModel`, which also meant a second socket and a second poll, just for the watch toggle.

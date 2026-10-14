@@ -32,8 +32,9 @@ You can run changes to this repo as datawatch **Automata** (PRDs) instead of as 
 
 ## App parity follow-up
 
-The new Automaton fields should appear in the app's PRD detail, as they do in the PWA:
+Done (datawatch v9.0.73 and v9.0.75 fields; see the CHANGELOG "Automata parity" entry). The app's Automaton detail now matches the PWA on Android and iOS:
 
-- `verification_backend`, `verification_model` and `verification_effort` on Task, Story and PRD (settable);
-- `verifier_*` and `verifier_source` on each verification result (read-only);
-- `foreign_file_drift` on Task, and `block_on_file_drift`.
+- `verification_backend`, `verification_model` and `verification_effort` on Task, Story and Automaton. Each one is settable from a Verification LLM section in the task edit, story LLM and Set LLM dialogs, which call `set_task_verification_llm`, `set_story_verification_llm` and `set_verification_llm`.
+- `verifier_backend`, `verifier_model`, `verifier_effort` and `verifier_source` on each verification result, shown read-only as a "Judged by" line.
+- `foreign_file_drift` on Task, shown as a warning chip plus the list of files.
+- `block_on_file_drift` is decoded on the Automaton, the global autonomous config and guardrail profiles. The app has no toggle for it yet; the PWA has the global one under Settings → Automate.

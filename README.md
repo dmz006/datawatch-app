@@ -119,7 +119,9 @@ phone, watch, or car display:
   through it, with no extra login. Picking one shows whether it's connecting, or
   why it can't be reached, with a button back to your server.
 - **Automata** — create, plan, approve and run automata; watch planning live; edit
-  stories and tasks; templates, dependency graph, verdicts and per-story resources.
+  stories and tasks; templates, dependency graph, verdicts and per-story resources;
+  pick the verification LLM per task, story or automaton, see which verifier judged a
+  task, and get warned when a task's commit swept in someone else's uncommitted files.
 - **Council** — run a multi-persona council debate and watch it live.
 - **Server settings** — every web-UI settings card, including the project / cluster
   profile editor with a YAML view, LLM registry, compute nodes and plugins.
