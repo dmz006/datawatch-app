@@ -53,7 +53,9 @@ internal object IosGlobalStreams {
             val existing = streams[profile.id]
             if (existing != null && existing.first == sig) return existing.second
             val shared: Flow<Unit> =
-                IosServiceLocator.wsTransportFor(profile).globalStream()
+                IosServiceLocator
+                    .wsTransportFor(profile)
+                    .globalStream()
                     .shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), replay = 0)
             streams[profile.id] = sig to shared
             return shared
@@ -206,12 +208,6 @@ public object IosSessionsLive {
                         .collect { onSession(it) }
                 }
             }
-        return IosSubscription(job)
-    }
-
-    /** Keeps the shared global socket for [profile] open without reading any hub. */
-    public fun hold(profile: ServerProfile): IosSubscription {
-        val job = scope.launch { IosGlobalStreams.stream(profile).collect { } }
         return IosSubscription(job)
     }
 }

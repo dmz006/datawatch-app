@@ -16,6 +16,8 @@ import com.dmzs.datawatchclient.transport.createHttpClientWithWebSockets
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.rest.RestTransport
+import com.dmzs.datawatchclient.transport.ws.PrdHub
+import com.dmzs.datawatchclient.transport.ws.StatsHub
 import com.dmzs.datawatchclient.transport.ws.WebSocketTransport
 import io.ktor.client.HttpClient
 import kotlinx.cinterop.ByteVar
@@ -494,7 +496,7 @@ public object IosServiceLocator {
         val job =
             ioScope.launch {
                 launch { IosGlobalStreams.stream(profile).collect { } }
-                launch { com.dmzs.datawatchclient.transport.ws.StatsHub.flow.collect { onStats(it) } }
+                launch { StatsHub.flow.collect { onStats(it) } }
                 launch { IosSessionsLive.listFlow(profile.id).collect { onSessions(it) } }
             }
         return IosSubscription(job)
@@ -502,8 +504,8 @@ public object IosServiceLocator {
 
     /**
      * Live `stats` frames only (Observer): keeps the shared global `/ws` for
-     * [profile] open and forwards [com.dmzs.datawatchclient.transport.ws.StatsHub]
-     * frames, without handing the session list to Swift.
+     * [profile] open and forwards [StatsHub] frames, without handing the
+     * session list to Swift.
      */
     public fun subscribeStats(
         profile: ServerProfile,
@@ -512,7 +514,7 @@ public object IosServiceLocator {
         val job =
             ioScope.launch {
                 launch { IosGlobalStreams.stream(profile).collect { } }
-                launch { com.dmzs.datawatchclient.transport.ws.StatsHub.flow.collect { onStats(it) } }
+                launch { StatsHub.flow.collect { onStats(it) } }
             }
         return IosSubscription(job)
     }
@@ -547,7 +549,7 @@ public object IosServiceLocator {
         val job =
             ioScope.launch {
                 launch { IosGlobalStreams.stream(profile).collect { } }
-                launch { com.dmzs.datawatchclient.transport.ws.PrdHub.flow.collect { onPrd(it) } }
+                launch { PrdHub.flow.collect { onPrd(it) } }
             }
         return IosSubscription(job)
     }
