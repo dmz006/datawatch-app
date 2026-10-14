@@ -100,7 +100,10 @@ struct RootView: View {
             AlertDock.shared.close()
         }
         .onChange(of: profileStore.profiles) { _ in profilesChanged() }
-        .onChange(of: profileStore.activeProfileId) { _ in probeAutonomous() }
+        .onChange(of: profileStore.activeProfileId) { _ in
+            stalePeerCount = 0
+            probeAutonomous()
+        }
         .onChange(of: scenePhase) { phase in shellServices(active: phase == .active) }
         .onAppear {
             ReachabilityCache.shared.attach(profileStore)
@@ -108,7 +111,8 @@ struct RootView: View {
             shellServices(active: true)
         }
         .task { await restoreOnce() }
-        .task(id: profileStore.activeProfileId) { await pollStalePeers() }
+        // Restarts on a server switch; paused while the app isn't active.
+        .task(id: stalePeerPollKey) { await pollStalePeers() }
         #if DEBUG
         .onAppear {
             DebugLaunchHooks.applyTheme()
@@ -304,9 +308,16 @@ struct RootView: View {
         }
     }
 
+    /// Identity of the stale-peer poll: active server + whether the scene is active.
+    private var stalePeerPollKey: String {
+        (profileStore.activeProfileId ?? "") + "|" + (scenePhase == .active ? "active" : "paused")
+    }
+
     /// PWA polls the peer registry for the stale badge; 30 s like Android.
+    /// Not while the app is inactive / backgrounded (the task restarts, and
+    /// polls at once, when it becomes active again; the last count is kept).
     private func pollStalePeers() async {
-        stalePeerCount = 0
+        guard scenePhase == .active else { return }
         while !Task.isCancelled {
             if !profileStore.isAllServers, let profile = profileStore.activeProfile {
                 IosStalePeers.shared.count(profile: profile) { value in
