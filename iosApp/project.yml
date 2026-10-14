@@ -105,6 +105,9 @@ targets:
       - sdk: WebKit.framework
       - sdk: AppIntents.framework
       - sdk: WidgetKit.framework
+      # On-device crash reports: MetricKit diagnostics + mail composer for Send.
+      - sdk: MetricKit.framework
+      - sdk: MessageUI.framework
       # BL403: home-screen widgets + Control Center control (embedded in PlugIns/).
       - target: DatawatchWidgets
 

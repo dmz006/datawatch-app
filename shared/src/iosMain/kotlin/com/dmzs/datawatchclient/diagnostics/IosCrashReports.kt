@@ -89,7 +89,8 @@ public object IosCrashReports {
      */
     public fun signalHeader(): String =
         BugReportBuilder.header(ReportKind.SIGNAL, Clock.System.now().toEpochMilliseconds()) +
-            "Details: the app was stopped by a fatal signal. Recent log lines are not available for this kind of crash.\n" +
+            "Details: the app was stopped by a fatal signal. Time is when that session started; " +
+            "recent log lines are not available for this kind of crash.\n" +
             "Signal: "
 
     /** [Redactor.redact] for text Swift reads back from disk. */
