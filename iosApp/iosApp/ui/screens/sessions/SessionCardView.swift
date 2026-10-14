@@ -350,7 +350,9 @@ struct SessionCardView: View {
     /// PWA `↳ child of [host]` lineage badge (BL347), muted at 0.7 opacity.
     private func parentBadge(_ parentId: String) -> some View {
         let host: String = parentId.split(separator: "-").first.map(String.init) ?? parentId
-        return Text("↳ " + L("child of") + " [" + host + "]")
+        // Interpolation, not a `+` chain: the chain took >500 ms to type-check.
+        let label: String = "↳ \(L("child of")) [\(host)]"
+        return Text(label)
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(DatawatchColors.onSurfaceMuted)
             .padding(.horizontal, 7)
