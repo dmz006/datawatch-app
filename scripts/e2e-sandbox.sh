@@ -59,7 +59,13 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-mkdir -p "$TEST_DIR/work" "$OUT"
+mkdir -p "$TEST_DIR/work" "$OUT" "$TEST_DIR/tmux"
+# Never share the operator's tmux server. A shell started from a datawatch session carries
+# $TMUX / $TMUX_TMPDIR for the PRODUCTION server, and tmux gives $TMUX priority over
+# TMUX_TMPDIR, so a sandbox daemon (and every tmux command below) would create, inspect and
+# kill sessions on production. Drop them and give the sandbox its own socket directory.
+unset TMUX TMUX_PANE
+export TMUX_TMPDIR="$TEST_DIR/tmux"
 LOG="$OUT/run.log"
 RESULTS="$OUT/results.tsv"
 : > "$RESULTS"
