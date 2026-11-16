@@ -29,7 +29,7 @@ kotlin {
                 // mocked TransportClient. Avoids hand-implementing
                 // every method of a 60-method interface that mostly
                 // doesn't matter for the test under run.
-                implementation("io.mockk:mockk:1.14.11")
+                implementation("io.mockk:mockk:1.14.12")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
                 implementation(libs.turbine)
             }
